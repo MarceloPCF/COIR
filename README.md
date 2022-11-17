@@ -1,4 +1,4 @@
-# Importa Notas de Corretagens no padrão Sinacor para o excel
+# 'Importa Notas de Corretagens no padrão Sinacor para o excel
 
 Este é um Script em python para extração de Notas de Corretagens e exportação para o excel.
 
