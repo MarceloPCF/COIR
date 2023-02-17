@@ -2,7 +2,7 @@ Programa para Extração dos dados de Notas de Corretagens e exportação para o
 
 É só baixar e usar. Não será necessário instalar nenhum programa adicional.
 
-Os arquivos com extensão .001, .002 e .003 devem ser descompactados nessa pasta principal. 
+Os arquivos com extensão .001, .002 e .003 devem ser descompactados nessa pasta principal.
 
 Apenas notas de Corretagem no padrão SINACOR são compatíveis.
 
@@ -20,6 +20,6 @@ Além disso, há planilhas de controle de patrimônio, Manejo de Risco, Manejo d
 
 O sistema foi testado para as corretoras XP, Rico e BTG nos mercados "à vista", "Opção" e "futuro".
 
-Para demais corretoras é necessário o envio de notas de correções para implementação futura.
+Para demais corretoras é necessário o envio de Notas de Corretagens para implementação futura.
 
 Toda ajuda é sempre bem vinda!
