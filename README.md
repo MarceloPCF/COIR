@@ -18,7 +18,7 @@ Apuração de DARF mensal.
 
 Além disso, há planilhas de controle de patrimônio, Manejo de Risco, Manejo de Posição, entre várias outras.
 
-O sistema foi testado para as corretoras XP, Rico e BTG nos mercados "à vista", "Opção" e "futuro".
+O sistema foi testado para as corretoras XP, Rico e BTG nos mercados "à vista", "Opções" e "futuros".
 
 Para demais corretoras é necessário o envio de Notas de Corretagens para implementação futura.
 
