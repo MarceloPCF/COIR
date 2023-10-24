@@ -1,9 +1,8 @@
 # Controle de Operações e Imposto de Renda - COIR
-***
 O COIR é um sistema de extração de dados de notas de corretagens no padrão SINACOR (Sistema Integrado de Administração de Corretoras) para planilhas do Microsoft Excel. Tem como objetivo o controle de operações nos mercados Á Vista (Normal e DayTrade), Futuros, Commodities e Derivativos (Opções), na bolsa de valores da B3 (Brasil, Bolsa e Balcão).
 
-## História
 ***
+## História
 Esse controle de operações começou em 2017, inicalmente apenas em planilhas excel com operações do mercado À Vista. Em 2021 nasceu a necessidade de automatização da extração de dados das notas de corretegens, até então todo esse trabalho era realizado de forma manual. Para essa automatização é utilizada a linguagem de programação Python. Em 2022 foram acrescentado os controles de operações dos mercados de Futuros, Commodities e Derivativos (Opções).
 
 Desde o início, o objetivo desse controle foi a simplicidade e correção dos dados extraídos e contabilizados. Algumas das principais características do COIR são:
@@ -14,8 +13,8 @@ Desde o início, o objetivo desse controle foi a simplicidade e correção dos d
 
 Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, Clear, Rico, Necton e BTG.
 
-## Plataforma
 ***
+## Plataforma
 Para ter acesso a todas as funcionalidades do sistema será necessário o Microsoft Excel e o software Python.
 * Descompacte e copie todo o conteúdo baixado para uma pasta de seu interesse.
 * Baixe suas notas de corretagem no padrão SINACOR direto do portal de sua corretora.
@@ -60,6 +59,7 @@ A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas 
 1. Reservado2 - Planilha reservado para implementação futura.
 1. Reservado3 - Planilha reservado para implementação futura.
 
+***
 ## Capturas de telas
 Tela principal
 ![Tela principal](Apoio/Screenshots/Tela-programa.JPG)
