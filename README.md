@@ -93,3 +93,6 @@ Balanceamento da carteira
 
 Manejo de risco antimartingale com porcentagem fixa por tipo de operação
 ![manejo risco](Apoio/Screenshots/manejo-risco.JPG)
+
+***
+## Implementações futuras
