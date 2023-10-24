@@ -63,3 +63,33 @@ A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas 
 ## Capturas de telas
 Tela principal
 ![Tela principal](Apoio/Screenshots/Tela-programa.JPG)
+
+Índice
+![indice](Apoio/Screenshots/indice.JPG)
+
+Controle das operações realizadas
+![operacoes](Apoio/Screenshots/operacoes.JPG)
+
+Contabilidade das operações realizadas
+![contabilidade](Apoio/Screenshots/contabilidade.JPG)
+
+Alocação por classe de ativo
+![alocacao](Apoio/Screenshots/alocacao.JPG)
+
+Controle de operações isentas de IR
+![isentos](Apoio/Screenshots/isentos.JPG)
+
+Controle de DARF mensal
+![darf.JPG](Apoio/Screenshots/darf.JPG)
+
+Eventos da B3
+![eventos](Apoio/Screenshots/eventos.JPG)
+
+Custódia inicial
+![custodia inicial](Apoio/Screenshots/custodia-inicial.JPG)
+
+Balanceamento da carteira
+![balanceamento](Apoio/Screenshots/balanceamento.JPG)
+
+Manejo de risco antimartingale com porcentagem fixa por tipo de operação
+![manejo risco](Apoio/Screenshots/manejo-risco.JPG)
