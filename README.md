@@ -61,5 +61,5 @@ A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas 
 1. Reservado3 - Planilha reservado para implementação futura.
 
 ## Capturas de telas
-***
+Tela principal
 ![Tela principal](Apoio/Screenshots/Tela-programa.JPG)
