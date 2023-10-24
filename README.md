@@ -62,4 +62,4 @@ A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas 
 
 ## Capturas de telas
 ***
-![Tela principal](Apoio\Screenshots\Tela-programa.JPG)
+![Tela principal](Apoio/Screenshots/Tela-programa.JPG)
