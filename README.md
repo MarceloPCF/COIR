@@ -34,8 +34,8 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
 
 Contribuições são muito bem-vindas!
 
-## Recursos
 ***
+## Recursos
 A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas do COIR:
 
 1. Indice - Acesso, habilitação e descrição de cada uma das planilhas do COIR.
