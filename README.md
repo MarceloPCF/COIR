@@ -63,6 +63,7 @@ A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas 
 ## Capturas de telas
 Tela principal
 ![Tela principal](Apoio/Screenshots/tela-programa.JPG)
+<img src="Apoio/Screenshots/tela-programa.JPG" alt="Tela principal">
 
 Índice
 ![indice](Apoio/Screenshots/indice.JPG)
