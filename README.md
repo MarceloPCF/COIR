@@ -64,9 +64,11 @@ A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas 
 Tela principal
 ![Tela principal](Apoio/Screenshots/tela-programa.JPG)
 
+***
 Índice
 ![indice](Apoio/Screenshots/indice.JPG)
 
+***
 Controle das operações realizadas
 ![operacoes](Apoio/Screenshots/operacoes.JPG)
 
