@@ -96,3 +96,8 @@ Manejo de risco antimartingale com porcentagem fixa por tipo de operação
 
 ***
 ## Implementações futuras
+* Armazenamento e disponibilização dos dados em uma base de dados
+* Implementação de uma interface web para:
+   * importar as notas de corretagens
+   * visualização dos dados armazenados por usuário
+   * 
