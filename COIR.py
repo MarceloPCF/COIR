@@ -7,12 +7,14 @@
 # Os dados extraídos são inseridos em planilhas excel
 # O atual scritp foi testado nas corretoras BTG, XP, Rico e Agora
 # Para outras corretoras favor enviar notas de corretagem para implementação
+# ------
 # Para dúvidas e sugestões entrar em contato pelo e-mail: marcelo.pcf@gmail.com
+# Última atualização em 25/10/2023
 # ===================================================================================================
 from os.path import isfile, join, basename, exists
 import sys
 import re
-#import shutil
+import shutil
 import calendar
 from datetime import datetime, timedelta
 
@@ -73,15 +75,7 @@ def instalar_modulo(modulo):
 # Lista de modulos opcionais
 # ATENÇÃO: PARA CADA MÓDULO NOVO, INCLUIR AS DUAS LINHAS, com a definição da váriavel modulo e o import
 # ===================================================================================================
-modulo = ''
-try:
-    modulo='shutil'
-    import  shutil
-except ImportError as e:
-    print("-"*100)
-    print(str(e))
-    comando=instalar_modulo(modulo)
-    
+modulo = ''   
 try:
     modulo='pandas'
     import  pandas
@@ -115,6 +109,16 @@ except ImportError as e:
     comando=instalar_modulo(modulo)
 
 ### Por enquanto não são necessários
+# Talvez precise mais tarde
+#
+#try:
+#    modulo='shutil' - Já importado
+#    import  shutil
+#except ImportError as e:
+#    print("-"*100)
+#    print(str(e))
+#    comando=instalar_modulo(modulo)
+#
 #try:
 #    modulo='et-xmlfile'
 #    import  et-xmlfile
@@ -123,7 +127,6 @@ except ImportError as e:
 #    print(str(e))
 #    comando=instalar_modulo(modulo)
 #
-# Talvez precise mais tarde
 # try:
 #     modulo='cryptography'
 #     import cryptography
