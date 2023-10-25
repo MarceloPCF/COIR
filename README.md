@@ -24,8 +24,11 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
    * Para isso é necessário que o Python 3 estaja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.
    * Ele pode ser baixando do endereço https://www.python.org/downloads/
    * Após o download e instalação do python execute o script “COIR.py”
-   * Na primeira execução do script serão instaladas algumas bibliotecas **não** nativas do Python e que são necessárias para a correta execução do COIR.py. Essa instalação é automática
-      * Serão instalado os seguintes pacotes: pandas, openpyxl, xlwings e tabula-py
+   * Na primeira execução do script serão instaladas algumas bibliotecas **não** nativas do Python e que são necessárias para a correta execução do COIR.py. Essa instalação é automática e serão instalados os seguintes pacotes: 
+      * pandas
+      * openpyxl
+      * xlwings e 
+      * tabula-py
 * Após concluídas as instalações o programa fará a exportação das Nota de Corretagens presentes na pasta “..\Entrada” automaticamente.
 * As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saída”.
 * O resultado da extração das notas de corretagens será inserido em 2 arquivos:
