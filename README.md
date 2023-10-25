@@ -35,7 +35,7 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
    * ..\Resultado\CPF\Completo.xlsx – que contém o resultado bruto da extração de todas as notas.
    * ..\Resultado\CPF\COIR.xlsm – que contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).
 
-Contribuições são muito bem-vindas!
+**Contribuições são muito bem-vindas!**
 
 ***
 ## Recursos
