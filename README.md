@@ -27,7 +27,7 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
    * Na primeira execução do script serão instaladas algumas bibliotecas **não** nativas do Python e que são necessárias para a correta execução do COIR.py. Essa instalação é automática e serão instalados os seguintes pacotes: 
       * pandas
       * openpyxl
-      * xlwings e 
+      * xlwings 
       * tabula-py
 * Após concluídas as instalações o programa fará a exportação das Nota de Corretagens presentes na pasta “..\Entrada” automaticamente.
 * As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saída”.
