@@ -75,7 +75,7 @@ def instalar_modulo(modulo):
 # Lista de modulos opcionais
 # ATENÇÃO: PARA CADA MÓDULO NOVO, INCLUIR AS DUAS LINHAS, com a definição da váriavel modulo e o import
 # ===================================================================================================
-modulo = ''   
+modulo = ''
 try:
     modulo='pandas'
     import  pandas
