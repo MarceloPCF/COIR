@@ -24,7 +24,7 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
    * Para isso é necessário que o Python 3 estaja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.
    * Ele pode ser baixando do endereço https://www.python.org/downloads/
    * Após o download e instalação do python execute o script “COIR.py”
-   * Na primeira execução do script devem ser instaladas algumas bibliotecas **não** nativas do Python e que são necessárias para a correta execução do COIR.py. O arquivo  requirements.txt tem uma lista com essas bibliotecas, bastando para isso utilizando a seguinte linha de comando:
+   * Na primeira execução do script devem ser instaladas algumas bibliotecas **não** nativas do Python e que são necessárias para a correta execução do COIR.py. O arquivo  requirements.txt tem uma lista com essas bibliotecas, bastando para isso utilizar a seguinte linha de comando:
    
    `$ python -m pip install -r requirements.txt`
 
