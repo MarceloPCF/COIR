@@ -77,7 +77,7 @@ def instalar_modulo(modulo):
 # ===================================================================================================
 modulo = ''   
 try:
-    modulo='pandas'
+    modulo='pandas==1.3.3'
     import  pandas
 except ImportError as e:
     print("-"*100)
@@ -85,7 +85,7 @@ except ImportError as e:
     comando=instalar_modulo(modulo)
     
 try:
-    modulo='openpyxl'
+    modulo='openpyxl==3.0.9'
     import  openpyxl
 except ImportError as e:
     print("-"*100)
@@ -93,7 +93,7 @@ except ImportError as e:
     comando=instalar_modulo(modulo)
     
 try:
-    modulo='xlwings'
+    modulo='xlwings==0.24.9'
     import  xlwings
 except ImportError as e:
     print("-"*100)
@@ -101,7 +101,7 @@ except ImportError as e:
     comando=instalar_modulo(modulo)
     
 try:
-    modulo='tabula-py'
+    modulo='tabula-py==2.3.0'
     import tabula
 except ImportError as e:
     print("-"*100)
@@ -180,7 +180,7 @@ except ImportError as e:
 # ATENÇÃO: Esses modulos serão instalados automaticamente, 
 #          caso não estejam instalados na primeira execução do script.
 # ===================================================================================================
-from tabula import read_pdf 
+from tabula import read_pdf
 import pandas as pd
 
 # ===================================================================================================
