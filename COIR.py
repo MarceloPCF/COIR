@@ -1080,6 +1080,8 @@ acoes = pd.DataFrame(data=(
     ['MAESTROLOCON','MSRO3'],
     ['MAGAZ LUIZAON','MGLU3'],
     ['MAGAZINE LUION','MGLU3'],
+    ['MGLU3ON','MGLU3'],
+    ['MGLU3 ON','MGLU3'],
     ['MANGELS INDLON','MGEL3'],
     ['MANGELS INDLPN','MGEL4'],
     ['Marathon Oil DRN','M1RO34'],
