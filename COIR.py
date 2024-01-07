@@ -9,7 +9,7 @@
 # Para outras corretoras favor enviar notas de corretagem para implementação
 # ------
 # Para dúvidas e sugestões entrar em contato pelo e-mail: marcelo.pcf@gmail.com
-# Última atualização em 25/10/2023
+# Última atualização em 07/01/2024
 # ===================================================================================================
 from os.path import isfile, join, basename, exists
 import sys
@@ -530,6 +530,7 @@ acoes = pd.DataFrame(data=(
     ['CCR S.A.ON','CCRO3'],
     ['CCR SAON','CCRO3'],
     ['CEA MODASON','CEAB3'],
+    ['CEA MODAS','CEAB3'],
     ['CEBON','CEBR3'],
     ['CEBPNA','CEBR5'],
     ['CEBPNB','CEBR6'],
@@ -1575,8 +1576,8 @@ acoes = pd.DataFrame(data=(
     ['VERTEX PHARMDRN','VRTX34'],
     ['VIACOMCBS','C1BS34'],
     ['VIACOMCBSDRN','C1BS34'],
-    ['VIAON','VIIA3'],
-    ['VIAVAREJOON','VVAR3'],
+    ['VIAON','BHIA3'],
+    ['VIAVAREJOON','BHIA3'],
     ['VIBRAON','VBBR3'],
     ['Vipshop Hold DRN','V1IP34'],
     ['Vipshop Hold','V1IP34'],
@@ -1718,7 +1719,8 @@ opcoes = pd.DataFrame(data=(
     ['USIM','USIM5'],
     ['VALE','VALE3'],
     ['VBBR','VBBR3'],
-    ['VIIA','VIIA3'],
+    ['VIIA','BHIA3'],
+    ['VVAR','BHIA3'],
     ['VIVT','VIVT3'],
     ['WEGE','WEGE3'],
     ['YDUQ','YDUQ3']
@@ -2215,6 +2217,25 @@ def valida_corretora(corretora):
 def agrupar_old(note_df):
     note_df_agrupado = note_df.groupby(
     ['Corretora','CPF','Nota', 'Data', 'C/V', 'Papel', 'Operacao'],as_index=False
+    ).agg(
+        {
+            'Preço': sum,
+            'Quantidade': sum,
+            'Total': sum,
+            'Custos_Fin': sum,
+            'PM': sum,
+            'IRRF': sum
+        }
+    )
+    return note_df_agrupado
+
+# ===================================================================================================
+# Agrupar os dados de preço e quantidade por cada ativo comprado/vendido em cada nota de corretagem
+# da corretora BTG com alteração da indexação por data e só depois por nota de corretagem
+# ===================================================================================================
+def agrupar_BTG(note_df):
+    note_df_agrupado = note_df.groupby(
+    ['Corretora','CPF','Data', 'Nota', 'C/V', 'Papel', 'Operacao','Mercado','Prazo','Exercicio'],as_index=False
     ).agg(
         {
             'Preço': sum,
@@ -3401,7 +3422,7 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
     
     # 51.691,400.509,72.516,568.597   - Nota e data do pregão:
     # 141.684,423.566,158.791,567.109 - CPF  
-    # 240.603,24.172,497.941,570.828    - Informações de compra e venda:
+    # 240.603,24.172,497.941,570.828  - Informações de compra e venda:
 
     data = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages=page, encoding="utf-8", area=((51.691,400.509,72.516,568.597),(141.684,423.566,158.791,567.109),(240.603,24.172,497.941,570.828)))
 
@@ -3631,7 +3652,7 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
     #Agrupar os dados de preço e quantidade por cada ativo comprado/vendido em cada nota de corretagem
     grouped = agrupar(note_df)
     grouped = grouped[cols]
-    
+
     # Seleção de papel isento de IR (IRRF e IRPF). Apenas uma operação (um papel) está sendo analisada por NC       
     note_data,log_isecao = isencao_imposto_renda(taxas_df,grouped,note_data)
     log.append(log_isecao)
@@ -3639,7 +3660,7 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
     note_df = pd.DataFrame(data=note_data, columns=cols)
 
     # Refaz o agrupamento para atualizar os dados de preço e quantidade com a correção de compra/venda a maior no DayTrade 
-    grouped = agrupar(note_df) 
+    grouped = agrupar_BTG(note_df) 
     grouped = grouped[cols]
     
     # Agrupa as operações por tipo de operação (Normal ou Daytrade)
@@ -3655,16 +3676,16 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
         grouped = grouped[cols]
     except ValueError:
         agrupar_operacoes(grouped,cols)
-        
+      
     # Acrescentando os custos operacionais (Corretagem, Imposto e Outros)
     grouped = custos_operacionais(grouped,taxas_df)
     
     # Obtendo o valor correto do preço unitário de cada operação
     grouped['Preço'] = grouped['Total'] / grouped['Quantidade']
-
+   
     # Obtendo o valor correto do preço médio de cada operação
     grouped['PM'] = preco_medio_correcao(grouped)
-
+       
     # Inseri o número da conta na corretora
     grouped.insert(2,"Conta",int(conta),True)
     taxas_df.insert(0,"Conta",int(conta),True)
