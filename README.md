@@ -19,7 +19,8 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
 * Descompacte e copie todo o conteúdo baixado para uma pasta de seu interesse.
 * Baixe suas notas de corretagem no padrão SINACOR direto do portal de sua corretora.
    * O sistema foi testado apenas para as corretoras XP, Clear, Rico, Necton e BTG.
-* Copie as cotas de corretagens baixadas para a pasta “..\Entrada”.
+   * O sistema trabalha com notas de corretagens de um mês fechado/completo.
+* Copie as notas de corretagens baixadas para a pasta “..\Entrada”.
 * Execute o programa “COIR.py”, que se encontra na pasta principal.
    * Para isso é necessário que o Python 3 estaja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.
    * Ele pode ser baixando do endereço https://www.python.org/downloads/
