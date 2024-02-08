@@ -9,7 +9,7 @@
 # Para outras corretoras favor enviar notas de corretagem para implementação
 # ------
 # Para dúvidas e sugestões entrar em contato pelo e-mail: marcelo.pcf@gmail.com
-# Última atualização em 07/01/2024
+# Última atualização em 07/02/2024
 # ===================================================================================================
 from os.path import isfile, join, basename, exists
 import sys
@@ -841,6 +841,7 @@ acoes = pd.DataFrame(data=(
     ['GLAXOSMITHKL','G1SK34'],
     ['GLAXOSMITHKLDRN','G1SK34'],
     ['Gol ON','GOLL3'],
+    ['GOLL4 PN','GOLL4'],
     ['GOLD FIELDS','G1FI34'],
     ['GOLD FIELDSDRN','G1FI34'],
     ['GOLDMANSACHS','GSGI34'],
@@ -1681,6 +1682,7 @@ opcoes = pd.DataFrame(data=(
     ['HAPV','HAPV3'],
     ['HYPE','HYPE3'],
     ['IGTI','IGTI11'],
+    ['IRBR','IRBR3'],
     ['ITSA','ITSA4'],
     ['ITUB','ITUB4'],
     ['JBSS','JBSS3'],
@@ -1743,9 +1745,11 @@ codigos  = { 'ON' : '3' , 'PN' : '4' , 'PNA' : '5' , 'PNB' : '6' , 'PNC' : '7' ,
 # Há duas possibilidades de implementação. Buscando em um arquivo csv ou incorporando essas informações
 # no próprio script python, conforme implementado a seguir. Analisar qual a melhor aboradagem.
 # ===================================================================================================
-''' Atualizado em 31/01/2022'''
+''' Atualizado em 02/02/2024'''
 corretoras_cadastradas = pd.DataFrame(data=(
     ['3','XP INVESTIMENTOS CCTVM S/A','XP'],
+    ['3','XP INVESTIMENTOS CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.','XP'],
+    ['3','XP INVESTIMENTOS CORRETORA DE CÂMBIO, TÍTULOS E VALORES','XP'],
     ['386','RICO INVESTIMENTOS - GRUPO XP','RICO'],
     ['90','EASYNVEST - TITULO CV S.A.','EASYNVEST'],
     ['308','CLEAR CORRETORA - GRUPO XP','CLEAR'],
@@ -1878,7 +1882,7 @@ def sanitiza_moeda(moeda):
     #Se o valor é uma string então remove os simbolo $ e delimitadores
     #caso contrário, o valor é numérico e pode ser convertido
     if isinstance(moeda, str):
-        return moeda.replace('CONTINUA...','0').replace('T - Liquidação pelo Bruto','0').replace('ON NM','0').replace('.','').replace(',','.').replace('R$','').replace('$','').replace('NM','0').replace('ON','0').replace('N1','0').replace('N2','0').replace('C O N T I N U A   ','0').replace("| D",'').replace("|D ",'').replace(" |D",'').replace('D','').replace("| C",'').replace("|C",'').replace("|",'').replace("| ",'').replace("0| ",'0').replace("0|",'0').replace('Compra Opções','0').replace('0 ay Trade (proj)','0').replace('+0 Custos Impostos','0')
+        return moeda.replace('CONTINUA...','0').replace('T - Liquidação pelo Bruto','0').replace('ON NM','0').replace('.','').replace(',','.').replace('R$','').replace('$','').replace('NM','0').replace('ON','0').replace('N1','0').replace('N2','0').replace('C O N T I N U A   ','0').replace("| D",'').replace("|D ",'').replace(" |D",'').replace('D','').replace("| C",'').replace("|C",'').replace("|",'').replace("| ",'').replace("0| ",'0').replace("0|",'0').replace('Compra Opções','0').replace('0 ay Trade (proj)','0').replace('+0 Custos Impostos','0').replace('Impostos','0')
     return moeda
     #return moeda.replace('CONTINUA...','0').replace('T - Liquidação pelo Bruto','0').replace('ON NM','0').replace('.','').replace(',','.').replace('R$','').replace('$','').replace('NM','0').replace('ON','0').replace('N1','0').replace('N2','0').replace('C O N T I N U A   ','0')
     
@@ -2779,8 +2783,311 @@ def log_processamento(current_path,cpf,log):
 
 # ===================================================================================================
 # Processamento de notas de corretagens das corretoras do grupo XP (XP, Rico e Clear)
+# Rotina para extração de dados no novo layout das notas de corretagens - início em 01/2024
 # ===================================================================================================
-def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):      
+def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
+    # ===================================================================================================
+    # Coleta de dados por área de informação - Extraindo os dados das operações na B3 
+    # ===================================================================================================         
+    
+    # 50.947,428.028,73.259,564.134   - Nota e data do pregão:
+    # 143.172,424.894,160.278,560.256 - CPF  
+    # 238.028,41.348,436.198,559.868  - Informações de compra e venda 
+  
+    data = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages=page, encoding="utf-8", area=((50.947,428.028,73.259,564.134),(143.172,424.894,160.278,560.256),(238.028,41.348,436.198,559.868)))
+    df = pd.concat(data,axis=0,ignore_index=True)
+
+    df['Preço / Ajuste'] = df['Preço / Ajuste'].apply(sanitiza_moeda).astype('float')
+    df['Valor Operação / Ajuste'] = df['Valor Operação / Ajuste'].apply(sanitiza_moeda).astype('float')
+    df['Quantidade'] = df['Quantidade'].apply(sanitiza_moeda).astype('float')
+    df['Nr. nota'] = df['Nr. nota'].apply(sanitiza_moeda).astype('float')
+    df['Tipo mercado'] = sanitiza_especificacao_titulo(df['Tipo mercado'])
+    df['Prazo'] = sanitiza_especificacao_titulo(df['Prazo'])
+    df['Prazo'].fillna("", inplace=True)
+    df['Especificação do título'] = sanitiza_especificacao_titulo(df['Especificação do título'])    
+    df['Obs. (*)'] = sanitiza_observacao(df['Obs. (*)'])
+    if 'Unnamed: 0' in df.columns:
+        try:
+            df['Unnamed: 0'] = df['Unnamed: 0'].apply(sanitiza_moeda).astype('float')
+        except:
+            df['Unnamed: 0'] = pd.to_numeric(df['Unnamed: 0'], errors='coerce')
+            df['Unnamed: 0'] = df['Unnamed: 0'].apply(sanitiza_moeda).astype('float')
+    if 'Unnamed: 1' in df.columns:
+        try:
+            df['Unnamed: 1'] = df['Unnamed: 1'].apply(sanitiza_moeda).astype('float')
+        except:
+            df['Unnamed: 1'] = pd.to_numeric(df['Unnamed: 1'], errors='coerce')
+            df['Unnamed: 1'] = df['Unnamed: 1'].apply(sanitiza_moeda).astype('float')
+    if 'Unnamed: 2' in df.columns:
+        try:
+            df['Unnamed: 2'] = df['Unnamed: 2'].apply(sanitiza_moeda).astype('float')
+        except:
+            df['Unnamed: 2'] = pd.to_numeric(df['Unnamed: 2'], errors='coerce')
+            df['Unnamed: 2'] = df['Unnamed: 2'].apply(sanitiza_moeda).astype('float')
+    # ===================================================================================================
+    # Coleta de dados por área de informação - Extraindo os dados das taxas e impostos 
+    # ===================================================================================================         
+
+    # 49.543,428.003,68.913,562.103 - nota e data do pregão:
+    # 439.178,33.898,617.233,546.458 - Resumo dos negócios, Resumo financeiro e Custos operacionais
+
+    data = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages='all', encoding="utf-8", area=((49.543,428.003,68.913,562.103),(435.453,32.408,617.978,546.458)))
+    df_gastos = pd.concat(data,axis=0,ignore_index=True)
+    df_gastos['Nr. nota'] = df_gastos['Nr. nota'].apply(sanitiza_moeda).astype('float')
+    if 'Unnamed: 0' in df_gastos.columns:
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].apply(sanitiza_moeda).astype('float')
+        df_gastos['Unnamed: 0'].fillna(0, inplace=True)
+    if 'Unnamed: 1' in df_gastos.columns:       
+        #print(df_gastos['Unnamed: 1'].to_markdown())
+        df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].apply(sanitiza_moeda).astype('float')
+        df_gastos['Unnamed: 1'].fillna(0, inplace=True)
+    lista = list(df_gastos[df_gastos['Resumo dos Negócios'].str.contains("Valor das operações",na=False)].index)
+    note_taxa = []
+
+    #Obtem o número da conta na corretora 
+    conta = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages='1', encoding="utf-8", area=(156.823,429.493,177.683,522.617))
+    conta = pd.concat(conta,axis=0,ignore_index=True)
+    conta = conta['Unnamed: 0'].iloc[0].strip().lstrip('0')
+        
+    #Verifica se a Nota de Corretagem já foi processada anteriormente
+    cpf = str(df['C.P.F./C.N.P.J/C.V.M./C.O.B.'][1])
+    nome = conta + '_' + df_gastos['Data pregão'][0][6:10] + '_' + df_gastos['Data pregão'][0][3:5] + '.xlsx'
+    current_path = './Resultado/'
+    folder_prefix = str(df['C.P.F./C.N.P.J/C.V.M./C.O.B.'][1] + '/' + corretora + '/' + df_gastos['Data pregão'][0][6:10])
+    folder_path = join(current_path, folder_prefix)
+    if exists(folder_path+'/'+nome):
+        log.append(verifica_nota_corretagem(folder_path,nome,item))
+        log_processamento(current_path,cpf,log)
+        return()
+    for current_row in lista:
+        nota = df_gastos['Nr. nota'].iloc[current_row-8]
+        data = datetime.strptime(df_gastos['Data pregão'].iloc[current_row-8], '%d/%m/%Y').date()
+        total = df_gastos['Unnamed: 0'].iloc[current_row]
+        vendas = df_gastos['Unnamed: 0'].iloc[current_row-6]
+        liquidacao = df_gastos['Unnamed: 1'].iloc[current_row-5]
+        registro = df_gastos['Unnamed: 1'].iloc[current_row-4]
+        emolumentos = df_gastos['Unnamed: 1'].iloc[current_row+1]
+        corretagem = df_gastos['Unnamed: 1'].iloc[current_row+5]
+        imposto = df_gastos['Unnamed: 1'].iloc[current_row+8]
+        irrf = df_gastos['Unnamed: 1'].iloc[current_row+9]
+        outros = df_gastos['Unnamed: 1'].iloc[current_row+10]
+        ir_daytrade = str(df_gastos['Resumo dos Negócios'].iloc[current_row+10])
+        if ir_daytrade != "nan":
+            ir_daytrade = ir_daytrade.split("Projeção R$ ")[1]
+            outros = df_gastos['Unnamed: 1'].iloc[current_row+11]
+        else:
+            ir_daytrade = "0"
+        ir_daytrade = float(ir_daytrade.replace('.','').replace(',','.'))
+        basecalculo = str(df_gastos['Resumo Financeiro'].iloc[current_row+9])
+        if basecalculo != "nan":
+            basecalculo = basecalculo.split("base R$")[1]
+            if basecalculo == "":
+                basecalculo = "0"
+        else:
+            basecalculo = "0"
+        basecalculo = float(basecalculo.replace('.','').replace(',','.'))
+        row_data = [nota,data,total,vendas,liquidacao,registro,emolumentos,corretagem,imposto,outros,emolumentos+liquidacao+registro,corretagem+imposto+outros,irrf,ir_daytrade,basecalculo]                                        
+        note_taxa.append(row_data)
+
+    cols = ['Nota','Data','Total','Vendas','Liquidação','Registro','Emolumentos','Corretagem','Imposto','Outros','Custos_Fin','Custos_Op','IRRF','IR_DT','BaseCalculo']
+    taxas_df = pd.DataFrame(data=note_taxa, columns=cols)
+    taxas_df = taxas_df.drop_duplicates(subset='Nota', keep='last', ignore_index=True)
+    cont_notas = len(taxas_df['Nota'])
+    if cont_notas > 1:
+        log.append('Serão processadas ' + str(cont_notas) + ' notas de corretagens do mercado à vista.\n')
+    else:
+        log.append('Será processada ' + str(cont_notas) + ' nota de corretagem do mercado à vista.\n')
+
+    #Incluir aqui a etapa para obter lista de linhas de cada operação
+    operacoes = list(df[df['Negociação'].str.contains("1-BOVESPA",na=False)].index)
+    note_data = []
+    numero_nota = 0
+    cpf = ''
+    nome = ''
+    ano = ''
+    temp = ''
+    for current_row in operacoes:
+        cell_value = df['Nr. nota'].iloc[current_row-2]
+        if cell_value > 0:
+            numero_nota = df['Nr. nota'].iloc[current_row-2]
+            data = df['Data pregão'].iloc[current_row-2]
+            if ano == '':
+                cpf = df['C.P.F./C.N.P.J/C.V.M./C.O.B.'].iloc[current_row-1]
+                nome = conta + '_' + data[6:10] + '_' + data[3:5] + '.xlsx'
+                ano = data[6:10]
+            data = datetime.strptime(df['Data pregão'].iloc[current_row-2], '%d/%m/%Y').date()
+            
+        #Tipo de operação (Compra ou Venda)
+        c_v = df['C/V'].iloc[current_row].strip()
+
+        #Nome do ativo no pregão
+        stock_title = df['Especificação do título'].iloc[current_row].strip()
+
+        operacao = df['Obs. (*)'].iloc[current_row]
+        if operacao == "D":
+            operacao = "DayTrade"
+        else:
+            operacao = "Normal"
+        
+        #Tipo de Mercado operado
+        if df['Tipo mercado'].iloc[current_row] == "VISTA":
+            mercado = "VISTA"
+        elif df['Tipo mercado'].iloc[current_row] == "OPCAO DE COMPRA":
+            mercado = "CALL"
+        elif df['Tipo mercado'].iloc[current_row] == "OPCAO DE VENDA":
+            mercado = "PUT"
+        elif df['Tipo mercado'].iloc[current_row] == "EXERC OPC VENDA":
+            mercado = "EXERC PUT"
+        elif df['Tipo mercado'].iloc[current_row] == "EXERC OPC COMPRA":
+            mercado = "EXERC CALL"
+        else:
+            mercado = df['Tipo mercado'].iloc[current_row]
+        
+        #Prazo de Vencimento da Opção
+        if df['Prazo'].iloc[current_row] != "" and mercado != "VISTA" and df['Prazo'].iloc[current_row] == str:            
+            monthRange = calendar.monthrange(2000 + int(df['Prazo'].iloc[current_row][3:]),int(df['Prazo'].iloc[current_row][0:2]))
+            prazo = str(monthRange[1]) +'/' + str(int(df['Prazo'].iloc[current_row][0:2])) + '/' +str(2000 + int(df['Prazo'].iloc[current_row][3:]))
+            prazo = datetime.strptime(prazo, '%d/%m/%Y').date()
+        elif df['Prazo'].iloc[current_row] != "" and df['Tipo mercado'].iloc[current_row] in "TERMOTermotermo":
+            prazo = int(df['Prazo'].iloc[current_row])
+        else:
+            prazo = ""
+        
+        #Exercicio de opção de compra/venda
+        if df['Tipo mercado'].iloc[current_row].split(" ")[0] == "EXERC":
+            exercicio = df['Especificação do título'].iloc[current_row]
+            exercicio = exercicio[:-1]
+        elif df['Tipo mercado'].iloc[current_row].split(" ")[0] == "OPCAO":
+            exercicio = converte_opcao_ticket(df['Especificação do título'].iloc[current_row])
+        else:
+            exercicio = ""
+        
+        #Altera o número de dias de um contrato a Termo para a 
+        #data de vencimento desse contrato
+        if mercado in "TERMOTermoTERMO":
+            prazo = data + timedelta(days=prazo)
+
+        #Quantidade operada de cada ativo por nota de corretagem
+        quantidade = quantidade_operada(df['Quantidade'].iloc[current_row],df['Unnamed: 0'].iloc[current_row] if 'Unnamed: 0' in df.columns else 0,df['Unnamed: 1'].iloc[current_row] if 'Unnamed: 1' in df.columns else 0,df['Unnamed: 2'].iloc[current_row] if 'Unnamed: 2' in df.columns else 0)
+
+        #Valor total de cada operação por nota de corretagem
+        valor_total = valor_total_ativo(df['Valor Operação / Ajuste'].iloc[current_row],df['Unnamed: 2'].iloc[current_row] if 'Unnamed: 2' in df.columns else 0 ,df['Unnamed: 1'].iloc[current_row] if 'Unnamed: 1' in df.columns else 0)
+        
+        # Preço unitário da operação de cada ativo por nota de corretagem
+        preco_unitario = valor_total / quantidade
+            
+        #Dividindo os custos e o IRRF por operação
+        custo_financeiro,irrf_operacao = custos_por_operacao(taxas_df,numero_nota,c_v,valor_total,operacao)
+      
+        #Susbstitui o nome do papel no pregão pelo seu respectivo código na B3 no padrão "XXXX3"
+        #Caso seja uma opção de compra/venda o código continuará o mesmo
+        if df['Tipo mercado'].iloc[current_row] in "VISTAFRACIONARIOTERMOVistavistaFracionariofracionarioTermotermo":
+            stock_title,log_nome_pregao = nome_pregao(acoes, stock_title, data)
+            if log_nome_pregao != temp:
+                temp = log_nome_pregao
+                log.append(log_nome_pregao)
+        elif df['Tipo mercado'].iloc[current_row].split(" ")[0] == "EXERC":
+            stock_title,log_nome_pregao = nome_pregao_opcoes(opcoes, stock_title, data)
+            if log_nome_pregao != temp:
+                temp = log_nome_pregao
+                log.append(log_nome_pregao)
+        elif df['Tipo mercado'].iloc[current_row].split(" ")[0] == "OPCAO":
+            stock_title = stock_title.split(" ")[0]
+        else:
+            stock_title,log_nome_pregao = nome_pregao(acoes, stock_title, data)
+            if log_nome_pregao != temp:
+                temp = log_nome_pregao
+                log.append(log_nome_pregao)
+        
+        #Calculando o preço médio de cada operação
+        pm = preco_medio(c_v,valor_total,custo_financeiro,quantidade)
+        
+        row_data = [corretora, cpf, numero_nota, data, c_v, stock_title, operacao, preco_unitario, quantidade, valor_total, custo_financeiro, pm, irrf_operacao,mercado,prazo,exercicio]
+        note_data.append(row_data)
+    cols = ['Corretora','CPF', 'Nota', 'Data', 'C/V', 'Papel', 'Operacao','Preço', 'Quantidade', 'Total', 'Custos_Fin', 'PM', 'IRRF', 'Mercado', 'Prazo', 'Exercicio']
+    note_df = pd.DataFrame(data=note_data, columns=cols)
+  
+    #Agrupar os dados de preço e quantidade por cada ativo comprado/vendido em cada nota de corretagem
+    grouped = agrupar(note_df)
+    grouped = grouped[cols]
+    
+    # Seleção de papel isento de IR (IRRF e IRPF). Apenas uma operação (um papel) está sendo analisada por NC       
+    note_data,log_isecao = isencao_imposto_renda(taxas_df,grouped,note_data)
+    log.append(log_isecao)
+    cols = ['Corretora','CPF', 'Nota', 'Data', 'C/V', 'Papel', 'Operacao','Preço', 'Quantidade', 'Total', 'Custos_Fin', 'PM', 'IRRF', 'Mercado', 'Prazo', 'Exercicio']
+    note_df = pd.DataFrame(data=note_data, columns=cols)
+
+    # Refaz o agrupamento para atulizar os dados de preço e quantidade com a correção de compra/venda a maior no DayTrade 
+    grouped = agrupar(note_df)
+    grouped = grouped[cols]
+    
+    # Agrupa as operações por tipo de operação (Normal ou Daytrade)
+    try:
+        normal_df,daytrade_df,result = agrupar_operacoes(grouped,cols)
+        # Insere o valor do IR para as operações de Daytrade"
+        note_data,taxas_df,log_daytrade_ir = daytrade_ir(result,taxas_df,note_data,grouped)
+        log.append(log_daytrade_ir)
+        cols = ['Corretora','CPF', 'Nota', 'Data', 'C/V', 'Papel', 'Operacao','Preço', 'Quantidade', 'Total', 'Custos_Fin', 'PM', 'IRRF','Mercado','Prazo','Exercicio']
+        note_df = pd.DataFrame(data=note_data, columns=cols)
+        # Refaz o agrupamento para atualizar os dados de preço e quantidade por cada ativo comprado/vendido 
+        grouped = agrupar(note_df)
+        grouped = grouped[cols]
+    except ValueError:
+        agrupar_operacoes(grouped,cols)
+        #normal_df,daytrade_df = agrupar_operacoes(grouped,cols)    
+        #excluir esse retorno e testar!!!
+        
+    # Acrescentando os custos operacionais (Corretagem, Imposto e Outros)
+    grouped = custos_operacionais(grouped,taxas_df)
+    
+    # Obtendo o valor correto do preço unitário de cada operação
+    grouped['Preço'] = grouped['Total'] / grouped['Quantidade']
+
+    # Obtendo o valor correto do preço médio de cada operação
+    grouped['PM'] = preco_medio_correcao(grouped)
+
+    # Inseri o número da conta na corretora
+    grouped.insert(2,"Conta",int(conta),True)
+    taxas_df.insert(0,"Conta",int(conta),True)
+
+    # Agrupa as operações por tipo de trade com correção de compra/venda a maior no DayTrade
+    normal_df,daytrade_df = agrupar_operacoes_correcao(grouped,cols)
+    cols = ['Corretora','CPF','Conta','Nota', 'Data', 'C/V', 'Papel','Mercado','Preço', 'Quantidade', 'Total', 'Custos_Fin', 'PM', 'IRRF','Prazo','Exercicio']
+    if normal_df.empty == False:
+        normal_df = normal_df[cols]
+    if daytrade_df.empty == False:
+        daytrade_df = daytrade_df[cols]
+    
+    # Cria o caminho completo de pastas/subpasta para salvar o resultado do processamento
+    current_path = './Resultado/'
+    folder_prefix = cpf+'/'+corretora+'/'+ano
+    folder_path = join(current_path, folder_prefix)
+    log_move_resultado,pagebmf = move_resultado(folder_path,cpf,nome,item,pagebmf)
+    log.append(log_move_resultado)
+
+    # Disponibiliza os dados coletados em um arquivo .xlsx separado por mês
+    arquivo_separado(folder_path,nome,note_df,normal_df,daytrade_df,taxas_df)   
+
+    # Disponibiliza todos os dados coletados de todos os arquivos processados em um único arquivo
+    arquivo_unico(current_path,cpf,note_df,normal_df,daytrade_df,taxas_df)
+    
+    # Disponibiliza todos os dados coletados de todos os arquivos processados em um único arquivo
+    if pagebmf != 0 and control != 0:
+        xp_rico_clear_bmf(corretora,filename,item,log,pagebmf,control)
+    
+    # Cria o caminho completo de pastas/subpastas para mover os arquivos já processados.
+    log_move_saida = move_saida(cpf,corretora,ano,item)
+    log.append(log_move_saida)
+    
+    # Cria um arquivo de LOG para armazenar os dados do processamento
+    log.append('Todas as Notas de Corretagem contidadas no arquivo "'+basename(item)+'" foram processadas com sucesso.\n')
+    log_processamento(current_path,cpf,log)
+
+# ===================================================================================================
+# Processamento de notas de corretagens das corretoras do grupo XP (XP, Rico e Clear)
+# Rotina para extração de dados de notas de corretagens até 12/2023
+# ===================================================================================================
+def xp_rico_clear_old(corretora,filename,item,log,page,pagebmf=0,control=0):      
     # ===================================================================================================
     # Coleta de dados por área de informação - Extraindo os dados das operações na B3 
     # ===================================================================================================         
@@ -2822,7 +3129,7 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
     # ===================================================================================================
     # Coleta de dados por área de informação - Extraindo os dados das taxas e impostos 
     # ===================================================================================================         
-    
+
     # 50.947,428.028,73.259,564.134  - nota e data do pregão:
     # 450.341,32.576,639.253,544.276 -  Resumo dos negócios, Resumo financeiro e Custos operacionais:
 
@@ -2838,7 +3145,7 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
         df_gastos['Unnamed: 1'].fillna(0, inplace=True)
     lista = list(df_gastos[df_gastos['Resumo dos Negócios'].str.contains("Valor das operações",na=False)].index)
     note_taxa = []
-    
+
     #Obtem o número da conta na corretora
     conta = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages='1', encoding="utf-8", area=(160.278,426.541,179.616,520.253))
     conta = pd.concat(conta,axis=0,ignore_index=True)
@@ -3066,7 +3373,7 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
     
     # Disponibiliza todos os dados coletados de todos os arquivos processados em um único arquivo
     if pagebmf != 0 and control != 0:
-        xp_rico_clear_bmf(corretora,filename,item,log,pagebmf,control)
+        xp_rico_clear_bmf_old(corretora,filename,item,log,pagebmf,control)
     
     # Cria o caminho completo de pastas/subpastas para mover os arquivos já processados.
     log_move_saida = move_saida(cpf,corretora,ano,item)
@@ -3078,8 +3385,349 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
 
 # ===================================================================================================
 # Processamento de notas de corretagens BM&F das corretoras do grupo XP (XP, Rico e Clear)
+# Rotina para extração de dados no novo layout das notas de corretagens - início em 01/2024
 # ===================================================================================================    
 def xp_rico_clear_bmf(corretora,filename,item,log,page,control):
+    # ===================================================================================================
+    # Coleta de dados por área de informação - Extraindo os dados das operações na B3 
+    # ===================================================================================================           
+    
+    # 51.777,445.138,68.913,556.888    - Nota e data do pregão
+    # 126.278,444.393,145.648,558.377 - CPF
+    # 181.408,31.663,629.153,562.848  - Informações de compra e venda
+
+    data = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages=page, encoding="utf-8", area=((51.777,445.138,68.913,556.888),(126.278,444.393,145.648,558.377),(181.408,31.663,629.153,562.848)))
+    df = pd.concat(data,axis=0,ignore_index=True)
+
+    df['Nr. nota'] = df['Nr. nota'].apply(sanitiza_moeda).astype('float')
+    df['C/V'] = sanitiza_especificacao_titulo(df['C/V'])
+    #df['Mercadoria'] = sanitiza_especificacao_titulo(df['Mercadoria'])
+    df['Mercadoria'] = df['Mercadoria'].str.replace(' ','',regex=False)
+    #df['Vencimento'] = df['Vencimento'].str.replace('@','',regex=False)
+    df['Quantidade'] = df['Quantidade'].apply(sanitiza_moeda).astype('float')
+    df['Preço/Ajuste'] = df['Preço/Ajuste'].apply(sanitiza_moeda).astype('float')
+    df['Tipo Negócio'] = sanitiza_especificacao_titulo(df['Tipo Negócio'])
+    df['Vlr de Operação/Ajuste'] = df['Vlr de Operação/Ajuste'].apply(sanitiza_moeda).astype('float')
+    df['D/C'] = sanitiza_especificacao_titulo(df['D/C'])
+    df['Taxa Operacional'] = df['Taxa Operacional'].apply(sanitiza_moeda).astype('float')
+    if 'Unnamed: 0' in df.columns: #CPF do investidor
+        df['Unnamed: 0'] = sanitiza_especificacao_titulo(df['Unnamed: 0'])
+    if 'Unnamed: 1' in df.columns:
+        df['Unnamed: 1'] = df['Unnamed: 1'].apply(sanitiza_moeda).astype('float')
+    if 'Unnamed: 2' in df.columns:
+        df['Unnamed: 2'] = df['Unnamed: 2'].apply(sanitiza_moeda).astype('float')
+   
+    # ===================================================================================================
+    # Coleta de dados por área de informação - Extraindo os dados das taxas e impostos 
+    # ===================================================================================================         
+    # 46.484,442.159,68.797,561.90   - Nota e data do pregão
+    # 634.368,31.663,719.298,562.103 - Resumo dos negócios, Resumo financeiro e Custos operacionais - 636.603,32.408,718.553,561.358
+    
+    data = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages=page, encoding="utf-8", area=((51.033,445.138,70.403,559.123),(636.603,32.408,718.553,561.358)))
+    df_gastos = pd.concat(data,axis=0,ignore_index=True)
+
+    df_gastos['Nr. nota'] = df_gastos['Nr. nota'].apply(sanitiza_moeda).astype('float')
+    if 'Unnamed: 0' in df_gastos.columns:
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].apply(sanitiza_nota_bmf)
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].apply(sanitiza_moeda).astype('float')
+        df_gastos['Unnamed: 0'].fillna(0, inplace=True) 
+    if 'Unnamed: 1' in df_gastos.columns:
+        df_gastos['Unnamed: 1'].fillna(0, inplace=True)
+    if 'Unnamed: 2' in df_gastos.columns:
+       df_gastos['Unnamed: 2'] = df_gastos['Unnamed: 2'].apply(sanitiza_nota_bmf)
+       df_gastos['Unnamed: 2'] = df_gastos['Unnamed: 2'].apply(sanitiza_moeda).astype('float')
+       df_gastos['Unnamed: 2'].fillna(0, inplace=True)
+    if 'Unnamed: 3' in df_gastos.columns:
+       df_gastos['Unnamed: 3'] = df_gastos['Unnamed: 3'].apply(sanitiza_moeda).astype('float')
+       df_gastos['Unnamed: 3'].fillna(0, inplace=True)
+    if 'Unnamed: 4' in df_gastos.columns:
+       df_gastos['Unnamed: 4'] = df_gastos['Unnamed: 4'].apply(sanitiza_nota_bmf)
+       df_gastos['Unnamed: 4'] = df_gastos['Unnamed: 4'].apply(sanitiza_moeda).astype('float')
+       df_gastos['Unnamed: 4'].fillna(0, inplace=True)
+    if 'Unnamed: 5' in df_gastos.columns:
+       df_gastos['Unnamed: 5'] = df_gastos['Unnamed: 5'].apply(sanitiza_nota_bmf)
+       df_gastos['Unnamed: 5'] = df_gastos['Unnamed: 5'].apply(sanitiza_moeda).astype('float')
+       df_gastos['Unnamed: 5'].fillna(0, inplace=True)
+    if 'Unnamed: 6' in df_gastos.columns:
+       df_gastos['Unnamed: 6'] = df_gastos['Unnamed: 6'].apply(sanitiza_nota_bmf)
+       df_gastos['Unnamed: 6'] = df_gastos['Unnamed: 6'].apply(sanitiza_moeda).astype('float')
+       df_gastos['Unnamed: 6'].fillna(0, inplace=True)
+    if 'Unnamed: 7' in df_gastos.columns:
+       df_gastos['Unnamed: 7'] = df_gastos['Unnamed: 7'].apply(sanitiza_moeda).astype('float')
+       df_gastos['Unnamed: 7'].fillna(0, inplace=True)
+    if 'Unnamed: 8' in df_gastos.columns:
+       df_gastos['Unnamed: 8'] = df_gastos['Unnamed: 8'].apply(sanitiza_moeda).astype('float')
+       df_gastos['Unnamed: 8'].fillna(0, inplace=True)
+    lista = list(df_gastos[df_gastos['Venda disponível'].str.contains("IRRF",na=False)].index)
+    note_taxa = []
+
+    #Obtem o número da conta na corretora 144.903,446.628,162.783,559.123
+    try:
+        conta = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages='1', encoding="utf-8", area=(156.078,425.768,177.683,521.127))
+        conta = pd.concat(conta,axis=0,ignore_index=True)
+        conta = conta['Unnamed: 0'].iloc[0].strip().lstrip('0')
+    except KeyError:    
+        conta = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages='1', encoding="utf-8", area=(144.903,445.138,162.783,556.143))
+        conta = pd.concat(conta,axis=0,ignore_index=True)
+        conta = conta['Unnamed: 0'].iloc[0].strip().lstrip('0')
+    except ValueError:
+        conta = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages='1', encoding="utf-8", area=(144.903,445.138,162.783,556.143))
+        conta = pd.concat(conta,axis=0,ignore_index=True)
+        conta = conta['Unnamed: 0'].iloc[0].strip().lstrip('0')
+
+    #Verifica se a Nota de Corretagem já foi processada anteriormente
+    if control == 2:   
+        cpf = df['Unnamed: 0'].iloc[1]
+        nome = conta + '_' + df_gastos['Data pregão'][0][6:10] + '_' + df_gastos['Data pregão'][0][3:5] + '.xlsx'
+        current_path = './Resultado/'
+        folder_prefix = (df['Unnamed: 0'].iloc[1] + '/' + corretora + '/' + df_gastos['Data pregão'][0][6:10])
+        folder_path = join(current_path, folder_prefix)
+        if exists(folder_path+'/'+nome):
+            log.append(verifica_nota_corretagem(folder_path,nome,item))
+            log_processamento(current_path,cpf,log)
+            return()
+    
+    for current_row in lista: 
+        nota = df_gastos['Nr. nota'].iloc[current_row-2]
+        data = datetime.strptime(df_gastos['Data pregão'].iloc[current_row-2], '%d/%m/%Y').date()
+        irrf = str(df_gastos['Unnamed: 1'].iloc[current_row+1])
+        if irrf != "nan":
+            irrf = irrf.split("|")[0]
+            irrf = float(irrf.replace('.','').replace(',','.'))
+        else:
+            irrf = "0"       
+        if irrf > 0:
+            venda_disponivel = df_gastos['Unnamed: 1'].iloc[current_row-1]
+            venda_disponivel = float(venda_disponivel.replace('.','').replace(',','.'))
+            compra_disponivel = df_gastos['Unnamed: 3'].iloc[current_row-1]
+            venda_opcoes = df_gastos['Unnamed: 4'].iloc[current_row-1]
+            compra_opcoes = df_gastos['Unnamed: 5'].iloc[current_row-1]
+            valor_negocios = df_gastos['Unnamed: 6'].iloc[current_row-1]
+            ir_daytrade = df_gastos['Unnamed: 3'].iloc[current_row+1]
+            corretagem = df_gastos['Unnamed: 4'].iloc[current_row+1]
+            taxa_registro = df_gastos['Unnamed: 5'].iloc[current_row+1]
+            emolumentos = df_gastos['Unnamed: 6'].iloc[current_row+1]
+            outros_custos = df_gastos['Compra disponível'].iloc[current_row+3]
+            outros_custos = float(outros_custos.replace('.','').replace(',','.'))
+            imposto = df_gastos['Unnamed: 3'].iloc[current_row+3]
+            ajuste_posicao = df_gastos['Unnamed: 4'].iloc[current_row+3]
+            ajuste_daytrade = df_gastos['Unnamed: 5'].iloc[current_row+3]
+            total_custos_operacionais = df_gastos['Unnamed: 6'].iloc[current_row+3]
+            outros = df_gastos['Unnamed: 0'].iloc[current_row+5]
+            ir_operacional = df_gastos['Unnamed: 1'].iloc[current_row+5]
+            total_conta_investimento = df_gastos['Unnamed: 3'].iloc[current_row+5]#Fazer o mesmo procedimento feito no caso do IRRF
+            total_conta_normal = df_gastos['Unnamed: 4'].iloc[current_row+5]
+            total_liquido = df_gastos['Unnamed: 5'].iloc[current_row+5]
+            total_liquido_nota = df_gastos['Unnamed: 6'].iloc[current_row+5]
+        else:
+            venda_disponivel = df_gastos['Unnamed: 2'].iloc[current_row-1]
+            compra_disponivel = df_gastos['Unnamed: 4'].iloc[current_row-1]
+            venda_opcoes = df_gastos['Unnamed: 5'].iloc[current_row-1]
+            compra_opcoes = df_gastos['Unnamed: 6'].iloc[current_row-1]
+            valor_negocios = df_gastos['Unnamed: 7'].iloc[current_row-1]
+            ir_daytrade = df_gastos['Unnamed: 4'].iloc[current_row+1]
+            corretagem = df_gastos['Unnamed: 5'].iloc[current_row+1]
+            taxa_registro = df_gastos['Unnamed: 6'].iloc[current_row+1]
+            emolumentos = df_gastos['Unnamed: 7'].iloc[current_row+1]
+            outros_custos = df_gastos['Compra disponível'].iloc[current_row+3]
+            outros_custos = float(outros_custos.replace('.','').replace(',','.'))
+            imposto = df_gastos['Unnamed: 4'].iloc[current_row+3]
+            ajuste_posicao = df_gastos['Unnamed: 5'].iloc[current_row+3]
+            ajuste_daytrade = df_gastos['Unnamed: 6'].iloc[current_row+3]
+            total_custos_operacionais = df_gastos['Unnamed: 7'].iloc[current_row+3]
+            outros = df_gastos['Unnamed: 0'].iloc[current_row+5]
+            ir_operacional = df_gastos['Unnamed: 2'].iloc[current_row+5]
+            total_conta_investimento = df_gastos['Unnamed: 4'].iloc[current_row+5]#Fazer o mesmo procedimento feito no caso do IRRF
+            total_conta_normal = df_gastos['Unnamed: 5'].iloc[current_row+5]
+            total_liquido = df_gastos['Unnamed: 6'].iloc[current_row+5]
+            total_liquido_nota = df_gastos['Unnamed: 7'].iloc[current_row+5]
+        liquidacao = 0
+        basecalculo = 0
+        row_data = [nota,data,compra_disponivel,venda_disponivel,liquidacao,taxa_registro,emolumentos,corretagem,imposto,outros,liquidacao+imposto+outros,corretagem+imposto+outros,irrf,ir_daytrade,basecalculo] 
+        #row_data = [nota,data,compra_disponivel,venda_disponivel,liquidacao,taxa_registro,emolumentos,corretagem,imposto,outros,emolumentos+liquidacao+taxa_registro+imposto+outros,corretagem+imposto+outros,irrf,ir_daytrade,basecalculo] 
+        note_taxa.append(row_data)                                               
+    cols = ['Nota','Data','Total','Vendas','Liquidação','Registro','Emolumentos','Corretagem','Imposto','Outros','Custos_Fin','Custos_Op','IRRF','IR_DT','BaseCalculo'] 
+    taxas_df = pd.DataFrame(data=note_taxa, columns=cols)    
+    indexNames = taxas_df[((taxas_df['Custos_Fin'] == 0) & (taxas_df['Custos_Op'] == 0))].index
+    taxas_df.drop(indexNames ,inplace=True)
+    taxas_df = taxas_df.drop_duplicates(subset=['Nota','Data'], keep='last', ignore_index=True)
+    
+    cont_notas = len(taxas_df['Nota'])
+    if cont_notas > 1:
+        log.append('Serão processadas ' + str(cont_notas) + ' notas de corretagens de Mercados Futuros ou BMF.\n')
+    else:
+        log.append('Será processada ' + str(cont_notas) + ' notas de corretagens de Mercados Futuros ou BMF.\n')
+    
+    #Incluir aqui a etapa para obter lista de linhas de cada operação
+    operacoes = list(df[df['C/V'].isin(['C','V'])].index)
+    vendas = list(df[df['C/V'].isin(['V'])].index)
+        
+    if len(operacoes) == 0 and control == 1:
+        log.append('Nota(s) de Corretagem(ns) apenas com ajustes de posição, por isso não será contabilizada.\n')
+        cpf = df['Unnamed: 0'].iloc[current_row-1]
+        log_processamento(current_path,cpf,log)
+        return
+    elif len(operacoes) == 0 and control == 2:
+        log.append('Nota(s) de Corretagem(ns) apenas com ajustes de posição, por isso não será contabilizada.\n')
+        current_path = './Resultado/'
+        cpf = df['Unnamed: 0'].iloc[current_row-1]
+        data = df['Data pregão'].iloc[current_row-2]
+        ano = data[6:10]
+        nome = ''
+        folder_prefix = cpf+'/'+corretora+'/'+ano
+        folder_path = join(current_path, folder_prefix)      
+        log_move_saida = move_saida(cpf,corretora,ano,item)
+        log.append(log_move_saida)
+        log_move_resultado,pagebmf = move_resultado(folder_path,cpf,nome,item,pagebmf=0)
+        log.append(log_move_resultado) 
+        log_processamento(current_path,cpf,log)
+        return
+
+    note_data = []
+    numero_nota = 0
+    cpf = ''
+    nome = ''
+    ano = ''
+    temp = ''   
+    for current_row in operacoes:
+        cell_value = df['Nr. nota'].iloc[current_row-2]               
+        if cell_value > 0:
+            numero_nota = df['Nr. nota'].iloc[current_row-2]
+            data = df['Data pregão'].iloc[current_row-2]
+            if ano == '':    
+                cpf = df['Unnamed: 0'].iloc[current_row-1]
+                nome = conta + '_' + data[6:10] + '_' + data[3:5] + '.xlsx'
+                ano = data[6:10]
+            data = datetime.strptime(df['Data pregão'].iloc[current_row-2], '%d/%m/%Y').date()
+        
+        if df['Tipo Negócio'].iloc[current_row] in 'NORMALDAY TRADE':
+            
+            #Tipo de operação (Compra ou Venda)        
+            c_v = df['C/V'].iloc[current_row].strip()
+                
+            #Nome do ativo no pregão
+            mercadoria = df['Mercadoria'].iloc[current_row].strip()
+        
+            tipo_negocio = df['Tipo Negócio'].iloc[current_row]
+            operacao = df['Tipo Negócio'].iloc[current_row]
+            if operacao == "DAY TRADE":
+                operacao = "DayTrade"
+            else:
+                operacao = "Normal"
+        
+            #Preço unitário da operação de cada mercadoria por nota de corretagem
+            preco_unitario = df['Preço/Ajuste'].iloc[current_row]
+        
+            #Quantidade operada de cada mercadoria por nota de corretagem
+            quantidade = df['Quantidade'].iloc[current_row]
+        
+            #Valor total de cada operação por nota de corretagem
+            valor_total,id,mult = mercadoria_ticket(mercadoria,preco_unitario,quantidade)
+        
+            #Valor de corretagem por cada mercadoria operada
+            corretagem = df['Taxa Operacional'].iloc[current_row]
+        
+            #Alterao nome da variável para manter a compatibilidade com o script de ações
+            stock_title = mercadoria
+                     
+            #Obtem o valor individualizado da taxa de Registro e Emolumentos de cada operação
+            datalimite = datetime.strptime("01/08/2021", '%d/%m/%Y').date()
+            if data >= datalimite:
+                registro_emol,mercado = taxas_registro_emol(operacao,df['Mercadoria'].iloc[current_row][:3])
+            else:
+                registro_emol,mercado = taxas_registro_emol_old(operacao,df['Mercadoria'].iloc[current_row][:3])
+                        
+            #Dividindo os custos                  
+            custo_financeiro = 0
+            if corretagem == 0:
+                for i in taxas_df.index:
+                    if numero_nota == taxas_df['Nota'].iloc[i] and data == taxas_df['Data'].iloc[i]:
+                        custo_financeiro = (taxas_df['Custos_Fin'].iloc[i] + taxas_df['Registro'].iloc[i] + taxas_df['Emolumentos'].iloc[i])/len(operacoes)
+                        break
+            else:
+                for i in taxas_df.index:
+                    if taxas_df['Corretagem'].iloc[i] == 0:
+                        taxas_df_corretagem = 1
+                    else:
+                        taxas_df_corretagem = taxas_df['Corretagem'].iloc[i]
+                    if taxas_df['Custos_Fin'].iloc[i] == 0:
+                        taxas_df_Custos_Fin = 1
+                    else:
+                        taxas_df_Custos_Fin = taxas_df['Custos_Fin'].iloc[i]
+                    if numero_nota == taxas_df['Nota'].iloc[i] and data == taxas_df['Data'].iloc[i] and df['Mercadoria'].iloc[current_row][:3] in "WINwinINDindWDOwdoDOLdol":
+                        custo_financeiro = (corretagem/taxas_df_corretagem) * (taxas_df_Custos_Fin + taxas_df['Registro'].iloc[i] + taxas_df['Emolumentos'].iloc[i])
+                        break
+                    elif numero_nota == taxas_df['Nota'].iloc[i] and data == taxas_df['Data'].iloc[i]:
+                        custo_financeiro = (registro_emol*quantidade) + ((corretagem/taxas_df_corretagem)*taxas_df_Custos_Fin)
+                        break
+            
+            irrf_operacao = 0
+            ir_daytrade = 0
+        
+            #Calculando o preço médio de cada operação - Para operações de Futuros não se caucula PM
+            pm = 0
+            
+            row_data = [corretora, cpf, numero_nota, data, c_v, stock_title, operacao, preco_unitario, quantidade, valor_total, custo_financeiro + corretagem,pm,irrf_operacao,ir_daytrade,id,mult,mercado]
+            note_data.append(row_data)
+    
+    cols = ['Corretora','CPF', 'Nota', 'Data', 'C/V', 'Papel', 'Operacao','Preço','Quantidade', 'Total','Custos_Fin','PM','IRRF','IR_DT','ID','FATOR','Mercado']
+    note_df = pd.DataFrame(data=note_data, columns=cols)
+    
+    #Contabiliza a quantidade de vendas nas operações DayTrade e Normal
+    note_df = ir_bmf(cont_notas,note_df,taxas_df,row_data,note_data)
+    
+    #Agrupar os dados de preço e quantidade por cada ativo comprado/vendido em cada nota de corretagem
+    grouped = agrupar_bmf(note_df)
+    #print(grouped.head(40))
+    
+    # Inseri o número da conta na corretora
+    grouped.insert(2,"Conta",int(conta),True)
+    taxas_df.insert(0,"Conta",int(conta),True)
+    
+    # Agrupa as operações por tipo de trade com correção de compra/venda a maior no DayTrade
+    cols = ['Corretora','CPF','Conta','Nota','Data','C/V','Papel','Mercado','Preço','Quantidade','Total','Custos_Fin','PM','IRRF']
+    normal_df,daytrade_df = agrupar_operacoes_correcao(grouped,cols)
+    if normal_df.empty == False:
+        normal_df = normal_df[cols]
+    if daytrade_df.empty == False:
+        daytrade_df = daytrade_df[cols]
+    
+    # Cria o caminho completo de pastas/subpasta para salvar o resultado do processamento
+    current_path = './Resultado/'
+    folder_prefix = cpf+'/'+corretora+'/'+ano
+    folder_path = join(current_path, folder_prefix)   
+    if control == 2:
+        log_move_resultado,pagebmf = move_resultado(folder_path,cpf,nome,item,pagebmf=1)
+        log.append(log_move_resultado)
+    
+    # Não exportar os dados de 'ID','FATOR', sem utilidade no momento
+    cols = ['Corretora','CPF', 'Nota', 'Data', 'C/V', 'Papel', 'Operacao','Preço','Quantidade', 'Total','Custos_Fin','PM','IRRF','Mercado']
+    note_df = note_df[cols]
+    
+    # Disponibiliza os dados coletados em um arquivo .xlsx separado por mês
+    if control == 2:
+        arquivo_separado(folder_path,nome,note_df,normal_df,daytrade_df,taxas_df)
+    else:
+        arquivo_separado_bmf(folder_path,nome,note_df,normal_df,daytrade_df,taxas_df)
+
+    # Disponibiliza todos os dados coletados de todos os arquivos processados em um único arquivo
+    arquivo_unico(current_path,cpf,note_df,normal_df,daytrade_df,taxas_df)
+        
+    # Cria o caminho completo de pastas/subpastas para mover os arquivos já processados.
+    if control == 2:
+        log_move_saida = move_saida(cpf,corretora,ano,item)
+        log.append(log_move_saida)
+    
+    # Cria um arquivo de LOG para armazenar os dados do processamento
+    if control == 2:
+        log.append('Todas as Notas de Corretagem contidadas no arquivo "'+basename(item)+'" foram processadas com sucesso.\n')
+        log_processamento(current_path,cpf,log)
+
+# ===================================================================================================
+# Processamento de notas de corretagens BM&F das corretoras do grupo XP (XP, Rico e Clear)
+# Rotina para extração de dados de notas de corretagens até 12/2023
+# ===================================================================================================    
+def xp_rico_clear_bmf_old(corretora,filename,item,log,page,control):
     # ===================================================================================================
     # Coleta de dados por área de informação - Extraindo os dados das operações na B3 
     # ===================================================================================================           
@@ -3242,9 +3890,9 @@ def xp_rico_clear_bmf(corretora,filename,item,log,page,control):
     
     cont_notas = len(taxas_df['Nota'])
     if cont_notas > 1:
-        log.append('Serão processadas ' + str(cont_notas) + ' notas de corretagens de Mercados Futuros ou  BMF.\n')
+        log.append('Serão processadas ' + str(cont_notas) + ' notas de corretagens de Mercados Futuros ou BMF.\n')
     else:
-        log.append('Será processada ' + str(cont_notas) + ' nota de corretagem.\n')
+        log.append('Será processada ' + str(cont_notas) + ' notas de corretagens de Mercados Futuros ou BMF.\n')
     
     #Incluir aqui a etapa para obter lista de linhas de cada operação
     operacoes = list(df[df['C/V'].isin(['C','V'])].index)
@@ -3524,7 +4172,7 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
         #else:
         #    basecalculo = "0"
         basecalculo = float(basecalculo.replace('.','').replace(',','.'))       
-        row_data = [nota,data,total,vendas,liquidacao,registro,emolumentos,corretagem,imposto,outros,emolumentos+liquidacao+registro,corretagem+imposto+outros,irrf,ir_daytrade,basecalculo]                                        
+        row_data = [nota,data,total,vendas,liquidacao,registro,emolumentos,corretagem,imposto,outros,emolumentos+liquidacao+registro,corretagem+imposto+outros,irrf,ir_daytrade,basecalculo]
         note_taxa.append(row_data)
     cols = ['Nota','Data','Total','Vendas','Liquidação','Registro','Emolumentos','Corretagem','Imposto','Outros','Custos_Fin','Custos_Op','IRRF','IR_DT','BaseCalculo']
     taxas_df = pd.DataFrame(data=note_taxa, columns=cols)
@@ -3620,7 +4268,8 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
             
         #Dividindo os custos e o IRRF por operação
         custo_financeiro,irrf_operacao = custos_por_operacao(taxas_df,numero_nota,c_v,valor_total,operacao)
-        
+        irrf_operacao = irrf_operacao * 10
+
         #Susbstitui o nome do papel no pregão pelo seu respectivo código na B3 no padrão "XXXX3"
         #Caso seja uma opção de compra/venda o código continuará o mesmo
         if df['Tipo Mercado'].iloc[current_row] in "VISTAFRACIONARIOTERMOVistavistaFracionariofracionarioTermotermo":
@@ -3648,7 +4297,7 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
         note_data.append(row_data)
     cols = ['Corretora','CPF', 'Nota', 'Data', 'C/V', 'Papel', 'Operacao','Preço', 'Quantidade', 'Total', 'Custos_Fin', 'PM', 'IRRF','Mercado','Prazo','Exercicio']
     note_df = pd.DataFrame(data=note_data, columns=cols)
-       
+
     #Agrupar os dados de preço e quantidade por cada ativo comprado/vendido em cada nota de corretagem
     grouped = agrupar(note_df)
     grouped = grouped[cols]
@@ -3875,9 +4524,9 @@ def btg_bmf(corretora,filename,item,log,page,control):
 
     cont_notas = len(taxas_df['Nota'])
     if cont_notas > 1:
-        log.append('Serão processadas ' + str(cont_notas) + ' notas de corretagens de Mercados Futuros ou  BMF.\n')
+        log.append('Serão processadas ' + str(cont_notas) + ' notas de corretagens de Mercados Futuros ou BMF.\n')
     else:
-        log.append('Será processada ' + str(cont_notas) + ' nota de corretagem.\n')
+        log.append('Será processada ' + str(cont_notas) + ' notas de corretagens de Mercados Futuros ou BMF.\n')
     
     #Incluir aqui a etapa para obter lista de linhas de cada operação
     operacoes = list(df[df['C/V'].isin(['C','V'])].index)#operacoes = list(df[df['Taxa Operacional'] > 0 ].index)
@@ -4531,25 +5180,44 @@ def extracao_nota_corretagem(path_origem='./Entrada/', ext='pdf'):
         corretora = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages='all', encoding="utf-8", area=(2.603,26.609,214.572,561.903))#BTG
         df_corretora = pd.concat(corretora,axis=0,ignore_index=True)
         corretora = tabula.read_pdf(filename, pages='1', **kwargs, area=(2.603,26.609,214.572,561.903))
-        
+         
         try:
             control,corretora,cell_value = valida_corretora(corretora)
             if control == 0:
                 print('Corretora',cell_value, 'não implementada','\n')
                 continue
             elif corretora in 'XPxpRICOricoCLEARclear' and control == 1:
+                # Identifica o ano da nota de corretagem para a corretora XP
+                ano_pregao = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages=1, encoding="utf-8", area=(50.947,428.028,73.259,564.134))
+                ano_pregao = pd.concat(ano_pregao,axis=0,ignore_index=True)  
+                ano_pregao = int(ano_pregao['Data pregão'][0][6:10])
                 lista_acoes = list(df_corretora[df_corretora['NOTA DE NEGOCIAÇÃO'].str.contains(cell_value,na=False)].index)
+                if cell_value == "XP INVESTIMENTOS CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.":
+                    cell_value = 'XP INVESTIMENTOS CORRETORA DE CÂMBIO, TÍTULOS E VALORES'
                 lista_bmf = list(df_corretora[df_corretora['Unnamed: 0'].str.contains(cell_value,na=False)].index)
                 n1 = len(lista_acoes)
                 n2 = len(lista_bmf)
                 if n2 >= 1:
                     page_acoes = ('1'+'-'+str(n1))
                     page_bmf = (str(int(n1+1))+'-'+str(int(n1+n2)))
-                    xp_rico_clear(corretora,filename,item,log,page_acoes,page_bmf,control)
+                    if ano_pregao > 2023:
+                        xp_rico_clear(corretora,filename,item,log,page_acoes,page_bmf,control)
+                    else:
+                        xp_rico_clear_old(corretora,filename,item,log,page_acoes,page_bmf,control)
                 else:
-                    xp_rico_clear(corretora,filename,item,log,'all')
+                    if ano_pregao > 2023:
+                        xp_rico_clear(corretora,filename,item,log,'all')
+                    else:
+                        xp_rico_clear_old(corretora,filename,item,log,'all')
             elif corretora in 'XPxpRICOricoCLEARclear' and control == 2:
-                xp_rico_clear_bmf(corretora,filename,item,log,'all',control=2)
+                # Identifica o ano da nota de corretagem para a corretora XP
+                ano_pregao = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True, multiple_tables=True, pages=1, encoding="utf-8", area=(50.947,428.028,73.259,564.134))
+                ano_pregao = pd.concat(ano_pregao,axis=0,ignore_index=True)  
+                ano_pregao = int(ano_pregao['Data pregão'][0][6:10])
+                if ano_pregao > 2023:
+                    xp_rico_clear_bmf(corretora,filename,item,log,'all',control=2)
+                else:
+                    xp_rico_clear_bmf_old(corretora,filename,item,log,'all',control=2)
             elif corretora in 'AGORAagora' and control == 1:
                 agora(corretora,filename,item,log)
             elif corretora in 'BTGbtg' and control == 1:
