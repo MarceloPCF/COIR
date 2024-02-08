@@ -33,7 +33,7 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
 * As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saída”.
 * O resultado da extração das notas de corretagens será inserido em 2 arquivos:
    * ..\Resultado\CPF\Completo.xlsx – que contém o resultado bruto da extração de todas as notas.
-   * ..\Resultado\CPF\COIR.xlsm – que contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).
+   * ..\Resultado\CPF\COIR.xlsb – que contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).
 
 **Contribuições são muito bem-vindas!**
 
