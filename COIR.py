@@ -9,7 +9,7 @@
 # Para outras corretoras favor enviar notas de corretagem para implementação
 # ------
 # Para dúvidas e sugestões entrar em contato pelo e-mail: marcelo.pcf@gmail.com
-# Última atualização em 07/02/2024
+# Última atualização em 15/09/2024
 # ===================================================================================================
 from os.path import isfile, join, basename, exists
 import sys
@@ -377,7 +377,8 @@ acoes = pd.DataFrame(data=(
     ['AZEVEDOON','AZEV3'],
     ['AZEVEDOPN','AZEV4'],
     ['AZUL S.A.PN','AZUL4'],
-    ['AZULPN','AZUL4'],
+    ['AZUL4PN','AZUL4'],
+    ['AZUL4 PN','AZUL4'],
     ['B TECH EQION','BLUT3'],
     ['B TECH EQION','JBDU3'],
     ['B TECH EQIPN','BLUT4'],
@@ -484,6 +485,7 @@ acoes = pd.DataFrame(data=(
     ['BRASKEMON','BRKM3'],
     ['BRASKEMPNA','BRKM5'],
     ['BRASKEMPNB','BRKM6'],
+    ['BRAVA ENERGIAON','BRAV3'],
     ['BRB BANCOON','BSLI3'],
     ['BRB BANCOPN','BSLI4'],
     ['BRF S.A.ON','BRFS3'],
@@ -713,6 +715,10 @@ acoes = pd.DataFrame(data=(
     ['DURATEXON','DTEX3'],
     ['Eaton Corp P DRN','E1TN34'],
     ['Eaton Corp P','E1TN34'],
+    ['EALT4 PN','EALT4'],
+    ['EALT4PN','EALT4'],
+    ['EALT3 ON','EALT3'],
+    ['EALT3ON','EALT3'],
     ['EBAY','EBAY34'],
     ['EBAYDRN','EBAY34'],
     ['ECORODOVIASON','ECOR3'],
@@ -818,6 +824,8 @@ acoes = pd.DataFrame(data=(
     ['FREEPORT','FCXO34'],
     ['FREEPORTDRN','FCXO34'],
     ['GAFISAON','GFSA3'],
+    ['GFSA3 ON','GFSA3'],
+    ['GFSA3ON','GFSA3'],
     ['Galapagos Nv DRN','G1LP34'],
     ['Galapagos Nv','G1LP34'],
     ['GAMA PARTON','OPGM3B'],
@@ -973,6 +981,7 @@ acoes = pd.DataFrame(data=(
     ['ISHARES ECOOCI','ECOO11'],
     ['ISHARES SMAL','SMAL11'],
     ['ISHARES SMALCI','SMAL11'],
+    ['IT NOW B5P2F11','B5P211'],
     ['IT NOW DNA','DNAI11'],
     ['IT NOW DNACI','DNAI11'],
     ['IT NOW GREEN','REVE11'],
@@ -1108,6 +1117,8 @@ acoes = pd.DataFrame(data=(
     ['MENEZES CORTON','MNZC3B'],
     ['MERC BRASILON','BMEB3'],
     ['MERC BRASILPN','BMEB4'],
+    ['MERCANTILPN','BMEB4'],
+    ['MERCANTILON','BMEB3'],
     ['MERC FINANCON','MERC3'],
     ['MERC FINANCPN','MERC4'],
     ['MERC INVESTON','BMIN3'],
@@ -1649,6 +1660,7 @@ opcoes = pd.DataFrame(data=(
     ['BPAC','BPAC11'],
     ['BPAN','BPAN4'],
     ['BRAP','BRAP4'],
+    ['BRAV','BRAV3'],
     ['BRFS','BRFS3'],
     ['BRKM','BRKM5'],
     ['CASH','CASH3'],
@@ -1676,6 +1688,7 @@ opcoes = pd.DataFrame(data=(
     ['EQTL','EQTL3'],
     ['EZTC','EZTC3'],
     ['FLRY','FLRY3'],
+    ['GFSA','GFSA3'],
     ['GGBR','GGBR4'],
     ['GOAU','GOAU4'],
     ['GOLL','GOLL4'],
@@ -2900,6 +2913,7 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
 
     #Incluir aqui a etapa para obter lista de linhas de cada operação
     operacoes = list(df[df['Negociação'].str.contains("1-BOVESPA",na=False)].index)
+    #operacoes = list(df[df['Negociação'].str.contains("-BOVESPA",na=False)].index)
     note_data = []
     numero_nota = 0
     cpf = ''
@@ -2998,7 +3012,7 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
             if log_nome_pregao != temp:
                 temp = log_nome_pregao
                 log.append(log_nome_pregao)
-        
+
         #Calculando o preço médio de cada operação
         pm = preco_medio(c_v,valor_total,custo_financeiro,quantidade)
         
@@ -4090,6 +4104,7 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
     df['Obs. (*)'] = sanitiza_observacao(df['Obs. (*)'])    
     try:
         if 'Unnamed: 0' in df.columns:
+            tipoTikect = df['Unnamed: 0']
             df['Unnamed: 0'] = df['Unnamed: 0'].apply(sanitiza_moeda).astype('float')
     except:
         pass
@@ -4241,15 +4256,35 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
         else:
             prazo = ""
         
-        #Exercicio de opção de compra/venda
+        #Exercicio de opção de compra/venda - atualizado em 15/09/2024
         if df['Tipo Mercado'].iloc[current_row].split(" ")[0] == "EXERC":
             exercicio = df['Especificação do título'].iloc[current_row]
-            exercicio = exercicio[:-1]
+            exercicio = exercicio.split(" ")[0][:-1]
         elif df['Tipo Mercado'].iloc[current_row].split(" ")[0] == "OPCAO":
-            exercicio = converte_opcao_ticket(df['Especificação do título'].iloc[current_row])
+            #exercicio = converte_opcao_ticket(df['Especificação do título'].iloc[current_row])
+            exercicio = df['Especificação do título'].iloc[current_row].split(" ")[0][0:4]            
+            try:
+                if isinstance(tipoTikect.iloc[current_row], str):
+                    letras = ""
+                    letras = tipoTikect.iloc[current_row].split(" ")[0]
+                    codigo  =  codigos[letras]
+                    exercicio = exercicio + codigo
+                elif len(df['Especificação do título'].iloc[current_row].split(" "))==2:
+                    letras = ""
+                    letras = df['Especificação do título'].iloc[current_row].split(" ")[1]
+                    codigo  =  codigos[letras]
+                    exercicio = exercicio + codigo
+                else:
+                    exercicio = converte_opcao_ticket(df['Especificação do título'].iloc[current_row])
+                   #exercicio,log_nome_pregao = nome_pregao_opcoes(opcoes, exercicio, data)
+                   #if log_nome_pregao != temp:
+                   #    temp = log_nome_pregao
+                   #    log.append(log_nome_pregao)
+            except:
+                codigo = '11'
         else:
             exercicio = ""
-        
+               
         #Altera o número de dias de um contrato a Termo para a 
         #data de vencimento desse contrato
         if mercado in "TERMOTermoTERMO":
@@ -4270,18 +4305,42 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
         custo_financeiro,irrf_operacao = custos_por_operacao(taxas_df,numero_nota,c_v,valor_total,operacao)
         irrf_operacao = irrf_operacao * 10
 
-        #Susbstitui o nome do papel no pregão pelo seu respectivo código na B3 no padrão "XXXX3"
-        #Caso seja uma opção de compra/venda o código continuará o mesmo
+        #Susbstitui o nome do papel no pregão pelo seu respectivo código na B3 no padrão "XXXX3" - atualizado em 15/09/2024
+        #Caso seja uma opção de compra/venda o código continuará o mesmo        
         if df['Tipo Mercado'].iloc[current_row] in "VISTAFRACIONARIOTERMOVistavistaFracionariofracionarioTermotermo":
-            stock_title,log_nome_pregao = nome_pregao(acoes, stock_title, data)
-            if log_nome_pregao != temp:
-                temp = log_nome_pregao
-                log.append(log_nome_pregao)
-        elif df['Tipo Mercado'].iloc[current_row].split(" ")[0] == "EXERC":
-            stock_title,log_nome_pregao = nome_pregao_opcoes(opcoes, stock_title, data)
-            if log_nome_pregao != temp:
-                temp = log_nome_pregao
-                log.append(log_nome_pregao)
+            stock_title = stock_title.split(" ")[0]
+            #stock_title,log_nome_pregao = nome_pregao(acoes, stock_title, data)
+            #if log_nome_pregao != temp:
+            #    temp = log_nome_pregao
+            #    log.append(log_nome_pregao)
+        elif df['Tipo Mercado'].iloc[current_row].split(" ")[0] == "EXERC" and df['Especificação do título'].iloc[current_row].split(" ")[0][-1:] == "E":
+            #if data > datetime.strptime("01/06/2024", '%d/%m/%Y').date():
+            stock_title = df['Especificação do título'].iloc[current_row].split(" ")[0][0:4]            
+            try:
+                if isinstance(tipoTikect.iloc[current_row], str):
+                    letras = ""
+                    letras = tipoTikect.iloc[current_row].split(" ")[0]
+                    codigo  =  codigos[letras]
+                    stock_title = stock_title + codigo
+                elif len(df['Especificação do título'].iloc[current_row].split(" "))==2:
+                    letras = ""
+                    letras = df['Especificação do título'].iloc[current_row].split(" ")[1]
+                    codigo  =  codigos[letras]
+                    stock_title = stock_title + codigo
+                else:
+                    stock_title,log_nome_pregao = nome_pregao_opcoes(opcoes, stock_title, data)
+                    if log_nome_pregao != temp:
+                        temp = log_nome_pregao
+                        log.append(log_nome_pregao)
+            except:
+                codigo = '11'
+        elif df['Tipo Mercado'].iloc[current_row].split(" ")[0] == "EXERC" and df['Especificação do título'].iloc[current_row].split(" ")[0][-1:] != "E":
+            stock_title = df['Especificação do título'].iloc[current_row].split(" ")[0][0:4]
+            string = df['Especificação do título'].iloc[current_row]
+            letras = string[string.rfind('E')+1:]
+            codigo  =  codigos[letras] 
+            stock_title = stock_title + codigo
+            exercicio = string[:string.rfind('E')]
         elif df['Tipo Mercado'].iloc[current_row].split(" ")[0] == "OPCAO":
             stock_title = stock_title.split(" ")[0]
         else:
