@@ -66,37 +66,37 @@ A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas 
 ***
 ## Capturas de telas
 Tela principal
-![Tela principal](Apoio/Screenshots/tela-programa.JPG)
+![Tela principal](Utils/Screenshots/tela-programa.JPG)
 
 Índice
-![indice](Apoio/Screenshots/indice.JPG)
+![indice](Utils/Screenshots/indice.JPG)
 
 Controle das operações realizadas
-![operacoes](Apoio/Screenshots/operacoes.JPG)
+![operacoes](Utils/Screenshots/operacoes.JPG)
 
 Contabilidade das operações realizadas
-![contabilidade](Apoio/Screenshots/contabilidade.JPG)
+![contabilidade](Utils/Screenshots/contabilidade.JPG)
 
 Alocação por classe de ativo
-![alocacao](Apoio/Screenshots/alocacao.JPG)
+![alocacao](Utils/Screenshots/alocacao.JPG)
 
 Controle de operações isentas de IR
-![isentos](Apoio/Screenshots/isentos.JPG)
+![isentos](Utils/Screenshots/isentos.JPG)
 
 Controle de DARF mensal
-![darf.JPG](Apoio/Screenshots/darf.JPG)
+![darf.JPG](Utils/Screenshots/darf.JPG)
 
 Eventos da B3
-![eventos](Apoio/Screenshots/eventos.JPG)
+![eventos](Utils/Screenshots/eventos.JPG)
 
 Custódia inicial
-![custodia inicial](Apoio/Screenshots/custodia-inicial.JPG)
+![custodia inicial](Utils/Screenshots/custodia-inicial.JPG)
 
 Balanceamento da carteira
-![balanceamento](Apoio/Screenshots/balanceamento.JPG)
+![balanceamento](Utils/Screenshots/balanceamento.JPG)
 
 Manejo de risco antimartingale com porcentagem fixa por tipo de operação
-![manejo risco](Apoio/Screenshots/manejo-risco.JPG)
+![manejo risco](Utils/Screenshots/manejo-risco.JPG)
 
 ***
 ## Implementações futuras
