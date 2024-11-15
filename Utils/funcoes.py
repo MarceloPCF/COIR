@@ -1018,6 +1018,7 @@ def move_resultado(cpf):
 #def arquivo_unico(current_path,cpf,note_df,normal_df,daytrade_df,taxas_df):
 def arquivo_unico(current_path,cpf,normal_df,daytrade_df):    
     # log = ''
+    reprocessamento = 0
     try:
         app = xw.App(visible=False)
         wb = xw.Book(current_path+"/"+cpf+".xlsb")
@@ -1070,6 +1071,7 @@ def arquivo_unico(current_path,cpf,normal_df,daytrade_df):
                 print_atencao()
                 print('Reprocessamento conforme número de nota(s) de corretagem(ns) a seguir:')
                 print(f'{notas_str}.')
+                reprocessamento = 1
 
                 # Expande o intervalo para o tamanho da tabela de dados a partir de A1
                 data_range = sheet.range('A1').expand()
@@ -1140,9 +1142,12 @@ def arquivo_unico(current_path,cpf,normal_df,daytrade_df):
                 notas_str = ', '.join(map(lambda x: str(int(x)), set(notas)))
 
                 # Imprime a mensagem com a lista de notas
-                print_atencao()
-                print('Reprocessamento de DayTrade conforme número de nota(s) de corretagem(ns) a seguir:')
-                print(f'{notas_str}.')
+                if reprocessamento == 0:
+                    print_atencao()
+                    print('Reprocessamento de DayTrade conforme número de nota(s) de corretagem(ns) a seguir:')
+                    print(f'{notas_str}.')
+                else:
+                    print(f'{notas_str}.')
 
                 # Expande o intervalo para o tamanho da tabela de dados a partir de A1
                 data_range = sheet.range('A1').expand()
