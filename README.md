@@ -1,3 +1,4 @@
+<meta name="google-site-verification" content="Y0V_yoxkASjbl08AkTywrqXzxNHmg-YJY1Hkwa3SW5A" />
 # Controle de Operações e Imposto de Renda - COIR
 O COIR é um sistema de extração de dados de notas de corretagens no padrão SINACOR (Sistema Integrado de Administração de Corretoras) para planilhas do Microsoft Excel. Tem como objetivo o controle de operações nos mercados Á Vista (Normal e DayTrade), Futuros, Commodities e Derivativos (Opções), na bolsa de valores da B3 (Brasil, Bolsa e Balcão).
 
