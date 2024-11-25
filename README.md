@@ -13,7 +13,7 @@ Desde o início, o objetivo desse controle foi a simplicidade e correção dos d
 * Possibilidade de contabilizar notas de corretagens de corretoras diferentes para um mesmo CPF
 * Contabilizar operações para cada tipo de mercado (Á Vista, Futuros, Commodities e Derivativos)
 * Apuração mensal da DARF
-* Cáluco do Imposto de Renda Retido na Fonte (IRRF)
+* Cálculo do Imposto de Renda Retido na Fonte (IRRF)
 * Auxílio na Declaração anual de Imposto de Renda Pessoa Física (DIRPF)
 
 Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, Clear, Rico, Necton e BTG.
