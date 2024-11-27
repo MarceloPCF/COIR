@@ -275,7 +275,7 @@ def principal():
         result = subprocess.run(["taskkill", "/f", "/im", "excel.exe"],
         capture_output=True, text=True)
         if "não foi encontrado" in result.stderr:
-            print("Coformado: programa Excel fechado.")
+            print("Cofirmado: programa Excel fechado.")
         print()
         print('-=' * 50)
         print('Iniciando o processamento das Notas de Corretagens...\n\n')

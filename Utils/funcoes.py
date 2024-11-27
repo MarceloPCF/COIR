@@ -1,5 +1,6 @@
 # Importações padrão de bibliotecas Python
 import shutil
+import subprocess
 from os.path import join, basename, exists
 from os import makedirs, rename
 from datetime import datetime
@@ -1019,6 +1020,13 @@ def move_resultado(cpf):
 def arquivo_unico(current_path,cpf,normal_df,daytrade_df):    
     # log = ''
     reprocessamento = 0
+    
+    #Fechar excel aberto para evitar erro no processamento
+    result = subprocess.run(["taskkill", "/f", "/im", "excel.exe"],
+    capture_output=True, text=True)
+    if "não foi encontrado" in result.stderr:
+        print("Cofirmado: programa Excel fechado.")
+    
     try:
         app = xw.App(visible=False)
         wb = xw.Book(current_path+"/"+cpf+".xlsb")
