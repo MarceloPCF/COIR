@@ -1049,7 +1049,10 @@ def arquivo_unico(current_path,cpf,normal_df,daytrade_df):
         # Converter colunas "Data" para datetime64[ns]
         normal_df['Data'] = pd.to_datetime(normal_df['Data'])
         normal_dados['Data'] = pd.to_datetime(normal_dados['Data'])
-
+        
+        # Converter coluna "Notas" para float
+        normal_dados['Nota'] = normal_dados['Nota'].astype(float)
+        
         # Verificar se há linhas idênticas nas colunas 'Corretora','Conta','Nota','Data','Papel'
         if not normal_dados.empty and not normal_df.empty:
             identical_normal = normal_dados.merge(
