@@ -52,12 +52,13 @@ def btg_bmf(corretora,filename,item,log,page,control):
     # Coleta de dados por área de informação - Extraindo os dados das taxas e impostos
     # 46.484,442.159,68.797,561.90   - Nota e data do pregão
     # 619.916,29.378,709.166,566.366 - Resumo dos negócios, Resumo financeiro e Custos operacionais
+    # (654.128,25.659,738.172,568.597))- alterado em 30/11/2024
     # ==============================================================================================
     data = tabula.read_pdf(filename, pandas_options={'dtype': str}, guess=False, stream=True,
     multiple_tables=True, pages=page, encoding="utf-8",
     area=(
     (47.972,446.622,68.053,568.597),
-    (654.128,25.659,738.172,568.597))
+    (645.203,24.172,738.172,568.597))
     )
     df_gastos = pd.concat(data,axis=0,ignore_index=True)
     df_gastos['Nr. nota'] = df_gastos['Nr. nota'].apply(
