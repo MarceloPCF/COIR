@@ -122,7 +122,14 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
     #    log.append(Utils.funcoes.verifica_nota_corretagem(folder_path,nome,item))
     #    Utils.funcoes.log_processamento(current_path,cpf,log)
     #    return
-
+    
+    #print(df_gastos.head(20))
+    
+    #if df_gastos['Resumo Financeiro'].iloc[current_row+2] == 'Taxa de Transf. de Ativos':
+    #    print(df_gastos['Resumo Financeiro'].iloc[current_row+2])
+    #else:
+    #    print('2 -> ', df_gastos['Resumo Financeiro'].iloc[current_row+2])
+      
     for current_row in lista:
         nota = df_gastos['Nr. nota'].iloc[current_row-8]
         data = datetime.strptime(df_gastos['Data pregão'].iloc[current_row-8], '%d/%m/%Y').date()
@@ -130,19 +137,42 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
         vendas = df_gastos['Unnamed: 0'].iloc[current_row-6]
         liquidacao = df_gastos['Unnamed: 1'].iloc[current_row-5]
         registro = df_gastos['Unnamed: 1'].iloc[current_row-4]
-        emolumentos = df_gastos['Unnamed: 1'].iloc[current_row+1]
-        corretagem = df_gastos['Unnamed: 1'].iloc[current_row+5]
-        imposto = df_gastos['Unnamed: 1'].iloc[current_row+8]
-        irrf = df_gastos['Unnamed: 1'].iloc[current_row+9]
-        outros = df_gastos['Unnamed: 1'].iloc[current_row+10]
-        ir_daytrade = str(df_gastos['Resumo dos Negócios'].iloc[current_row+10])
-        if ir_daytrade != "nan":
-            ir_daytrade = ir_daytrade.split("Projeção R$ ")[1]
+        # emolumentos = df_gastos['Unnamed: 1'].iloc[current_row+1]
+        
+        if df_gastos['Resumo Financeiro'].iloc[current_row+2] == 'Taxa de Transf. de Ativos':
+            # print(df_gastos['Resumo Financeiro'].iloc[current_row+2])
+            emolumentos = df_gastos['Unnamed: 1'].iloc[current_row+1] + df_gastos['Unnamed: 1'].iloc[current_row+2]
+            corretagem = df_gastos['Unnamed: 1'].iloc[current_row+6]
+            imposto = df_gastos['Unnamed: 1'].iloc[current_row+9]
+            irrf = df_gastos['Unnamed: 1'].iloc[current_row+10]
             outros = df_gastos['Unnamed: 1'].iloc[current_row+11]
+            # ir_daytrade = str(df_gastos['Resumo dos Negócios'].iloc[current_row+11])
+            ir_daytrade = str(df_gastos['Resumo dos Negócios'].iloc[current_row+11]) if "IRRF" in str(df_gastos['Resumo dos Negócios'].iloc[current_row+11])  else "nan"
+            ir_daytrade = str(df_gastos['Resumo dos Negócios'].iloc[current_row+10]) if "IRRF" in str(df_gastos['Resumo dos Negócios'].iloc[current_row+10])  else "nan"
+            if ir_daytrade != "nan":
+                ir_daytrade = ir_daytrade.split("Projeção R$ ")[1]
+                irrf = df_gastos['Unnamed: 1'].iloc[current_row+11]
+                outros = df_gastos['Unnamed: 1'].iloc[current_row+12]
+            else:
+                ir_daytrade = "0"
+            ir_daytrade = float(ir_daytrade.replace('.','').replace(',','.'))
+            basecalculo = str(df_gastos['Resumo Financeiro'].iloc[current_row+10])
+        
         else:
-            ir_daytrade = "0"
-        ir_daytrade = float(ir_daytrade.replace('.','').replace(',','.'))
-        basecalculo = str(df_gastos['Resumo Financeiro'].iloc[current_row+9])
+            emolumentos = df_gastos['Unnamed: 1'].iloc[current_row+1]
+            corretagem = df_gastos['Unnamed: 1'].iloc[current_row+5]
+            imposto = df_gastos['Unnamed: 1'].iloc[current_row+8]
+            irrf = df_gastos['Unnamed: 1'].iloc[current_row+9]
+            outros = df_gastos['Unnamed: 1'].iloc[current_row+10]
+            ir_daytrade = str(df_gastos['Resumo dos Negócios'].iloc[current_row+10])
+            if ir_daytrade != "nan":
+                ir_daytrade = ir_daytrade.split("Projeção R$ ")[1]
+                outros = df_gastos['Unnamed: 1'].iloc[current_row+11]
+            else:
+                ir_daytrade = "0"
+            ir_daytrade = float(ir_daytrade.replace('.','').replace(',','.'))
+            basecalculo = str(df_gastos['Resumo Financeiro'].iloc[current_row+9])
+        
         if basecalculo != "nan":
             basecalculo = basecalculo.split("base R$")[1]
             if basecalculo == "":
