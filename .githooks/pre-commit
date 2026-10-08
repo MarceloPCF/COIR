@@ -1,0 +1,13 @@
+#!/bin/sh
+# Hook de pre-commit do COIR: impede que dados pessoais (CPF, notas de corretagem em PDF,
+# planilhas de resultado) sejam commitados por engano.
+# Ative uma vez, dentro da pasta do repositorio:
+#     git config core.hooksPath .githooks
+for py in python3 python py; do
+  if command -v "$py" >/dev/null 2>&1; then
+    exec "$py" tools/verificar_dados_pessoais.py --staged
+  fi
+done
+echo "ERRO: Python nao encontrado; a verificacao de dados pessoais nao foi executada." >&2
+echo "Commit cancelado por seguranca." >&2
+exit 1

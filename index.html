@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>  
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>COIR | Programa para extração de Notas de Corretagem no Padrão SINACOR</title>
+<meta name="google-site-verification" content="vDjlNKkJJRVfJJTE-ybAxmtGzT-z72kWETuAConlxOg"/>
+<meta name="generator" content="Jekyll v3.10.0">
+<meta property="og:title" content="COIR">
+<meta property="og:locale" content="en_US">
+<meta name="description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
+<meta property="og:description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
+<link rel="canonical" href="https://github.com/MarceloPCF/COIR">
+<meta property="og:url" content="https://github.com/MarceloPCF/COIR">
+<meta property="og:site_name" content="COIR">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta property="twitter:title" content="COIR">
+<!--<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","description":"Programa para extração de Notas de Corretagem no Padrão SINACOR","headline":"COIR","name":"COIR","url":"https://marcelopcf.github.io/COIR/"}</script>-->
+
+<script type="application/ld+json">
+{
+	"@context":"https://schema.org",
+	"@type":"WebSite",
+	"description":"Programa para extração de Notas de Corretagem no Padrão SINACOR",
+	"headline":"COIR",
+	"name":"COIR",
+	"url":"https://marcelopcf.github.io/COIR/"
+}
+</script>
+<style>
+    .right-align {
+        text-align: right;
+    }
+</style>
+<!-- End Jekyll SEO tag -->
+    <style class="anchorjs"></style>
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+<!-- Setup Google Analytics -->
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/COIR/favicon.ico" -->
+<!-- end custom head snippets -->
+
+  </head>
+  <body>
+    <div class="container-lg px-3 my-5 markdown-body">      
+      <h2 class="right-align"><a href="https://github.com/MarceloPCF/COIR">Download</a></h2>
+	  
+<h1 id="controle-de-operações-e-imposto-de-renda---coir">Controle de Operações e Imposto de Renda - COIR</h1>
+<p>O COIR é um sistema de extração de dados de notas de corretagens no padrão SINACOR (Sistema Integrado de Administração de Corretoras) para planilhas do Microsoft Excel. Tem como objetivo o controle de operações nos mercados Á Vista (Normal e DayTrade), Futuros, Commodities e Derivativos (Opções), na bolsa de valores da B3 (Brasil, Bolsa e Balcão).</p>
+
+<hr>
+<h2 id="história">História<a class="anchorjs-link " href="https://marcelopcf.github.io/COIR/#hist%C3%B3ria" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
+<p>Esse controle de operações começou em 2017, inicalmente apenas em planilhas excel com operações do mercado À Vista. Em 2021 nasceu a necessidade de automatização da extração de dados das notas de corretegens, até então todo esse trabalho era realizado de forma manual. Para essa automatização é utilizada a linguagem de programação Python. Em 2022 foram acrescentado os controles de operações dos mercados de Futuros, Commodities e Derivativos (Opções).</p>
+
+<p>Desde o início, o objetivo desse controle foi a simplicidade e correção dos dados extraídos e contabilizados. Algumas das principais características do COIR são:</p>
+<ul>
+  <li>Controle separado por CPF</li>
+  <li>Possibilidade de contabilizar notas de corretagens de corretoras diferentes para um mesmo CPF</li>
+  <li>Contabilizar operações para cada tipo de mercado (Á Vista, Futuros, Commodities e Derivativos)</li>
+  <li>Apuração mensal da DARF</li>
+  <li>Cálculo do Imposto de Renda Retido na Fonte (IRRF)</li>
+  <li>Auxílio na Declaração anual de Imposto de Renda Pessoa Física (DIRPF)</li>
+</ul>
+
+<p>Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, Clear, Rico, Necton e BTG.</p>
+
+<hr>
+<h2>Plataforma</h2>
+<p>Para ter acesso a todas as funcionalidades do sistema será necessário o Microsoft Excel e o software Python.</p>
+<ul>
+  <li>Descompacte e copie todo o conteúdo baixado para uma pasta de seu interesse.</li>
+  <li>Baixe suas notas de corretagem no padrão SINACOR direto do portal de sua corretora.
+    <ul>
+      <li>O sistema foi testado apenas para as corretoras XP, Clear, Rico, Necton e BTG.</li>
+      <li>O sistema trabalha com notas de corretagens de um mês fechado/completo.</li>
+    </ul>
+  </li>
+  <li>Copie as notas de corretagens baixadas para a pasta “..\Entrada”.</li>
+  <li>Execute o programa “COIR.py”, que se encontra na pasta principal.
+    <ul>
+      <li>Para isso é necessário que o Python 3 estaja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.</li>
+      <li>Ele pode ser baixando do endereço https://www.python.org/downloads/</li>
+      <li>Após o download e instalação do python execute o script “COIR.py”</li>
+      <li>Na primeira execução do script devem ser instaladas algumas bibliotecas <strong>não</strong> nativas do Python e que são necessárias para a correta execução do COIR.py. O arquivo  requirements.txt tem uma lista com essas bibliotecas, bastando para isso utilizar a seguinte linha de comando:</li>
+    </ul>
+
+    <p><code class="language-plaintext highlighter-rouge">$ python -m pip install -r requirements.txt</code></p>
+  </li>
+  <li>Após concluídas as instalações o programa fará a exportação das Nota de Corretagens presentes na pasta “..\Entrada” automaticamente.</li>
+  <li>As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saída”.</li>
+  <li>O resultado da extração das notas de corretagens será inserido em 2 arquivos:
+    <ul>
+      <li>..\Resultado\CPF\Completo.xlsx – que contém o resultado bruto da extração de todas as notas.</li>
+      <li>..\Resultado\CPF\COIR.xlsb – que contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).</li>
+    </ul>
+  </li>
+</ul>
+
+<p><strong>Contribuições são muito bem-vindas!</strong></p>
+
+<hr>
+<h2>Recursos</h2>
+<p>A seguir são apresentadas, de forma resumida, as funcionalidades de algumas das planilhas do COIR:</p>
+<ol>
+  <li>Indice - Acesso, habilitação e descrição de cada uma das planilhas do COIR.</li>
+  <li>Normais_Op - Operações Normais importadas automaticamente das notas de corretagens no padrão SINACOR.</li>
+  <li>Normais_Cont - Resultado das operações Nomais, separado por mês e por ano no padrão do IRPF.</li>
+  <li>Normais_Dados - Dados importados das notas de corretagens que serão utilizados na aba “Normais_Op”.</li>
+  <li>DayTrade_Op - Operações DayTrade importadas automaticamente das notas de corretagens no padrão SINACOR.</li>
+  <li>DayTrade_Cont - Resultado das operações DayTrade separado por mês e por ano no padrão do IRPF</li>
+  <li>DayTrade_Dados - Dados importados das notas de corretagens que serão utilizados na aba “DayTrade_Op”</li>
+  <li>Eventos B3 - São eventos da B3, tais como; Bonificação, Desdobramento, Grupamento, Subscrição, que alteram o preço médio do ativo em carteira e que não constão das notas de corretagens.</li>
+  <li>Isentos - Apresenta os Rendimentos Isentos e Não Tributáveis auferidos no mercado financeiro e que devem ser declarados na DIRPF</li>
+  <li>DARF - Disponibiliza os dados para a apuração do DARF mensal.</li>
+  <li>Custodia inicial - Dados de custódia para pessoas que já possuem resultados apurados com a Receita.</li>
+  <li>Alocação - Saldo da Alocação por ativos com porcentagem da alocação atual e a porcentagem “desejada” para cada ativo.</li>
+  <li>Balanceamento - Apresenta uma forma de balanceamento de carteira, com os aportes mensais ou por variação de cada ativo da carteira.</li>
+  <li>Patrimônio - É o total do patrimônio investido em todas as classes de ativo.</li>
+  <li>Rendimento - Mostra a rentabilidade da carteira ao longo ao tempo.</li>
+  <li>ManejoRisco - Destinado a configuração do Manejo de Risco por operação de renda variável.</li>
+  <li>ManejoPosicao - Destinado a estimativa do Tamanho de Posição para cada operação que será aberta em renda variável.</li>
+  <li>Reservado0 - Planilha reservado para implementação futura.</li>
+  <li>Reservado1 - Planilha reservado para implementação futura.</li>
+  <li>Reservado2 - Planilha reservado para implementação futura.</li>
+  <li>Reservado3 - Planilha reservado para implementação futura.</li>
+</ol>
+
+<hr>
+<h2>Capturas de algumas telas do sistema</h2>
+<h3>Tela principal</h3>
+<img src="./docs/imagens/tela-programa.JPG" alt="Tela principal">
+
+<h3>Índice</h3>
+<p><img src="./docs/imagens/indice.JPG" alt="indice"></p>
+
+<h3>Controle das operações realizadas</h3>
+<img src="./docs/imagens/operacoes.JPG" alt="operacoes">
+
+<h3>Contabilidade das operações realizadas<h3>
+<p><img src="./docs/imagens/contabilidade.JPG" alt="contabilidade"></p>
+
+<h3>Alocação por classe de ativo<h3>
+<img src="./docs/imagens/alocacao.JPG" alt="alocacao">
+
+<h3>Controle de operações isentas de IR</h3>
+<img src="./docs/imagens/isentos.JPG" alt="isentos">
+
+<h3>Controle de DARF mensal</h3>
+<img src="./docs/imagens/darf.JPG" alt="darf.JPG">
+
+<h3>Eventos da B3</h3>
+<img src="./docs/imagens/eventos.JPG" alt="eventos">
+
+<h3>Custódia inicial</h3>
+<img src="./docs/imagens/custodia-inicial.JPG" alt="custodia inicial">
+
+<h3>Balanceamento da carteira</h3>
+<img src="./docs/imagens/balanceamento.JPG" alt="balanceamento">
+
+<h3>Manejo de risco antimartingale com porcentagem fixa por tipo de operação<h3>
+<img src="./docs/imagens/manejo-risco.JPG" alt="manejo risco"> 
+
+</div>
+<p>Contato: marcelo.pcf@gmail.com</p>
+</body>
+</html>

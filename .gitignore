@@ -1,0 +1,51 @@
+# =====================================================================
+# DADOS PESSOAIS - NUNCA versionar (CPF, notas de corretagem, resultados)
+# =====================================================================
+# Pastas de trabalho do usuario: o conteudo fica so no computador dele.
+# O ".gitkeep" mantem as pastas vazias no repositorio.
+Entrada/*
+Saida/*
+Resultado/*
+!Entrada/.gitkeep
+!Saida/.gitkeep
+!Resultado/.gitkeep
+_dados/
+
+# Notas de corretagem e planilhas geradas pelo programa
+*.pdf
+*.PDF
+*.xlsx
+*.xls
+*.xlsm
+*.ods
+*.xlsb
+# Unica planilha permitida: o modelo vazio
+!modelos/COIR.xlsb
+~$*
+
+# Correcoes manuais do usuario (contem conta, datas e quantidades reais).
+# Use dados/ajustes_manuais.modelo.csv como ponto de partida.
+dados/ajustes_manuais.csv
+
+# Logs de processamento (o nome contem o CPF)
+*.log
+log_*.txt
+
+# =====================================================================
+# Python / editores / sistema
+# =====================================================================
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Pacotes de distribuicao: vao para a pagina de Releases, nao para o Git
+*.zip
+dist/
+build/

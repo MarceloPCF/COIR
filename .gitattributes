@@ -1,0 +1,18 @@
+# Normaliza finais de linha (evita arquivos "modificados" so por CRLF/LF no Windows)
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.html text eol=lf
+.githooks/* text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+*.bat text eol=crlf
+
+# Binarios: nunca converter
+*.xlsb binary
+*.xlsx binary
+*.JPG binary
+*.jpg binary
+*.png binary
+*.pdf binary
