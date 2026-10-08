@@ -19,15 +19,14 @@ Desde o início, o objetivo desse controle foi a simplicidade e correção dos d
 * Cálculo do Imposto de Renda Retido na Fonte (IRRF)
 * Auxílio na Declaração anual de Imposto de Renda Pessoa Física (DIRPF)
 
-Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, Clear, Rico, Necton e BTG.
+Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato para que ela seja adicionada ao sistema.
 
 ***
 ## Plataforma
 Para ter acesso a todas as funcionalidades do sistema será necessário o Microsoft Excel e o software Python.
 * Descompacte e copie todo o conteúdo baixado para uma pasta de seu interesse.
 * Baixe suas notas de corretagem no padrão SINACOR direto do portal de sua corretora.
-   * O sistema foi testado apenas para as corretoras XP, Clear, Rico, Necton e BTG.
-   * O sistema trabalha com notas de corretagens de um mês fechado/completo.
+   * O sistema foi testado para as corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato (marcelo.pcf@gmail.com ou uma issue aqui no GitHub) para que ela seja adicionada.
 * Copie as notas de corretagens baixadas para a pasta “..\Entrada”.
 * Execute o programa “COIR.py”, que se encontra na pasta principal.
    * Para isso é necessário que o Python 3 esteja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.
@@ -39,9 +38,7 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
 
 * Após concluídas as instalações o programa fará a exportação das Nota de Corretagens presentes na pasta “..\Entrada” automaticamente.
 * As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saida”.
-* O resultado da extração das notas de corretagens será inserido em 2 arquivos:
-   * ..\Resultado\CPF\Completo.xlsx – que contém o resultado bruto da extração de todas as notas.
-   * ..\Resultado\CPF\COIR.xlsb – que contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).
+* O resultado da extração das notas de corretagens será inserido no arquivo ..\Resultado\CPF.xlsb, onde CPF é o número do CPF do investidor. Ele contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).
 
 **Contribuições são muito bem-vindas!**
 

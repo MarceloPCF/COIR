@@ -1,30 +1,29 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
-<head>  
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<!-- Begin Jekyll SEO tag v2.8.0 -->
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>COIR | Programa para extração de Notas de Corretagem no Padrão SINACOR</title>
 <meta name="google-site-verification" content="vDjlNKkJJRVfJJTE-ybAxmtGzT-z72kWETuAConlxOg"/>
-<meta name="generator" content="Jekyll v3.10.0">
+<meta name="description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
 <meta property="og:title" content="COIR">
 <meta property="og:locale" content="pt_BR">
-<meta name="description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
 <meta property="og:description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
 <link rel="canonical" href="https://marcelopcf.github.io/COIR/">
 <meta property="og:url" content="https://marcelopcf.github.io/COIR/">
 <meta property="og:site_name" content="COIR">
 <meta property="og:type" content="website">
-<meta name="twitter:card" content="summary_large_image">
-<meta property="twitter:title" content="COIR | Controle de Operações e Imposto de Renda">
-<meta property="twitter:description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
 <meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta property="og:image:alt" content="COIR - Controle de Operações e Imposto de Renda">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="COIR | Controle de Operações e Imposto de Renda">
+<meta name="twitter:description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
 <meta name="twitter:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+<meta name="theme-color" content="#102a43">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <script type="application/ld+json">
 {
 	"@context":"https://schema.org",
@@ -42,141 +41,365 @@
 }
 </script>
 <style>
-    .right-align {
-        text-align: right;
-    }
+:root{
+  --marinho:#102a43;
+  --marinho-2:#1b3d5c;
+  --verde:#2ea043;
+  --verde-escuro:#1a7f37;
+  --azul-claro:#a8d4ff;
+  --fundo:#f4f7fa;
+  --papel:#ffffff;
+  --texto:#243b53;
+  --suave:#52606d;
+  --linha:#d9e2ec;
+  --foco:#f0b429;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--fundo);color:var(--texto);font:17px/1.65 "Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-text-size-adjust:100%}
+a{color:var(--verde-escuro)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--foco);outline-offset:3px;border-radius:4px}
+img{max-width:100%;height:auto;display:block}
+.wrap{width:min(1080px,100% - 40px);margin-inline:auto}
+
+/* Abertura */
+.topo,footer{position:relative}
+.topo::before,footer::before{content:"";position:absolute;left:0;top:0;bottom:0;width:16px;background:var(--verde)}
+.topo{background:var(--marinho);color:#fff;padding:18px 0 40px}
+.topo nav{display:flex;justify-content:flex-end;gap:22px;font-size:15px}
+.topo nav a{color:var(--azul-claro);text-decoration:none}
+.topo nav a:hover{text-decoration:underline}
+.topo .wrap{display:grid;gap:40px}
+.apresentacao{margin-top:8px;max-width:42em}
+.apresentacao h1{margin:0;font-size:clamp(56px,12vw,88px);line-height:.95;font-weight:800;letter-spacing:-.03em}
+.apresentacao .nome{margin:10px 0 0;font-size:clamp(20px,3vw,26px);font-weight:700;color:var(--azul-claro);line-height:1.25}
+.apresentacao .resumo{margin:14px 0 0;font-size:18px;color:#dbe7f3;max-width:34em}
+.acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px;align-items:center}
+.botao{display:inline-block;padding:11px 24px;border-radius:6px;font-weight:700;font-size:18px;text-decoration:none;border:2px solid transparent;transition:background-color .15s,border-color .15s}
+.botao.principal{background:var(--verde);color:#fff}
+.botao.principal:hover{background:var(--verde-escuro)}
+.botao.secundario{color:#fff;border-color:#6b8cad}
+.botao.secundario:hover{border-color:#fff}
+.versao{margin:10px 0 0;font-size:15px;color:#b6c8da;min-height:1.6em}
+.moldura{background:#fff;padding:7px;border-radius:3px;box-shadow:0 0 0 1px #0003}
+.moldura img{border-radius:1px}
+
+/* Seções */
+section{padding:72px 0 0}
+section:last-of-type{padding-bottom:80px}
+h2{margin:0 0 10px;font-size:clamp(28px,4.4vw,38px);line-height:1.15;color:var(--marinho);font-weight:800;letter-spacing:-.01em}
+.intro{margin:0 0 34px;color:var(--suave);max-width:40em}
+.coluna-leitura{max-width:44em}
+
+/* Como usar */
+.passos{list-style:none;margin:0;padding:0;counter-reset:passo;display:grid;grid-template-columns:minmax(0,1fr);gap:0;max-width:46em}
+.passos li{min-width:0;counter-increment:passo;position:relative;padding:0 0 30px 62px;border-left:0}
+.passos li::before{content:counter(passo);position:absolute;left:0;top:-2px;width:42px;height:42px;border-radius:50%;background:var(--marinho);color:#fff;font-weight:800;display:grid;place-items:center;font-size:19px}
+.passos li::after{content:"";position:absolute;left:20px;top:46px;bottom:6px;width:2px;background:var(--linha)}
+.passos li:last-child{padding-bottom:0}
+.passos li:last-child::after{display:none}
+.passos h3{margin:0 0 4px;font-size:20px;color:var(--marinho)}
+.passos p{margin:0 0 6px}
+code,.cmd{font-family:Consolas,"Cascadia Mono","SF Mono",Menlo,monospace;font-size:.92em}
+code{background:#e6edf4;padding:2px 6px;border-radius:4px}
+.cmd{display:block;background:var(--marinho);color:#e6f1ff;padding:12px 16px;border-radius:6px;margin:10px 0 4px;overflow-x:auto;white-space:pre}
+.nota{font-size:15.5px;color:var(--suave)}
+.aviso-simples{margin-top:34px;padding:16px 20px;background:#e8f5ec;border-left:5px solid var(--verde);border-radius:0 6px 6px 0;max-width:46em}
+
+/* Controle */
+.mercados{display:grid;gap:14px 40px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:0;padding:0;list-style:none}
+.mercados li{padding:14px 0;border-top:2px solid var(--marinho)}
+.mercados strong{display:block;color:var(--marinho);font-size:18px}
+.mercados span{color:var(--suave);font-size:16px}
+.historia{margin-top:44px}
+.historia p{margin:0 0 14px}
+
+/* Planilhas */
+.planilhas{display:grid;gap:0 40px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin:0}
+.planilhas div{padding:12px 0;border-bottom:1px solid var(--linha)}
+.planilhas dt{font-weight:700;color:var(--marinho);font-family:Consolas,"Cascadia Mono",Menlo,monospace;font-size:15.5px}
+.planilhas dd{margin:2px 0 0;font-size:16px}
+
+/* Telas: uma fileira, com setas nas laterais */
+.carrossel{position:relative;--larg:min(440px,78vw)}
+.galeria{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:4px;scrollbar-width:none;padding:8px 4px 6px;margin:0 -4px;overscroll-behavior-x:contain}
+.galeria::-webkit-scrollbar{display:none}
+.galeria figure{margin:0;flex:0 0 var(--larg);scroll-snap-align:start}
+.galeria button{all:unset;display:block;cursor:zoom-in;width:100%}
+.galeria button:focus-visible{outline:3px solid var(--foco);outline-offset:3px}
+.galeria .moldura{display:block;transition:box-shadow .15s}
+.galeria button:hover .moldura{box-shadow:0 0 0 3px var(--verde)}
+.galeria img{aspect-ratio:3/2;object-fit:cover;object-position:left top;width:100%}
+.galeria figcaption{margin-top:10px;font-weight:600;color:var(--marinho);font-size:16px;line-height:1.35}
+.seta{position:absolute;top:calc(var(--larg)/3 + 8px - 24px);width:48px;height:48px;border-radius:50%;border:0;background:var(--marinho);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 10px #102a4366;transition:background-color .15s,opacity .15s}
+.seta:hover{background:var(--verde-escuro)}
+.seta:focus-visible{outline:3px solid var(--foco);outline-offset:3px}
+.seta[disabled]{opacity:0;pointer-events:none}
+.seta svg{width:22px;height:22px}
+.seta.ant{left:-10px}
+.seta.prox{right:-10px}
+.contagem{margin:14px 0 0;color:var(--suave);font-size:15px}
+dialog{border:0;padding:0;background:transparent;max-width:min(1200px,96vw);width:96vw}
+dialog::backdrop{background:#102a43e6}
+dialog .moldura{max-height:86vh;overflow:auto}
+dialog p{color:#fff;margin:10px 0 0;font-weight:600;text-align:center}
+dialog form{text-align:right;margin-bottom:8px}
+dialog form button{background:#fff;color:var(--marinho);border:0;border-radius:6px;padding:8px 18px;font:700 16px inherit;cursor:pointer}
+
+/* Lista, linha do tempo e dúvidas */
+.recursos{margin:0;padding-left:1.2em;max-width:40em}
+.recursos li{margin:0 0 6px}
+.linha-tempo{list-style:none;margin:40px 0 0;padding:0;display:grid;gap:26px 32px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.linha-tempo li{position:relative;padding-top:22px;border-top:3px solid var(--marinho)}
+.linha-tempo li::before{content:"";position:absolute;top:-9px;left:0;width:15px;height:15px;border-radius:50%;background:var(--verde);box-shadow:0 0 0 4px var(--fundo)}
+.linha-tempo strong{display:block;font-size:30px;line-height:1.1;color:var(--marinho);font-weight:800;margin-bottom:6px}
+.linha-tempo span{color:var(--suave)}
+.faq h3{margin:26px 0 4px;font-size:19px;color:var(--marinho)}
+.faq h3:first-child{margin-top:0}
+.faq p{margin:0}
+
+/* Rodapé */
+footer{background:var(--marinho);color:#c3d3e3;padding:36px 0;font-size:15.5px}
+footer a{color:var(--azul-claro)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-between}
+
+@media (max-width:560px){
+  .topo{padding-bottom:32px}
+  .topo::before,footer::before{width:8px}
+  .botao{width:100%;text-align:center}
+  .passos li{padding-left:54px}
+}
 </style>
-<!-- End Jekyll SEO tag -->
-    <style class="anchorjs"></style>
-    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
-<!-- Setup Google Analytics -->
-<!-- You can set your favicon here -->
-<link rel="icon" type="image/svg+xml" href="./favicon.svg">
-<!-- end custom head snippets -->
+</head>
+<body>
 
-  </head>
-  <body>
-    <div class="container-lg px-3 my-5 markdown-body">      
-      <h2 class="right-align"><a href="https://github.com/MarceloPCF/COIR/releases/latest">Download</a> · <a href="https://github.com/MarceloPCF/COIR">GitHub</a></h2>
-	  
-<h1 id="controle-de-operações-e-imposto-de-renda---coir">Controle de Operações e Imposto de Renda - COIR</h1>
-<p>O COIR é um sistema de extração de dados de notas de corretagens no padrão SINACOR (Sistema Integrado de Administração de Corretoras) para planilhas do Microsoft Excel. Tem como objetivo o controle de operações nos mercados Á Vista (Normal e DayTrade), Futuros, Commodities e Derivativos (Opções), na bolsa de valores da B3 (Brasil, Bolsa e Balcão).</p>
+<header class="topo">
+  <div class="wrap">
+    <nav aria-label="Atalhos">
+      <a href="#como-usar">Como usar</a>
+      <a href="#planilhas">Planilhas</a>
+      <a href="#telas">Telas</a>
+      <a href="#duvidas">Dúvidas</a>
+      <a href="https://github.com/MarceloPCF/COIR">GitHub</a>
+    </nav>
+    <div class="apresentacao">
+      <div>
+        <h1>COIR</h1>
+        <p class="nome">Controle de Operações e Imposto de Renda</p>
+        <p class="resumo">Extrai as notas de corretagem no padrão SINACOR (B3) para planilhas do Excel e prepara a apuração da DARF mensal, o IRRF e a declaração anual do IRPF.</p>
+        <div class="acoes">
+          <a class="botao principal" id="baixar" href="https://github.com/MarceloPCF/COIR/releases/latest">Baixar o COIR</a>
+          <a class="botao secundario" href="https://github.com/MarceloPCF/COIR">Ver no GitHub</a>
+        </div>
+        <p class="versao" id="versao">Gratuito, código aberto (licença MIT).</p>
+      </div>
+    </div>
+  </div>
+</header>
 
-<p><img src="./docs/imagens/coir-demo.gif" alt="Apresentação das principais telas do COIR" loading="lazy"></p>
+<main>
 
-<hr>
-<h2 id="história">História<a class="anchorjs-link " href="https://marcelopcf.github.io/COIR/#hist%C3%B3ria" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
-<p>Esse controle de operações começou em 2017, inicialmente apenas em planilhas excel com operações do mercado À Vista. Em 2021 nasceu a necessidade de automatização da extração de dados das notas de corretagens, até então todo esse trabalho era realizado de forma manual. Para essa automatização é utilizada a linguagem de programação Python. Em 2022 foram acrescentados os controles de operações dos mercados de Futuros, Commodities e Derivativos (Opções).</p>
+<section id="como-usar">
+  <div class="wrap">
+    <h2>Como usar</h2>
+    <p class="intro">Você precisa do Microsoft Excel e do Python. Em cinco passos, as notas viram planilhas.</p>
+    <ol class="passos">
+      <li>
+        <h3>Baixe e descompacte</h3>
+        <p>Use o botão <strong>Baixar o COIR</strong> e copie todo o conteúdo para uma pasta de sua escolha.</p>
+      </li>
+      <li>
+        <h3>Coloque as notas na pasta Entrada</h3>
+        <p>Baixe suas notas de corretagem no padrão SINACOR direto do portal da corretora e copie para a pasta <code>Entrada</code>.</p>
+        <p class="nota">O COIR foi testado com as corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato pelo e-mail <a href="mailto:marcelo.pcf@gmail.com">marcelo.pcf@gmail.com</a> ou abra uma <a href="https://github.com/MarceloPCF/COIR/issues">issue</a>, para que ela seja adicionada ao sistema.</p>
+      </li>
+      <li>
+        <h3>Instale o Python e as bibliotecas</h3>
+        <p>É necessário o Python 3.9.2 ou superior, disponível em <a href="https://www.python.org/downloads/">python.org/downloads</a>. Na primeira vez, instale as bibliotecas que o COIR usa, com este comando na pasta do programa:</p>
+        <span class="cmd">python -m pip install -r requirements.txt</span>
+      </li>
+      <li>
+        <h3>Execute o COIR.py</h3>
+        <p>O arquivo <code>COIR.py</code> fica na pasta principal. Ao rodar, o programa extrai automaticamente as notas que estiverem na pasta <code>Entrada</code>.</p>
+      </li>
+      <li>
+        <h3>Abra o resultado</h3>
+        <p>As notas processadas são movidas de <code>Entrada</code> para <code>Saida</code>. O resultado fica no arquivo <code>Resultado\CPF.xlsb</code>, onde CPF é o número do CPF do investidor. Ele traz os dados em várias planilhas: Normais, DayTrade, Contabilidade, DARF, Isentos e outras.</p>
+      </li>
+    </ol>
+    <div class="aviso-simples">
+      <strong>Contribuições são muito bem-vindas.</strong> Encontrou um problema ou quer ajudar? Abra uma <a href="https://github.com/MarceloPCF/COIR/issues">issue</a> no GitHub.
+    </div>
+  </div>
+</section>
 
-<p>Desde o início, o objetivo desse controle foi a simplicidade e correção dos dados extraídos e contabilizados. Algumas das principais características do COIR são:</p>
-<ul>
-  <li>Controle separado por CPF</li>
-  <li>Possibilidade de contabilizar notas de corretagens de corretoras diferentes para um mesmo CPF</li>
-  <li>Contabilizar operações para cada tipo de mercado (Á Vista, Futuros, Commodities e Derivativos)</li>
-  <li>Apuração mensal da DARF</li>
-  <li>Cálculo do Imposto de Renda Retido na Fonte (IRRF)</li>
-  <li>Auxílio na Declaração anual de Imposto de Renda Pessoa Física (DIRPF)</li>
-</ul>
-
-<p>Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, Clear, Rico, Necton e BTG.</p>
-
-<hr>
-<h2>Plataforma</h2>
-<p>Para ter acesso a todas as funcionalidades do sistema será necessário o Microsoft Excel e o software Python.</p>
-<ul>
-  <li>Descompacte e copie todo o conteúdo baixado para uma pasta de seu interesse.</li>
-  <li>Baixe suas notas de corretagem no padrão SINACOR direto do portal de sua corretora.
-    <ul>
-      <li>O sistema foi testado apenas para as corretoras XP, Clear, Rico, Necton e BTG.</li>
-      <li>O sistema trabalha com notas de corretagens de um mês fechado/completo.</li>
+<section id="controle">
+  <div class="wrap">
+    <h2>O que o COIR controla</h2>
+    <p class="intro">Notas de corretagem da B3 (Brasil, Bolsa e Balcão) nos mercados:</p>
+    <ul class="mercados">
+      <li><strong>À Vista</strong><span>Operações comuns e Day Trade</span></li>
+      <li><strong>Futuros</strong></li>
+      <li><strong>Commodities</strong></li>
+      <li><strong>Derivativos</strong><span>Opções</span></li>
     </ul>
-  </li>
-  <li>Copie as notas de corretagens baixadas para a pasta “..\Entrada”.</li>
-  <li>Execute o programa “COIR.py”, que se encontra na pasta principal.
-    <ul>
-      <li>Para isso é necessário que o Python 3 esteja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.</li>
-      <li>Ele pode ser baixado do endereço https://www.python.org/downloads/</li>
-      <li>Após o download e instalação do python execute o script “COIR.py”</li>
-      <li>Na primeira execução do script devem ser instaladas algumas bibliotecas <strong>não</strong> nativas do Python e que são necessárias para a correta execução do COIR.py. O arquivo  requirements.txt tem uma lista com essas bibliotecas, bastando para isso utilizar a seguinte linha de comando:</li>
-    </ul>
+    <div class="historia coluna-leitura">
+      <ul class="recursos">
+        <li>Você envia as notas. O COIR extrai os dados.</li>
+        <li>Controle separado por CPF, com notas de várias corretoras no mesmo CPF.</li>
+        <li>Cada mercado é contabilizado à parte.</li>
+        <li>Apuração mensal da DARF e cálculo do IRRF.</li>
+        <li>Apoio à declaração anual do IRPF.</li>
+      </ul>
+      </div>
+    <h2 style="margin-top:56px">História</h2>
+    <ol class="linha-tempo">
+      <li><strong>2017</strong><span>Primeira versão, em planilhas Excel, com operações do mercado à vista.</span></li>
+      <li><strong>2021</strong><span>Extração automática das notas de corretagem com Python. Até então, o trabalho era manual.</span></li>
+      <li><strong>2022</strong><span>Controles de Futuros, Commodities e Derivativos (Opções).</span></li>
+    </ol>
+    <p class="coluna-leitura" style="margin-top:28px">Desde o início, o objetivo foi a simplicidade e a correção dos dados extraídos e contabilizados.</p>
+  </div>
+</section>
 
-    <p><code class="language-plaintext highlighter-rouge">$ python -m pip install -r requirements.txt</code></p>
-  </li>
-  <li>Após concluídas as instalações o programa fará a exportação das Nota de Corretagens presentes na pasta “..\Entrada” automaticamente.</li>
-  <li>As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saida”.</li>
-  <li>O resultado da extração das notas de corretagens será inserido em 2 arquivos:
-    <ul>
-      <li>..\Resultado\CPF\Completo.xlsx – que contém o resultado bruto da extração de todas as notas.</li>
-      <li>..\Resultado\CPF\COIR.xlsb – que contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).</li>
-    </ul>
-  </li>
-</ul>
+<section id="planilhas">
+  <div class="wrap">
+    <h2>As planilhas do COIR</h2>
+    <p class="intro">Resumo das funcionalidades de cada planilha do arquivo <code>COIR.xlsb</code>.</p>
+    <dl class="planilhas">
+      <div><dt>Indice</dt><dd>Acesso, habilitação e descrição de cada uma das planilhas do COIR.</dd></div>
+      <div><dt>Normais_Op</dt><dd>Operações comuns importadas automaticamente das notas de corretagens no padrão SINACOR.</dd></div>
+      <div><dt>Normais_Cont</dt><dd>Resultado das operações comuns, separado por mês e por ano no padrão do IRPF.</dd></div>
+      <div><dt>Normais_Dados</dt><dd>Dados importados das notas de corretagens que serão utilizados na aba “Normais_Op”.</dd></div>
+      <div><dt>DayTrade_Op</dt><dd>Operações Day Trade importadas automaticamente das notas de corretagens no padrão SINACOR.</dd></div>
+      <div><dt>DayTrade_Cont</dt><dd>Resultado das operações Day Trade separado por mês e por ano no padrão do IRPF.</dd></div>
+      <div><dt>DayTrade_Dados</dt><dd>Dados importados das notas de corretagens que serão utilizados na aba “DayTrade_Op”.</dd></div>
+      <div><dt>Eventos B3</dt><dd>Eventos da B3, tais como Bonificação, Desdobramento, Grupamento e Subscrição, que alteram o preço médio do ativo em carteira e que não constam das notas de corretagens.</dd></div>
+      <div><dt>Isentos</dt><dd>Apresenta os Rendimentos Isentos e Não Tributáveis auferidos no mercado financeiro e que devem ser declarados na DIRPF.</dd></div>
+      <div><dt>DARF</dt><dd>Disponibiliza os dados para a apuração do DARF mensal.</dd></div>
+      <div><dt>Custodia inicial</dt><dd>Dados de custódia para pessoas que já possuem resultados apurados com a Receita.</dd></div>
+      <div><dt>Alocação</dt><dd>Saldo da Alocação por ativos com porcentagem da alocação atual e a porcentagem “desejada” para cada ativo.</dd></div>
+      <div><dt>Balanceamento</dt><dd>Apresenta uma forma de balanceamento de carteira, com os aportes mensais ou por variação de cada ativo da carteira.</dd></div>
+      <div><dt>Patrimônio</dt><dd>Total do patrimônio investido em todas as classes de ativo.</dd></div>
+      <div><dt>Rendimento</dt><dd>Mostra a rentabilidade da carteira ao longo do tempo.</dd></div>
+      <div><dt>ManejoRisco</dt><dd>Destinado à configuração do Manejo de Risco por operação de renda variável.</dd></div>
+      <div><dt>ManejoPosicao</dt><dd>Destinado à estimativa do Tamanho de Posição para cada operação que será aberta em renda variável.</dd></div>
+    </dl>
+  </div>
+</section>
 
-<p><strong>Contribuições são muito bem-vindas!</strong></p>
+<section id="telas">
+  <div class="wrap">
+    <h2>Telas do sistema</h2>
+    <p class="intro">Use as setas ou deslize para ver as telas. Clique em uma imagem para ampliar.</p>
+    <div class="carrossel" role="region" aria-roledescription="carrossel" aria-label="Telas do sistema">
+    <button type="button" class="seta ant" aria-label="Telas anteriores" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></button>
+    <button type="button" class="seta prox" aria-label="Próximas telas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4 8 8-8 8"/></svg></button>
+    <div class="galeria" id="galeria">
+      <figure><button type="button" data-img="tela-programa"><span class="moldura"><img src="./docs/imagens/tela-programa.JPG" width="1014" height="354" loading="lazy" alt="Tela principal do COIR"></span><figcaption>Tela principal</figcaption></button></figure>
+      <figure><button type="button" data-img="indice"><span class="moldura"><img src="./docs/imagens/indice.JPG" width="1144" height="785" loading="lazy" alt="Índice das planilhas do COIR"></span><figcaption>Índice</figcaption></button></figure>
+      <figure><button type="button" data-img="operacoes"><span class="moldura"><img src="./docs/imagens/operacoes.JPG" width="1872" height="734" loading="lazy" alt="Planilha de operações importadas das notas de corretagem"></span><figcaption>Controle das operações realizadas</figcaption></button></figure>
+      <figure><button type="button" data-img="contabilidade"><span class="moldura"><img src="./docs/imagens/contabilidade.JPG" width="1149" height="733" loading="lazy" alt="Contabilidade das operações por mês e por ano"></span><figcaption>Contabilidade das operações realizadas</figcaption></button></figure>
+      <figure><button type="button" data-img="alocacao"><span class="moldura"><img src="./docs/imagens/alocacao.JPG" width="1024" height="757" loading="lazy" alt="Alocação da carteira por classe de ativo"></span><figcaption>Alocação por classe de ativo</figcaption></button></figure>
+      <figure><button type="button" data-img="isentos"><span class="moldura"><img src="./docs/imagens/isentos.JPG" width="1871" height="547" loading="lazy" alt="Controle de operações isentas de IR"></span><figcaption>Controle de operações isentas de IR</figcaption></button></figure>
+      <figure><button type="button" data-img="darf"><span class="moldura"><img src="./docs/imagens/darf.JPG" width="1015" height="847" loading="lazy" alt="Controle da DARF mensal"></span><figcaption>Controle de DARF mensal</figcaption></button></figure>
+      <figure><button type="button" data-img="eventos"><span class="moldura"><img src="./docs/imagens/eventos.JPG" width="1727" height="835" loading="lazy" alt="Eventos da B3: bonificação, desdobramento e subscrição"></span><figcaption>Eventos da B3</figcaption></button></figure>
+      <figure><button type="button" data-img="custodia-inicial"><span class="moldura"><img src="./docs/imagens/custodia-inicial.JPG" width="1424" height="760" loading="lazy" alt="Custódia inicial"></span><figcaption>Custódia inicial</figcaption></button></figure>
+      <figure><button type="button" data-img="balanceamento"><span class="moldura"><img src="./docs/imagens/balanceamento.JPG" width="1498" height="802" loading="lazy" alt="Balanceamento da carteira"></span><figcaption>Balanceamento da carteira</figcaption></button></figure>
+      <figure><button type="button" data-img="manejo-risco"><span class="moldura"><img src="./docs/imagens/manejo-risco.JPG" width="728" height="537" loading="lazy" alt="Manejo de risco antimartingale por tipo de operação"></span><figcaption>Manejo de risco antimartingale com porcentagem fixa por tipo de operação</figcaption></button></figure>
+    </div>
+    </div>
+  </div>
+</section>
 
-<hr>
-<h2>Recursos</h2>
-<p>A seguir são apresentadas, de forma resumida, as funcionalidades de algumas das planilhas do COIR:</p>
-<ol>
-  <li>Indice - Acesso, habilitação e descrição de cada uma das planilhas do COIR.</li>
-  <li>Normais_Op - Operações Normais importadas automaticamente das notas de corretagens no padrão SINACOR.</li>
-  <li>Normais_Cont - Resultado das operações Normais, separado por mês e por ano no padrão do IRPF.</li>
-  <li>Normais_Dados - Dados importados das notas de corretagens que serão utilizados na aba “Normais_Op”.</li>
-  <li>DayTrade_Op - Operações DayTrade importadas automaticamente das notas de corretagens no padrão SINACOR.</li>
-  <li>DayTrade_Cont - Resultado das operações DayTrade separado por mês e por ano no padrão do IRPF</li>
-  <li>DayTrade_Dados - Dados importados das notas de corretagens que serão utilizados na aba “DayTrade_Op”</li>
-  <li>Eventos B3 - São eventos da B3, tais como; Bonificação, Desdobramento, Grupamento, Subscrição, que alteram o preço médio do ativo em carteira e que não constão das notas de corretagens.</li>
-  <li>Isentos - Apresenta os Rendimentos Isentos e Não Tributáveis auferidos no mercado financeiro e que devem ser declarados na DIRPF</li>
-  <li>DARF - Disponibiliza os dados para a apuração do DARF mensal.</li>
-  <li>Custodia inicial - Dados de custódia para pessoas que já possuem resultados apurados com a Receita.</li>
-  <li>Alocação - Saldo da Alocação por ativos com porcentagem da alocação atual e a porcentagem “desejada” para cada ativo.</li>
-  <li>Balanceamento - Apresenta uma forma de balanceamento de carteira, com os aportes mensais ou por variação de cada ativo da carteira.</li>
-  <li>Patrimônio - É o total do patrimônio investido em todas as classes de ativo.</li>
-  <li>Rendimento - Mostra a rentabilidade da carteira ao longo ao tempo.</li>
-  <li>ManejoRisco - Destinado a configuração do Manejo de Risco por operação de renda variável.</li>
-  <li>ManejoPosicao - Destinado a estimativa do Tamanho de Posição para cada operação que será aberta em renda variável.</li>
-  <li>Reservado0 - Planilha reservado para implementação futura.</li>
-  <li>Reservado1 - Planilha reservado para implementação futura.</li>
-  <li>Reservado2 - Planilha reservado para implementação futura.</li>
-  <li>Reservado3 - Planilha reservado para implementação futura.</li>
-</ol>
+<section id="duvidas">
+  <div class="wrap">
+    <h2>Dúvidas frequentes</h2>
+    <div class="faq coluna-leitura">
+      <h3>O COIR é gratuito?</h3>
+      <p>Sim. É código aberto, com licença MIT.</p>
+      <h3>O que preciso ter instalado?</h3>
+      <p>O Microsoft Excel e o Python 3.9.2 ou superior. O passo a passo está em <a href="#como-usar">Como usar</a>.</p>
+      <h3>Quais corretoras funcionam?</h3>
+      <p>O COIR lê notas no padrão SINACOR e foi testado com XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato para que ela seja adicionada ao sistema.</p>
+      <h3>Onde fica o resultado?</h3>
+      <p>No arquivo <code>Resultado\CPF.xlsb</code>, onde CPF é o número do CPF do investidor.</p>
+      <h3>O COIR substitui um contador?</h3>
+      <p>Não. Ele organiza e calcula as informações das suas operações, mas não substitui a análise nem a responsabilidade de um profissional contábil.</p>
+      <h3>Encontrei um erro. O que faço?</h3>
+      <p>Abra uma <a href="https://github.com/MarceloPCF/COIR/issues">issue</a> no GitHub ou escreva para <a href="mailto:marcelo.pcf@gmail.com">marcelo.pcf@gmail.com</a>.</p>
+    </div>
+  </div>
+</section>
 
-<hr>
-<h2>Capturas de algumas telas do sistema</h2>
-<h3>Tela principal</h3>
-<img src="./docs/imagens/tela-programa.JPG" alt="Tela principal do COIR" loading="lazy">
+</main>
 
-<h3>Índice</h3>
-<p><img src="./docs/imagens/indice.JPG" alt="Índice das planilhas do COIR" loading="lazy"></p>
+<footer>
+  <div class="wrap">
+    <span>Contato: <a href="mailto:marcelo.pcf@gmail.com">marcelo.pcf@gmail.com</a></span>
+    <span>COIR é gratuito, com licença MIT. <a href="https://github.com/MarceloPCF/COIR">Código-fonte no GitHub</a></span>
+  </div>
+</footer>
 
-<h3>Controle das operações realizadas</h3>
-<img src="./docs/imagens/operacoes.JPG" alt="Planilha de operações importadas das notas de corretagem" loading="lazy">
+<dialog id="ampliada" aria-label="Imagem ampliada">
+  <form method="dialog"><button type="submit">Fechar</button></form>
+  <div class="moldura"><img id="ampliada-img" src="" alt=""></div>
+  <p id="ampliada-legenda"></p>
+</dialog>
 
-<h3>Contabilidade das operações realizadas</h3>
-<p><img src="./docs/imagens/contabilidade.JPG" alt="Contabilidade das operações por mês e por ano" loading="lazy"></p>
+<script>
+(function () {
+  // Botão "Baixar": aponta direto para o zip da última Release; sem JavaScript, abre a página da Release.
+  var botao = document.getElementById('baixar');
+  var versao = document.getElementById('versao');
+  if (window.fetch) {
+    fetch('https://api.github.com/repos/MarceloPCF/COIR/releases/latest', { headers: { 'Accept': 'application/vnd.github+json' } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (rel) {
+        var zip = (rel.assets || []).filter(function (a) { return /\.zip$/i.test(a.name); })[0];
+        if (!zip) { return; }
+        botao.href = zip.browser_download_url;
+        var mb = (zip.size / 1048576).toFixed(1).replace('.', ',');
+        var num = (rel.tag_name || '').replace(/^v/i, '');
+        versao.textContent = 'Versão ' + num + ', arquivo zip de ' + mb + ' MB. Gratuito, código aberto (licença MIT).';
+      })
+      .catch(function () {});
+  }
 
-<h3>Alocação por classe de ativo</h3>
-<img src="./docs/imagens/alocacao.JPG" alt="Alocação da carteira por classe de ativo" loading="lazy">
+  // Carrossel de telas.
+  var gal = document.getElementById('galeria');
+  var ant = document.querySelector('.seta.ant');
+  var prox = document.querySelector('.seta.prox');
+  function atualizar() {
+    ant.disabled = gal.scrollLeft < 10;
+    prox.disabled = gal.scrollLeft + gal.clientWidth >= gal.scrollWidth - 4;
+  }
+  function passo(dir) {
+    var f = gal.querySelector('figure');
+    gal.scrollBy({ left: dir * (f.getBoundingClientRect().width + 22), behavior: 'smooth' });
+  }
+  ant.addEventListener('click', function () { passo(-1); });
+  prox.addEventListener('click', function () { passo(1); });
+  gal.addEventListener('scroll', atualizar, { passive: true });
+  window.addEventListener('resize', atualizar);
+  atualizar();
 
-<h3>Controle de operações isentas de IR</h3>
-<img src="./docs/imagens/isentos.JPG" alt="Controle de operações isentas de IR" loading="lazy">
-
-<h3>Controle de DARF mensal</h3>
-<img src="./docs/imagens/darf.JPG" alt="Controle da DARF mensal" loading="lazy">
-
-<h3>Eventos da B3</h3>
-<img src="./docs/imagens/eventos.JPG" alt="Eventos da B3: bonificação, desdobramento e subscrição" loading="lazy">
-
-<h3>Custódia inicial</h3>
-<img src="./docs/imagens/custodia-inicial.JPG" alt="Custódia inicial" loading="lazy">
-
-<h3>Balanceamento da carteira</h3>
-<img src="./docs/imagens/balanceamento.JPG" alt="Balanceamento da carteira" loading="lazy">
-
-<h3>Manejo de risco antimartingale com porcentagem fixa por tipo de operação</h3>
-<img src="./docs/imagens/manejo-risco.JPG" alt="Manejo de risco antimartingale por tipo de operação" loading="lazy"> 
-
-</div>
-<p>Contato: marcelo.pcf@gmail.com</p>
+  // Galeria: amplia a imagem ao clicar.
+  var dlg = document.getElementById('ampliada');
+  var img = document.getElementById('ampliada-img');
+  var leg = document.getElementById('ampliada-legenda');
+  document.querySelectorAll('.galeria button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var origem = b.querySelector('img');
+      img.src = origem.src;
+      img.alt = origem.alt;
+      leg.textContent = b.querySelector('figcaption').textContent;
+      if (dlg.showModal) { dlg.showModal(); } else { window.open(origem.src, '_blank'); }
+    });
+  });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) { dlg.close(); } });
+})();
+</script>
 </body>
 </html>
