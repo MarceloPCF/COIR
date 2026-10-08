@@ -5,16 +5,18 @@
 ## Controle de Operações e Imposto de Renda - COIR
 O COIR é um sistema de extração de dados de notas de corretagens no padrão SINACOR (Sistema Integrado de Administração de Corretoras) para planilhas do Microsoft Excel. Tem como objetivo o controle de operações nos mercados Á Vista (Normal e DayTrade), Futuros, Commodities e Derivativos (Opções), na bolsa de valores da B3 (Brasil, Bolsa e Balcão).
 
+![Telas do COIR](./docs/imagens/coir-demo.gif)
+
 ***
 ## História
-Esse controle de operações começou em 2017, inicalmente apenas em planilhas excel com operações do mercado À Vista. Em 2021 nasceu a necessidade de automatização da extração de dados das notas de corretegens, até então todo esse trabalho era realizado de forma manual. Para essa automatização é utilizada a linguagem de programação Python. Em 2022 foram acrescentado os controles de operações dos mercados de Futuros, Commodities e Derivativos (Opções).
+Esse controle de operações começou em 2017, inicialmente apenas em planilhas excel com operações do mercado À Vista. Em 2021 nasceu a necessidade de automatização da extração de dados das notas de corretagens, até então todo esse trabalho era realizado de forma manual. Para essa automatização é utilizada a linguagem de programação Python. Em 2022 foram acrescentado os controles de operações dos mercados de Futuros, Commodities e Derivativos (Opções).
 
 Desde o início, o objetivo desse controle foi a simplicidade e correção dos dados extraídos e contabilizados. Algumas das principais características do COIR são:
 * Controle separado por CPF
 * Possibilidade de contabilizar notas de corretagens de corretoras diferentes para um mesmo CPF
 * Contabilizar operações para cada tipo de mercado (Á Vista, Futuros, Commodities e Derivativos)
 * Apuração mensal da DARF
-* Cáluco do Imposto de Renda Retido na Fonte (IRRF)
+* Cálculo do Imposto de Renda Retido na Fonte (IRRF)
 * Auxílio na Declaração anual de Imposto de Renda Pessoa Física (DIRPF)
 
 Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, Clear, Rico, Necton e BTG.
@@ -28,15 +30,15 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
    * O sistema trabalha com notas de corretagens de um mês fechado/completo.
 * Copie as notas de corretagens baixadas para a pasta “..\Entrada”.
 * Execute o programa “COIR.py”, que se encontra na pasta principal.
-   * Para isso é necessário que o Python 3 estaja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.
-   * Ele pode ser baixando do endereço https://www.python.org/downloads/
+   * Para isso é necessário que o Python 3 esteja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.
+   * Ele pode ser baixado do endereço https://www.python.org/downloads/
    * Após o download e instalação do python execute o script “COIR.py”
    * Na primeira execução do script devem ser instaladas algumas bibliotecas **não** nativas do Python e que são necessárias para a correta execução do COIR.py. O arquivo  requirements.txt tem uma lista com essas bibliotecas, bastando para isso utilizar a seguinte linha de comando:
    
    `$ python -m pip install -r requirements.txt`
 
 * Após concluídas as instalações o programa fará a exportação das Nota de Corretagens presentes na pasta “..\Entrada” automaticamente.
-* As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saída”.
+* As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saida”.
 * O resultado da extração das notas de corretagens será inserido em 2 arquivos:
    * ..\Resultado\CPF\Completo.xlsx – que contém o resultado bruto da extração de todas as notas.
    * ..\Resultado\CPF\COIR.xlsb – que contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).
@@ -75,7 +77,7 @@ A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas 
 
 1. Indice - Acesso, habilitação e descrição de cada uma das planilhas do COIR.
 1. Normais_Op - Operações Normais importadas automaticamente das notas de corretagens no padrão SINACOR.
-1. Normais_Cont - Resultado das operações Nomais, separado por mês e por ano no padrão do IRPF.
+1. Normais_Cont - Resultado das operações Normais, separado por mês e por ano no padrão do IRPF.
 1. Normais_Dados - Dados importados das notas de corretagens que serão utilizados na aba "Normais_Op".
 1. DayTrade_Op - Operações DayTrade importadas automaticamente das notas de corretagens no padrão SINACOR.
 1. DayTrade_Cont - Resultado das operações DayTrade separado por mês e por ano no padrão do IRPF

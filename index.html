@@ -10,26 +10,35 @@
 <meta name="google-site-verification" content="vDjlNKkJJRVfJJTE-ybAxmtGzT-z72kWETuAConlxOg"/>
 <meta name="generator" content="Jekyll v3.10.0">
 <meta property="og:title" content="COIR">
-<meta property="og:locale" content="en_US">
+<meta property="og:locale" content="pt_BR">
 <meta name="description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
 <meta property="og:description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
-<link rel="canonical" href="https://github.com/MarceloPCF/COIR">
-<meta property="og:url" content="https://github.com/MarceloPCF/COIR">
+<link rel="canonical" href="https://marcelopcf.github.io/COIR/">
+<meta property="og:url" content="https://marcelopcf.github.io/COIR/">
 <meta property="og:site_name" content="COIR">
 <meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
-<meta property="twitter:title" content="COIR">
-<!--<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebSite","description":"Programa para extração de Notas de Corretagem no Padrão SINACOR","headline":"COIR","name":"COIR","url":"https://marcelopcf.github.io/COIR/"}</script>-->
-
+<meta name="twitter:card" content="summary_large_image">
+<meta property="twitter:title" content="COIR | Controle de Operações e Imposto de Renda">
+<meta property="twitter:description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
+<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="COIR - Controle de Operações e Imposto de Renda">
+<meta name="twitter:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
 <script type="application/ld+json">
 {
 	"@context":"https://schema.org",
-	"@type":"WebSite",
-	"description":"Programa para extração de Notas de Corretagem no Padrão SINACOR",
-	"headline":"COIR",
-	"name":"COIR",
-	"url":"https://marcelopcf.github.io/COIR/"
+	"@type":"SoftwareApplication",
+	"name":"COIR - Controle de Operações e Imposto de Renda",
+	"description":"Programa para extração de Notas de Corretagem no Padrão SINACOR para planilhas do Excel, com apuração de DARF e apoio à declaração do IRPF.",
+	"applicationCategory":"FinanceApplication",
+	"operatingSystem":"Windows",
+	"softwareVersion":"2.1.0",
+	"inLanguage":"pt-BR",
+	"url":"https://marcelopcf.github.io/COIR/",
+	"downloadUrl":"https://github.com/MarceloPCF/COIR/releases/latest",
+	"license":"https://opensource.org/licenses/MIT",
+	"offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"}
 }
 </script>
 <style>
@@ -42,20 +51,22 @@
     <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
 <!-- Setup Google Analytics -->
 <!-- You can set your favicon here -->
-<!-- link rel="shortcut icon" type="image/x-icon" href="/COIR/favicon.ico" -->
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <!-- end custom head snippets -->
 
   </head>
   <body>
     <div class="container-lg px-3 my-5 markdown-body">      
-      <h2 class="right-align"><a href="https://github.com/MarceloPCF/COIR">Download</a></h2>
+      <h2 class="right-align"><a href="https://github.com/MarceloPCF/COIR/releases/latest">Download</a> · <a href="https://github.com/MarceloPCF/COIR">GitHub</a></h2>
 	  
 <h1 id="controle-de-operações-e-imposto-de-renda---coir">Controle de Operações e Imposto de Renda - COIR</h1>
 <p>O COIR é um sistema de extração de dados de notas de corretagens no padrão SINACOR (Sistema Integrado de Administração de Corretoras) para planilhas do Microsoft Excel. Tem como objetivo o controle de operações nos mercados Á Vista (Normal e DayTrade), Futuros, Commodities e Derivativos (Opções), na bolsa de valores da B3 (Brasil, Bolsa e Balcão).</p>
 
+<p><img src="./docs/imagens/coir-demo.gif" alt="Apresentação das principais telas do COIR" loading="lazy"></p>
+
 <hr>
 <h2 id="história">História<a class="anchorjs-link " href="https://marcelopcf.github.io/COIR/#hist%C3%B3ria" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
-<p>Esse controle de operações começou em 2017, inicalmente apenas em planilhas excel com operações do mercado À Vista. Em 2021 nasceu a necessidade de automatização da extração de dados das notas de corretegens, até então todo esse trabalho era realizado de forma manual. Para essa automatização é utilizada a linguagem de programação Python. Em 2022 foram acrescentado os controles de operações dos mercados de Futuros, Commodities e Derivativos (Opções).</p>
+<p>Esse controle de operações começou em 2017, inicialmente apenas em planilhas excel com operações do mercado À Vista. Em 2021 nasceu a necessidade de automatização da extração de dados das notas de corretagens, até então todo esse trabalho era realizado de forma manual. Para essa automatização é utilizada a linguagem de programação Python. Em 2022 foram acrescentados os controles de operações dos mercados de Futuros, Commodities e Derivativos (Opções).</p>
 
 <p>Desde o início, o objetivo desse controle foi a simplicidade e correção dos dados extraídos e contabilizados. Algumas das principais características do COIR são:</p>
 <ul>
@@ -83,8 +94,8 @@
   <li>Copie as notas de corretagens baixadas para a pasta “..\Entrada”.</li>
   <li>Execute o programa “COIR.py”, que se encontra na pasta principal.
     <ul>
-      <li>Para isso é necessário que o Python 3 estaja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.</li>
-      <li>Ele pode ser baixando do endereço https://www.python.org/downloads/</li>
+      <li>Para isso é necessário que o Python 3 esteja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.</li>
+      <li>Ele pode ser baixado do endereço https://www.python.org/downloads/</li>
       <li>Após o download e instalação do python execute o script “COIR.py”</li>
       <li>Na primeira execução do script devem ser instaladas algumas bibliotecas <strong>não</strong> nativas do Python e que são necessárias para a correta execução do COIR.py. O arquivo  requirements.txt tem uma lista com essas bibliotecas, bastando para isso utilizar a seguinte linha de comando:</li>
     </ul>
@@ -92,7 +103,7 @@
     <p><code class="language-plaintext highlighter-rouge">$ python -m pip install -r requirements.txt</code></p>
   </li>
   <li>Após concluídas as instalações o programa fará a exportação das Nota de Corretagens presentes na pasta “..\Entrada” automaticamente.</li>
-  <li>As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saída”.</li>
+  <li>As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saida”.</li>
   <li>O resultado da extração das notas de corretagens será inserido em 2 arquivos:
     <ul>
       <li>..\Resultado\CPF\Completo.xlsx – que contém o resultado bruto da extração de todas as notas.</li>
@@ -109,7 +120,7 @@
 <ol>
   <li>Indice - Acesso, habilitação e descrição de cada uma das planilhas do COIR.</li>
   <li>Normais_Op - Operações Normais importadas automaticamente das notas de corretagens no padrão SINACOR.</li>
-  <li>Normais_Cont - Resultado das operações Nomais, separado por mês e por ano no padrão do IRPF.</li>
+  <li>Normais_Cont - Resultado das operações Normais, separado por mês e por ano no padrão do IRPF.</li>
   <li>Normais_Dados - Dados importados das notas de corretagens que serão utilizados na aba “Normais_Op”.</li>
   <li>DayTrade_Op - Operações DayTrade importadas automaticamente das notas de corretagens no padrão SINACOR.</li>
   <li>DayTrade_Cont - Resultado das operações DayTrade separado por mês e por ano no padrão do IRPF</li>
@@ -133,37 +144,37 @@
 <hr>
 <h2>Capturas de algumas telas do sistema</h2>
 <h3>Tela principal</h3>
-<img src="./docs/imagens/tela-programa.JPG" alt="Tela principal">
+<img src="./docs/imagens/tela-programa.JPG" alt="Tela principal do COIR" loading="lazy">
 
 <h3>Índice</h3>
-<p><img src="./docs/imagens/indice.JPG" alt="indice"></p>
+<p><img src="./docs/imagens/indice.JPG" alt="Índice das planilhas do COIR" loading="lazy"></p>
 
 <h3>Controle das operações realizadas</h3>
-<img src="./docs/imagens/operacoes.JPG" alt="operacoes">
+<img src="./docs/imagens/operacoes.JPG" alt="Planilha de operações importadas das notas de corretagem" loading="lazy">
 
-<h3>Contabilidade das operações realizadas<h3>
-<p><img src="./docs/imagens/contabilidade.JPG" alt="contabilidade"></p>
+<h3>Contabilidade das operações realizadas</h3>
+<p><img src="./docs/imagens/contabilidade.JPG" alt="Contabilidade das operações por mês e por ano" loading="lazy"></p>
 
-<h3>Alocação por classe de ativo<h3>
-<img src="./docs/imagens/alocacao.JPG" alt="alocacao">
+<h3>Alocação por classe de ativo</h3>
+<img src="./docs/imagens/alocacao.JPG" alt="Alocação da carteira por classe de ativo" loading="lazy">
 
 <h3>Controle de operações isentas de IR</h3>
-<img src="./docs/imagens/isentos.JPG" alt="isentos">
+<img src="./docs/imagens/isentos.JPG" alt="Controle de operações isentas de IR" loading="lazy">
 
 <h3>Controle de DARF mensal</h3>
-<img src="./docs/imagens/darf.JPG" alt="darf.JPG">
+<img src="./docs/imagens/darf.JPG" alt="Controle da DARF mensal" loading="lazy">
 
 <h3>Eventos da B3</h3>
-<img src="./docs/imagens/eventos.JPG" alt="eventos">
+<img src="./docs/imagens/eventos.JPG" alt="Eventos da B3: bonificação, desdobramento e subscrição" loading="lazy">
 
 <h3>Custódia inicial</h3>
-<img src="./docs/imagens/custodia-inicial.JPG" alt="custodia inicial">
+<img src="./docs/imagens/custodia-inicial.JPG" alt="Custódia inicial" loading="lazy">
 
 <h3>Balanceamento da carteira</h3>
-<img src="./docs/imagens/balanceamento.JPG" alt="balanceamento">
+<img src="./docs/imagens/balanceamento.JPG" alt="Balanceamento da carteira" loading="lazy">
 
-<h3>Manejo de risco antimartingale com porcentagem fixa por tipo de operação<h3>
-<img src="./docs/imagens/manejo-risco.JPG" alt="manejo risco"> 
+<h3>Manejo de risco antimartingale com porcentagem fixa por tipo de operação</h3>
+<img src="./docs/imagens/manejo-risco.JPG" alt="Manejo de risco antimartingale por tipo de operação" loading="lazy"> 
 
 </div>
 <p>Contato: marcelo.pcf@gmail.com</p>
