@@ -3,11 +3,13 @@
 # planilhas de resultado) sejam commitados por engano.
 # Ative uma vez, dentro da pasta do repositorio:
 #     git config core.hooksPath .githooks
-for py in python3 python py; do
-  if command -v "$py" >/dev/null 2>&1; then
+# Procura um Python que REALMENTE funcione (no Windows, "python3" costuma ser so um atalho
+# da Microsoft Store que nao executa nada).
+for py in python python3 py; do
+  if command -v "$py" >/dev/null 2>&1 && "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" >/dev/null 2>&1; then
     exec "$py" tools/verificar_dados_pessoais.py --staged
   fi
 done
-echo "ERRO: Python nao encontrado; a verificacao de dados pessoais nao foi executada." >&2
-echo "Commit cancelado por seguranca." >&2
+echo "ERRO: nenhum Python 3.8+ funcional encontrado; a verificacao de dados pessoais nao foi executada." >&2
+echo "Commit cancelado por seguranca. Instale o Python (python.org) ou use o caminho completo do python.exe." >&2
 exit 1
