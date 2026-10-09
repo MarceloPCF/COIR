@@ -8,6 +8,20 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [2.1.1] - 2026-10-09
+
+Correção de instalação: uma instalação nova da 2.1.0 falhava por incompatibilidade de bibliotecas. Nenhuma alteração no código do programa.
+
+### Corrigido
+- `requirements.txt` fixa `numpy==1.23.5` e `setuptools==69.5.1`. Sem isso o pip instalava o numpy 2.x, incompatível com o pandas 1.3.3, e o setuptools 81 ou superior, que não traz o `pkg_resources` usado pelo tabula-py 2.3.0.
+
+### Alterado
+- O pacote para Windows passa a levar o **Python 3.9.7 e o Java 17 (Temurin) embutidos**. Não é preciso instalar Python, bibliotecas nem Java: basta extrair o `.zip` e dar dois cliques em `COIR.bat`.
+- Estrutura do pacote simplificada: na pasta principal ficam `COIR.bat`, `Entrada`, `Saida`, `Resultado`, `dados`, `modelos` e `sistema` (programa, Python e Java).
+- A instalação manual (Python próprio, `pip install -r requirements.txt`) continua possível para quem usa o código-fonte.
+- Novo `tools/montar_pacote.py`, que monta o pacote para Windows.
+- Planilha-modelo `modelos/COIR.xlsb` revisada: uma linha que estava oculta foi corrigida.
+
 ## [2.1.0] - 2026-10-08
 
 Primeira versão do repositório reorganizado. O histórico anterior foi reiniciado (veja "Removido").
@@ -51,4 +65,5 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[2.1.1]: https://github.com/MarceloPCF/COIR/releases/tag/v2.1.1
 [2.1.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.1.0

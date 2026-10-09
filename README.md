@@ -23,22 +23,24 @@ Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, 
 
 ***
 ## Plataforma
-Para ter acesso a todas as funcionalidades do sistema será necessário o Microsoft Excel e o software Python.
-* Descompacte e copie todo o conteúdo baixado para uma pasta de seu interesse.
+Para ter acesso a todas as funcionalidades do sistema será necessário o Microsoft Excel instalado, em um Windows de 64 bits. O Python e o Java já vêm dentro do pacote: **não é preciso instalar mais nada**.
+* Baixe o `.zip` da última [Release](https://github.com/MarceloPCF/COIR/releases/latest) e **extraia todo o conteúdo** para uma pasta de seu interesse (não execute de dentro do zip).
 * Baixe suas notas de corretagem no padrão SINACOR direto do portal de sua corretora.
    * O sistema foi testado para as corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato (marcelo.pcf@gmail.com ou uma issue aqui no GitHub) para que ela seja adicionada.
-* Copie as notas de corretagens baixadas para a pasta “..\Entrada”.
-* Execute o programa “COIR.py”, que se encontra na pasta principal.
-   * Para isso é necessário que o Python 3 esteja instalado em sua máquina, Python 3.9.2 ou superior, preferencialmente.
-   * Ele pode ser baixado do endereço https://www.python.org/downloads/
-   * Após o download e instalação do python execute o script “COIR.py”
-   * Na primeira execução do script devem ser instaladas algumas bibliotecas **não** nativas do Python e que são necessárias para a correta execução do COIR.py. O arquivo  requirements.txt tem uma lista com essas bibliotecas, bastando para isso utilizar a seguinte linha de comando:
-   
-   `$ python -m pip install -r requirements.txt`
+* Copie as notas de corretagens baixadas para a pasta `Entrada`.
+* Dê dois cliques em **`COIR.bat`**. O programa extrai as notas da pasta `Entrada` automaticamente.
+* As notas de corretagem processadas serão movidas da pasta `Entrada` para a pasta `Saida`.
+* O resultado da extração das notas de corretagens será inserido no arquivo `Resultado\CPF.xlsb`, onde CPF é o número do CPF do investidor. Ele contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).
+* Se o Windows alertar sobre o `python.exe` (SmartScreen ou antivírus), é um aviso comum para programas baixados da internet; ele faz parte do pacote.
 
-* Após concluídas as instalações o programa fará a exportação das Nota de Corretagens presentes na pasta “..\Entrada” automaticamente.
-* As notas de corretagem processadas serão movidas da pasta “..\Entrada” para a pasta “..\Saida”.
-* O resultado da extração das notas de corretagens será inserido no arquivo ..\Resultado\CPF.xlsb, onde CPF é o número do CPF do investidor. Ele contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).
+### Instalação manual (avançado)
+Para rodar a partir do código-fonte, instale o Python 3.9 ou 3.10 e o Java 8 ou superior (o Java é usado pela biblioteca tabula-py para ler os PDFs). Na pasta do projeto:
+
+`$ python -m pip install -r requirements.txt`
+
+`$ python COIR.py`
+
+As versões das bibliotecas em `requirements.txt` estão fixadas porque o pandas 1.3.3 e o tabula-py 2.3.0 não funcionam com numpy 2.x nem com setuptools 81 ou superior. O pacote para Windows usa numpy 1.21.5, que é a versão testada em campo; ambas funcionam.
 
 **Contribuições são muito bem-vindas!**
 
@@ -52,7 +54,7 @@ COIR/
 ├── dados/                   tabelas auxiliares (ações, opções, corretoras cadastradas)
 ├── docs/imagens/            capturas de tela usadas neste README e no site
 ├── Entrada/ Saida/ Resultado/   pastas de trabalho (ficam vazias no repositório)
-├── tools/                   ferramentas de manutenção (verificação de dados pessoais)
+├── tools/                   ferramentas de manutenção (verificação de dados pessoais, montagem do pacote)
 ├── CHANGELOG.md  VERSION    histórico de mudanças e número da versão atual
 └── requirements.txt         bibliotecas Python necessárias
 ```

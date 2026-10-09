@@ -32,7 +32,7 @@
 	"description":"Programa para extração de Notas de Corretagem no Padrão SINACOR para planilhas do Excel, com apuração de DARF e apoio à declaração do IRPF.",
 	"applicationCategory":"FinanceApplication",
 	"operatingSystem":"Windows",
-	"softwareVersion":"2.1.0",
+	"softwareVersion":"2.1.1",
 	"inLanguage":"pt-BR",
 	"url":"https://marcelopcf.github.io/COIR/",
 	"downloadUrl":"https://github.com/MarceloPCF/COIR/releases/latest",
@@ -203,11 +203,11 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
 <section id="como-usar">
   <div class="wrap">
     <h2>Como usar</h2>
-    <p class="intro">Você precisa do Microsoft Excel e do Python. Em cinco passos, as notas viram planilhas.</p>
+    <p class="intro">Você precisa só do Microsoft Excel: o Python e o Java já vêm no pacote. Em quatro passos, as notas viram planilhas.</p>
     <ol class="passos">
       <li>
         <h3>Baixe e descompacte</h3>
-        <p>Use o botão <strong>Baixar o COIR</strong> e copie todo o conteúdo para uma pasta de sua escolha.</p>
+        <p>Use o botão <strong>Baixar o COIR</strong> e extraia todo o conteúdo do zip para uma pasta de sua escolha. Não execute de dentro do zip.</p>
       </li>
       <li>
         <h3>Coloque as notas na pasta Entrada</h3>
@@ -215,13 +215,9 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
         <p class="nota">O COIR foi testado com as corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato pelo e-mail <a href="mailto:marcelo.pcf@gmail.com">marcelo.pcf@gmail.com</a> ou abra uma <a href="https://github.com/MarceloPCF/COIR/issues">issue</a>, para que ela seja adicionada ao sistema.</p>
       </li>
       <li>
-        <h3>Instale o Python e as bibliotecas</h3>
-        <p>É necessário o Python 3.9.2 ou superior, disponível em <a href="https://www.python.org/downloads/">python.org/downloads</a>. Na primeira vez, instale as bibliotecas que o COIR usa, com este comando na pasta do programa:</p>
-        <span class="cmd">python -m pip install -r requirements.txt</span>
-      </li>
-      <li>
-        <h3>Execute o COIR.py</h3>
-        <p>O arquivo <code>COIR.py</code> fica na pasta principal. Ao rodar, o programa extrai automaticamente as notas que estiverem na pasta <code>Entrada</code>.</p>
+        <h3>Dê dois cliques em COIR.bat</h3>
+        <p>O arquivo fica na pasta principal. Ao rodar, o COIR extrai automaticamente as notas que estiverem na pasta <code>Entrada</code>.</p>
+        <p class="nota">Se o Windows alertar sobre o <code>python.exe</code>, é um aviso comum para programas baixados da internet; ele faz parte do pacote.</p>
       </li>
       <li>
         <h3>Abra o resultado</h3>
@@ -320,7 +316,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
       <h3>O COIR é gratuito?</h3>
       <p>Sim. É código aberto, com licença MIT.</p>
       <h3>O que preciso ter instalado?</h3>
-      <p>O Microsoft Excel e o Python 3.9.2 ou superior. O passo a passo está em <a href="#como-usar">Como usar</a>.</p>
+      <p>Apenas o Microsoft Excel, em um Windows de 64 bits. O Python e o Java já vêm dentro do pacote. O passo a passo está em <a href="#como-usar">Como usar</a>.</p>
       <h3>Quais corretoras funcionam?</h3>
       <p>O COIR lê notas no padrão SINACOR e foi testado com XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato para que ela seja adicionada ao sistema.</p>
       <h3>Onde fica o resultado?</h3>

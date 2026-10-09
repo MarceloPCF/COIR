@@ -49,3 +49,6 @@ desktop.ini
 *.zip
 dist/
 build/
+
+# Pasta de trabalho da montagem do pacote (zip, python e java embutidos)
+_pacote/
