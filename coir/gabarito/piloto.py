@@ -72,14 +72,21 @@ def _numero_br(texto: str) -> Decimal:
     return Decimal(texto.replace(".", "").replace(",", "."))
 
 
-def _variantes_nota(nota: str) -> list[str]:
-    com_pontos = f"{int(nota):,}".replace(",", ".")
-    return [nota, com_pontos] if com_pontos != nota else [nota]
+RE_INTEIRO_IMPRESSO = re.compile(r"(?<![\d.,])\d[\d.]*(?<!\.)(?![\d.,]*\d|,)")
 
 
 def paginas_da_nota(textos: list[str], nota: str) -> list[int]:
-    padroes = [re.compile(rf"(?<![\d.]){re.escape(v)}(?![\d])") for v in _variantes_nota(nota)]
-    return [i for i, t in enumerate(textos) if any(p.search(t) for p in padroes)]
+    """Páginas em que o número da nota aparece como inteiro isolado, com ou sem pontos de
+    milhar e zeros à esquerda (ex.: 57990, 57.990, 057.990). Valores com vírgula não contam."""
+    alvo = int(nota)
+    paginas: list[int] = []
+    for i, texto in enumerate(textos):
+        for token in RE_INTEIRO_IMPRESSO.findall(texto):
+            digitos = token.replace(".", "")
+            if digitos.isdigit() and int(digitos) == alvo:
+                paginas.append(i)
+                break
+    return paginas
 
 
 RE_SO_VALORES = re.compile(r"^[\d.,|\sDC+-]*\d,\d{2}[\d.,|\sDC+-]*$")

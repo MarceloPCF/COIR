@@ -20,6 +20,9 @@ def test_interpretar_nome() -> None:
 def test_paginas_da_nota_aceita_pontos_e_nao_casa_dentro_de_outro_numero() -> None:
     paginas = ["Nr. nota\n599.721\nFolha 1", "Nr. nota 1599721", "nota 599721 folha"]
     assert piloto.paginas_da_nota(paginas, "599721") == [0, 2]
+    # XP BM&F 2024+: zero à esquerda com ponto; valor monetário igual não conta
+    zeros = ["Nr. nota\n057.990", "valor 57.990,00", "57990", "157990"]
+    assert piloto.paginas_da_nota(zeros, "57990") == [0, 2]
 
 
 def test_liquido_pdf() -> None:
