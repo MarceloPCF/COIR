@@ -221,8 +221,12 @@ def conferir_arquivo(gabarito: Gabarito, caminho: Path) -> ResultadoArquivo:
         usadas.update(pags)
         texto = "\n".join(textos[i] for i in pags)
         res.notas.append(conferir_nota(caminho.name, ops, texto, arq.bmf))
-    extrair = linhas_bmf if arq.bmf else linhas_bovespa
-    res.paginas_sem_nota = [i + 1 for i, t in enumerate(textos) if i not in usadas and extrair(t)]
+    # procura os dois tipos de negócio: há PDFs mistos (ações + BM&F no mesmo arquivo)
+    res.paginas_sem_nota = [
+        i + 1
+        for i, t in enumerate(textos)
+        if i not in usadas and (linhas_bovespa(t) or linhas_bmf(t))
+    ]
     return res
 
 
