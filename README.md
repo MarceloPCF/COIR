@@ -1,6 +1,6 @@
 # COIR v3 — Controle de Operações e Imposto de Renda (B3)
 
-Sistema open source (MIT), **local e offline**, que importa notas de corretagem SINACOR e planilhas da Área do
+Sistema open source (AGPL v3), **local e offline**, que importa notas de corretagem SINACOR e planilhas da Área do
 Investidor B3, calcula preço médio, apura o IR mensal de renda variável, gera DARF e prepara as fichas do IRPF.
 
 > **Status:** em desenvolvimento (fase F0 — fundação). Ainda não há versão utilizável da v3.
@@ -27,4 +27,10 @@ Notas de desenvolvimento com o Claude Code: [`docs/desenvolvimento/`](docs/desen
 
 ## Licença
 
-MIT — ver [LICENSE](LICENSE).
+A v3 é distribuída sob a **GNU Affero General Public License v3.0 ou posterior** (AGPL-3.0-or-later) —
+ver [LICENSE](LICENSE). Em resumo: qualquer pessoa pode usar, estudar, modificar e redistribuir o COIR de
+graça; quem distribuir uma versão modificada, ou oferecê-la como serviço pela internet, precisa publicar o
+código-fonte dessas modificações sob a mesma licença.
+
+O código da v2 em [`legacy/`](legacy/) continua sob a licença MIT ([legacy/LICENSE](legacy/LICENSE)).
+Decisão registrada em [docs/adr/0002-licenca-agpl.md](docs/adr/0002-licenca-agpl.md).

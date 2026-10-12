@@ -13,6 +13,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 Nova versão escrita do zero, sem dependência do Excel. O código da 2.1.1 fica em `legacy/` como referência.
 
 ### Adicionado
+- Licença da v3: AGPL-3.0-or-later (a v2 em `legacy/` continua MIT).
 - Fase F0 (fundação): projeto uv com Python 3.13, estrutura `coir/`, configuração da pasta de dados (`COIR_DADOS`), CLI mínima, verificador de dados pessoais (pre-commit, pre-push e CI) e testes automatizados em Windows e Linux.
 
 ## [2.1.1] - 2026-10-09
