@@ -95,6 +95,30 @@ def gabarito_piloto(
     print(f"Piloto gravado em {saida} ({len(nomes)} PDF(s)).")
 
 
+@gabarito_app.command("conferir")
+def gabarito_conferir(
+    origem: Path | None = OpcaoCaminho, destino: Path | None = OpcaoCaminho
+) -> None:
+    """Confere automaticamente o gabarito contra todos os PDFs de notas (conferencia.md/.csv)."""
+    import csv
+
+    from coir.gabarito import conferencia
+    from coir.gabarito.exportar import exigir_fora_do_repositorio
+
+    pasta = _destino(destino)
+    exigir_fora_do_repositorio(pasta)
+    gabarito, _ = _ler_planilha(_origem(origem), pasta)
+    resultados = conferencia.conferir_pasta(gabarito, dados_dir(exigir=True) / "_notas-corretagens")
+    md, linhas = conferencia.relatorio(resultados)
+    saida = pasta / "conferencia"
+    saida.mkdir(parents=True, exist_ok=True)
+    (saida / "conferencia.md").write_text(md, encoding="utf-8")
+    with (saida / "conferencia.csv").open("w", encoding="utf-8", newline="") as arquivo:
+        csv.writer(arquivo, lineterminator="\n").writerows(linhas)
+    print("\n".join(md.splitlines()[2:6]))
+    print(f"Relatório em {saida}")
+
+
 @gabarito_app.command("gerar")
 def gabarito_gerar(origem: Path | None = OpcaoCaminho, destino: Path | None = OpcaoCaminho) -> None:
     """Converte a planilha-gabarito em CSV pseudonimizados + manifesto + resumo.md."""
