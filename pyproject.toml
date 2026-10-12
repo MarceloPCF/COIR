@@ -1,0 +1,68 @@
+[project]
+name = "coir"
+version = "3.0.0.dev0"
+description = "Controle de Operações e Imposto de Renda (B3) — local e offline"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "MarceloPCF" }]
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.9",
+    "typer>=0.15",
+]
+
+[project.scripts]
+coir = "coir.cli:main"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.120",
+    "pre-commit>=4.0",
+    "pyright>=1.1.390",
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["uv_build>=0.9,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
+
+# ---------------------------------------------------------------- ruff
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "B", "UP", "SIM", "RUF",
+    "BLE",   # proíbe except Exception genérico
+    "S110",  # proíbe try/except/pass
+    "E722",  # proíbe except: nu
+    "T20",   # proíbe print (regra 10 do CLAUDE.md)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"coir/cli.py" = ["T20"]
+"tools/*.py" = ["T20"]
+
+# ---------------------------------------------------------------- pyright
+[tool.pyright]
+pythonVersion = "3.13"
+include = ["coir", "tests", "tools"]
+exclude = ["legacy", ".venv", "**/__pycache__"]
+typeCheckingMode = "standard"
+strict = ["coir/engine", "coir/domain"]
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers"]
+markers = [
+    "golden: compara com o gabarito real em COIR_DADOS (pulado sem a pasta)",
+    "slow: testes demorados",
+]
