@@ -1,0 +1,50 @@
+C/V Mercadoria Vencimento Quantidade Preço/Ajuste Tipo Negócio Vlr de Operação/Ajuste D/C Taxa Operacional
+C WING19 @13/02/2019 1 97.810,0000 DAYTRADE 25,00 C 0,20
+C WING19 @13/02/2019 1 97.585,0000 DAYTRADE 70,00 C 0,20
+C WING19 13/02/2019 1 97.585,0000 DAYTRADE 70,00 C 0,20
+C WING19 @13/02/2019 1 97.310,0000 DAYTRADE 125,00 C 0,20
+V WING19 @13/02/2019 1 97.910,0000 DAYTRADE 5,00 D 0,20
+V WING19 @13/02/2019 1 97.545,0000 DAYTRADE 78,00 D 0,20
+V WING19 @13/02/2019 1 97.530,0000 DAYTRADE 81,00 D 0,20
+V WING19 @13/02/2019 1 97.525,0000 DAYTRADE 82,00 D 0,20
+NOTA DENEGOCIAÇÃO Nr. nota
+1.000.005
+Folha
+1
+Data pregão
+01/02/2019
+XPINVESTIMENTOS CCTVMS/A Fone: 4003-3710 Fax: (55 55) 800880-3710
+AVATAULFODEPAIVA, 153 - SALA201 LEBLON 22440-032 RIODEJANEIRO- RJ
+Internet:www.xpi.com.br SAC: 0800-772-0202 e-mail:atendimento@xpi.com.br
+Ouvidoria: 0800.722.0202 e-mail ouvidoria: ouvidoria@xpi.com.br
+Corretora
+Cliente
+C.N.P.J.
+02.332.886/0001-04
+Numero da Corretora
+3-5
+C.N.P.J/C.P.F
+Codigo do Cliente
+Venda disponível Compra disponível Venda Opções Compra Opções Valor dos negócios
+0,00 0,00 0,00 0,00 44,00 | C
+IRRF IRRFDay Trade(proj.) Taxa operacional Taxaregistro BM&F Taxas BM&F (emol+f.gar)
+0,00| 0,41 1,60 0,56 0,48 | D
++Outros Custos Impostos Ajuste de posição Ajuste day trade Total decustos operacionais
+0,00 0,08 0,00 | 44,00 | C 2,64 | D
+Outros IRRF operacional Total ContaInvestimento Total Conta Normal Total liquido (#) Total líquido da nota
+0,00 0,00 0,00| 40,95 | C 41,36 | C 40,87 | C
++Custos BM&F, conforme Ofício Circular BM&F 079/2007-DG
+-Exercícios de opções=EXO
+-OZ1=249,72 grs. / OZ2=9,990 grs. / OZ3=0,225 grs.
+@ Corretora ou Pessoa Vinculada atuou na Contra Parte
+* Negocios gerados automaticamente pelo sistema.
+** Valores pagos conforme previsão do Contrato de Transferência de negócios realizados na BMF (Repasse /
+Brokerage), celebrando entre as Corretoras Intermediadoras e a Corretora
+*** Taxa referente à liquidação das operações intermediadas por Terceiros e as operações feitas integralmente
+pela Corretora.
+Capitaiseregiõesmetropolitanas: 4003-3710 Demaislocalidades: 0800-880-3710 SAC: 0800-772-0202 Ouvidoria: 0800-722-3710
+FULANO DE TAL
+Rua Exemplo, 0 - Apto 0
+00000-000 BAIRRO CIDADE - UF
+000.000.000-00
+000000

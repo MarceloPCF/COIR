@@ -1,0 +1,49 @@
+NOTA DE CORRETAGEM
+Nr.Nota Folha Data pregão
+1000001 1 18/04/2008
+AGORA CORRETORA DE TITULOS E VALORES MOBILIARIOS S/A
+AVENIDA PAULISTA, 1450 - 3º ANDARBELA VISTA 01310-917 SÃO PAULO - SP
+Tel. (55 11) 4004-8282 
+Internet : www.agorainvest.com.br e-mail :
+C.N.P.J.: 74.014.747/0001-35 Carta Patente: A-39
+Ouvidoria : Tel. (55 800) 727-9933 e-mail ouvidoria:
+Cliente C.P.F./C.N.P.J./C.V.M./C.O.B.
+Código cliente Assessor
+000000 0000
+Agente de Compensação Cliente Valor Custodiante C.I.
+ 0- 0 - 0,00 C - N
+Banco Agência Conta corrente Acionista Administrador Complemento nome P. Vinc
+N
+Negócios realizados
+Q Negociação C/V Tipo mercado Prazo Especificação do título Obs. (*) Quantidade Preço / Ajuste Valor Operação / Ajuste D/C
+BOVESPA C VISTA GERDAU PN N1 H 300 62,20 D 18.660,00
+Resumo dos Negócios Resumo Financeiro D/C
+Debêntures 0,00 Clearing
+Vendas à vista 0,00 Valor líquido das operações 18.660,00 D
+Compras à vista 18.660,00 Taxa de liquidação 1,49 D
+Opções - compras 0,00 Taxa de Registro 0,00 D
+Opções - vendas 0,00 Total CBLC 18.661,49 D
+Operações à termo 0,00 Bolsa
+Valor das oper. c/ títulos públ. (v. nom.) 0,00 Taxa de termo/opções 0,00 D
+Valor das operações 18.660,00 Taxa A.N.A. 0,00 D
+Emolumentos 5,03 D
+Total Bovespa / Soma 5,03 D
+Especificações diversas Corretagem / Despesas
+Corretagem 20,00 D
+A coluna Q indica liquidação no Agente do Qualificado.
+ISS ( RIO DE JANEIRO ) 0,40
+Outras 0,00 D
+Total corretagem / Despesas 20,40
+(*) - Observações: A - Posição Futuro T - Liquidação pelo Bruto Líquido para 24/04/2008 18.686,92 D
+ 2 - Corretora ou pessoa vinculada atuou na contra parte. C - Clubes e Fundos de Ações I - POP Observação: (1) As operações a termo não são computadas no líquido da fatura
+ # - Negócio direto P - Carteira Própria
+ 8 - Liquidação Institucional. H - Home Broker
+ D - Day-Trade X - Box
+ F - Cobertura Y - Desmanche de Box ________________________________________________
+ B - Debêntures L - Precatório AGORA CORRETORA DE TITULOS E VALORES MOBILIARIOS S/A
+Obs: Sobre a taxa de corretagem são aplicados os seguintes impostos: ISS, PIS e COFINS, no total de 9,65%, previstos na Lei nº 12.741, de 8/12/2012. Esse valor está consolidado acima com a descrição ISS (SÃO PAULO).
+orrlnota.qrp
+0000000-0 FULANO DE TAL 000.000.000-00
+RUA EXEMPLO, 0 - APTO 0 BAIRRO
+00000-000 CIDADE - UF (00) 00000-0000 00000 -0
+000 0000 000000

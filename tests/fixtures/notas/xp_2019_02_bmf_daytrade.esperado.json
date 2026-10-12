@@ -1,0 +1,180 @@
+{
+  "id": "xp_2019_02_bmf_daytrade",
+  "corretora": "XP",
+  "segmento": "bmf",
+  "layout": "XP BM&F 2019 (mini-índice, day trade); 1 nota por página; vencimento 13/02/2019 = WING19",
+  "data_pregao": "2019-02-01",
+  "numero_nota": "1000005",
+  "folha": "1",
+  "conta": null,
+  "numero_nota_no_texto": "1.000.005",
+  "operacoes": [
+    {
+      "cv": "C",
+      "mercado": "WING19",
+      "vencimento": "2019-02-13",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "97810.0000",
+      "tipo_negocio": "DAYTRADE",
+      "valor": "25.00",
+      "dc": "C",
+      "taxa_operacional": "0.20"
+    },
+    {
+      "cv": "C",
+      "mercado": "WING19",
+      "vencimento": "2019-02-13",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "97585.0000",
+      "tipo_negocio": "DAYTRADE",
+      "valor": "70.00",
+      "dc": "C",
+      "taxa_operacional": "0.20"
+    },
+    {
+      "cv": "C",
+      "mercado": "WING19",
+      "vencimento": "2019-02-13",
+      "observacao": "",
+      "quantidade": "1",
+      "preco": "97585.0000",
+      "tipo_negocio": "DAYTRADE",
+      "valor": "70.00",
+      "dc": "C",
+      "taxa_operacional": "0.20"
+    },
+    {
+      "cv": "C",
+      "mercado": "WING19",
+      "vencimento": "2019-02-13",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "97310.0000",
+      "tipo_negocio": "DAYTRADE",
+      "valor": "125.00",
+      "dc": "C",
+      "taxa_operacional": "0.20"
+    },
+    {
+      "cv": "V",
+      "mercado": "WING19",
+      "vencimento": "2019-02-13",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "97910.0000",
+      "tipo_negocio": "DAYTRADE",
+      "valor": "5.00",
+      "dc": "D",
+      "taxa_operacional": "0.20"
+    },
+    {
+      "cv": "V",
+      "mercado": "WING19",
+      "vencimento": "2019-02-13",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "97545.0000",
+      "tipo_negocio": "DAYTRADE",
+      "valor": "78.00",
+      "dc": "D",
+      "taxa_operacional": "0.20"
+    },
+    {
+      "cv": "V",
+      "mercado": "WING19",
+      "vencimento": "2019-02-13",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "97530.0000",
+      "tipo_negocio": "DAYTRADE",
+      "valor": "81.00",
+      "dc": "D",
+      "taxa_operacional": "0.20"
+    },
+    {
+      "cv": "V",
+      "mercado": "WING19",
+      "vencimento": "2019-02-13",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "97525.0000",
+      "tipo_negocio": "DAYTRADE",
+      "valor": "82.00",
+      "dc": "D",
+      "taxa_operacional": "0.20"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_dos_negocios": {
+      "valor": "44.00",
+      "dc": "C"
+    },
+    "venda_disponivel": "0.00",
+    "compra_disponivel": "0.00",
+    "venda_opcoes": "0.00",
+    "compra_opcoes": "0.00",
+    "custos": {
+      "Taxa operacional": {
+        "valor": "1.60",
+        "dc": "D"
+      },
+      "Taxa registro BM&F": {
+        "valor": "0.56",
+        "dc": "D"
+      },
+      "Taxas BM&F (emol+f.gar)": {
+        "valor": "0.48",
+        "dc": "D"
+      },
+      "+Outros Custos": {
+        "valor": "0.00"
+      }
+    },
+    "subtotais": {
+      "Total de custos operacionais": {
+        "valor": "2.64",
+        "dc": "D"
+      }
+    },
+    "impostos": {
+      "valor": "0.08"
+    },
+    "ajuste_de_posicao": {
+      "valor": "0.00"
+    },
+    "ajuste_day_trade": {
+      "valor": "44.00",
+      "dc": "C"
+    },
+    "irrf": {
+      "IRRF": "0.00",
+      "IRRF Day Trade (proj.)": "0.41",
+      "Outros": "0.00",
+      "IRRF operacional": "0.00"
+    },
+    "totais": {
+      "Total ContaInvestimento": {
+        "valor": "0.00"
+      },
+      "Total Conta Normal": {
+        "valor": "40.95",
+        "dc": "C"
+      },
+      "Total liquido (#)": {
+        "valor": "41.36",
+        "dc": "C"
+      },
+      "Total líquido da nota": {
+        "valor": "40.87",
+        "dc": "C"
+      }
+    },
+    "liquido": {
+      "data": "2019-02-01",
+      "valor": "40.87",
+      "dc": "C"
+    }
+  }
+}

@@ -1,0 +1,93 @@
+NOTA DE CORRETAGEM
+1000003
+ Nr. nota
+1
+ Folha
+16/01/2023
+ Data pregão
+Carta Patente:
+Avenida Brigadeiro Faria Lima, 3477 - 14º Andar ITAIM BIBI
+Tel: (011) 3046 - 2100 / 3443 - 2100 - Fax (011) 3046 - 2001
+C.N.P.J: 43.815.158/0001-22
+04538-133 SÃO PAULO - SP
+BTG Pactual CTVM S.A.
+Internet: https://digital.necton.com.br/portal/
+SAC: 0800-722-2827 Ouvidoria: Tel. 0800-722-0048
+e-mail: atendimento@btgpactualdigital.com
+e-mail ouvidoria: ouvidoria@btgpactualdigital.com
+ Cliente C.P.F./C.N.P.J/C.V.M./C.O.B.
+ Código cliente Assessor
+ Participante destino do repasse
+0000
+ Cliente
+-
+ Valor
+0
+ Custodiante C.I
+N
+ Banco Acionista Administrador Complemento nome P.Vinc
+N
+ Agência Conta Corrente
+Negócios realizados
+Q Negociação C/V Tipo Mercado Prazo Especificação do título Obs. (*) Quantidade Preço / Ajuste Valor Operação / Ajuste D/C
+1-BOVESPA V OPCAO DE VENDA 02/23 BBASN380 ON 300 0,72 216,00 C
+1-BOVESPA V OPCAO DE VENDA 02/23 BBDCN128 PN 400 0,29 116,00 C
+1-BOVESPA V OPCAO DE VENDA 02/23 BBSEN319 ON 300 0,38 114,00 C
+1-BOVESPA C OPCAO DE COMPRA 05/24 IRBRE35 ON 600 0,12 72,00 D
+1-BOVESPA C OPCAO DE COMPRA 09/24 IRBRI258 ON 300 0,21 63,00 D
+1-BOVESPA V OPCAO DE VENDA 02/23 TAEEN356 UNT 200 0,40 80,00 C
+Resumo dos Negócios Resumo Financeiro
+Debêntures 0,00 Clearing
+Vendas à vista 0,00
+Compras à vista 0,00
+Opções - compras 135,00
+Opções - vendas 526,00
+Operações à termo 0,00
+Valor das oper. c/ títulos públ. (v. nom.) 0,00
+Valor das operações 661,00
+Especificações diversas
+A coluna Q indica liquidação no Agente do Qualificado.
+Valor líquido das operações 391,00 C
+Taxa de liquidação 0,18 D
+Taxa de Registro 0,45 D
+Total CBLC 390,37 C
+Bolsa
+Taxa de termo/opções 0,00
+Taxa A.N.A. 0,00
+Emolumentos 0,24 D
+Total Bovespa / Soma 0,24 D
+Corretagem / Despesas
+Clearing 0,00
+Execução 0,00
+Execução casa 0,00
+0,00
+0,01
+0,00
+I.R.R.F. s/ operações, base R$ 391,00
+Outras Bovespa
+Total corretagem / Despesas 0,00
+Líquido para 17/01/2023 390,13 C
+(*) Observações
+C - Clubes e fundos de I - POP 2 - Corretora ou pessoa vinculada atuou
+A - Posição futuro T - Liquidação pelo
+# - Negócio direto P - Carteira Própria
+8 - Liquidação Institucional H - Home Broker
+D - Day Trade X - Box
+F - Cobertura Y - Desmanche de Box
+B - Debêntures L - Precatório
+Observações:
+(1) As operações a termo não são computadas no líquido da fatura.
+(2) IR fonte à alíquota de 0,005% somente serão debitados em sua conta corrente, a
+partir do momento em que o IRRF for superior à R$ 1,00, no respectivo mês calendário.
+(3) Valor mínimo de IR fonte à alíquota de 0,005% não se aplica para FII e ETF.
+(4) IR fonte Day Trade de 1% não é descontado no líquido da nota. O débito será feito
+diretamente na conta do cliente.
+(5) ISS* contempla o ISS do município PIS / COFINS.
+ISS* (SÃO PAULO - SP)
+Atendimento: 0800 770 9936 Ouvidoria: 0800 776 1443
+https://digital.necton.com.br/portal/
+000000 FULANO DE TAL 000.000.000-00
+RUA EXEMPLO, 0 - APTO 0 00000000 CIDADE
+UF
+Tel. (00) 000000000
+85-0 000000000
