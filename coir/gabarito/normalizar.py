@@ -85,6 +85,8 @@ def corrigir_cpf(cpf: str, validos: set[str]) -> tuple[str, bool]:
     digitos = so_digitos(cpf)
     if cpf_valido(digitos):
         return digitos, False
+    if len(digitos) == 11 and len(set(digitos)) == 1:
+        return digitos, False  # planilha anonimizada (ex.: 888.888.888-88): titular fictício
     proximos = [
         v
         for v in validos

@@ -60,3 +60,8 @@ def test_corrigir_cpf_ambiguo_ou_sem_candidato_falha_sem_expor_cpf() -> None:
     assert CPF_A_ERRADO not in str(erro.value)
     with pytest.raises(GabaritoError):
         nz.corrigir_cpf(CPF_A_ERRADO, set())
+
+
+def test_cpf_ficticio_de_digitos_repetidos_vira_titular_proprio() -> None:
+    assert nz.corrigir_cpf("888.888.888-88", set()) == ("88888888888", False)
+    assert nz.corrigir_cpf("888.888.888-88", {CPF_A}) == ("88888888888", False)
