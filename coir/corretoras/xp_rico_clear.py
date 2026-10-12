@@ -71,7 +71,7 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
     df['Nr. nota'] = df['Nr. nota'].apply(coir.funcoes.sanitiza_moeda).astype('float')
     df['Tipo mercado'] = coir.funcoes.sanitiza_especificacao_titulo(df['Tipo mercado'])
     df['Prazo'] = coir.funcoes.sanitiza_especificacao_titulo(df['Prazo'])
-    df['Prazo'].fillna("", inplace=True)
+    df['Prazo'] = df['Prazo'].fillna("")
     df['Especificação do título'] = coir.funcoes.sanitiza_especificacao_titulo(
     df['Especificação do título'])
     df['Obs. (*)'] = coir.funcoes.sanitiza_observacao(df['Obs. (*)'])
@@ -110,11 +110,11 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
     if 'Unnamed: 0' in df_gastos.columns:
         df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].apply(
         coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 0'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].fillna(0)
     if 'Unnamed: 1' in df_gastos.columns:
         df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].apply(
         coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 1'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].fillna(0)
     lista = list(
     df_gastos[df_gastos['Resumo dos Negócios'].str.contains("Valor das operações",na=False)].index)
     note_taxa = []
@@ -478,7 +478,7 @@ def xp_rico_clear_old(corretora,filename,item,log,page,pagebmf=0,control=0):
     df['Nr. nota'] = df['Nr. nota'].apply(coir.funcoes.sanitiza_moeda).astype('float')
     df['Tipo mercado'] = coir.funcoes.sanitiza_especificacao_titulo(df['Tipo mercado'])
     df['Prazo'] = coir.funcoes.sanitiza_especificacao_titulo(df['Prazo'])
-    df['Prazo'].fillna("", inplace=True)
+    df['Prazo'] = df['Prazo'].fillna("")
     df['Especificação do título'] = coir.funcoes.sanitiza_especificacao_titulo(
     df['Especificação do título'])
     df['Obs. (*)'] = coir.funcoes.sanitiza_observacao(df['Obs. (*)'])
@@ -517,11 +517,11 @@ def xp_rico_clear_old(corretora,filename,item,log,page,pagebmf=0,control=0):
     if 'Unnamed: 0' in df_gastos.columns:
         df_gastos['Unnamed: 0'] = df_gastos[
         'Unnamed: 0'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 0'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].fillna(0)
     if 'Unnamed: 1' in df_gastos.columns:
         df_gastos['Unnamed: 1'] = df_gastos[
         'Unnamed: 1'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 1'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].fillna(0)
     lista = list(
     df_gastos[df_gastos['Resumo dos Negócios'].str.contains("Valor das operações",na=False)].index)
     note_taxa = []

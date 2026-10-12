@@ -57,7 +57,7 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
         df['Especificação do título'])
     df['Tipo Mercado'] = coir.funcoes.sanitiza_especificacao_titulo(df['Tipo Mercado'])
     df['Prazo'] = coir.funcoes.sanitiza_especificacao_titulo(df['Prazo'])
-    df['Prazo'].fillna("", inplace=True)
+    df['Prazo'] = df['Prazo'].fillna("")
     df['Obs. (*)'] = coir.funcoes.sanitiza_observacao(df['Obs. (*)'])
 
     tipotikect = ""
@@ -95,15 +95,15 @@ def btg(corretora,filename,item,log,page,pagebmf=0,control=0):
     if 'Unnamed: 0' in df_gastos.columns:
         df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].apply(
         coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 0'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].fillna(0)
     if 'Unnamed: 1' in df_gastos.columns:
         df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].apply(
         coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 1'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].fillna(0)
     if 'Unnamed: 2' in df_gastos.columns:
         df_gastos['Unnamed: 2'] = df_gastos['Unnamed: 2'].apply(
         coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 2'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 2'] = df_gastos['Unnamed: 2'].fillna(0)
     lista = list(
     df_gastos[df_gastos['Resumo dos Negócios'].str.contains("Valor das operações",na=False)].index)
     note_taxa = []

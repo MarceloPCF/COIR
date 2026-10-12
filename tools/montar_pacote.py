@@ -82,7 +82,7 @@ sp_destino = os.path.join(py, "Lib", "site-packages")
 os.makedirs(sp_destino, exist_ok=True)
 
 PACOTES = [
-    "numpy", "pandas", "pytz", "dateutil", "six.py",
+    "numpy", "numpy.libs", "pandas", "pandas.libs", "pytz", "dateutil", "six.py", "tzdata",
     "openpyxl", "et_xmlfile", "jdcal.py",
     "tabula", "distro.py",
     "xlwings",
@@ -121,7 +121,7 @@ for nome in PACOTES:
 if not feito("metadados"):
     # dist-info / egg-info: nome e versao das bibliotecas (util para diagnostico)
     LISTA = ("numpy", "pandas", "pytz", "python-dateutil", "openpyxl", "et-xmlfile",
-             "jdcal", "tabula-py", "pywin32", "distro", "six")
+             "jdcal", "tabula-py", "pywin32", "distro", "six", "tzdata")
     for n in os.listdir(sp_origem):
         src = os.path.join(sp_origem, n)
         if n.endswith(".dist-info") and n.split("-")[0].lower().replace("_", "-") in LISTA:

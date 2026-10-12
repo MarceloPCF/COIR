@@ -8,6 +8,18 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [Não lançado]
+
+Compatibilidade com as versões atuais do pandas ([#11](https://github.com/MarceloPCF/COIR/issues/11)). Os resultados são os mesmos do pandas 1.3.3.
+
+### Corrigido
+- Preenchimento de células vazias com `fillna(..., inplace=True)` em uma coluna (`df['col'].fillna(0, inplace=True)`) trocado por atribuição (`df['col'] = df['col'].fillna(0)`). No pandas 3 a forma antiga não altera nada e os valores vazios das taxas continuariam vazios; no pandas 2 ela gera aviso de depreciação.
+- Agrupamentos (`agrupar`, `agrupar_btg`, `agrupar_bmf`) usam `'sum'` em vez da função `sum` do Python, que o pandas 2 marca como depreciada.
+
+### Alterado
+- `requirements.txt` passa a fixar `pandas==2.3.3` e `numpy==2.0.2`, as últimas versões com suporte ao Python 3.9.
+- `tools/montar_pacote.py` copia também `numpy.libs` e `pandas.libs` (DLLs que os pacotes Windows dessas versões trazem fora da pasta da biblioteca) e o `tzdata`, nova dependência do pandas 2.
+
 ## [2.1.1] - 2026-10-09
 
 Correção de instalação: uma instalação nova da 2.1.0 falhava por incompatibilidade de bibliotecas. Nenhuma alteração no código do programa.

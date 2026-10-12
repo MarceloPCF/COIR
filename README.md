@@ -42,7 +42,7 @@ Para rodar a partir do código-fonte, instale o Python 3.9 ou 3.10 e o Java 8 ou
 
 `$ python COIR.py`
 
-As versões das bibliotecas em `requirements.txt` estão fixadas porque o pandas 1.3.3 e o tabula-py 2.3.0 não funcionam com numpy 2.x nem com setuptools 81 ou superior. O pacote para Windows usa numpy 1.21.5, que é a versão testada em campo; ambas funcionam.
+As versões das bibliotecas em `requirements.txt` estão fixadas: pandas 2.3.3 e numpy 2.0.2 são as últimas que ainda suportam o Python 3.9, e o tabula-py 2.3.0 não funciona com setuptools 81 ou superior. O código também roda com o pandas 3.
 
 **Contribuições são muito bem-vindas!**
 
