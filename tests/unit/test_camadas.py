@@ -1,6 +1,7 @@
 """Dependências entre camadas e guardas das regras 1 e 6 (CLAUDE.md).
 
 - engine e parsing dependem só de domain (e de coir.erros); domain não depende de outra camada.
+- gabarito (ferramenta de validação) pode usar parsing e pyxlsb, mas não db, ui nem engine.
 - Nenhuma dessas camadas importa banco, UI, CLI ou bibliotecas de planilha.
 - engine e domain: sem ``float`` (dinheiro é Decimal) e sem leitura de relógio/aleatoriedade.
 """
@@ -15,7 +16,12 @@ INTERNOS_PERMITIDOS = {
     "domain": ("coir.domain", "coir.erros"),
     "engine": ("coir.engine", "coir.domain", "coir.erros"),
     "parsing": ("coir.parsing", "coir.domain", "coir.erros"),
-}
+    # ferramenta de validação: lê a planilha do usuário e PDFs; nunca banco, UI nem motor
+    "gabarito": (
+        "coir.gabarito", "coir.domain", "coir.erros", "coir.parsing", "coir.recursos",
+    ),
+}  # fmt: skip
+EXTERNOS_LIBERADOS = {"gabarito": ("pyxlsb",)}
 EXTERNOS_PROIBIDOS = (
     "sqlalchemy", "alembic", "sqlite3", "nicegui", "webview", "typer",
     "openpyxl", "xlsxwriter", "pyxlsb",
@@ -56,7 +62,10 @@ def _casa(modulo: str, prefixos: tuple[str, ...]) -> bool:
 
 
 def _violacoes_de_import(camada: str, modulos: set[str]) -> list[str]:
-    proibidos = EXTERNOS_PROIBIDOS + (NAO_DETERMINISTICOS if camada != "parsing" else ())
+    liberados = EXTERNOS_LIBERADOS.get(camada, ())
+    proibidos = tuple(p for p in EXTERNOS_PROIBIDOS if p not in liberados) + (
+        NAO_DETERMINISTICOS if camada != "parsing" else ()
+    )
 
     def errado(mod: str) -> bool:
         # `from coir.domain import Nota` gera "coir.domain.Nota", que casa o prefixo permitido

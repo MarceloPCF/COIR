@@ -1,0 +1,5 @@
+# Tolerâncias da comparação com o gabarito (em R$). Acima delas = divergência a explicar,
+# nunca "ajustar" o motor para bater sem entender a causa (CLAUDE.md, regra 14).
+operacao = "0.01"  # total, custos e IRRF de cada operação (somados por nota, papel e C/V)
+pm = "0.05"        # preço médio após cada operação
+mes = "1.00"       # resultado, IRRF, imposto e prejuízo acumulado por mês e categoria
