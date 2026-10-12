@@ -1,42 +1,71 @@
-# =====================================================================
-# DADOS PESSOAIS - NUNCA versionar (CPF, notas de corretagem, resultados)
-# =====================================================================
-# Pastas de trabalho do usuario: o conteudo fica so no computador dele.
-# O ".gitkeep" mantem as pastas vazias no repositorio.
-Entrada/*
-Saida/*
-Resultado/*
-!Entrada/.gitkeep
-!Saida/.gitkeep
-!Resultado/.gitkeep
+# --- Dados pessoais: NUNCA versionar ---
+dados_privados/
 _dados/
-
-# Notas de corretagem e planilhas geradas pelo programa
+COIR-dados/
+_notas-corretagens/
+_relatorios-b3/
+_gabarito/
+_contexto-claude-code/
+Entrada/
+Saida/
+Resultado/
 *.pdf
 *.PDF
 *.xlsx
-*.xls
 *.xlsm
-*.ods
 *.xlsb
-# Unica planilha permitida: o modelo vazio
-!modelos/COIR.xlsb
+*.xls
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.bak
+*.zip
+*.7z
+*.rar
+*.ofx
+termos-sensiveis.txt
+backups/
 ~$*
 
-# Correcoes manuais do usuario (contem conta, datas e quantidades reais).
-# Use dados/ajustes_manuais.modelo.csv como ponto de partida.
-dados/ajustes_manuais.csv
+# Exceções: fixtures sintéticas e anonimizadas
+!tests/fixtures/**/*.pdf
+*.PDF
+!tests/fixtures/**/*.xlsx
 
-# Logs de processamento (o nome contem o CPF)
-*.log
-log_*.txt
-
-# =====================================================================
-# Python / editores / sistema
-# =====================================================================
+# --- Python / ferramentas ---
 __pycache__/
 *.py[cod]
 .venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+build/
+dist/
+.coverage
+htmlcov/
+
+# --- Claude Code (local) ---
+.claude/settings.local.json
+.claude/agent-memory-local/
+# memória de agentes pode conter números reais do usuário
+.claude/agent-memory/
+
+# Segredos/logs locais
+.env
+*.log
+log_*.txt
+
+# Documentos de trabalho com o perfil do mantenedor: ficam só no PC
+/CLAUDE.md
+/docs/PLANO.md
+
+# --- Legado v2 (herdado do .gitignore da v2.1.1) ---
+# correções manuais do usuário: contêm conta, datas e quantidades reais
+legacy/dados/ajustes_manuais.csv
+_pacote/
 venv/
 env/
 .vscode/
@@ -44,11 +73,3 @@ env/
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# Pacotes de distribuicao: vao para a pagina de Releases, nao para o Git
-*.zip
-dist/
-build/
-
-# Pasta de trabalho da montagem do pacote (zip, python e java embutidos)
-_pacote/

@@ -4,7 +4,7 @@
 # =================================================================================================
 # Extração e exportação dos dados contidos nas Notas de Corretagem no padrão SINACOR
 # Testado nas corretoras BTG, XP, Rico e Agora
-# Para dúvidas e sugestões entrar em contato pelo e-mail: marcelo.pcf@gmail.com
+# Para dúvidas e sugestões entrar em contato pelo e-mail: marcelo.pcf@gmail.com  # dados-pessoais: ok (contato público do autor)
 # =================================================================================================
 
 # Importações padrão de bibliotecas Python
