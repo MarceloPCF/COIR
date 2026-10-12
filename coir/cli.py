@@ -61,14 +61,16 @@ def _destino(destino: Path | None) -> Path:
     return destino or dados_dir(exigir=True) / "gabarito"
 
 
-def _ler_planilha(origem: Path, destino: Path) -> tuple["Gabarito", "MapaPseudonimos"]:
+def _ler_planilha(
+    origem: Path, destino: Path, titular_unico: bool = False
+) -> tuple["Gabarito", "MapaPseudonimos"]:
     from coir.gabarito.exportar import ARQUIVO_MAPA, PASTA_PRIVADA
     from coir.gabarito.extrair import ABAS, extrair
     from coir.gabarito.leitor import ler_abas
     from coir.gabarito.pseudonimos import MapaPseudonimos
 
     mapa = MapaPseudonimos.carregar(destino / PASTA_PRIVADA / ARQUIVO_MAPA)
-    return extrair(ler_abas(origem, ABAS), mapa), mapa
+    return extrair(ler_abas(origem, ABAS), mapa, titular_unico), mapa
 
 
 @gabarito_app.command("piloto")
@@ -120,13 +122,19 @@ def gabarito_conferir(
 
 
 @gabarito_app.command("gerar")
-def gabarito_gerar(origem: Path | None = OpcaoCaminho, destino: Path | None = OpcaoCaminho) -> None:
+def gabarito_gerar(
+    origem: Path | None = OpcaoCaminho,
+    destino: Path | None = OpcaoCaminho,
+    titular_unico: bool = typer.Option(
+        False, help="Trata todos os CPFs da planilha como um único titular."
+    ),
+) -> None:
     """Converte a planilha-gabarito em CSV pseudonimizados + manifesto + resumo.md."""
     from coir.gabarito import resumo
     from coir.gabarito.exportar import exportar
 
     arquivo, pasta = _origem(origem), _destino(destino)
-    gabarito, mapa = _ler_planilha(arquivo, pasta)
+    gabarito, mapa = _ler_planilha(arquivo, pasta, titular_unico)
     manifesto = exportar(gabarito, mapa, arquivo, pasta)
     (pasta / "resumo.md").write_text(resumo.gerar(gabarito), encoding="utf-8")
     print(f"Gabarito gravado em {pasta}")
