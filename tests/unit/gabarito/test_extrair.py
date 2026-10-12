@@ -97,3 +97,14 @@ def test_cv_invalido_falha_alto() -> None:
     abas["Normais_Dados"][1][5] = "X"
     with pytest.raises(GabaritoError, match="C/V"):
         extrair(abas, MapaPseudonimos())
+
+
+def test_titular_unico_junta_cpf_real_e_ficticio() -> None:
+    abas = fabrica.planilha()
+    abas["DayTrade_Dados"][1][1] = "888.888.888-88"
+    separados = extrair(abas, MapaPseudonimos())
+    assert {o.titular for o in separados.operacoes} == {"TITULAR-1", "TITULAR-2"}
+    unico = extrair(fabrica.planilha() | {"DayTrade_Dados": abas["DayTrade_Dados"]},
+                    MapaPseudonimos(), titular_unico=True)  # fmt: skip
+    assert {o.titular for o in unico.operacoes} == {"TITULAR-1"}
+    assert any("Titular único" in a for a in unico.avisos)

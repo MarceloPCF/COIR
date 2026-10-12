@@ -90,10 +90,12 @@ def _cv(valor: object, onde: str) -> Literal["C", "V"]:
 class Extrator:
     """Mantém o mapa de pseudônimos e os avisos de uma extração."""
 
-    def __init__(self, mapa: MapaPseudonimos) -> None:
+    def __init__(self, mapa: MapaPseudonimos, titular_unico: bool = False) -> None:
         self.mapa = mapa
+        self.titular_unico = titular_unico
         self.avisos: list[str] = []
         self._cpfs_validos: set[str] = set()
+        self._cpfs_unificados: set[str] = set()
 
     # ------------------------------------------------------------------ titulares
     def registrar_cpfs(self, abas: dict[str, Linhas]) -> None:
@@ -114,6 +116,13 @@ class Extrator:
         if nz.vazio(cpf):
             raise GabaritoError(f"{onde}: CPF vazio")
         digitos, corrigido = nz.corrigir_cpf(str(cpf), self._cpfs_validos)
+        if self.titular_unico:
+            # planilha de uma pessoa só com CPFs mistos (ex.: real e fictício): um titular
+            pseudonimo = self.mapa.titulares.setdefault(digitos, "TITULAR-1")
+            if pseudonimo != "TITULAR-1":
+                raise GabaritoError("titular único pedido, mas o mapa já separa os CPFs")
+            self._cpfs_unificados.add(digitos)
+            return pseudonimo
         pseudonimo = self.mapa.titular(digitos)
         if corrigido:
             self.avisos.append(
@@ -439,8 +448,10 @@ def _cabecalho_darf_ou_outros(linha: Sequence[object]) -> int | None:
 
 
 # ---------------------------------------------------------------------- extração completa
-def extrair(abas: dict[str, Linhas], mapa: MapaPseudonimos) -> Gabarito:
-    ext = Extrator(mapa)
+def extrair(
+    abas: dict[str, Linhas], mapa: MapaPseudonimos, titular_unico: bool = False
+) -> Gabarito:
+    ext = Extrator(mapa, titular_unico)
     ext.registrar_cpfs(abas)
     operacoes: list[OperacaoGabarito] = []
     eventos: list[EventoGabarito] = []
@@ -463,6 +474,10 @@ def extrair(abas: dict[str, Linhas], mapa: MapaPseudonimos) -> Gabarito:
             "BTC_Outros: nenhum valor mensal encontrado (outros custos dedutíveis ficam vazios)."
         )
     custodia = custodia_inicial(abas["Custodia_Inicial"])
+    if len(ext._cpfs_unificados) > 1:
+        ext.avisos.append(
+            f"Titular único: {len(ext._cpfs_unificados)} CPFs diferentes tratados como TITULAR-1."
+        )
     return Gabarito(
         operacoes=operacoes,
         eventos=eventos,
