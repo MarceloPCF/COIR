@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planilhas do COIR para DARF, IRRF e declaração do IRPF</title>
+<meta name="description" content="Para que serve cada planilha do COIR: operações normais e day trade, contabilidade por mês e ano, DARF mensal, IRRF, rendimentos isentos, eventos da B3 e custódia inicial.">
+<link rel="canonical" href="https://marcelopcf.github.io/COIR/guias/planilhas-darf-irrf-irpf/">
+<meta property="og:title" content="Planilhas do COIR para DARF, IRRF e declaração do IRPF">
+<meta property="og:description" content="Para que serve cada planilha do COIR: operações, contabilidade, DARF mensal, IRRF, rendimentos isentos, eventos da B3 e custódia inicial.">
+<meta property="og:url" content="https://marcelopcf.github.io/COIR/guias/planilhas-darf-irrf-irpf/">
+<meta property="og:site_name" content="COIR">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#102a43">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link rel="stylesheet" href="../guias.css">
+<script type="application/ld+json">
+{
+	"@context":"https://schema.org",
+	"@type":"TechArticle",
+	"headline":"Planilhas do COIR para DARF, IRRF e declaração do IRPF",
+	"description":"Para que serve cada planilha do COIR: operações, contabilidade, DARF mensal, IRRF, rendimentos isentos, eventos da B3 e custódia inicial.",
+	"inLanguage":"pt-BR",
+	"mainEntityOfPage":"https://marcelopcf.github.io/COIR/guias/planilhas-darf-irrf-irpf/",
+	"dateModified":"2026-10-13",
+	"isPartOf":{"@type":"WebSite","name":"COIR","url":"https://marcelopcf.github.io/COIR/"}
+}
+</script>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav aria-label="Navegação">
+      <a href="../../">COIR</a>
+      <a href="../extrair-notas-de-corretagem-sinacor-para-excel/">Como extrair as notas</a>
+      <a href="../corretoras-e-mercados-compativeis/">Corretoras e mercados</a>
+      <a href="https://github.com/MarceloPCF/COIR">GitHub</a>
+    </nav>
+    <h1>Planilhas do COIR para DARF, IRRF e declaração do IRPF</h1>
+    <p class="sub">O que cada planilha do arquivo de resultado faz e como elas se encaixam no controle das suas operações na B3.</p>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <h2>Onde ficam as planilhas</h2>
+    <p>Depois de <a href="../extrair-notas-de-corretagem-sinacor-para-excel/">extrair as notas de corretagem</a>, o COIR grava tudo em um único arquivo por investidor: <code>Resultado\CPF.xlsb</code>, onde CPF é o número do CPF. O controle é separado por CPF e cada mercado (À Vista, Futuros, Commodities e Derivativos/Opções) é contabilizado à parte.</p>
+    <div class="aviso">
+      <p>O COIR organiza e calcula as informações das suas operações, mas não substitui a análise nem a responsabilidade de um profissional contábil. Confira sempre as regras tributárias vigentes com a Receita Federal ou com o seu contador.</p>
+    </div>
+
+    <h2>Operações e contabilidade</h2>
+    <p>Para as operações do mercado à vista, o COIR separa as operações comuns (chamadas de Normais) das operações de day trade. Cada tipo tem três planilhas:</p>
+    <dl class="dl-planilhas">
+      <div><dt>Normais_Op</dt><dd>Operações comuns importadas automaticamente das notas de corretagem no padrão SINACOR.</dd></div>
+      <div><dt>Normais_Cont</dt><dd>Resultado das operações comuns, separado por mês e por ano no padrão do IRPF.</dd></div>
+      <div><dt>Normais_Dados</dt><dd>Dados importados das notas de corretagem que alimentam a aba Normais_Op.</dd></div>
+      <div><dt>DayTrade_Op</dt><dd>Operações de day trade importadas automaticamente das notas.</dd></div>
+      <div><dt>DayTrade_Cont</dt><dd>Resultado das operações de day trade, separado por mês e por ano no padrão do IRPF.</dd></div>
+      <div><dt>DayTrade_Dados</dt><dd>Dados importados das notas que alimentam a aba DayTrade_Op.</dd></div>
+    </dl>
+    <figure>
+      <span class="moldura"><img src="../../docs/imagens/contabilidade.JPG" width="1149" height="733" loading="lazy" alt="Contabilidade das operações por mês e por ano"></span>
+      <figcaption>Contabilidade das operações realizadas, por mês e por ano.</figcaption>
+    </figure>
+
+    <h2>DARF mensal e IRRF</h2>
+    <p>A planilha <code>DARF</code> disponibiliza os dados para a apuração da DARF mensal. O COIR também calcula o Imposto de Renda Retido na Fonte (IRRF) a partir das operações extraídas das notas.</p>
+    <figure>
+      <span class="moldura"><img src="../../docs/imagens/darf.JPG" width="1015" height="847" loading="lazy" alt="Controle da DARF mensal"></span>
+      <figcaption>Controle da DARF mensal.</figcaption>
+    </figure>
+
+    <h2>Declaração anual (DIRPF)</h2>
+    <dl class="dl-planilhas">
+      <div><dt>Isentos</dt><dd>Apresenta os Rendimentos Isentos e Não Tributáveis auferidos no mercado financeiro e que devem ser declarados na DIRPF.</dd></div>
+      <div><dt>Eventos B3</dt><dd>Eventos da B3, como Bonificação, Desdobramento, Grupamento e Subscrição, que alteram o preço médio do ativo em carteira e que não constam das notas de corretagem.</dd></div>
+      <div><dt>Custodia inicial</dt><dd>Dados de custódia para quem já possui resultados apurados com a Receita.</dd></div>
+    </dl>
+    <figure>
+      <span class="moldura"><img src="../../docs/imagens/isentos.JPG" width="1871" height="547" loading="lazy" alt="Controle de operações isentas de IR"></span>
+      <figcaption>Controle de operações isentas de IR.</figcaption>
+    </figure>
+    <figure>
+      <span class="moldura"><img src="../../docs/imagens/eventos.JPG" width="1727" height="835" loading="lazy" alt="Eventos da B3: bonificação, desdobramento e subscrição"></span>
+      <figcaption>Eventos da B3, que alteram o preço médio mas não aparecem nas notas.</figcaption>
+    </figure>
+
+    <h2>Gestão da carteira</h2>
+    <p>Além do controle fiscal, o arquivo traz planilhas para acompanhar a carteira:</p>
+    <dl class="dl-planilhas">
+      <div><dt>Alocação</dt><dd>Saldo da alocação por ativo, com a porcentagem atual e a porcentagem desejada para cada ativo.</dd></div>
+      <div><dt>Balanceamento</dt><dd>Uma forma de balancear a carteira, com aportes mensais ou por variação de cada ativo.</dd></div>
+      <div><dt>Patrimônio</dt><dd>Total do patrimônio investido em todas as classes de ativo.</dd></div>
+      <div><dt>Rendimento</dt><dd>Rentabilidade da carteira ao longo do tempo.</dd></div>
+      <div><dt>ManejoRisco</dt><dd>Configuração do manejo de risco por operação de renda variável.</dd></div>
+      <div><dt>ManejoPosicao</dt><dd>Estimativa do tamanho de posição para cada operação que será aberta em renda variável.</dd></div>
+    </dl>
+    <p>A planilha <code>Indice</code> reúne o acesso, a habilitação e a descrição de cada uma delas.</p>
+
+    <p><a class="cta" href="https://github.com/MarceloPCF/COIR/releases/latest">Baixar o COIR</a></p>
+
+    <nav class="relacionados" aria-label="Guias relacionados">
+      <h2>Veja também</h2>
+      <ul>
+        <li><a href="../extrair-notas-de-corretagem-sinacor-para-excel/">Como extrair notas de corretagem SINACOR para Excel</a></li>
+        <li><a href="../corretoras-e-mercados-compativeis/">Corretoras e mercados compatíveis com o COIR</a></li>
+        <li><a href="../../">Página inicial do COIR</a></li>
+      </ul>
+    </nav>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Contato: <a href="mailto:marcelo.pcf@gmail.com">marcelo.pcf@gmail.com</a></span>
+    <span>COIR é gratuito, com licença MIT. <a href="https://github.com/MarceloPCF/COIR">Código-fonte no GitHub</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
