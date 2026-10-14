@@ -6,10 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>COIR | Programa para extração de Notas de Corretagem no Padrão SINACOR</title>
 <meta name="google-site-verification" content="vDjlNKkJJRVfJJTE-ybAxmtGzT-z72kWETuAConlxOg"/>
-<meta name="description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
-<meta property="og:title" content="COIR">
+<meta name="description" content="Programa gratuito que extrai notas de corretagem SINACOR (XP, Clear, Rico, Necton, BTG) para planilhas do Excel e apoia DARF, IRRF e IRPF.">
+<meta property="og:title" content="COIR | Controle de Operações e Imposto de Renda">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
+<meta property="og:description" content="Programa gratuito que extrai notas de corretagem SINACOR (XP, Clear, Rico, Necton, BTG) para planilhas do Excel e apoia DARF, IRRF e IRPF.">
 <link rel="canonical" href="https://marcelopcf.github.io/COIR/">
 <meta property="og:url" content="https://marcelopcf.github.io/COIR/">
 <meta property="og:site_name" content="COIR">
@@ -20,7 +20,7 @@
 <meta property="og:image:alt" content="COIR - Controle de Operações e Imposto de Renda">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="COIR | Controle de Operações e Imposto de Renda">
-<meta name="twitter:description" content="Programa para extração de Notas de Corretagem no Padrão SINACOR">
+<meta name="twitter:description" content="Programa gratuito que extrai notas de corretagem SINACOR (XP, Clear, Rico, Necton, BTG) para planilhas do Excel e apoia DARF, IRRF e IRPF.">
 <meta name="twitter:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
 <meta name="theme-color" content="#102a43">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
@@ -37,6 +37,8 @@
 	"url":"https://marcelopcf.github.io/COIR/",
 	"downloadUrl":"https://github.com/MarceloPCF/COIR/releases/latest",
 	"license":"https://opensource.org/licenses/MIT",
+	"author":{"@type":"Person","name":"MarceloPCF","url":"https://github.com/MarceloPCF"},
+	"sameAs":["https://github.com/MarceloPCF/COIR"],
 	"offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"}
 }
 </script>
@@ -72,8 +74,9 @@ img{max-width:100%;height:auto;display:block}
 .topo nav a:hover{text-decoration:underline}
 .topo .wrap{display:grid;gap:40px}
 .apresentacao{margin-top:8px;max-width:42em}
-.apresentacao h1{margin:0;font-size:clamp(56px,12vw,88px);line-height:.95;font-weight:800;letter-spacing:-.03em}
-.apresentacao .nome{margin:10px 0 0;font-size:clamp(20px,3vw,26px);font-weight:700;color:var(--azul-claro);line-height:1.25}
+.apresentacao h1{margin:0;font-weight:800}
+.apresentacao h1 .sigla{display:block;font-size:clamp(56px,12vw,88px);line-height:.95;letter-spacing:-.03em}
+.apresentacao h1 .nome{display:block;margin:10px 0 0;font-size:clamp(20px,3vw,26px);font-weight:700;color:var(--azul-claro);line-height:1.25;letter-spacing:0}
 .apresentacao .resumo{margin:14px 0 0;font-size:18px;color:#dbe7f3;max-width:34em}
 .acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px;align-items:center}
 .botao{display:inline-block;padding:11px 24px;border-radius:6px;font-weight:700;font-size:18px;text-decoration:none;border:2px solid transparent;transition:background-color .15s,border-color .15s}
@@ -179,14 +182,14 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
     <nav aria-label="Atalhos">
       <a href="#como-usar">Como usar</a>
       <a href="#planilhas">Planilhas</a>
+      <a href="#guias">Guias</a>
       <a href="#telas">Telas</a>
       <a href="#duvidas">Dúvidas</a>
       <a href="https://github.com/MarceloPCF/COIR">GitHub</a>
     </nav>
     <div class="apresentacao">
       <div>
-        <h1>COIR</h1>
-        <p class="nome">Controle de Operações e Imposto de Renda</p>
+        <h1><span class="sigla">COIR</span> <span class="nome">Controle de Operações e Imposto de Renda: notas de corretagem SINACOR para Excel</span></h1>
         <p class="resumo">Extrai as notas de corretagem no padrão SINACOR (B3) para planilhas do Excel e prepara a apuração da DARF mensal, o IRRF e a declaração anual do IRPF.</p>
         <div class="acoes">
           <a class="botao principal" id="baixar" href="https://github.com/MarceloPCF/COIR/releases/latest">Baixar o COIR</a>
@@ -282,6 +285,18 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
       <div><dt>ManejoRisco</dt><dd>Destinado à configuração do Manejo de Risco por operação de renda variável.</dd></div>
       <div><dt>ManejoPosicao</dt><dd>Destinado à estimativa do Tamanho de Posição para cada operação que será aberta em renda variável.</dd></div>
     </dl>
+  </div>
+</section>
+
+<section id="guias">
+  <div class="wrap">
+    <h2>Guias</h2>
+    <p class="intro">Explicações mais detalhadas sobre o uso do COIR.</p>
+    <ul class="recursos">
+      <li><a href="./guias/extrair-notas-de-corretagem-sinacor-para-excel/">Como extrair notas de corretagem SINACOR para Excel</a></li>
+      <li><a href="./guias/planilhas-darf-irrf-irpf/">Planilhas do COIR para DARF, IRRF e declaração do IRPF</a></li>
+      <li><a href="./guias/corretoras-e-mercados-compativeis/">Corretoras e mercados compatíveis com o COIR</a></li>
+    </ul>
   </div>
 </section>
 

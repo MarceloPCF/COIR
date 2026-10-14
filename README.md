@@ -5,6 +5,8 @@
 ## Controle de Operações e Imposto de Renda - COIR
 O COIR é um sistema de extração de dados de notas de corretagens no padrão SINACOR (Sistema Integrado de Administração de Corretoras) para planilhas do Microsoft Excel. Tem como objetivo o controle de operações nos mercados Á Vista (Normal e DayTrade), Futuros, Commodities e Derivativos (Opções), na bolsa de valores da B3 (Brasil, Bolsa e Balcão).
 
+Site do projeto: <https://marcelopcf.github.io/COIR/>. Guias: [como extrair notas de corretagem SINACOR para Excel](https://marcelopcf.github.io/COIR/guias/extrair-notas-de-corretagem-sinacor-para-excel/), [planilhas para DARF, IRRF e IRPF](https://marcelopcf.github.io/COIR/guias/planilhas-darf-irrf-irpf/) e [corretoras e mercados compatíveis](https://marcelopcf.github.io/COIR/guias/corretoras-e-mercados-compativeis/).
+
 ![Telas do COIR](./docs/imagens/coir-demo.gif)
 
 ***
