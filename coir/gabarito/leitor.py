@@ -23,3 +23,16 @@ def ler_abas(caminho: Path, nomes: Iterable[str]) -> dict[str, Linhas]:
             with livro.get_sheet(nome) as aba:
                 abas[nome] = [[celula.v for celula in linha] for linha in aba.rows()]
     return abas
+
+
+def localizar_planilha(pasta: Path) -> Path:
+    """A planilha-gabarito é o único .xlsb da pasta (o nome é livre; a v2 usa o CPF)."""
+    candidatas = sorted(
+        p for p in pasta.glob("*.xlsb") if p.is_file() and not p.name.startswith("~$")
+    )
+    if len(candidatas) != 1:
+        raise GabaritoError(
+            f"Esperada uma única planilha .xlsb em {pasta}, há {len(candidatas)}; "
+            "indique o arquivo com --origem"
+        )
+    return candidatas[0]

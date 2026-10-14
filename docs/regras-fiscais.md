@@ -30,6 +30,27 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 Lançamento manual mensal (ex.: custos de BTC) que reduz o resultado tributável do mês, como no v2.02. BTC como
 operação está fora do escopo.
 
+## Decisões da validação do gabarito (F1, 14/10/2026)
+Respostas do usuário aos pontos do `resumo.md`. Onde o gabarito difere da regra por desenho, a comparação
+da F4 trata como divergência conhecida, nunca ajusta o motor para bater.
+
+- **PM global por titular (R7/R8):** para apuração e declaração vale o PM do titular somando todas as
+  corretoras/contas. A tela também mostra o PM por corretora/conta. O gabarito calcula por papel + conta,
+  então diverge por desenho quando o mesmo ticker está em mais de uma conta.
+- **Opções lançadas (R9/R10):** resultado apurado no mês do encerramento/vencimento, não no do pregão, como
+  no gabarito. Confirmado pelo usuário; revisar com o `especialista-fiscal-b3` na F4.
+- **IRRF dispensado (R6):** IRRF ≤ R$ 1,00 não retido (o PDF não o desconta) não vira crédito a deduzir; só
+  conta o que foi efetivamente retido (a BTG acumula no mês e retém quando o total passa de R$ 1,00). O
+  gabarito registra esses valores: divergência conhecida.
+- **Prejuízo em mês isento (R5):** em aberto para a F4. O gabarito o exclui do resultado (ex.: fracionário
+  06/2008). R5 (P&R IRPF) diz que continua compensável; uma resposta de IA consultada pelo usuário diz o
+  contrário, sem fonte primária. Decidir com o `especialista-fiscal-b3` e a pergunta da edição vigente do
+  P&R IRPF antes de implementar; enquanto isso, parâmetro configurável.
+- **Isentos zerados de 2021 em diante:** correto. **Custódia inicial vazia:** correto (histórico começa
+  zerado em 2008).
+- **Outros custos dedutíveis (BTC_Outros):** o usuário não os lançou. Verificar nas fases de telas se a
+  Sencon ou o myProfit têm equivalente (`docs/referencias/`); sem equivalente, não implementar.
+
 ## Pontos do v2.02 a corrigir (ver docs/PLANO.md, Diagnóstico)
 - Isenção inferida por "IRRF < R$ 1" (falha com 2+ corretoras; pode isentar ETF).
 - Sem categoria FII.

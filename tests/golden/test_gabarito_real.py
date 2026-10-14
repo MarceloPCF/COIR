@@ -10,20 +10,25 @@ from coir.config import dados_dir
 from coir.gabarito.comparar import Tolerancias, comparar
 from coir.gabarito.exportar import ARQUIVO_MANIFESTO, ARQUIVOS, carregar, exportar
 from coir.gabarito.extrair import ABAS, extrair
-from coir.gabarito.leitor import Linhas, ler_abas
+from coir.gabarito.leitor import Linhas, ler_abas, localizar_planilha
 from coir.gabarito.modelo import Categoria, Gabarito
 from coir.gabarito.pseudonimos import MapaPseudonimos
 from tools.verificar_dados_pessoais import carregar_termos, verificar
 
 pytestmark = pytest.mark.golden
-PLANILHA = dados_dir() / "_gabarito" / "gabarito.xlsb"
+PASTA = dados_dir() / "_gabarito"
 
 
 @pytest.fixture(scope="module")
-def abas() -> dict[str, Linhas]:
-    if not PLANILHA.is_file():
-        pytest.skip("planilha-gabarito ausente")
-    return ler_abas(PLANILHA, ABAS)
+def planilha() -> Path:
+    if not PASTA.is_dir():
+        pytest.skip("pasta da planilha-gabarito ausente")
+    return localizar_planilha(PASTA)
+
+
+@pytest.fixture(scope="module")
+def abas(planilha: Path) -> dict[str, Linhas]:
+    return ler_abas(planilha, ABAS)
 
 
 @pytest.fixture(scope="module")
@@ -76,11 +81,11 @@ def test_resultado_das_operacoes_bate_com_apuracao_mensal(
 
 
 def test_exportacao_pseudonimizada_e_estavel(
-    extraido: tuple[Gabarito, MapaPseudonimos], tmp_path: Path
+    extraido: tuple[Gabarito, MapaPseudonimos], planilha: Path, tmp_path: Path
 ) -> None:
     g, mapa = extraido
-    m1 = exportar(g, mapa, PLANILHA, tmp_path / "a")
-    m2 = exportar(g, mapa, PLANILHA, tmp_path / "b")
+    m1 = exportar(g, mapa, planilha, tmp_path / "a")
+    m2 = exportar(g, mapa, planilha, tmp_path / "b")
     assert m1["arquivos"] == m2["arquivos"]
     publicos = [tmp_path / "a" / nome for nome, _ in ARQUIVOS.values()]
     publicos.append(tmp_path / "a" / ARQUIVO_MANIFESTO)
