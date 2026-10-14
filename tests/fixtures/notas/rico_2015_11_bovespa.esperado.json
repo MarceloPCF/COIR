@@ -1,0 +1,166 @@
+{
+  "id": "rico_2015_11_bovespa",
+  "corretora": "Rico",
+  "segmento": "bovespa",
+  "layout": "Rico 2015-2016 (template XP antigo, palavras coladas); venda com IRRF de R$ 0,53 não debitado (<= R$ 1)",
+  "data_pregao": "2015-11-04",
+  "numero_nota": "1000007",
+  "folha": "1",
+  "conta": "386-7 000000",
+  "operacoes": [
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "SIDNACIONAL ON",
+      "observacao": "H",
+      "quantidade": "200",
+      "preco": "5.33",
+      "valor": "1066.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "SIDNACIONAL ON",
+      "observacao": "H",
+      "quantidade": "700",
+      "preco": "5.33",
+      "valor": "3731.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "SIDNACIONAL ON",
+      "observacao": "H#",
+      "quantidade": "500",
+      "preco": "5.33",
+      "valor": "2665.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "SIDNACIONAL ON",
+      "observacao": "H",
+      "quantidade": "100",
+      "preco": "5.33",
+      "valor": "533.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "SIDNACIONAL ON",
+      "observacao": "H",
+      "quantidade": "200",
+      "preco": "5.33",
+      "valor": "1066.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "SIDNACIONAL ON",
+      "observacao": "H",
+      "quantidade": "300",
+      "preco": "5.33",
+      "valor": "1599.00",
+      "dc": "C"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_das_operacoes": "10660.00",
+    "resumo_dos_negocios": {
+      "Debêntures": "0.00",
+      "Vendas à vista": "10660.00",
+      "Compras à vista": "0.00",
+      "Opções - compras": "0.00",
+      "Opções - vendas": "0.00",
+      "Operações à termo": "0.00",
+      "Valor das oper. c/ títulos públ. (v. nom.)": "0.00"
+    },
+    "valor_liquido_das_operacoes": {
+      "valor": "10660.00",
+      "dc": "C"
+    },
+    "custos": {
+      "Taxa de liquidação": {
+        "valor": "2.93",
+        "dc": "D"
+      },
+      "Taxa de Registro": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Taxa de termo/opções": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Taxa A.N.A.": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Emolumentos": {
+        "valor": "0.53",
+        "dc": "D"
+      },
+      "Taxa Operacional": {
+        "valor": "9.80",
+        "dc": "D"
+      },
+      "Execução": {
+        "valor": "0.00"
+      },
+      "Taxa de Custódia": {
+        "valor": "0.00"
+      },
+      "Impostos": {
+        "valor": "0.51",
+        "dc": "D"
+      },
+      "Outros": {
+        "valor": "0.00",
+        "dc": "C"
+      }
+    },
+    "subtotais": {
+      "Total CBLC": {
+        "valor": "10657.07",
+        "dc": "C"
+      },
+      "Total Bovespa / Soma": {
+        "valor": "0.53",
+        "dc": "D"
+      },
+      "Total Custos / Despesas": {
+        "valor": "10.31",
+        "dc": "D"
+      }
+    },
+    "irrf": {
+      "rotulo": "I.R.R.F. s/ operações",
+      "base": "10660.00",
+      "valor": "0.53",
+      "dc": null,
+      "incluido_em_total_custos_despesas": false
+    },
+    "liquido": {
+      "data": "2015-11-09",
+      "valor": "10646.23",
+      "dc": "C"
+    }
+  }
+}

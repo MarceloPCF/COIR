@@ -1,0 +1,5 @@
+# Rico (grupo XP): mesmo template da XP antiga
+corretora: RICO
+prioridade: 10
+ancoras: ["Rico Investimentos", "RICO CORRETORA"]
+gramaticas: {bovespa: xp, bmf: xp}

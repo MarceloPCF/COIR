@@ -1,0 +1,5 @@
+# XP Investimentos: Bovespa antiga (2016–2023, palavras coladas) e nova (2024+); BM&F antiga e nova
+corretora: XP
+prioridade: 20
+ancoras: ["XP INVESTIMENTOS", "02.332.886/0001-04"]
+gramaticas: {bovespa: xp, bmf: xp}

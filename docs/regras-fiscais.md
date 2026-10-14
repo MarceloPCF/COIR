@@ -51,6 +51,25 @@ da F4 trata como divergência conhecida, nunca ajusta o motor para bater.
 - **Outros custos dedutíveis (BTC_Outros):** o usuário não os lançou. Verificar nas fases de telas se a
   Sencon ou o myProfit têm equivalente (`docs/referencias/`); sem equivalente, não implementar.
 
+## Decisões da validação da extração (F2, 14/10/2026)
+- **Termo (R18), regra do usuário:** durante o contrato, as ações compradas a termo ficam numa posição
+  separada (como na B3); na liquidação (vencimento ou antecipada), quando o contrato é pago e as ações
+  são recebidas, entram na carteira à vista e o PM se junta ao da posição existente. A nota deixa a
+  compra fora do líquido ("Operações à termo"); o prazo (dias) fica na operação extraída. O gabarito v2
+  soma na data do pregão: diferença de PM esperada entre pregão e liquidação. Decisão do usuário
+  (14/10/2026): data da liquidação = data do pregão + prazo do contrato; os custos da nota de compra
+  (corretagem, emolumentos, taxa de termo) entram no custo das ações liquidadas. Validar com o
+  `especialista-fiscal-b3` na F4.
+- **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte, retida pelo administrador na venda
+  com lucro. Registrar a posição e o custo, mas fora da apuração mensal e do DARF; vai para a DIRPF
+  como rendimento de tributação exclusiva. Precisa de tipo de ativo próprio em `data/` (F4, confirmar
+  alíquotas e base com o `especialista-fiscal-b3`).
+- **Transferência de custódia entre corretoras do mesmo titular (ex.: VALE5 Rico → Ágora, 2016):**
+  evento próprio que move quantidade e PM de uma conta para outra, sem resultado. A nota continua na
+  corretora que a emitiu; a planilha v2 relabelava as notas.
+- **Opção flexível (BTG):** fica para uma versão seguinte à v3.0 (parser do layout "Mercadoria: FCA"
+  e operação de opção flexível); na v3.0 a extração reconhece e avisa.
+
 ## Pontos do v2.02 a corrigir (ver docs/PLANO.md, Diagnóstico)
 - Isenção inferida por "IRRF < R$ 1" (falha com 2+ corretoras; pode isentar ETF).
 - Sem categoria FII.
