@@ -1,0 +1,91 @@
+Negócios realizados
+Q Negociação C/V Tipo mercado Prazo Especificação do título Obs. (*) Quantidade Preço / Ajuste Valor Operação / Ajuste D/C
+1-BOVESPA V VISTA SIDNACIONAL ON H 200 5,33 1.066,00 C
+1-BOVESPA V VISTA SIDNACIONAL ON H 700 5,33 3.731,00 C
+1-BOVESPA V VISTA SIDNACIONAL ON H# 500 5,33 2.665,00 C
+1-BOVESPA V VISTA SIDNACIONAL ON H 100 5,33 533,00 C
+1-BOVESPA V VISTA SIDNACIONAL ON H 200 5,33 1.066,00 C
+1-BOVESPA V VISTA SIDNACIONAL ON H 300 5,33 1.599,00 C
+NOTA DENEGOCIAÇÃO
+Nr. nota
+1000007
+Folha
+1
+Data pregão
+04/11/2015
+Rico Investimentos -GrupoXP
+Av. PresidenteJuscelinoKubitschek - Torre Sul, 1909 - 25ºANDARVILAOLIMPIA 4543-907 SÃOPAULO- SP
+Tel. 3003-5465 Fax: (55 11) 4007-2465
+Internet:www.rico.com.vc SAC: 0800-774-0402 e-mail:atendimento@rico.com.vc
+C.N.P.J: 02.332.886/0016-82 Carta Patente:
+Ouvidoria: Tel. 08007740402 e-mail ouvidoria:
+Cliente
+Participante destino do repasse
+- 0
+Cliente
+0
+Valor
+Banco Agência Conta corrente Acionista Administrador
+C.P.F./C.N.P.J/C.V.M./C.O.B.
+Código cliente Assessor
+0000
+Custodiante C.I
+N
+Complemento nome P. Vinc
+N
+0,00
+10.660,00
+0,00
+0,00
+0,00
+0,00
+0,00
+10.660,00
+Resumo dosNegócios
+Debêntures
+Vendasà vista
+Comprasà vista
+Opções -compras
+Opções - vendas
+Operaçõesàtermo
+Valor das oper.c/ títulos públ. (v. nom.)
+Valor das operações
+Especificações diversas
+AcolunaQindicaliquidação noAgente doQualificado.
+(*)Observações A- Posição futuro T - Liquidação pelo Bruto
+2 - Corretora ou pessoa vinculada atuou na contra parte. C- Clubese fundos de Ações I - POP
+# - Negócio direto P - Carteira Própria
+8 - Liquidação Institucional H- Home Broker
+D- Day Trade X- Box
+F- Cobertura Y- Desmanche de Box
+B- Debêntures L - Precatório
+Total CBLC 10.657,07 C
+Valor líquido das operações 10.660,00 C
+Taxa deliquidação 2,93 D
+Taxa deRegistro 0,00 D
+Total Bovespa / Soma 0,53 D
+Taxa determo/opções 0,00 D
+TaxaA.N.A. 0,00 D
+Emolumentos 0,53 D
+Total Custos /Despesas 10,31 D
+TaxaOperacional 9,80 D
+Execução 0,00
+Taxa deCustódia 0,00
+Impostos 0,51 D
+I.R.R.F. s/ operações, baseR$10.660,00 0,53
+Outros 0,00 C
+Líquido para 09/11/2015 10.646,23 C
+Resumo Financeiro
+Clearing
+Bolsa
+Custos Operacionais
+Observação: (1) As operaçõesatermo não são computadas no líquido dafatura.
+Capitaiseregiõesmetropolitanas: 3003-5465 ou 4007-2465 Demaislocalidades: 0800-771-5465 SAC: 0800-774-0402 Ouvidoria: 0800 771 5454
+000000 FULANO DE TAL
+RUA EXEMPLO, 0 - APTO 0
+BAIRRO
+Tel. (00) 00000-0000
+00000-000 CIDADE - UF
+000 0000 00000
+000.000.000.00
+386-7 000000

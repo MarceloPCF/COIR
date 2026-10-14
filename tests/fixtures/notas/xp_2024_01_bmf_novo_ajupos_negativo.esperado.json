@@ -1,0 +1,121 @@
+{
+  "id": "xp_2024_01_bmf_novo_ajupos_negativo",
+  "corretora": "XP",
+  "segmento": "bmf",
+  "layout": "XP BM&F 2024+ (milho CCM): AJUPOS com quantidade negativa + 2 linhas NORMAL; IRRF 0,08 D que não entra no líquido",
+  "data_pregao": "2024-01-10",
+  "numero_nota": "1000010",
+  "folha": "1",
+  "conta": null,
+  "numero_nota_no_texto": "1.000.010",
+  "operacoes": [
+    {
+      "cv": "V",
+      "mercado": "CCM H24",
+      "vencimento": "2024-03-15",
+      "observacao": "",
+      "quantidade": "-4",
+      "preco": "71.76",
+      "tipo_negocio": "AJUPOS",
+      "valor": "4590.00",
+      "dc": "C",
+      "taxa_operacional": "0.00"
+    },
+    {
+      "cv": "C",
+      "mercado": "CCM H24",
+      "vencimento": "2024-03-15",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "73.40",
+      "tipo_negocio": "NORMAL",
+      "valor": "738.00",
+      "dc": "D",
+      "taxa_operacional": "4.00"
+    },
+    {
+      "cv": "C",
+      "mercado": "CCM H24",
+      "vencimento": "2024-03-15",
+      "observacao": "",
+      "quantidade": "1",
+      "preco": "73.40",
+      "tipo_negocio": "NORMAL",
+      "valor": "738.00",
+      "dc": "D",
+      "taxa_operacional": "4.00"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_dos_negocios": {
+      "valor": "3114.00",
+      "dc": "C"
+    },
+    "venda_disponivel": "0.00",
+    "compra_disponivel": "0.00",
+    "venda_opcoes": "0.00",
+    "compra_opcoes": "0.00",
+    "custos": {
+      "Taxa operacional": {
+        "valor": "8.00",
+        "dc": "D"
+      },
+      "Taxa registro BM&F": {
+        "valor": "0.94",
+        "dc": "D"
+      },
+      "Taxas BM&F (emol+f.gar)": {
+        "valor": "0.50",
+        "dc": "D"
+      },
+      "+Outros Custos": {
+        "valor": "0.00"
+      }
+    },
+    "subtotais": {
+      "Total de custos operacionais": {
+        "valor": "9.44",
+        "dc": "D"
+      }
+    },
+    "impostos": {
+      "valor": "0.84"
+    },
+    "ajuste_de_posicao": {
+      "valor": "3114.00",
+      "dc": "C"
+    },
+    "ajuste_day_trade": {
+      "valor": "0.00"
+    },
+    "irrf": {
+      "IRRF": "0.08",
+      "IRRF_dc": "D",
+      "IRRF Day Trade (proj.)": "0.00",
+      "Outros": "0.00",
+      "IRRF operacional": "0.00",
+      "debitado_no_liquido": false
+    },
+    "totais": {
+      "Total Conta Investimento": {
+        "valor": "0.00"
+      },
+      "Total Conta Normal": {
+        "valor": "3104.56",
+        "dc": "C"
+      },
+      "Total liquido (#)": {
+        "valor": "0.00"
+      },
+      "Total líquido da nota": {
+        "valor": "3103.72",
+        "dc": "C"
+      }
+    },
+    "liquido": {
+      "data": "2024-01-10",
+      "valor": "3103.72",
+      "dc": "C"
+    }
+  }
+}
