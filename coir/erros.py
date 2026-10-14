@@ -10,3 +10,7 @@ class CoirError(Exception):
 
 class ConfiguracaoError(CoirError):
     """Configuração ausente ou inválida (ex.: pasta de dados inexistente)."""
+
+
+class GabaritoError(CoirError):
+    """Planilha-gabarito com estrutura ou conteúdo inesperado."""

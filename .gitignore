@@ -73,3 +73,6 @@ env/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Referencias de interface (Sencon/myProfit): uso interno, nao publicar
+docs/referencias/
