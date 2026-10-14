@@ -1,6 +1,14 @@
+from datetime import date
 from decimal import Decimal
 
-from coir.gabarito.conferencia import LinhaNegocio, linhas_bmf, linhas_bovespa, valores_impressos
+from coir.gabarito.conferencia import (
+    LinhaNegocio,
+    conferir_textos,
+    linhas_bmf,
+    linhas_bovespa,
+    valores_impressos,
+)
+from coir.gabarito.modelo import Categoria, Gabarito, OperacaoGabarito
 
 
 def test_linhas_bovespa_layouts() -> None:
@@ -44,3 +52,67 @@ def test_valores_impressos() -> None:
     assert valores_impressos("0,00| 0,41 1,60 | D 1000,00 40,87 | C") == {
         Decimal("0.00"), Decimal("0.41"), Decimal("1.60"), Decimal("1000.00"), Decimal("40.87"),
     }  # fmt: skip
+
+
+def _op(nota: str, cv: str, mercado: str, preco: str, total: str, custos: str) -> OperacaoGabarito:
+    return OperacaoGabarito(
+        categoria=Categoria.DAY_TRADE, linha=2, titular="TITULAR-1", corretora="XP",
+        conta="XP-1", nota=nota, data=date(2026, 2, 2), cv=cv, papel="WING26",  # type: ignore[arg-type]
+        mercado=mercado, preco=Decimal(preco), quantidade=Decimal(1), total=Decimal(total),
+        custos=Decimal(custos), pm=None, irrf=Decimal(0), prazo=None, ativo_objeto=None,
+    )  # fmt: skip
+
+
+def _gabarito(ops: list[OperacaoGabarito]) -> Gabarito:
+    return Gabarito(operacoes=ops, eventos=[], eventos_cadastro=[], posicoes=[], apuracao=[],
+                    darfs=[], isentos=[], custodia_inicial=[], avisos=[])  # fmt: skip
+
+
+PAGINA_BMF = "\n".join(
+    [
+        "C WIN G26 18/02/2026 1 183.685,00 DAY TRADE 30,20 C 0,20",
+        "V WIN G26 18/02/2026 1 183.665,00 DAY TRADE 34,20 D 0,20",
+        "NOTA DE NEGOCIAÇÃO Nr. nota",
+        "409.950",
+        "Ajuste day trade Total de custos operacionais",
+        "0,00 0,04 0,00 | 4,00 | D 0,90 | D",
+        "Total líquido da nota 4,94 | D",
+    ]
+)
+OPS_BMF = [
+    _op("409950", "C", "INDICE", "183685", "36737", "0.47"),
+    _op("409950", "V", "INDICE", "183665", "36733", "0.47"),
+]
+
+
+def test_nota_bmf_dentro_do_pdf_de_acoes_e_conferida() -> None:
+    """PDF misto: a nota BM&F está numa página do PDF Bovespa do mês (não há _BMF.pdf)."""
+    textos = {"XP_NC_2026_02.pdf": ["Nr. nota 123\nsem negócios", PAGINA_BMF]}
+    [arq] = conferir_textos(_gabarito(OPS_BMF), textos)
+    assert arq.paginas_sem_nota == []
+    [nota] = arq.notas
+    assert nota.nota == "409950" and nota.ok
+    assert {v.nome for v in nota.verificacoes} >= {"quantidade C", "ajuste day trade", "líquido"}
+
+
+def test_pdf_do_segmento_tem_preferencia_e_pagina_usada_nao_e_reaproveitada() -> None:
+    textos = {"XP_NC_2026_02.pdf": [PAGINA_BMF], "XP_NC_2026_02_BMF.pdf": [PAGINA_BMF]}
+    resultados = {r.arquivo: r for r in conferir_textos(_gabarito(OPS_BMF), textos)}
+    assert [n.nota for n in resultados["XP_NC_2026_02_BMF.pdf"].notas] == ["409950"]
+    assert resultados["XP_NC_2026_02.pdf"].notas == []
+    assert resultados["XP_NC_2026_02.pdf"].paginas_sem_nota == [1]
+
+
+def test_nota_sem_nenhum_pdf_vira_divergencia() -> None:
+    resultados = conferir_textos(_gabarito(OPS_BMF), {"XP_NC_2026_03.pdf": [PAGINA_BMF]})
+    ausente = resultados[-1]
+    assert ausente.arquivo == "XP_NC_2026_02_BMF.pdf (ausente)"
+    [nota] = ausente.notas
+    assert not nota.ok and nota.verificacoes[0].observacao == "PDF ausente"
+
+
+def test_mesmo_numero_de_nota_em_datas_diferentes_fica_separado() -> None:
+    outra = [o.model_copy(update={"data": date(2026, 2, 9)}) for o in OPS_BMF]
+    paginas = [f"Data pregão 02/02/2026\n{PAGINA_BMF}", f"Data pregão 09/02/2026\n{PAGINA_BMF}"]
+    [arq] = conferir_textos(_gabarito(OPS_BMF + outra), {"XP_NC_2026_02_BMF.pdf": paginas})
+    assert [(n.data, n.ok) for n in arq.notas] == [("2026-02-02", True), ("2026-02-09", True)]

@@ -51,6 +51,9 @@ gabarito_app = typer.Typer(
 app.add_typer(gabarito_app, name="gabarito")
 
 OpcaoCaminho = typer.Option(None, help="Padrão: dentro da pasta de dados (COIR_DADOS).")
+OpcaoTitularUnico = typer.Option(
+    False, help="Trata todos os CPFs da planilha como um único titular."
+)
 
 
 def _origem(origem: Path | None) -> Path:
@@ -99,7 +102,9 @@ def gabarito_piloto(
 
 @gabarito_app.command("conferir")
 def gabarito_conferir(
-    origem: Path | None = OpcaoCaminho, destino: Path | None = OpcaoCaminho
+    origem: Path | None = OpcaoCaminho,
+    destino: Path | None = OpcaoCaminho,
+    titular_unico: bool = OpcaoTitularUnico,
 ) -> None:
     """Confere automaticamente o gabarito contra todos os PDFs de notas (conferencia.md/.csv)."""
     import csv
@@ -109,7 +114,7 @@ def gabarito_conferir(
 
     pasta = _destino(destino)
     exigir_fora_do_repositorio(pasta)
-    gabarito, _ = _ler_planilha(_origem(origem), pasta)
+    gabarito, _ = _ler_planilha(_origem(origem), pasta, titular_unico)
     resultados = conferencia.conferir_pasta(gabarito, dados_dir(exigir=True) / "_notas-corretagens")
     md, linhas = conferencia.relatorio(resultados)
     saida = pasta / "conferencia"
@@ -125,9 +130,7 @@ def gabarito_conferir(
 def gabarito_gerar(
     origem: Path | None = OpcaoCaminho,
     destino: Path | None = OpcaoCaminho,
-    titular_unico: bool = typer.Option(
-        False, help="Trata todos os CPFs da planilha como um único titular."
-    ),
+    titular_unico: bool = OpcaoTitularUnico,
 ) -> None:
     """Converte a planilha-gabarito em CSV pseudonimizados + manifesto + resumo.md."""
     from coir.gabarito import resumo
