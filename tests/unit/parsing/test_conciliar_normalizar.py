@@ -212,3 +212,12 @@ def test_termo_fora_do_liquido_mas_no_valor_das_operacoes() -> None:
     errada = com_termo.model_copy(update={"resumo_bovespa": r.model_copy(update={"termo": 0})})
     with pytest.raises(ConciliacaoError, match="termo"):
         conciliar(errada)
+
+
+def test_termo_guarda_o_prazo_do_contrato() -> None:
+    nota = _nota("agora_2008_04_bovespa")
+    neg = nota.negocios_bovespa[0].model_copy(update={"mercado": "TERMO", "prazo": "90"})
+    [op] = operacoes(nota.model_copy(update={"negocios_bovespa": (neg,)}), REFS, {})
+    assert (op.mercado, op.prazo_termo_dias) == ("TERMO", 90)
+    [vista] = operacoes(nota, REFS, {})
+    assert vista.prazo_termo_dias is None

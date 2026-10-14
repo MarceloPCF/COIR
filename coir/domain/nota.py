@@ -198,3 +198,4 @@ class OperacaoExtraida(Modelo):
     quantidade: Decimal
     total: Decimal  # BM&F: preço x quantidade x multiplicador do contrato
     ativo_objeto: str | None  # opção: ativo-objeto; exercício: código da opção (sem o "E")
+    prazo_termo_dias: int | None = None  # termo: prazo do contrato (dias), para a liquidação (F4)

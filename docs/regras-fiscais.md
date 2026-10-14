@@ -52,9 +52,12 @@ da F4 trata como divergência conhecida, nunca ajusta o motor para bater.
   Sencon ou o myProfit têm equivalente (`docs/referencias/`); sem equivalente, não implementar.
 
 ## Decisões da validação da extração (F2, 14/10/2026)
-- **Termo (R18):** a compra a termo entra como operação do ativo-objeto na data do pregão e soma com as
-  operações à vista do mesmo papel (como no gabarito); a nota a deixa fora do líquido ("Operações à
-  termo"). A liquidação no vencimento não gera nova operação.
+- **Termo (R18), regra do usuário:** durante o contrato, as ações compradas a termo ficam numa posição
+  separada (como na B3); na liquidação (vencimento ou antecipada), quando o contrato é pago e as ações
+  são recebidas, entram na carteira à vista e o PM se junta ao da posição existente. A nota deixa a
+  compra fora do líquido ("Operações à termo"); o prazo (dias) fica na operação extraída. O gabarito v2
+  soma na data do pregão: diferença de PM esperada entre pregão e liquidação. Data da liquidação e
+  custos do contrato: a definir na F4 com o `especialista-fiscal-b3`.
 - **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte, retida pelo administrador na venda
   com lucro. Registrar a posição e o custo, mas fora da apuração mensal e do DARF; vai para a DIRPF
   como rendimento de tributação exclusiva. Precisa de tipo de ativo próprio em `data/` (F4, confirmar
