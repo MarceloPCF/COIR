@@ -162,32 +162,129 @@ def gabarito_resumo(pasta: Path | None = OpcaoCaminho) -> None:
 def validar_gabarito(
     candidato: Path = typer.Option(..., help="Pasta com CSV no formato do gabarito."),
     gabarito: Path | None = OpcaoCaminho,
-    niveis: str = typer.Option("operacoes,posicoes,apuracao", help="Níveis separados por vírgula."),
+    niveis: str = typer.Option(
+        "operacoes,posicoes,apuracao",
+        help="Níveis separados por vírgula (operacoes, negocios, notas, posicoes, apuracao).",
+    ),
+    explicacoes: Path | None = typer.Option(
+        None, help="CSV de divergências conhecidas (padrão: na pasta do gabarito)."
+    ),
+    relatorio: Path | None = typer.Option(None, help="Grava todas as divergências neste arquivo."),
 ) -> None:
     """Compara um candidato com o gabarito usando as tolerâncias de data/tolerancias.toml."""
-    from coir.gabarito.comparar import Tolerancias, comparar
+    from coir.gabarito.comparar import Tolerancias, carregar_explicacoes, comparar, explicacao
     from coir.gabarito.exportar import carregar
 
-    tol = Tolerancias.carregar()
+    pasta = _destino(gabarito)
+    conhecidas = carregar_explicacoes(explicacoes or pasta / "divergencias-conhecidas.csv")
     rel = comparar(
-        carregar(_destino(gabarito)),
+        carregar(pasta),
         carregar(candidato),
-        tol,
+        Tolerancias.carregar(),
         [n.strip() for n in niveis.split(",") if n.strip()],
     )
+    linhas = [
+        f"{d.nivel} {d.chave} {d.campo}: esperado {d.esperado} obtido {d.obtido} "
+        f"(dif {d.diferenca})"
+        for d in rel.divergencias
+    ]
+    linhas += [f"faltando {x}" for x in rel.faltando] + [f"sobrando {x}" for x in rel.sobrando]
+    explicadas = [(linha, e) for linha in linhas if (e := explicacao(linha, conhecidas))]
+    a_explicar = [linha for linha in linhas if not explicacao(linha, conhecidas)]
     print(f"Comparados: {rel.comparados}")
     print(
         f"Divergências: {len(rel.divergencias)} | faltando: {len(rel.faltando)} "
-        f"| sobrando: {len(rel.sobrando)}"
+        f"| sobrando: {len(rel.sobrando)} | explicadas: {len(explicadas)} "
+        f"| a explicar: {len(a_explicar)}"
     )
-    for d in rel.divergencias[:50]:
-        print(
-            f"  {d.nivel} {d.chave} {d.campo}: esperado {d.esperado} obtido {d.obtido} "
-            f"(dif {d.diferenca})"
-        )
-    for item in (rel.faltando + rel.sobrando)[:50]:
-        print(f"  {item}")
-    if not rel.ok:
+    for linha in a_explicar[:50]:
+        print(f"  {linha}")
+    if relatorio:
+        texto = ["# A explicar", *a_explicar, "", "# Explicadas"]
+        texto += [f"{linha} -> {e.motivo}" for linha, e in explicadas]
+        relatorio.write_text("\n".join(texto) + "\n", encoding="utf-8")
+        print(f"Relatório completo em {relatorio}")
+    if a_explicar:
+        raise typer.Exit(1)
+
+
+notas_app = typer.Typer(help="Notas de corretagem (PDF SINACOR).", no_args_is_help=True)
+app.add_typer(notas_app, name="notas")
+
+
+@notas_app.command("extrair")
+def notas_extrair(
+    origem: Path | None = typer.Option(None, help="Pasta dos PDFs (padrão: _notas-corretagens)."),
+    destino: Path | None = typer.Option(
+        None, help="Pasta do candidato (padrão: gabarito-candidato, na pasta de dados)."
+    ),
+    gabarito: Path | None = OpcaoCaminho,
+    explicacoes: Path | None = typer.Option(
+        None, help="CSV de divergências conhecidas (padrão: na pasta do gabarito)."
+    ),
+) -> None:
+    """Extrai e concilia todas as notas e grava um candidato no formato do gabarito.
+
+    Sai com código 1 se alguma nota for rejeitada sem estar no CSV de divergências conhecidas.
+    """
+    from coir import referencias
+    from coir.erros import ExtracaoError
+    from coir.gabarito import candidato as cand
+    from coir.gabarito.comparar import carregar_explicacoes
+    from coir.gabarito.exportar import ARQUIVO_MAPA, PASTA_PRIVADA, exigir_fora_do_repositorio
+    from coir.gabarito.pseudonimos import MapaPseudonimos
+    from coir.parsing.extrair import Rejeitada, extrair_pasta
+    from coir.parsing.normalizar import classes_das_series, operacoes
+
+    dados = dados_dir(exigir=True)
+    pasta_pdf = origem or dados / "_notas-corretagens"
+    saida = destino or dados / "gabarito-candidato"
+    exigir_fora_do_repositorio(saida)
+    res = extrair_pasta(pasta_pdf)
+    refs = referencias.carregar()
+    series = classes_das_series(res.notas, refs)
+    normalizadas = []
+    for nota in res.notas:
+        try:
+            normalizadas.append((nota, operacoes(nota, refs, series)))
+        except ExtracaoError as erro:
+            motivo = f"nota {nota.numero}: {erro}"
+            res.rejeitadas.append(
+                Rejeitada(nota.arquivo, nota.paginas, motivo, nota.numero, nota.data_pregao)
+            )
+    mapa = MapaPseudonimos.carregar(_destino(gabarito) / PASTA_PRIVADA / ARQUIVO_MAPA)
+    candidato = cand.montar(normalizadas, mapa)
+    cand.gravar(candidato, mapa, saida)
+    md = [
+        "# Extração das notas",
+        "",
+        f"- Notas extraídas e conciliadas: {len(normalizadas)}",
+        f"- Operações: {len(candidato.operacoes)}",
+        f"- Rejeitadas: {len(res.rejeitadas)}",
+        f"- Avisos: {len(res.avisos) + sum(len(n.avisos) for n, _ in normalizadas)}",
+        "",
+        "## Rejeitadas",
+        "",
+        *(f"- {r.arquivo} p. {list(r.paginas)}: {r.motivo}" for r in res.rejeitadas),
+        "",
+        "## Avisos",
+        "",
+        *(f"- {a}" for a in res.avisos),
+        *(f"- {n.arquivo} nota {n.numero}: {a}" for n, _ in normalizadas for a in n.avisos),
+        "",
+    ]
+    (saida / "extracao.md").write_text("\n".join(md), encoding="utf-8")
+    print("\n".join(md[2:6]))
+    arquivo_exp = explicacoes or _destino(gabarito) / "divergencias-conhecidas.csv"
+    conhecidas = {(e.nota, e.data) for e in carregar_explicacoes(arquivo_exp)}
+    novas = [r for r in res.rejeitadas if (r.nota, r.data) not in conhecidas]
+    for r in res.rejeitadas:
+        marca = "" if r in novas else " (conhecida)"
+        print(f"  rejeitada{marca}: {r.arquivo} p. {list(r.paginas)}: {r.motivo}")
+    for aviso in res.avisos:
+        print(f"  aviso: {aviso}")
+    print(f"Candidato em {saida}")
+    if novas:
         raise typer.Exit(1)
 
 
