@@ -121,3 +121,12 @@ def test_propriedade_comparar_consigo_mesmo(valor: Decimal) -> None:
     comparar_operacoes(g2.operacoes, g2.operacoes, TOL, rel)
     comparar_apuracao(g2.apuracao, g2.apuracao, TOL, rel)
     assert rel.ok
+
+
+def test_pm_vazio_so_de_um_lado_diverge() -> None:
+    g = _gabarito()
+    pos = list(g.posicoes)
+    assert pos[1].pm_apos is not None
+    pos[1] = pos[1].model_copy(update={"pm_apos": None})
+    rel = comparar(g, g.model_copy(update={"posicoes": pos}), TOL, ["posicoes"])
+    assert [(d.campo, d.obtido) for d in rel.divergencias] == [("pm_apos", None)]

@@ -3,9 +3,11 @@ from decimal import Decimal
 
 from coir.gabarito.conferencia import (
     LinhaNegocio,
+    ResultadoArquivo,
     conferir_textos,
     linhas_bmf,
     linhas_bovespa,
+    relatorio,
     valores_impressos,
 )
 from coir.gabarito.modelo import Categoria, Gabarito, OperacaoGabarito
@@ -116,3 +118,37 @@ def test_mesmo_numero_de_nota_em_datas_diferentes_fica_separado() -> None:
     paginas = [f"Data pregão 02/02/2026\n{PAGINA_BMF}", f"Data pregão 09/02/2026\n{PAGINA_BMF}"]
     [arq] = conferir_textos(_gabarito(OPS_BMF + outra), {"XP_NC_2026_02_BMF.pdf": paginas})
     assert [(n.data, n.ok) for n in arq.notas] == [("2026-02-02", True), ("2026-02-09", True)]
+
+
+def test_mesmo_numero_e_data_em_contas_diferentes_nao_e_somado() -> None:
+    outra_conta = [o.model_copy(update={"conta": "XP-2"}) for o in OPS_BMF]
+    paginas = [PAGINA_BMF, PAGINA_BMF]
+    [arq] = conferir_textos(_gabarito(OPS_BMF + outra_conta), {"XP_NC_2026_02_BMF.pdf": paginas})
+    assert sorted(n.conta for n in arq.notas) == ["XP-1", "XP-2"]
+    # o texto não diz qual página é de qual conta: não soma as duas, marca como não verificável
+    assert [v.observacao for n in arq.notas for v in n.verificacoes] == [
+        "mesmo número e data em outra conta"
+    ] * 2
+    assert all(v.ok is None for n in arq.notas for v in n.verificacoes)
+
+
+def test_bmf_com_quantidade_zero_e_valor_zero_nao_quebram_nem_passam() -> None:
+    """Quantidade 0 não pode derrubar a checagem de day trade; ajuste 0,00 não prova nada."""
+    zerada = _op("409950", "C", "INDICE", "183685", "36737", "0.47").model_copy(
+        update={"papel": "WINJ26", "quantidade": Decimal(0), "total": Decimal(0)}
+    )
+    empate = [o.model_copy(update={"total": Decimal(36737)}) for o in OPS_BMF]
+    texto = {"XP_NC_2026_02_BMF.pdf": [PAGINA_BMF]}
+    [arq] = conferir_textos(_gabarito([*empate, zerada]), texto)
+    ajuste = next(v for v in arq.notas[0].verificacoes if v.nome == "ajuste day trade")
+    assert (ajuste.ok, ajuste.observacao) == (None, "zero: não verificável")
+
+
+def test_relatorio_conta_pdfs_lidos_ausentes_e_nao_lidos() -> None:
+    resultados = conferir_textos(_gabarito(OPS_BMF), {"XP_NC_2026_03.pdf": [PAGINA_BMF]})
+    resultados.append(ResultadoArquivo("BTG_NC_2023_11_Opcao-Flexivel.pdf", erro="fora do padrão"))
+    md, csv = relatorio(resultados)
+    assert "- PDFs: 1 lidos, 1 não lidos" in md
+    assert "- BTG_NC_2023_11_Opcao-Flexivel.pdf: fora do padrão" in md
+    assert "| XP_NC_2026_02_BMF.pdf (ausente) | 409950 |" in md
+    assert csv[1][-1] == "PDF ausente"

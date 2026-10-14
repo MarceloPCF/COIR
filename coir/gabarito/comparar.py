@@ -149,7 +149,7 @@ def comparar_posicoes(
                         "posicao", rotulo, "quantidade_apos", pa.quantidade_apos, pb.quantidade_apos
                     )
                 )
-            if (
+            if (pa.pm_apos is None) != (pb.pm_apos is None) or (
                 pa.pm_apos is not None
                 and pb.pm_apos is not None
                 and _fora(pa.pm_apos, pb.pm_apos, tol.pm)

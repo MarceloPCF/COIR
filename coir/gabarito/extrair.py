@@ -3,7 +3,6 @@
 Funções puras sobre listas de linhas (o I/O fica em ``leitor``), testáveis com linhas sintéticas.
 """
 
-import hashlib
 from collections.abc import Callable, Iterator, Sequence
 from datetime import date
 from decimal import Decimal
@@ -46,10 +45,6 @@ MESES = (
 )  # fmt: skip
 CABECALHO_DADOS = ("Corretora", "CPF", "Conta", "Nota", "Data", "C/V", "Papel", "Operacao")
 LINHAS_POR_ANO = 16
-
-
-def _hash_curto(texto: str) -> str:
-    return hashlib.sha256(texto.encode()).hexdigest()[:6]
 
 
 def _indices(cabecalho: Sequence[object], exigidos: Sequence[str], aba: str) -> dict[str, int]:
@@ -97,6 +92,11 @@ class Extrator:
         self._cpfs_validos: set[str] = set()
         self._cpfs_unificados: set[str] = set()
 
+    @property
+    def cpfs_unificados(self) -> int:
+        """Quantos CPFs diferentes foram juntados em TITULAR-1 (opção titular_unico)."""
+        return len(self._cpfs_unificados)
+
     # ------------------------------------------------------------------ titulares
     def registrar_cpfs(self, abas: dict[str, Linhas]) -> None:
         """Coleta os CPFs válidos (para corrigir erros de digitação nos demais)."""
@@ -126,8 +126,7 @@ class Extrator:
         pseudonimo = self.mapa.titular(digitos)
         if corrigido:
             self.avisos.append(
-                f"{onde}: CPF com dígito verificador inválido "
-                f"(hash {_hash_curto(so_digitos(str(cpf)))}) tratado como {pseudonimo} "
+                f"{onde}: CPF com dígito verificador inválido tratado como {pseudonimo} "
                 "(erro de digitação)."
             )
         return pseudonimo
@@ -474,9 +473,9 @@ def extrair(
             "BTC_Outros: nenhum valor mensal encontrado (outros custos dedutíveis ficam vazios)."
         )
     custodia = custodia_inicial(abas["Custodia_Inicial"])
-    if len(ext._cpfs_unificados) > 1:
+    if ext.cpfs_unificados > 1:
         ext.avisos.append(
-            f"Titular único: {len(ext._cpfs_unificados)} CPFs diferentes tratados como TITULAR-1."
+            f"Titular único: {ext.cpfs_unificados} CPFs diferentes tratados como TITULAR-1."
         )
     return Gabarito(
         operacoes=operacoes,

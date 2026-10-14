@@ -83,6 +83,7 @@ def gabarito_piloto(
     ),
     origem: Path | None = OpcaoCaminho,
     destino: Path | None = OpcaoCaminho,
+    titular_unico: bool = OpcaoTitularUnico,
 ) -> None:
     """Gera piloto.md: gabarito x resumo do PDF para poucas notas."""
     from coir.gabarito import piloto
@@ -90,7 +91,7 @@ def gabarito_piloto(
 
     pasta = _destino(destino)
     exigir_fora_do_repositorio(pasta)
-    gabarito, mapa = _ler_planilha(_origem(origem), pasta)
+    gabarito, mapa = _ler_planilha(_origem(origem), pasta, titular_unico)
     mapa.salvar(pasta / PASTA_PRIVADA / ARQUIVO_MAPA)
     nomes = tuple(n.strip() for n in notas.split(",") if n.strip()) or piloto.NOTAS_PADRAO
     texto = piloto.gerar(gabarito, dados_dir(exigir=True) / "_notas-corretagens", nomes)

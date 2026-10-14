@@ -12,7 +12,7 @@ gabarito que não estão em nenhum PDF.
 """
 
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date
@@ -28,7 +28,7 @@ from coir.gabarito.piloto import (
     liquido_pdf,
     paginas_da_nota,
 )
-from coir.parsing.texto_pdf import paginas
+from coir.parsing.texto_pdf import PdfError, paginas
 
 UM_CENTAVO = Decimal("0.01")
 RE_NUMERO = re.compile(r"(?<![\w/,.])(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d+)?(?![\w/])")
@@ -118,7 +118,8 @@ class ResultadoArquivo:
     arquivo: str
     notas: list[ResultadoNota] = field(default_factory=list)
     paginas_sem_nota: list[int] = field(default_factory=list)  # páginas (1..n) com negócios órfãos
-    erro: str = ""
+    erro: str = ""  # PDF não lido (nome fora do padrão, ilegível)
+    ausente: bool = False  # PDF esperado pelas notas do gabarito, mas inexistente
 
 
 def _comparar(
@@ -176,7 +177,8 @@ def conferir_nota(
     qtd: dict[tuple[str, str], Decimal] = defaultdict(Decimal)
     for op in ops:
         qtd[(op.papel, op.cv)] += op.quantidade
-    so_day_trade = all(qtd[(p, "C")] == qtd[(p, "V")] for p, _ in qtd)
+    papeis = {p for p, _ in qtd}
+    so_day_trade = all(qtd.get((p, "C"), 0) == qtd.get((p, "V"), 0) for p in papeis)
     if not so_day_trade:
         res.verificacoes.append(
             Verificacao("líquido", None, None, None, "posição em aberto: depende de ajuste")
@@ -191,6 +193,9 @@ def conferir_nota(
     ):
         if nome == "IRRF day trade" and not valor:
             continue
+        if not valor:  # 0,00 aparece em quase toda nota: não prova nada
+            res.verificacoes.append(Verificacao(nome, valor, None, None, "zero: não verificável"))
+            continue
         res.verificacoes.append(
             Verificacao(nome, valor, None, _presente(valor, impressos), "procurado no resumo")
         )
@@ -199,21 +204,22 @@ def conferir_nota(
 
 def _notas_do_gabarito(gabarito: Gabarito) -> dict[ArquivoNota, list[list[OperacaoGabarito]]]:
     """Operações agrupadas pelo PDF esperado (corretora, mês do pregão, segmento) e pela nota
-    (número + data: a numeração BM&F da XP se repete no mesmo mês)."""
-    grupos: dict[ArquivoNota, dict[tuple[str, date], list[OperacaoGabarito]]] = defaultdict(
+    (conta + número + data: a numeração BM&F da XP se repete no mesmo mês)."""
+    grupos: dict[ArquivoNota, dict[tuple[str, str, date], list[OperacaoGabarito]]] = defaultdict(
         lambda: defaultdict(list)
     )
     for op in gabarito.operacoes:
         arq = ArquivoNota(op.corretora, op.data.year, op.data.month, op.mercado in MERCADOS_BMF)
-        grupos[arq][(op.nota, op.data)].append(op)
+        grupos[arq][(op.conta, op.nota, op.data)].append(op)
     return {arq: list(notas.values()) for arq, notas in grupos.items()}
 
 
 def _paginas(textos: list[str], livres: list[int], ops: list[OperacaoGabarito]) -> list[int]:
-    """Páginas livres com o número da nota; havendo mais de uma, só as com a data do pregão."""
+    """Páginas livres com o número da nota; havendo mais de uma, só as com a data do pregão
+    (dd/mm/aaaa ou dd/mm/aa)."""
     pags = [livres[i] for i in paginas_da_nota([textos[j] for j in livres], ops[0].nota)]
-    data = ops[0].data.strftime("%d/%m/%Y")
-    com_data = [i for i in pags if data in textos[i]]
+    datas = (ops[0].data.strftime("%d/%m/%Y"), ops[0].data.strftime("%d/%m/%y"))
+    com_data = [i for i in pags if any(d in textos[i] for d in datas)]
     return com_data if len(pags) > 1 and com_data else pags
 
 
@@ -253,7 +259,15 @@ def conferir_textos(
     pendentes: list[tuple[ArquivoNota, list[OperacaoGabarito]]] = []
     for arq, notas in _notas_do_gabarito(gabarito).items():
         nome = preferido.get(arq)
+        repetidas = Counter((ops[0].nota, ops[0].data) for ops in notas)
         for ops in notas:
+            if nome and repetidas[(ops[0].nota, ops[0].data)] > 1:
+                # sem a conta real (pseudonimizada) não há como separar as páginas
+                r = ResultadoNota(nome, ops[0].nota, ops[0].data.isoformat(), ops[0].conta)
+                obs = "mesmo número e data em outra conta"
+                r.verificacoes.append(Verificacao("nota no PDF", None, None, None, obs))
+                por_arquivo[nome].notas.append(r)
+                continue
             # no PDF do próprio segmento todas as páginas valem (como antes); só a busca
             # nos outros PDFs do mês fica restrita às páginas que nenhuma nota usou
             todas = list(range(len(textos_por_arquivo[nome]))) if nome else []
@@ -277,7 +291,9 @@ def conferir_textos(
                 esperado = (
                     f"{arq.corretora}_NC_{arq.ano}_{arq.mes:02d}{'_BMF' if arq.bmf else ''}.pdf"
                 )
-                res = sem_pdf.setdefault(esperado, ResultadoArquivo(f"{esperado} (ausente)"))
+                res = sem_pdf.setdefault(
+                    esperado, ResultadoArquivo(f"{esperado} (ausente)", ausente=True)
+                )
                 res.notas.append(_nao_encontrada(res.arquivo, ops, "PDF ausente"))
     for nome, res in por_arquivo.items():
         res.notas.sort(key=lambda n: (n.data, n.nota))
@@ -291,14 +307,17 @@ def conferir_textos(
 
 
 def conferir_pasta(gabarito: Gabarito, pasta: Path) -> list[ResultadoArquivo]:
+    """Lê os PDFs da pasta e confere; PDF fora do padrão de nome ou ilegível entra no relatório
+    com o motivo (as notas dele aparecem como "PDF ausente")."""
     textos: dict[str, list[str]] = {}
+    fora: list[ResultadoArquivo] = []
     for caminho in sorted(pasta.glob("*.pdf")):
         try:
             interpretar_nome(caminho.name)
-        except GabaritoError:
-            continue  # ex.: opção flexível, fora do escopo
-        textos[caminho.name] = paginas(caminho)
-    return conferir_textos(gabarito, textos)
+            textos[caminho.name] = paginas(caminho)
+        except (GabaritoError, PdfError) as erro:  # ex.: opção flexível, fora do escopo
+            fora.append(ResultadoArquivo(caminho.name, erro=str(erro)))
+    return [*conferir_textos(gabarito, textos), *fora]
 
 
 def _fmt(valor: Decimal | None) -> str:
@@ -330,10 +349,12 @@ def relatorio(resultados: list[ResultadoArquivo]) -> tuple[str, list[list[str]]]
     orfas = [
         f"- {a.arquivo}: páginas {a.paginas_sem_nota}" for a in resultados if a.paginas_sem_nota
     ]
+    nao_lidos = [f"- {a.arquivo}: {a.erro}" for a in resultados if a.erro]
     md = [
         "# Conferência automática gabarito x PDFs",
         "",
-        f"- PDFs: {sum(not a.arquivo.endswith('(ausente)') for a in resultados)}",
+        f"- PDFs: {sum(not a.ausente and not a.erro for a in resultados)} lidos, "
+        f"{len(nao_lidos)} não lidos",
         f"- Notas do gabarito conferidas: {total_notas} ({notas_ok} sem divergência)",
         f"- Verificações: {verif} — OK {verif_ok}, divergentes {len(divergentes)}, "
         f"não verificáveis {nao_verif}",
@@ -347,6 +368,10 @@ def relatorio(resultados: list[ResultadoArquivo]) -> tuple[str, list[list[str]]]
         "## Páginas com negócios sem nota correspondente no gabarito",
         "",
         *(orfas or ["- nenhuma"]),
+        "",
+        "## PDFs não lidos",
+        "",
+        *(nao_lidos or ["- nenhum"]),
         "",
     ]
     return "\n".join(md), csv
