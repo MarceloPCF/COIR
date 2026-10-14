@@ -56,8 +56,10 @@ da F4 trata como divergência conhecida, nunca ajusta o motor para bater.
   separada (como na B3); na liquidação (vencimento ou antecipada), quando o contrato é pago e as ações
   são recebidas, entram na carteira à vista e o PM se junta ao da posição existente. A nota deixa a
   compra fora do líquido ("Operações à termo"); o prazo (dias) fica na operação extraída. O gabarito v2
-  soma na data do pregão: diferença de PM esperada entre pregão e liquidação. Data da liquidação e
-  custos do contrato: a definir na F4 com o `especialista-fiscal-b3`.
+  soma na data do pregão: diferença de PM esperada entre pregão e liquidação. Decisão do usuário
+  (14/10/2026): data da liquidação = data do pregão + prazo do contrato; os custos da nota de compra
+  (corretagem, emolumentos, taxa de termo) entram no custo das ações liquidadas. Validar com o
+  `especialista-fiscal-b3` na F4.
 - **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte, retida pelo administrador na venda
   com lucro. Registrar a posição e o custo, mas fora da apuração mensal e do DARF; vai para a DIRPF
   como rendimento de tributação exclusiva. Precisa de tipo de ativo próprio em `data/` (F4, confirmar
