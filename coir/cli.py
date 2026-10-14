@@ -12,6 +12,8 @@ from coir.config import VAR_DADOS, dados_dir
 from coir.erros import CoirError
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from coir.gabarito.modelo import Gabarito
     from coir.gabarito.pseudonimos import MapaPseudonimos
 
@@ -50,6 +52,7 @@ gabarito_app = typer.Typer(
 )
 app.add_typer(gabarito_app, name="gabarito")
 
+OpcaoBanco = typer.Option(None, help="Arquivo do banco (padrão: coir.db na pasta de dados).")
 OpcaoCaminho = typer.Option(None, help="Padrão: dentro da pasta de dados (COIR_DADOS).")
 OpcaoTitularUnico = typer.Option(
     False, help="Trata todos os CPFs da planilha como um único titular."
@@ -222,6 +225,10 @@ def notas_extrair(
     explicacoes: Path | None = typer.Option(
         None, help="CSV de divergências conhecidas (padrão: na pasta do gabarito)."
     ),
+    do_banco: bool = typer.Option(
+        False, help="Usa as notas gravadas no banco em vez de extrair os PDFs."
+    ),
+    banco: Path | None = OpcaoBanco,
 ) -> None:
     """Extrai e concilia todas as notas e grava um candidato no formato do gabarito.
 
@@ -240,10 +247,19 @@ def notas_extrair(
     pasta_pdf = origem or dados / "_notas-corretagens"
     saida = destino or dados / "gabarito-candidato"
     exigir_fora_do_repositorio(saida)
-    res = extrair_pasta(pasta_pdf)
+    if do_banco:
+        from coir.db import repositorio as repo
+        from coir.db.sessao import conectar
+        from coir.parsing.extrair import ResultadoExtracao
+
+        res = ResultadoExtracao()
+        with conectar(_banco(banco)) as fabrica, fabrica() as sessao:
+            normalizadas = repo.carregar_notas(sessao)
+    else:
+        res = extrair_pasta(pasta_pdf)
+        normalizadas = []
     refs = referencias.carregar()
     series = classes_das_series(res.notas, refs)
-    normalizadas = []
     for nota in res.notas:
         try:
             normalizadas.append((nota, operacoes(nota, refs, series)))
@@ -284,6 +300,106 @@ def notas_extrair(
     for aviso in res.avisos:
         print(f"  aviso: {aviso}")
     print(f"Candidato em {saida}")
+    if novas:
+        raise typer.Exit(1)
+
+
+# ------------------------------------------------------------------------------- banco (F3)
+banco_app = typer.Typer(
+    help="Banco de dados local (coir.db na pasta de dados).", no_args_is_help=True
+)
+app.add_typer(banco_app, name="banco")
+titular_app = typer.Typer(help="Titulares (CPF) do banco.", no_args_is_help=True)
+app.add_typer(titular_app, name="titular")
+
+
+def _banco(banco: Path | None) -> Path:
+    from coir.db.sessao import NOME_BANCO
+
+    return banco or dados_dir(exigir=True) / NOME_BANCO
+
+
+def _agora() -> "datetime":
+    from datetime import datetime
+
+    return datetime.now().replace(microsecond=0)
+
+
+@banco_app.command("migrar")
+def banco_migrar(banco: Path | None = OpcaoBanco) -> None:
+    """Cria o banco ou o leva à última versão do esquema (backup antes)."""
+    from coir.db.sessao import migrar
+
+    caminho = _banco(banco)
+    migrar(caminho, _agora())
+    print(f"Banco atualizado: {caminho}")
+
+
+@titular_app.command("adicionar")
+def titular_adicionar(
+    cpf: str = typer.Argument(..., help="CPF do titular (com ou sem máscara)."),
+    nome: str = typer.Option(..., help="Nome do titular."),
+    banco: Path | None = OpcaoBanco,
+) -> None:
+    """Cadastra um titular (CPF) no banco."""
+    from coir.db import repositorio as repo
+    from coir.db.sessao import conectar, migrar
+
+    caminho = _banco(banco)
+    migrar(caminho, _agora())
+    with conectar(caminho) as fabrica, fabrica.begin() as sessao:
+        titular = repo.adicionar_titular(sessao, cpf, nome)
+        print(f"Titular cadastrado: {titular.nome} (id {titular.id})")
+
+
+@titular_app.command("listar")
+def titular_listar(banco: Path | None = OpcaoBanco) -> None:
+    """Lista os titulares do banco."""
+    from coir.db import repositorio as repo
+    from coir.db.sessao import conectar
+
+    with conectar(_banco(banco)) as fabrica, fabrica() as sessao:
+        for t in repo.titulares(sessao):
+            print(f"{t.id}: {t.nome}")
+
+
+@app.command("importar")
+def importar(
+    pasta: Path | None = typer.Argument(None, help="Pasta dos PDFs (padrão: _notas-corretagens)."),
+    titular: str | None = typer.Option(
+        None, help="CPF do titular das contas novas (dispensável com um só titular)."
+    ),
+    banco: Path | None = OpcaoBanco,
+    explicacoes: Path | None = typer.Option(
+        None, help="CSV de divergências conhecidas (padrão: na pasta do gabarito)."
+    ),
+) -> None:
+    """Importa as notas da pasta para o banco, numa transação e sem duplicar.
+
+    Sai com código 1 se alguma nota for rejeitada sem estar no CSV de divergências conhecidas.
+    """
+    from coir import referencias
+    from coir.gabarito.comparar import carregar_explicacoes
+    from coir.servicos.importacao import importar_pasta
+
+    dados = dados_dir(exigir=True)
+    rel = importar_pasta(
+        _banco(banco), pasta or dados / "_notas-corretagens", referencias.carregar(), _agora(),
+        titular,
+    )  # fmt: skip
+    print(
+        f"Arquivos lidos: {len(rel.arquivos_lidos)}; já importados: {len(rel.arquivos_ignorados)}"
+    )
+    print(f"Notas gravadas: {rel.notas_gravadas} ({rel.operacoes_gravadas} operações); "
+          f"já no banco: {rel.notas_ja_no_banco}; rejeitadas: {len(rel.rejeitadas)}")  # fmt: skip
+    arquivo_exp = explicacoes or dados / "gabarito" / "divergencias-conhecidas.csv"
+    conhecidas = {(e.nota, e.data) for e in carregar_explicacoes(arquivo_exp)}
+    novas = [r for r in rel.rejeitadas if (r.nota, r.data) not in conhecidas]
+    for r in rel.rejeitadas:
+        marca = "" if r in novas else " (conhecida)"
+        print(f"  rejeitada{marca}: {r.arquivo} p. {list(r.paginas)}: {r.motivo}")
+    for aviso in rel.avisos:
+        print(f"  aviso: {aviso}")
     if novas:
         raise typer.Exit(1)
 

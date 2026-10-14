@@ -83,8 +83,8 @@ def _bovespa(
     mercado = refs.mercados_bovespa.get(n.mercado.upper())
     if mercado is None:
         raise ReferenciaError(f"tipo de mercado {n.mercado!r} sem cadastro em mercados_bovespa.csv")
-    papel, objeto = _papel(n, mercado, refs, series)
-    papel = refs.ticker_na_data(papel, nota.data_pregao)
+    impresso, objeto = _papel(n, mercado, refs, series)
+    papel = refs.ticker_na_data(impresso, nota.data_pregao)
     return OperacaoExtraida(
         **_comum(nota),  # type: ignore[arg-type]
         categoria="DAY_TRADE" if n.day_trade else "COMUM",
@@ -96,6 +96,7 @@ def _bovespa(
         total=n.valor,
         ativo_objeto=objeto,
         prazo_termo_dias=int(n.prazo) if mercado == "TERMO" and n.prazo.isdigit() else None,
+        ticker_impresso=impresso if impresso != papel else None,
     )
 
 

@@ -8,11 +8,13 @@ license-files = ["LICENSE"]
 authors = [{ name = "MarceloPCF" }]
 requires-python = ">=3.13"
 dependencies = [
+    "alembic>=1.20.0",
     "pydantic>=2.9",
     "pypdfium2>=5.14.0",
     "pyxlsb>=1.0.10",
     "pyyaml>=6.0.3",
     "rapidfuzz>=3.14.6",
+    "sqlalchemy>=2.1.4",
     "typer>=0.15",
 ]
 
