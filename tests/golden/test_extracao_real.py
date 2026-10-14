@@ -44,8 +44,8 @@ def normalizadas(
 
 def test_todas_as_notas_extraidas_e_conciliadas(extracao: tuple[ResultadoExtracao, float]) -> None:
     res, segundos = extracao
-    assert len(res.notas) == 2032
-    assert len(res.rejeitadas) == 1
+    assert len(res.notas) == 2033
+    assert res.rejeitadas == []
     assert [a for a in res.avisos if "opção flexível" not in a] == []
     assert len(res.avisos) == 1
     assert segundos < 60

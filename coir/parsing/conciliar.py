@@ -50,9 +50,14 @@ def conciliar(nota: NotaExtraida) -> NotaExtraida:
 def _bovespa(nota: NotaExtraida) -> NotaExtraida:
     r = nota.resumo_bovespa
     assert r is not None
-    compras = sum((n.valor for n in nota.negocios_bovespa if n.cv == "C"), Decimal(0))
-    vendas = sum((n.valor for n in nota.negocios_bovespa if n.cv == "V"), Decimal(0))
-    _exigir("valor das operações", r.valor_operacoes, compras + vendas, nota)
+    # termo: soma em "Operações à termo" e no valor das operações, mas não no líquido da nota
+    a_termo = [n for n in nota.negocios_bovespa if n.mercado == "TERMO"]
+    demais = [n for n in nota.negocios_bovespa if n.mercado != "TERMO"]
+    termo = sum((n.valor for n in a_termo), Decimal(0))
+    compras = sum((n.valor for n in demais if n.cv == "C"), Decimal(0))
+    vendas = sum((n.valor for n in demais if n.cv == "V"), Decimal(0))
+    _exigir("operações à termo", r.termo, termo, nota)
+    _exigir("valor das operações", r.valor_operacoes, compras + vendas + termo, nota)
     _exigir("compras (resumo dos negócios)", r.compras, compras, nota)
     _exigir("vendas (resumo dos negócios)", r.vendas, vendas, nota)
     _exigir(

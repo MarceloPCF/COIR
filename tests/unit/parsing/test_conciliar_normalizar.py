@@ -190,3 +190,25 @@ def test_segmento_coerente() -> None:
     nota = _nota("agora_2008_04_bovespa")
     with pytest.raises(ValueError, match="incoerentes"):
         NotaExtraida.model_validate({**nota.model_dump(), "segmento": Segmento.BMF})
+
+
+def test_termo_fora_do_liquido_mas_no_valor_das_operacoes() -> None:
+    """Compra a termo: entra em "Operações à termo" e no valor das operações, não no líquido."""
+    nota = _nota("xp_2026_08_bovespa")
+    r = nota.resumo_bovespa
+    assert r is not None
+    termo = nota.negocios_bovespa[0].model_copy(
+        update={"cv": "C", "mercado": "TERMO", "prazo": "90", "dc": "D"}
+    )
+    com_termo = nota.model_copy(
+        update={
+            "negocios_bovespa": (*nota.negocios_bovespa, termo),
+            "resumo_bovespa": r.model_copy(
+                update={"termo": termo.valor, "valor_operacoes": r.valor_operacoes + termo.valor}
+            ),
+        }
+    )
+    assert conciliar(com_termo).resumo_bovespa is not None
+    errada = com_termo.model_copy(update={"resumo_bovespa": r.model_copy(update={"termo": 0})})
+    with pytest.raises(ConciliacaoError, match="termo"):
+        conciliar(errada)

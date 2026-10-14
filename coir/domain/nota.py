@@ -98,8 +98,11 @@ class Custo(Modelo):
 
 class ResumoBovespa(Modelo):
     valor_operacoes: Decimal
-    compras: Decimal  # à vista + opções + termo, como no "Resumo dos Negócios"
+    compras: Decimal  # à vista + opções, como no "Resumo dos Negócios"
     vendas: Decimal
+    termo: Decimal = Decimal(
+        0
+    )  # "Operações à termo": fora do líquido da nota (liquida no vencimento)
     valor_liquido_operacoes: Montante
     custos: tuple[Custo, ...]
     total_cblc: Montante
