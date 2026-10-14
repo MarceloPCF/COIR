@@ -14,14 +14,15 @@ RE_INTEIRO = r"-?(?:\d{1,3}(?:\.\d{3})+|\d+)"
 # valor seguido de "|" e/ou D/C opcionais: "44,00 | C", "0,00|D", "0,00 |", "1,49 D"
 RE_MONTANTE = re.compile(rf"(?P<valor>{RE_DECIMAL})(?:\s*\|)?(?:\s*(?P<dc>[DC])(?![\w,]))?")
 RE_DATA = re.compile(r"\d{2}/\d{2}/\d{4}")
+RE_NUMERO_BR = re.compile(rf"{RE_INTEIRO}(?:,\d+)?")  # milhar com ponto (grupos de 3) ou sem
 
 
 def decimal_br(texto: str) -> Decimal:
     """'1.234,56' -> Decimal('1234.56'); '1800' -> Decimal('1800'); aceita sinal."""
-    limpo = texto.strip().replace(".", "").replace(",", ".")
-    if not re.fullmatch(r"-?\d+(?:\.\d+)?", limpo):
+    bruto = texto.strip()
+    if not RE_NUMERO_BR.fullmatch(bruto):
         raise ExtracaoError(f"número inválido: {texto!r}")
-    return Decimal(limpo)
+    return Decimal(bruto.replace(".", "").replace(",", "."))
 
 
 def montante(texto: str) -> Montante:

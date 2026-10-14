@@ -22,9 +22,13 @@ def _igual(a: Decimal, b: Decimal) -> bool:
     return abs(a - b) <= TOLERANCIA
 
 
+def _contexto(nota: NotaExtraida) -> str:
+    return f"{nota.arquivo}: "
+
+
 def _exigir(campo: str, esperado: Decimal, lido: Decimal, nota: NotaExtraida) -> None:
     if not _igual(esperado, lido):
-        raise ConciliacaoError(campo, esperado, lido, f"nota {nota.numero} ({nota.arquivo}): ")
+        raise ConciliacaoError(campo, esperado, lido, _contexto(nota))
 
 
 def _debito(m: Montante) -> Decimal:
@@ -54,6 +58,15 @@ def _bovespa(nota: NotaExtraida) -> NotaExtraida:
     _exigir(
         "valor líquido das operações", vendas - compras, r.valor_liquido_operacoes.assinado, nota
     )
+    lados: dict[str, set[str]] = {}
+    for n in nota.negocios_bovespa:
+        if n.day_trade:
+            lados.setdefault(n.especificacao, set()).add(n.cv)
+    for papel, cvs in lados.items():
+        if cvs != {"C", "V"}:  # marca D sem compra e venda do mesmo papel: marca lida errado
+            raise ConciliacaoError(
+                f"day trade de {papel}", "compra e venda", "/".join(sorted(cvs)), _contexto(nota)
+            )
     cblc = r.valor_liquido_operacoes.assinado - _soma(r.custos, "cblc")
     _exigir("Total CBLC", cblc, r.total_cblc.assinado, nota)
     _exigir("Total Bovespa / Soma", _soma(r.custos, "bolsa"), _debito(r.total_bovespa), nota)
@@ -76,9 +89,7 @@ def _bovespa(nota: NotaExtraida) -> NotaExtraida:
             return nota.model_copy(
                 update={"resumo_bovespa": r.model_copy(update={"irrf_no_liquido": no_liquido})}
             )
-    raise ConciliacaoError(
-        "líquido", base, r.liquido.assinado, f"nota {nota.numero} ({nota.arquivo}): "
-    )
+    raise ConciliacaoError("líquido", base, r.liquido.assinado, _contexto(nota))
 
 
 def _bmf(nota: NotaExtraida) -> NotaExtraida:
@@ -88,6 +99,10 @@ def _bmf(nota: NotaExtraida) -> NotaExtraida:
         (n.valor if n.dc == "C" else -n.valor for n in nota.negocios_bmf if n.day_trade), Decimal(0)
     )
     _exigir("ajuste day trade", ajuste_dt, r.ajuste_day_trade.assinado, nota)
+    soma = sum((n.valor if n.dc == "C" else -n.valor for n in nota.negocios_bmf), Decimal(0))
+    _exigir("valor dos negócios", soma, r.valor_negocios.assinado, nota)
+    ajustes = r.ajuste_posicao.assinado + r.ajuste_day_trade.assinado
+    _exigir("ajuste de posição + ajuste day trade", r.valor_negocios.assinado, ajustes, nota)
     taxa_linhas = sum((n.taxa_operacional for n in nota.negocios_bmf), Decimal(0))
     taxa_resumo = sum((c.valor for c in r.custos if c.categoria.value == "corretagem"), Decimal(0))
     _exigir("taxa operacional", taxa_resumo, taxa_linhas, nota)
@@ -96,6 +111,4 @@ def _bmf(nota: NotaExtraida) -> NotaExtraida:
     for extra in (r.irrf_day_trade + r.irrf, r.irrf_day_trade, r.irrf, Decimal(0)):
         if _igual(base - extra, r.liquido.assinado):
             return nota
-    raise ConciliacaoError(
-        "líquido", base, r.liquido.assinado, f"nota {nota.numero} ({nota.arquivo}): "
-    )
+    raise ConciliacaoError("líquido", base, r.liquido.assinado, _contexto(nota))

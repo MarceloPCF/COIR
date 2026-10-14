@@ -219,11 +219,18 @@ def notas_extrair(
         None, help="Pasta do candidato (padrão: gabarito-candidato, na pasta de dados)."
     ),
     gabarito: Path | None = OpcaoCaminho,
+    explicacoes: Path | None = typer.Option(
+        None, help="CSV de divergências conhecidas (padrão: na pasta do gabarito)."
+    ),
 ) -> None:
-    """Extrai e concilia todas as notas e grava um candidato no formato do gabarito."""
+    """Extrai e concilia todas as notas e grava um candidato no formato do gabarito.
+
+    Sai com código 1 se alguma nota for rejeitada sem estar no CSV de divergências conhecidas.
+    """
     from coir import referencias
     from coir.erros import ExtracaoError
     from coir.gabarito import candidato as cand
+    from coir.gabarito.comparar import carregar_explicacoes
     from coir.gabarito.exportar import ARQUIVO_MAPA, PASTA_PRIVADA, exigir_fora_do_repositorio
     from coir.gabarito.pseudonimos import MapaPseudonimos
     from coir.parsing.extrair import Rejeitada, extrair_pasta
@@ -235,14 +242,16 @@ def notas_extrair(
     exigir_fora_do_repositorio(saida)
     res = extrair_pasta(pasta_pdf)
     refs = referencias.carregar()
-    series = classes_das_series(res.notas)
+    series = classes_das_series(res.notas, refs)
     normalizadas = []
     for nota in res.notas:
         try:
             normalizadas.append((nota, operacoes(nota, refs, series)))
         except ExtracaoError as erro:
             motivo = f"nota {nota.numero}: {erro}"
-            res.rejeitadas.append(Rejeitada(nota.arquivo, nota.paginas, motivo))
+            res.rejeitadas.append(
+                Rejeitada(nota.arquivo, nota.paginas, motivo, nota.numero, nota.data_pregao)
+            )
     mapa = MapaPseudonimos.carregar(_destino(gabarito) / PASTA_PRIVADA / ARQUIVO_MAPA)
     candidato = cand.montar(normalizadas, mapa)
     cand.gravar(candidato, mapa, saida)
@@ -266,7 +275,17 @@ def notas_extrair(
     ]
     (saida / "extracao.md").write_text("\n".join(md), encoding="utf-8")
     print("\n".join(md[2:6]))
+    arquivo_exp = explicacoes or _destino(gabarito) / "divergencias-conhecidas.csv"
+    conhecidas = {(e.nota, e.data) for e in carregar_explicacoes(arquivo_exp)}
+    novas = [r for r in res.rejeitadas if (r.nota, r.data) not in conhecidas]
+    for r in res.rejeitadas:
+        marca = "" if r in novas else " (conhecida)"
+        print(f"  rejeitada{marca}: {r.arquivo} p. {list(r.paginas)}: {r.motivo}")
+    for aviso in res.avisos:
+        print(f"  aviso: {aviso}")
     print(f"Candidato em {saida}")
+    if novas:
+        raise typer.Exit(1)
 
 
 def main() -> None:

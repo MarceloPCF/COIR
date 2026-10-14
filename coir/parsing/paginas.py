@@ -4,6 +4,7 @@ Um PDF pode ter várias notas e misturar Bovespa e BM&F; por isso corretora e se
 por página, pelas âncoras do perfil (razão social, CNPJ) e pelo cabeçalho de colunas dos negócios.
 """
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import cache
@@ -18,6 +19,8 @@ from coir.erros import ExtracaoError
 from coir.parsing.numeros import compactar
 
 Gramatica = Literal["agora", "xp", "btg"]
+# opção flexível (BTG): "Mercadoria:" e depois a modalidade, ex.: "FCA - Com Garantia"
+RE_OPCAO_FLEXIVEL = re.compile(r"^\s*F[A-Z]{2}\s*-\s*(?:Com|Sem)\s+Garantia", re.MULTILINE)
 
 
 class Perfil(BaseModel):
@@ -60,10 +63,8 @@ def classificar(texto: str, perfis: tuple[Perfil, ...] | None = None) -> Pagina:
             break
     else:
         raise ExtracaoError("página sem perfil de corretora conhecido (nenhuma âncora encontrada)")
-    if "mercadoria:" in compacto and "fca" in compacto:
-        tipo = TipoPagina.OPCAO_FLEXIVEL
-    else:
-        tipo = TipoPagina.NOTA
+    flexivel = "Mercadoria:" in texto and RE_OPCAO_FLEXIVEL.search(texto)
+    tipo = TipoPagina.OPCAO_FLEXIVEL if flexivel else TipoPagina.NOTA
     segmento = Segmento.BMF if "c/vmercadoria" in compacto else Segmento.BOVESPA
     gramatica = perfil.gramaticas.get(segmento)
     if gramatica is None:

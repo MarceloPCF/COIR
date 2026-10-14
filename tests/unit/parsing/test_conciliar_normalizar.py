@@ -8,7 +8,7 @@ from coir import referencias
 from coir.domain.nota import NotaExtraida, Segmento
 from coir.erros import ConciliacaoError, ExtracaoError, ReferenciaError
 from coir.parsing.conciliar import conciliar
-from coir.parsing.extrair import ResultadoExtracao, completar_contas, extrair_textos
+from coir.parsing.extrair import ResultadoExtracao, extrair_textos, sem_duplicadas
 from coir.parsing.normalizar import classes_das_series, operacoes
 from coir.parsing.paginas import TipoPagina, classificar
 
@@ -64,21 +64,78 @@ def test_negocio_com_valor_diferente_de_quantidade_x_preco() -> None:
 def test_pagina_sem_perfil_e_opcao_flexivel() -> None:
     with pytest.raises(ExtracaoError, match="sem perfil"):
         classificar("NOTA DE CORRETAGEM\nCorretora Desconhecida S.A.")
-    pagina = classificar("BTG Pactual CTVM S.A.\nMercadoria: FCA - Com Garantia")
-    assert pagina.tipo is TipoPagina.OPCAO_FLEXIVEL
-    res = extrair_textos("flex.pdf", ["BTG Pactual CTVM S.A.\nMercadoria: FCA - Com Garantia"])
+    flexivel = "BTG Pactual CTVM S.A.\nFCA - Com Garantia C 1 LIQ.\nMercadoria: Nat. Oper.:"
+    assert classificar(flexivel).tipo is TipoPagina.OPCAO_FLEXIVEL
+    res = extrair_textos("flex.pdf", [flexivel])
     assert res.notas == [] and res.rejeitadas == [] and "opção flexível" in res.avisos[0]
 
 
-def test_conta_ausente_completada_so_se_unica_no_lote() -> None:
-    nota = _nota("xp_2019_02_bmf_daytrade")
-    sem = nota.model_copy(update={"conta": "", "numero": "2"})
-    res = completar_contas(ResultadoExtracao(notas=[nota.model_copy(update={"conta": "77"}), sem]))
-    assert [n.conta for n in res.notas] == ["77", "77"]
-    assert "conta não impressa" in res.notas[1].avisos[0]
-    duas = [nota.model_copy(update={"conta": c}) for c in ("77", "88")]
-    res = completar_contas(ResultadoExtracao(notas=[*duas, sem]))
-    assert len(res.notas) == 2 and "2 contas" in res.rejeitadas[0].motivo
+def _rejeitada(texto_nome: str, de: str, para: str) -> str:
+    res = extrair_textos("x.pdf", _troca(texto_nome, de, para))
+    assert res.notas == []
+    [rejeitada] = res.rejeitadas
+    return rejeitada.motivo
+
+
+def test_conta_bmf_nao_impressa_rejeita_sem_palpite() -> None:
+    texto = (PASTA / "xp_2019_02_bmf_daytrade.txt").read_text(encoding="utf-8").rstrip()
+    sem_conta = texto.rsplit("\n", 1)[0]  # a última linha é a conta
+    res = extrair_textos("x.pdf", [sem_conta])
+    assert res.notas == [] and "não impressa" in res.rejeitadas[0].motivo
+
+
+def test_cabecalho_corrompido_vira_rejeitada() -> None:
+    texto = (PASTA / "xp_2026_08_bovespa.txt").read_text(encoding="utf-8")
+    res = extrair_textos("x.pdf", [texto.replace("Folha\n1", "Folha\nX")])
+    assert res.notas == [] and "folha inválido" in res.rejeitadas[0].motivo
+
+
+def test_folhas_fora_de_sequencia_nao_formam_nota() -> None:
+    texto = (PASTA / "xp_2016_11_bovespa_antigo_multipagina.txt").read_text(encoding="utf-8")
+    folha1, folha2 = texto.split("\f")
+    res = extrair_textos("x.pdf", [folha1, folha2.replace("Folha\n2", "Folha\n3")])
+    assert res.notas == [] and any("sequência" in r.motivo for r in res.rejeitadas)
+
+
+def test_linha_bmf_fora_do_padrao_falha_alto() -> None:
+    motivo = _rejeitada("xp_2019_02_bmf_daytrade", "DAYTRADE 25,00 C 0,20", "DAYTRADE 25,00 C")
+    assert "BM&F fora do padrão" in motivo
+
+
+def test_marca_day_trade_sem_compra_e_venda() -> None:
+    assert "day trade de GERDAU" in _rejeitada("agora_2008_04_bovespa", "N1 H 300", "N1 HD 300")
+
+
+def test_irrf_impresso_e_nao_lido_falha_alto() -> None:
+    motivo = _rejeitada("rico_2015_11_bovespa", "baseR$10.660,00 0,53", "baseR$ 10.660,00 x0,53")
+    assert "I.R.R.F." in motivo
+
+
+def test_nome_terminado_em_letras_de_marca_nao_vira_observacao() -> None:
+    from coir.parsing.bovespa import negocios
+
+    linha = "1-BOVESPA C VISTA ALLIANCE DAT 100 10,00 1.000,00 D"
+    [n] = negocios(linha, "xp")
+    assert (n.especificacao, n.observacao, n.day_trade) == ("ALLIANCE DAT", "", False)
+    [m] = negocios("1-BOVESPA V VISTA COPASA ON NM D#2 100 10,00 1.000,00 C", "xp")
+    assert (m.especificacao, m.observacao, m.day_trade) == ("COPASA ON NM", "D#2", True)
+
+
+def test_nota_repetida() -> None:
+    nota = _nota("xp_2026_08_bovespa")
+    outra = nota.model_copy(update={"arquivo": "y.pdf"})
+    res = sem_duplicadas(ResultadoExtracao(notas=[nota, outra]))
+    assert res.notas == [nota] and "repetida (idêntica)" in res.avisos[0]
+    r = nota.resumo_bovespa
+    assert r is not None
+    diferente = outra.model_copy(update={"resumo_bovespa": r.model_copy(update={"irrf": 0})})
+    res = sem_duplicadas(ResultadoExtracao(notas=[nota, diferente]))
+    assert res.notas == [] and len(res.rejeitadas) == 2
+
+
+def test_opcao_flexivel_exige_modalidade_no_inicio_da_linha() -> None:
+    texto = "BTG Pactual CTVM S.A.\nMercadoria: Nat. Oper.:\nVALOR DE FCA ESTIMADO"
+    assert classificar(texto).tipo is TipoPagina.NOTA
 
 
 # ------------------------------------------------------------------------------- normalização
@@ -105,7 +162,7 @@ def test_opcoes_e_exercicio_pelo_ativo_objeto() -> None:
     # sem classe na linha: classe da abertura da série; sem série conhecida, data/opcoes_raiz.csv
     [ex] = operacoes(exercicio, REFS, {"KLBNM199": "ON"})
     assert (ex.papel, ex.mercado, ex.ativo_objeto) == ("KLBN3", "EXERC PUT", "KLBNM199")
-    assert classes_das_series([opcoes])["BBASN380"] == "ON"
+    assert classes_das_series([opcoes], REFS)["BBASN380"] == "ON"
 
 
 def test_bmf_total_com_multiplicador_e_ajuste_de_posicao_fora() -> None:
