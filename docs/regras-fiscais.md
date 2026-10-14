@@ -62,8 +62,8 @@ da F4 trata como divergência conhecida, nunca ajusta o motor para bater.
 - **Transferência de custódia entre corretoras do mesmo titular (ex.: VALE5 Rico → Ágora, 2016):**
   evento próprio que move quantidade e PM de uma conta para outra, sem resultado. A nota continua na
   corretora que a emitiu; a planilha v2 relabelava as notas.
-- **Opção flexível (BTG):** deve ser tratada pelo sistema (parser do layout "Mercadoria: FCA" e
-  operação de opção flexível) em fase posterior; até lá a extração avisa.
+- **Opção flexível (BTG):** fica para uma versão seguinte à v3.0 (parser do layout "Mercadoria: FCA"
+  e operação de opção flexível); na v3.0 a extração reconhece e avisa.
 
 ## Pontos do v2.02 a corrigir (ver docs/PLANO.md, Diagnóstico)
 - Isenção inferida por "IRRF < R$ 1" (falha com 2+ corretoras; pode isentar ETF).
