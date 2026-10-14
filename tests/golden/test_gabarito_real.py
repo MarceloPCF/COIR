@@ -29,7 +29,8 @@ def abas() -> dict[str, Linhas]:
 @pytest.fixture(scope="module")
 def extraido(abas: dict[str, Linhas]) -> tuple[Gabarito, MapaPseudonimos]:
     mapa = MapaPseudonimos()
-    return extrair(abas, mapa), mapa
+    # planilha de uma pessoa com CPF real e fictício (eventos lançados à mão): um titular
+    return extrair(abas, mapa, titular_unico=True), mapa
 
 
 def test_contagens(extraido: tuple[Gabarito, MapaPseudonimos]) -> None:
@@ -38,12 +39,12 @@ def test_contagens(extraido: tuple[Gabarito, MapaPseudonimos]) -> None:
     for o in g.operacoes:
         ops[o.categoria] += 1
     assert ops == {Categoria.COMUM: 3081, Categoria.DAY_TRADE: 1247}
-    assert (len(g.eventos), len(g.eventos_cadastro)) == (28, 29)
+    assert (len(g.eventos), len(g.eventos_cadastro)) == (28, 17)
     assert len([p for p in g.posicoes if p.categoria is Categoria.COMUM]) == 3109
     assert len([p for p in g.posicoes if p.categoria is Categoria.DAY_TRADE]) == 1247
     assert {o.data.year for o in g.operacoes} >= set(range(2012, 2027))
     assert min(o.data.year for o in g.operacoes) == 2008
-    assert len(mapa.titulares) == 1
+    assert set(mapa.titulares.values()) == {"TITULAR-1"}
 
 
 def test_resultado_das_operacoes_bate_com_apuracao_mensal(
