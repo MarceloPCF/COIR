@@ -57,7 +57,9 @@ OpcaoTitularUnico = typer.Option(
 
 
 def _origem(origem: Path | None) -> Path:
-    return origem or dados_dir(exigir=True) / "_gabarito" / "gabarito.xlsb"
+    from coir.gabarito.leitor import localizar_planilha
+
+    return origem or localizar_planilha(dados_dir(exigir=True) / "_gabarito")
 
 
 def _destino(destino: Path | None) -> Path:

@@ -13,6 +13,7 @@ from coir.gabarito.exportar import (
     verificar_pseudonimizacao,
 )
 from coir.gabarito.extrair import extrair
+from coir.gabarito.leitor import localizar_planilha
 from coir.gabarito.pseudonimos import MapaPseudonimos
 from tests.unit.gabarito import fabrica
 from tools.verificar_dados_pessoais import verificar
@@ -76,3 +77,14 @@ def test_recusa_gravar_dentro_do_repositorio(tmp_path: Path) -> None:
 def test_carregar_arquivo_ausente(tmp_path: Path) -> None:
     with pytest.raises(GabaritoError, match="ausente"):
         carregar(tmp_path)
+
+
+def test_localizar_planilha_exige_um_unico_xlsb(tmp_path: Path) -> None:
+    with pytest.raises(GabaritoError, match="há 0"):
+        localizar_planilha(tmp_path)
+    (tmp_path / "888.888.888.88.xlsb").write_bytes(b"")
+    (tmp_path / "~$888.888.888.88.xlsb").write_bytes(b"")  # trava do Excel aberto
+    assert localizar_planilha(tmp_path).name == "888.888.888.88.xlsb"
+    (tmp_path / "outra.xlsb").write_bytes(b"")
+    with pytest.raises(GabaritoError, match="há 2"):
+        localizar_planilha(tmp_path)
