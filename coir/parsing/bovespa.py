@@ -7,7 +7,7 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from typing import Literal
 
 from coir.domain.nota import (
@@ -50,9 +50,9 @@ RE_NEGOCIO = {
     "agora": re.compile(_INICIO + _FIM_AGORA + r"\s*$"),
 }
 RE_PRAZO = re.compile(r"^(?P<prazo>\d{2}/\d{2}|\d{1,4})\s+")
-# marcas de observação (*): D day trade, # negócio direto, @ contraparte, H home broker, 2, 8...
-RE_OBS = re.compile(r"^[#@DH28FTXYBLIPACR]{1,4}$")
-NAO_OBS = re.compile(r"^(?:CI|R|DR\d|A|B|C|P|I|L|T|X|Y)$")
+# marcas de observação (*) vistas nas notas: H home broker, @ contraparte, D day trade, # negócio
+# direto, 2 corretora na contraparte, 8 liquidação institucional (ex.: "H#", "D#2", "@#")
+RE_OBS = re.compile(r"^(?=.)H?@?D?#?[28]?$")
 RE_LIQUIDO = re.compile(
     rf"L\s*[íi]\s*q\s*u\s*i\s*d\s*o\s*p\s*a\s*r\s*a\s*(?P<data>\d{{2}}/\d{{2}}/\d{{4}})\s*"
     rf"(?P<valor>{RE_DECIMAL})\s*\|?\s*(?P<dc>[DC])?"
@@ -137,28 +137,34 @@ def numero_nota(texto: str) -> str:
     return str(int(digitos))
 
 
+def _folha(texto: str) -> int:
+    if not texto.strip().isdigit():
+        raise ExtracaoError(f"número de folha inválido: {texto.strip()!r}")
+    return int(texto)
+
+
+def _vizinha(linhas: Sequence[str], i: int, rotulo: str) -> str:
+    if not 0 <= i < len(linhas):
+        raise ExtracaoError(f"cabeçalho: valor de {rotulo!r} ausente")
+    return linhas[i]
+
+
 def cabecalho(texto: str, variante: Variante) -> Cabecalho:
     linhas = _linhas(texto)
     if variante == "agora":
         i = _indice(linhas, "Nr.Nota Folha Data pregão")
-        partes = linhas[i + 1].split()
+        partes = _vizinha(linhas, i + 1, "Nr.Nota").split()
         if len(partes) < 3:
             raise ExtracaoError("cabeçalho da nota (Ágora) incompleto")
-        return Cabecalho(numero_nota(partes[0]), int(partes[1]), data_br(partes[2]))
-    if variante == "btg":  # valor antes do rótulo
-        i_nota, i_folha, i_data = (_indice(linhas, r) for r in ("Nr. nota", "Folha", "Data pregão"))
-        return Cabecalho(
-            numero_nota(linhas[i_nota - 1]),
-            int(linhas[i_folha - 1].strip()),
-            data_br(linhas[i_data - 1]),
-        )
+        return Cabecalho(numero_nota(partes[0]), _folha(partes[1]), data_br(partes[2]))
+    passo = -1 if variante == "btg" else 1  # BTG: o valor vem antes do rótulo
     i_nota = _indice(linhas, "Nr. nota")
-    i_folha = _indice(linhas, "Folha", i_nota)
-    i_data = _indice(linhas, "Data pregão", i_folha)
+    i_folha = _indice(linhas, "Folha", 0 if variante == "btg" else i_nota)
+    i_data = _indice(linhas, "Data pregão", 0 if variante == "btg" else i_folha)
     return Cabecalho(
-        numero_nota(linhas[i_nota + 1]),
-        int(linhas[i_folha + 1].strip()),
-        data_br(linhas[i_data + 1]),
+        numero_nota(_vizinha(linhas, i_nota + passo, "Nr. nota")),
+        _folha(_vizinha(linhas, i_folha + passo, "Folha")),
+        data_br(_vizinha(linhas, i_data + passo, "Data pregão")),
     )
 
 
@@ -203,13 +209,15 @@ def _negocio(m: re.Match[str]) -> NegocioBovespa:
         meio = meio[p.end() :]
     tokens = meio.split()
     obs = ""
-    if len(tokens) > 1 and RE_OBS.match(tokens[-1]) and not NAO_OBS.match(tokens[-1]):
+    if len(tokens) > 1 and RE_OBS.match(tokens[-1]):
         obs = tokens.pop()
     lote_mil = "*" in tokens
     especificacao = " ".join(t for t in tokens if t != "*")
     quantidade, preco, valor = decimal_br(m["qtd"]), decimal_br(m["preco"]), decimal_br(m["valor"])
     bruto = quantidade * preco / (1000 if lote_mil else 1)
-    if abs(bruto - valor) > Decimal("0.01"):
+    # valor impresso ao centavo: arredondado ou truncado (a Ágora trunca no lote de mil)
+    centavo = Decimal("0.01")
+    if valor not in {bruto.quantize(centavo, ROUND_HALF_UP), bruto.quantize(centavo, ROUND_DOWN)}:
         raise ExtracaoError(
             f"negócio {especificacao}: quantidade x preço = {bruto} difere do valor {valor}"
         )
@@ -291,10 +299,14 @@ def resumo(texto: str, variante: Variante) -> ResumoBovespa:
             custos.append(_custo(rotulos[0], categoria, grupo, v))
     irrf, base = Decimal(0), None
     m_irrf = RE_IRRF.search(texto)
+    if m_irrf is None and "i.r.r.f.s/opera" in compactar(texto):
+        raise ExtracaoError("linha de I.R.R.F. s/ operações fora do padrão")
     if m_irrf:
         base = decimal_br(m_irrf["base"])
         if m_irrf["valor"]:
             irrf = decimal_br(m_irrf["valor"])
+        elif variante != "btg":  # só a BTG imprime o valor do IRRF longe da base
+            raise ExtracaoError("I.R.R.F. s/ operações sem valor legível após a base")
     if variante == "agora":
         iss = RE_ISS_AGORA.search(texto)
         if iss:
@@ -316,6 +328,8 @@ def resumo(texto: str, variante: Variante) -> ResumoBovespa:
         irrf = orfaos[1].valor
         custos.append(_custo("Outras Bovespa", CategoriaCusto.OUTROS, "despesas", orfaos[2]))
     m_dt = RE_IRRF_DT.search(texto)
+    if m_dt is None and re.search(r"daytrade.*proje", compactar(texto)):
+        raise ExtracaoError("linha de IRRF day trade (projeção) fora do padrão")
     liquido = RE_LIQUIDO.search(texto)
     if not liquido:
         raise ExtracaoError("'Líquido para' não encontrado")

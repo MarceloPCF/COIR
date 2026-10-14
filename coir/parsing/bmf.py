@@ -56,11 +56,16 @@ ROTULOS_BTG: tuple[tuple[str, str], ...] = (
 )
 
 
+RE_PARECE_NEGOCIO = re.compile(r"^\s*[CV]\s+[A-Z0-9]{3,}\b.*\d,\d")
+
+
 def negocios(texto: str) -> list[NegocioBMF]:
     saida: list[NegocioBMF] = []
     for linha in texto.splitlines():
         m = RE_NEGOCIO.match(linha)
         if not m:
+            if RE_PARECE_NEGOCIO.match(linha):
+                raise ExtracaoError(f"linha de negócio BM&F fora do padrão: {linha.strip()!r}")
             continue
         venc = m["vencimento"]
         saida.append(
@@ -95,7 +100,7 @@ def _valores_xp(texto: str) -> dict[str, Montante]:
     return valores
 
 
-def _valores_btg(texto: str, ajuste_dt: Decimal) -> dict[str, Montante]:
+def _valores_btg(texto: str, ajuste_dt: Decimal, total: Decimal) -> dict[str, Montante]:
     linhas = [linha.strip() for linha in texto.splitlines() if linha.strip()]
     compactos = [compactar(linha) for linha in linhas]
     try:
@@ -110,10 +115,10 @@ def _valores_btg(texto: str, ajuste_dt: Decimal) -> dict[str, Montante]:
             f"resumo BM&F (BTG): {len(valores)} valores (esperado {len(ROTULOS_BTG)})"
         )
     lidos = dict(zip((nome for nome, _ in ROTULOS_BTG), valores, strict=True))
-    # D/C soltos no fim: o sinal dos ajustes vem dos negócios; o do líquido, da conciliação
-    dc = "C" if ajuste_dt >= 0 else "D"
-    for nome in ("valor_negocios", "ajuste_dt"):
-        lidos[nome] = Montante(valor=lidos[nome].valor, dc=dc)  # type: ignore[arg-type]
+    # D/C soltos no fim: o sinal de cada ajuste vem dos negócios (a conciliação confere os valores)
+    sinais = {"valor_negocios": total, "ajuste_dt": ajuste_dt, "ajuste_posicao": total - ajuste_dt}
+    for nome, referencia in sinais.items():
+        lidos[nome] = Montante(valor=lidos[nome].valor, dc="C" if referencia >= 0 else "D")
     return lidos
 
 
@@ -125,9 +130,12 @@ def resumo(texto: str, variante: Variante, negocios_bmf: list[NegocioBMF]) -> Re
     if variante == "xp":
         v = _valores_xp(texto)
     else:
-        ajuste = sum((n.valor if n.dc == "C" else -n.valor for n in negocios_bmf if n.day_trade),
-                     Decimal(0))  # fmt: skip
-        v = _valores_btg(texto, ajuste)
+
+        def soma(so_day_trade: bool) -> Decimal:
+            return sum((n.valor if n.dc == "C" else -n.valor for n in negocios_bmf
+                        if n.day_trade or not so_day_trade), Decimal(0))  # fmt: skip
+
+        v = _valores_btg(texto, soma(True), soma(False))
     custos = (
         Custo(rotulo="Taxa operacional", categoria=CategoriaCusto.CORRETAGEM, grupo="bmf",
               valor=v["taxa_operacional"].valor),

@@ -26,14 +26,14 @@ TIPOS_BMF_IGNORADOS = (
 )  # ajuste de posição e taxa de permanência não são negócios
 
 
-def classes_das_series(notas: Iterable[NotaExtraida]) -> dict[str, str]:
+def classes_das_series(notas: Iterable[NotaExtraida], refs: Referencias) -> dict[str, str]:
     """Série de opção -> classe do ativo-objeto, vista na abertura (ex.: 'BBASN380 ON' -> ON)."""
     series: dict[str, str] = {}
     for nota in sorted(notas, key=lambda n: n.data_pregao):
         for n in nota.negocios_bovespa:
             tokens = n.especificacao.split()
             m = RE_OPCAO.match(tokens[0]) if tokens else None
-            if m and len(tokens) > 1 and tokens[1] in ("ON", "PN", "PNA", "PNB", "PNC", "UNT"):
+            if m and len(tokens) > 1 and tokens[1] in refs.classes:
                 series.setdefault(m["serie"], tokens[1])
     return series
 
