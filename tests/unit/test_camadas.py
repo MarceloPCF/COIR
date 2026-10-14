@@ -2,6 +2,7 @@
 
 - engine e parsing dependem só de domain (e de coir.erros); domain não depende de outra camada.
 - gabarito (ferramenta de validação) pode usar parsing e pyxlsb, mas não db, ui nem engine.
+- db (SQLAlchemy/Alembic) depende só de domain; servicos orquestra parsing + db (sem ui).
 - Nenhuma dessas camadas importa banco, UI, CLI ou bibliotecas de planilha.
 - engine e domain: sem ``float`` (dinheiro é Decimal) e sem leitura de relógio/aleatoriedade.
 """
@@ -20,8 +21,16 @@ INTERNOS_PERMITIDOS = {
     "gabarito": (
         "coir.gabarito", "coir.domain", "coir.erros", "coir.parsing", "coir.recursos",
     ),
+    "db": ("coir.db", "coir.domain", "coir.erros"),
+    "servicos": (
+        "coir.servicos", "coir.db", "coir.domain", "coir.erros", "coir.parsing",
+    ),
 }  # fmt: skip
-EXTERNOS_LIBERADOS = {"gabarito": ("pyxlsb",)}
+EXTERNOS_LIBERADOS = {
+    "gabarito": ("pyxlsb",),
+    "db": ("sqlalchemy", "alembic", "sqlite3"),
+    "servicos": ("sqlalchemy",),
+}
 EXTERNOS_PROIBIDOS = (
     "sqlalchemy", "alembic", "sqlite3", "nicegui", "webview", "typer",
     "openpyxl", "xlsxwriter", "pyxlsb",
