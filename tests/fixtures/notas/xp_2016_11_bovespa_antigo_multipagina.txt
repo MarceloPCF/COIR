@@ -1,0 +1,177 @@
+Negócios realizados
+Q Negociação C/V Tipo mercado Prazo Especificação do título Obs. (*) Quantidade Preço / Ajuste Valor Operação / Ajuste D/C
+1-BOVESPA C VISTA USIMINAS PNAN1 D 2.600 4,03 10.478,00 D
+1-BOVESPA C VISTA USIMINAS PNAN1 D 500 4,03 2.015,00 D
+1-BOVESPA C VISTA USIMINAS PNAN1 D 6.400 4,03 25.792,00 D
+1-BOVESPA C VISTA USIMINAS PNAN1 D# 500 4,03 2.015,00 D
+1-BOVESPA V VISTA USIMINAS PNAN1 D 200 3,90 780,00 C
+1-BOVESPA V VISTA USIMINAS PNAN1 D 1.000 3,90 3.900,00 C
+1-BOVESPA V VISTA USIMINAS PNAN1 D 2.000 3,90 7.800,00 C
+1-BOVESPA V VISTA USIMINAS PNAN1 D 3.800 3,90 14.820,00 C
+1-BOVESPA V VISTA USIMINAS PNAN1 D 100 3,90 390,00 C
+1-BOVESPA V VISTA USIMINAS PNAN1 D 1.300 3,90 5.070,00 C
+1-BOVESPA V VISTA USIMINAS PNAN1 D 1.600 3,90 6.240,00 C
+1-BOVESPA V VISTA VALE PNAN1 300 23,48 7.044,00 C
+1-BOVESPA V VISTA VALE PNAN1 800 23,48 18.784,00 C
+1-BOVESPA V VISTA VALE PNAN1 100 23,48 2.348,00 C
+1-BOVESPA V VISTA VALE PNAN1 100 23,48 2.348,00 C
+1-BOVESPA V VISTA VALE PNAN1 100 23,47 2.347,00 C
+1-BOVESPA V VISTA VALE PNAN1 100 23,48 2.348,00 C
+1-BOVESPA V VISTA VALE PNAN1 # 300 23,48 7.044,00 C
+NOTA DENEGOCIAÇÃO
+Nr. nota
+1000006
+Folha
+1
+Data pregão
+16/11/2016
+XPINVESTIMENTOS CCTVMS/A
+AVATAULFODEPAIVA, 153 - SALA201 LEBLON 22440-032 RIODEJANEIRO- RJ
+Tel. 4003-3710 Fax: (55 55) 800880-3710
+Internet:www.xpi.com.br SAC: 0800-772-0202 e-mail:atendimento@xpi.com.br
+C.N.P.J: 02.332.886/0001-04 Carta Patente:
+Ouvidoria: Tel. 0800.722.0202 e-mail ouvidoria: ouvidoria@xpi.com.br
+Cliente
+Participante destino do repasse
+-
+Cliente
+0
+Valor
+Banco Agência Conta corrente Acionista Administrador
+C.P.F./C.N.P.J/C.V.M./C.O.B.
+Código cliente Assessor
+0000
+Custodiante C.I
+N
+Complemento nome P. Vinc
+N
+Resumo dosNegócios
+Debêntures
+Vendasà vista
+Comprasà vista
+Opções- compras
+Opções- vendas
+Operaçõesàtermo
+Valor das oper. c/ títulos públ. (v. nom.)
+Valor das operações
+Especificações diversas
+Acoluna Qindicaliquidação no Agente do Qualificado.
+(*)Observações A- Posição futuro T - Liquidação pelo Bruto
+2 - Corretora ou pessoa vinculada atuou na contra parte. C- Clubese fundos de Ações I - POP
+# - Negócio direto P - Carteira Própria
+8 - Liquidação Institucional H- Home Broker
+D- Day Trade X- Box
+F- Cobertura Y- Desmanche de Box
+B- Debêntures L - Precatório
+Taxa Operacional
+Execução
+Taxa de Custódia
+Impostos
+I.R.R.F. s/ operações, base R$ 0,00 D
+Outros
+Total Custos / Despesas D
+Resumo Financeiro
+Clearing
+Valor líquido das operações
+Taxa deliquidação
+Taxa de Registro
+Total CBLC
+Bolsa
+Taxa determo/opções
+Taxa A.N.A.
+Emolumentos
+Total Bovespa / Soma CONTINUA...
+Corretagem / Despesas
+Líquido para
+Observação: (1) As operaçõesatermo não são computadas no líquido dafatura.
+Capitaiseregiõesmetropolitanas: 4003-3710 Demaislocalidades: 0800-880-3710 SAC: 0800-772-0202 Ouvidoria: 0800-722-3710
+000000 FULANO DE TAL
+Rua Exemplo, 0 - Apto 0 Bairro Tel. (00) 00000-0000
+00000-000 CIDADE - UF
+000.000.000.00
+3-5 000000
+
+1-BOVESPA V VISTA VALE PNAN1 100 23,47 2.347,00 C
+Negócios realizados
+Q Negociação C/V Tipo mercado Prazo Especificação do título Obs. (*) Quantidade Preço / Ajuste Valor Operação / Ajuste D/C
+NOTA DENEGOCIAÇÃO
+Nr. nota
+1000006
+Folha
+2
+Data pregão
+16/11/2016
+XPINVESTIMENTOS CCTVMS/A
+AVATAULFODEPAIVA, 153 - SALA201 LEBLON 22440-032 RIODEJANEIRO- RJ
+Tel. 4003-3710 Fax: (55 55) 800880-3710
+Internet:www.xpi.com.br SAC: 0800-772-0202 e-mail:atendimento@xpi.com.br
+C.N.P.J: 02.332.886/0001-04 Carta Patente:
+Ouvidoria: Tel. 0800.722.0202 e-mail ouvidoria: ouvidoria@xpi.com.br
+Cliente
+Participante destino do repasse
+-
+Cliente
+0
+Valor
+Banco Agência Conta corrente Acionista Administrador
+C.P.F./C.N.P.J/C.V.M./C.O.B.
+Código cliente Assessor
+0000
+Custodiante C.I
+N
+Complemento nome P. Vinc
+N
+0,00
+83.610,00
+40.300,00
+0,00
+0,00
+0,00
+0,00
+123.910,00
+Resumo dosNegócios
+Debêntures
+Vendasà vista
+Comprasà vista
+Opções -compras
+Opções - vendas
+Operaçõesàtermo
+Valor das oper.c/ títulos públ. (v. nom.)
+Valor das operações
+Especificações diversas
+AcolunaQindicaliquidação noAgente doQualificado.
+IRRFDay Trade: Base R$ 1.319,82 Projeção R$ 0,00
+(*)Observações A- Posição futuro T - Liquidação pelo Bruto
+2 - Corretora ou pessoa vinculada atuou na contra parte. C- Clubese fundos de Ações I - POP
+# - Negócio direto P - Carteira Própria
+8 - Liquidação Institucional H- Home Broker
+D- Day Trade X- Box
+F- Cobertura Y- Desmanche de Box
+B- Debêntures L - Precatório
+Total CBLC 43.281,88 C
+Valor líquido das operações 43.310,00 C
+Taxa deliquidação 28,12 D
+Taxa deRegistro 0,00 D
+Total Bovespa / Soma 6,19 D
+Taxa determo/opções 0,00 D
+TaxaA.N.A. 0,00 D
+Emolumentos 6,19 D
+Total Custos /Despesas 2,23 D
+TaxaOperacional 0,00 D
+Execução 0,00
+Taxa deCustódia 0,00
+Impostos 0,00
+I.R.R.F. s/ operações, baseR$44.610,00 2,23 D
+Outros 0,00 C
+Líquido para 21/11/2016 43.273,46 C
+Resumo Financeiro
+Clearing
+Bolsa
+Custos Operacionais
+Observação: (1) As operaçõesatermo não são computadas no líquido dafatura.
+Capitaiseregiõesmetropolitanas: 4003-3710 Demaislocalidades: 0800-880-3710 SAC: 0800-772-0202 Ouvidoria: 0800-722-3710
+000000 FULANO DE TAL
+Rua Exemplo, 0 - Apto 0 Bairro Tel. (00) 00000-0000
+00000-000 CIDADE - UF
+000.000.000.00
+3-5 000000

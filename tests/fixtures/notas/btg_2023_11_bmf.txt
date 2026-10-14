@@ -1,0 +1,83 @@
+NOTA DE CORRETAGEM
+1000009
+ Nr. nota
+1
+ Folha
+03/11/2023
+ Data pregão
+ C.N.P.J.
+Numero da Corretora
+85-0
+Corretora
+Avenida Brigadeiro Faria Lima, 3477 - 14º Andar
+ITAIM BIBI
+04538-133
+Tel: (011) 3046 - 2100 / 3443 - 2100 43.815.158/0001-22
+SÃO PAULO - SP
+BTG Pactual CTVM S.A.
+Internet: https://digital.necton.com.br/portal/
+SAC: 0800-722-2827 Ouvidoria: Tel. 0800-722-0048
+e-mail: atendimentoinvestimentos@btgpactual.com
+e-mail ouvidoria: ouvidoria@btgpactual.com
+Cliente C.N.P.J/C.P.F
+Código cliente
+C/V Mercadoria Vencimento Quantidade Preço / Ajuste Tipo Negócio Valor Operação / D/C Taxa Operacional
+V WINZ23 13/12/2023 5 119.140,0000 DAY TRADE 574,00 D 0,00
+C WINZ23 13/12/2023 5 119.080,0000 DAY TRADE 634,00 C 0,00
++Custos BM&F, conforme Ofício Circular BM&F 079/2007-DG
+-Exercícios de opções=EXO
+-OZ1=249,72 grs. / OZ2=9,990 grs. / OZ3=0,225 grs.
+Outros
+0,00 0,00
+IRRF Corretagem
+0,00
+Total Conta Investimento
+57,50
+Total Conta Normal
+57,50
+Total liquido (#)
+56,93
+Total líquido da nota
+0,00
+Ajuste de posição
+60,00
+Ajuste day trade
+2,50
+Total das despesas
+0,57
+IRRF Day Trade (proj.)
+0,00
+Taxa operacional
+1,60
+Taxa registro BM&F
+0,90
+Taxas BM&F (emol+f.gar)
+0,00
+IRRF
+0,00
+Compra disponível
+0,00
+Venda Opções
+0,00
+Compra Opções
+60,00
+Valor dos negócios
+0,00
+Venda disponível
++Outros Custos
+0,00 0,00
+I.S.S
+ | C
+ | D
+ | D
+ | C
+ | C
+ | C
+ |
+ | | C
+https://digital.necton.com.br/portal/
+Atendimento: 0800-722-2827 Ouvidoria: 0800-722-0048
+00000000
+FULANO DE TAL 000.000.000.00
+RUA EXEMPLO, 0 - APTO 0
+CIDADE - UF 000000

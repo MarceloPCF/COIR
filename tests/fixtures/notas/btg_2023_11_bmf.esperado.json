@@ -1,0 +1,107 @@
+{
+  "id": "btg_2023_11_bmf",
+  "corretora": "BTG",
+  "segmento": "bmf",
+  "layout": "BTG/Necton BM&F (2023): no texto do pypdfium2 cada valor vem antes do seu rótulo e os D/C ficam soltos no fim; IRRF Day Trade (proj.) 0,57",
+  "data_pregao": "2023-11-03",
+  "numero_nota": "1000009",
+  "folha": "1",
+  "conta": null,
+  "operacoes": [
+    {
+      "cv": "V",
+      "mercado": "WINZ23",
+      "vencimento": "2023-12-13",
+      "observacao": "",
+      "quantidade": "5",
+      "preco": "119140.0000",
+      "tipo_negocio": "DAY TRADE",
+      "valor": "574.00",
+      "dc": "D",
+      "taxa_operacional": "0.00"
+    },
+    {
+      "cv": "C",
+      "mercado": "WINZ23",
+      "vencimento": "2023-12-13",
+      "observacao": "",
+      "quantidade": "5",
+      "preco": "119080.0000",
+      "tipo_negocio": "DAY TRADE",
+      "valor": "634.00",
+      "dc": "C",
+      "taxa_operacional": "0.00"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_dos_negocios": {
+      "valor": "60.00",
+      "dc": "C"
+    },
+    "venda_disponivel": "0.00",
+    "compra_disponivel": "0.00",
+    "venda_opcoes": "0.00",
+    "compra_opcoes": "0.00",
+    "custos": {
+      "Taxa operacional": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Taxa registro BM&F": {
+        "valor": "1.60",
+        "dc": "D"
+      },
+      "Taxas BM&F (emol+f.gar)": {
+        "valor": "0.90",
+        "dc": "D"
+      },
+      "+Outros Custos": {
+        "valor": "0.00"
+      },
+      "I.S.S": {
+        "valor": "0.00"
+      }
+    },
+    "subtotais": {
+      "Total das despesas": {
+        "valor": "2.50",
+        "dc": "D"
+      }
+    },
+    "ajuste_de_posicao": {
+      "valor": "0.00"
+    },
+    "ajuste_day_trade": {
+      "valor": "60.00",
+      "dc": "C"
+    },
+    "irrf": {
+      "IRRF": "0.00",
+      "IRRF Day Trade (proj.)": "0.57",
+      "Outros": "0.00",
+      "IRRF Corretagem": "0.00"
+    },
+    "totais": {
+      "Total Conta Investimento": {
+        "valor": "0.00"
+      },
+      "Total Conta Normal": {
+        "valor": "57.50",
+        "dc": "C"
+      },
+      "Total liquido (#)": {
+        "valor": "57.50",
+        "dc": "C"
+      },
+      "Total líquido da nota": {
+        "valor": "56.93",
+        "dc": "C"
+      }
+    },
+    "liquido": {
+      "data": "2023-11-03",
+      "valor": "56.93",
+      "dc": "C"
+    }
+  }
+}
