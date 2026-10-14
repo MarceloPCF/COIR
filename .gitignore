@@ -73,3 +73,6 @@ env/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Referencias de interface de outros sistemas: uso interno, nao publicar
+docs/referencias/
