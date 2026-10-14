@@ -95,6 +95,7 @@ def _bovespa(
         quantidade=n.quantidade,
         total=n.valor,
         ativo_objeto=objeto,
+        prazo_termo_dias=int(n.prazo) if mercado == "TERMO" and n.prazo.isdigit() else None,
     )
 
 
