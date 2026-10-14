@@ -1,0 +1,99 @@
+{
+  "id": "btg_2023_01_bovespa_exercicio",
+  "corretora": "BTG",
+  "segmento": "bovespa",
+  "layout": "BTG/Necton 2023: exercício de opção de venda (só o código da opção com sufixo E, sem classe)",
+  "data_pregao": "2023-01-20",
+  "numero_nota": "1000004",
+  "folha": "1",
+  "conta": "85-0 000000000",
+  "operacoes": [
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "C",
+      "mercado": "EXERC OPC VENDA",
+      "prazo": "",
+      "papel": "KLBNM199E",
+      "observacao": "",
+      "quantidade": "300",
+      "preco": "19.53",
+      "valor": "5859.00",
+      "dc": "D"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_das_operacoes": "5859.00",
+    "resumo_dos_negocios": {
+      "Debêntures": "0.00",
+      "Vendas à vista": "0.00",
+      "Compras à vista": "5859.00",
+      "Opções - compras": "0.00",
+      "Opções - vendas": "0.00",
+      "Operações à termo": "0.00",
+      "Valor das oper. c/ títulos públ. (v. nom.)": "0.00"
+    },
+    "valor_liquido_das_operacoes": {
+      "valor": "5859.00",
+      "dc": "D"
+    },
+    "custos": {
+      "Taxa de liquidação": {
+        "valor": "1.05",
+        "dc": "D"
+      },
+      "Taxa de Registro": {
+        "valor": "0.00"
+      },
+      "Taxa de termo/opções": {
+        "valor": "0.00"
+      },
+      "Taxa A.N.A.": {
+        "valor": "0.00"
+      },
+      "Emolumentos": {
+        "valor": "0.29",
+        "dc": "D"
+      },
+      "Clearing": {
+        "valor": "0.00"
+      },
+      "Execução": {
+        "valor": "0.00"
+      },
+      "Execução casa": {
+        "valor": "0.00"
+      },
+      "ISS* (SÃO PAULO - SP)": {
+        "valor": "0.00"
+      },
+      "Outras Bovespa": {
+        "valor": "0.00"
+      }
+    },
+    "subtotais": {
+      "Total CBLC": {
+        "valor": "5860.05",
+        "dc": "D"
+      },
+      "Total Bovespa / Soma": {
+        "valor": "0.29",
+        "dc": "D"
+      },
+      "Total corretagem / Despesas": {
+        "valor": "0.00"
+      }
+    },
+    "irrf": {
+      "rotulo": "I.R.R.F. s/ operações",
+      "base": "0.00",
+      "valor": "0.00",
+      "dc": null,
+      "incluido_em_total_custos_despesas": false
+    },
+    "liquido": {
+      "data": "2023-01-24",
+      "valor": "5860.34",
+      "dc": "D"
+    }
+  }
+}

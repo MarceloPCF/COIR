@@ -1,0 +1,92 @@
+{
+  "id": "agora_2008_04_bovespa",
+  "corretora": "AGORA",
+  "segmento": "bovespa",
+  "layout": "Ágora antigo (2008), Bovespa; D/C aparece antes do valor no texto extraído",
+  "data_pregao": "2008-04-18",
+  "numero_nota": "1000001",
+  "folha": "1",
+  "conta": "0000000-0",
+  "operacoes": [
+    {
+      "negociacao": "BOVESPA",
+      "cv": "C",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "GERDAU PN N1",
+      "observacao": "H",
+      "quantidade": "300",
+      "preco": "62.20",
+      "valor": "18660.00",
+      "dc": "D"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_das_operacoes": "18660.00",
+    "resumo_dos_negocios": {
+      "Debêntures": "0.00",
+      "Vendas à vista": "0.00",
+      "Compras à vista": "18660.00",
+      "Opções - compras": "0.00",
+      "Opções - vendas": "0.00",
+      "Operações à termo": "0.00",
+      "Valor das oper. c/ títulos públ. (v. nom.)": "0.00"
+    },
+    "valor_liquido_das_operacoes": {
+      "valor": "18660.00",
+      "dc": "D"
+    },
+    "custos": {
+      "Taxa de liquidação": {
+        "valor": "1.49",
+        "dc": "D"
+      },
+      "Taxa de Registro": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Taxa de termo/opções": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Taxa A.N.A.": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Emolumentos": {
+        "valor": "5.03",
+        "dc": "D"
+      },
+      "Corretagem": {
+        "valor": "20.00",
+        "dc": "D"
+      },
+      "ISS ( RIO DE JANEIRO )": {
+        "valor": "0.40"
+      },
+      "Outras": {
+        "valor": "0.00",
+        "dc": "D"
+      }
+    },
+    "subtotais": {
+      "Total CBLC": {
+        "valor": "18661.49",
+        "dc": "D"
+      },
+      "Total Bovespa / Soma": {
+        "valor": "5.03",
+        "dc": "D"
+      },
+      "Total corretagem / Despesas": {
+        "valor": "20.40"
+      }
+    },
+    "irrf": null,
+    "liquido": {
+      "data": "2008-04-24",
+      "valor": "18686.92",
+      "dc": "D"
+    }
+  }
+}
