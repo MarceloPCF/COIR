@@ -51,6 +51,20 @@ da F4 trata como divergência conhecida, nunca ajusta o motor para bater.
 - **Outros custos dedutíveis (BTC_Outros):** o usuário não os lançou. Verificar nas fases de telas se a
   Sencon ou o myProfit têm equivalente (`docs/referencias/`); sem equivalente, não implementar.
 
+## Decisões da validação da extração (F2, 14/10/2026)
+- **Termo (R18):** a compra a termo entra como operação do ativo-objeto na data do pregão e soma com as
+  operações à vista do mesmo papel (como no gabarito); a nota a deixa fora do líquido ("Operações à
+  termo"). A liquidação no vencimento não gera nova operação.
+- **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte, retida pelo administrador na venda
+  com lucro. Registrar a posição e o custo, mas fora da apuração mensal e do DARF; vai para a DIRPF
+  como rendimento de tributação exclusiva. Precisa de tipo de ativo próprio em `data/` (F4, confirmar
+  alíquotas e base com o `especialista-fiscal-b3`).
+- **Transferência de custódia entre corretoras do mesmo titular (ex.: VALE5 Rico → Ágora, 2016):**
+  evento próprio que move quantidade e PM de uma conta para outra, sem resultado. A nota continua na
+  corretora que a emitiu; a planilha v2 relabelava as notas.
+- **Opção flexível (BTG):** deve ser tratada pelo sistema (parser do layout "Mercadoria: FCA" e
+  operação de opção flexível) em fase posterior; até lá a extração avisa.
+
 ## Pontos do v2.02 a corrigir (ver docs/PLANO.md, Diagnóstico)
 - Isenção inferida por "IRRF < R$ 1" (falha com 2+ corretoras; pode isentar ETF).
 - Sem categoria FII.
