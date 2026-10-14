@@ -338,6 +338,7 @@ def resumo(texto: str, variante: Variante) -> ResumoBovespa:
         valor_operacoes=negs["Valor das operações"],
         compras=negs["Compras à vista"] + negs["Opções - compras"],
         vendas=negs["Vendas à vista"] + negs["Opções - vendas"],
+        termo=negs["Operações à termo"],
         valor_liquido_operacoes=vlo,
         custos=tuple(custos),
         total_cblc=_obrigatorio(texto, "Total CBLC"),
