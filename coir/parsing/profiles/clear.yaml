@@ -1,0 +1,5 @@
+# Clear (grupo XP): usa o perfil da XP
+corretora: CLEAR
+prioridade: 10
+ancoras: ["CLEAR CORRETORA"]
+gramaticas: {bovespa: xp, bmf: xp}

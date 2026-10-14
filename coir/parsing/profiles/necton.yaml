@@ -1,0 +1,5 @@
+# Necton: usa o perfil da BTG
+corretora: NECTON
+prioridade: 20
+ancoras: ["NECTON INVESTIMENTOS"]
+gramaticas: {bovespa: btg, bmf: btg}
