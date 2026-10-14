@@ -181,8 +181,17 @@ def test_main_codigo_de_saida(tmp_path: Path) -> None:
 
 
 def _git(repo: Path, *args: str) -> None:
+    # repositório descartável do teste: sem assinatura GPG (a config global pediria a senha)
+    config = [
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@example.invalid",
+        "-c",
+        "commit.gpgsign=false",
+    ]
     subprocess.run(
-        ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", *args],
+        ["git", *config, *args],
         cwd=repo,
         check=True,
         capture_output=True,

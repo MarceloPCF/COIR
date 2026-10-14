@@ -199,3 +199,9 @@ class OperacaoExtraida(Modelo):
     total: Decimal  # BM&F: preço x quantidade x multiplicador do contrato
     ativo_objeto: str | None  # opção: ativo-objeto; exercício: código da opção (sem o "E")
     prazo_termo_dias: int | None = None  # termo: prazo do contrato (dias), para a liquidação (F4)
+    ticker_impresso: str | None = None  # ticker antes da troca de código (só quando houve troca)
+
+    @property
+    def ticker_original(self) -> str:
+        """Ticker como negociado na data (antes de trocas de código): resolve o ativo."""
+        return self.ticker_impresso or self.papel
