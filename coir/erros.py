@@ -30,3 +30,11 @@ class ConciliacaoError(ExtracaoError):
 
 class ReferenciaError(ExtracaoError):
     """Ativo, opção ou contrato sem cadastro nas tabelas de referência (data/)."""
+
+
+class BancoError(CoirError):
+    """Banco de dados ausente, desatualizado ou com conteúdo inesperado."""
+
+
+class ImportacaoError(CoirError):
+    """Lote de importação que não pode ser gravado (titular, conta ou arquivos inconsistentes)."""

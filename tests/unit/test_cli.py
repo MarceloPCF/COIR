@@ -43,3 +43,21 @@ def test_main_converte_erro_de_dominio(
         cli.main()
     assert saida.value.code == 1
     assert capsys.readouterr().err.strip() == "Erro: pasta ausente"
+
+
+def test_banco_titular_e_importar_pasta_vazia(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tests.apoio import cpf_de_teste
+
+    monkeypatch.setenv(VAR_DADOS, str(tmp_path))
+    assert runner.invoke(app, ["banco", "migrar"]).exit_code == 0
+    assert (tmp_path / "coir.db").is_file()
+    cpf = cpf_de_teste()
+    r = runner.invoke(app, ["titular", "adicionar", cpf, "--nome", "Titular de Teste"])
+    assert r.exit_code == 0 and cpf not in r.output and "id 1" in r.output
+    assert "Titular de Teste" in runner.invoke(app, ["titular", "listar"]).output
+    (tmp_path / "_notas-corretagens").mkdir()
+    r = runner.invoke(app, ["importar"])
+    assert r.exit_code == 0, r.output
+    assert "Notas gravadas: 0" in r.output
