@@ -130,3 +130,42 @@ def test_pm_vazio_so_de_um_lado_diverge() -> None:
     pos[1] = pos[1].model_copy(update={"pm_apos": None})
     rel = comparar(g, g.model_copy(update={"posicoes": pos}), TOL, ["posicoes"])
     assert [(d.campo, d.obtido) for d in rel.divergencias] == [("pm_apos", None)]
+
+
+def test_nivel_negocios_ignora_custos_e_irrf() -> None:
+    g = _gabarito()
+    outro = _troca_op(g, 0, custos=Decimal("99"), irrf=Decimal("9"))
+    assert comparar(g, outro, TOL, ["negocios"]).ok
+    assert not comparar(g, outro, TOL, ["operacoes"]).ok
+
+
+def test_nivel_notas_soma_por_nota() -> None:
+    g = _gabarito()
+    op = g.operacoes[0]
+    metade = {"custos": op.custos / 2, "total": op.total / 2, "quantidade": op.quantidade / 2}
+    partes = [op.model_copy(update=metade), op.model_copy(update=metade)]
+    assert comparar(g, g.model_copy(update={"operacoes": [*partes, *g.operacoes[1:]]}), TOL,
+                    ["notas"]).ok  # fmt: skip
+    rel = comparar(g, _troca_op(g, 0, custos=op.custos + Decimal("0.02")), TOL, ["notas"])
+    assert [(d.nivel, d.campo) for d in rel.divergencias] == [("nota", "custos")]
+
+
+def test_explicacoes_por_nota_e_por_papel(tmp_path: Path) -> None:
+    from coir.gabarito.comparar import carregar_explicacoes, explicacao
+
+    arquivo = tmp_path / "divergencias-conhecidas.csv"
+    arquivo.write_text(
+        "nota,data,papel,motivo\n2588033,2008-04-18,,nota toda\n"
+        "11490605,2008-06-02,PETR4,só PETR4\n",
+        encoding="utf-8",
+    )
+    exp = carregar_explicacoes(arquivo)
+    linha = "nota ('AGORA', 'AGORA-1', '2588033', datetime.date(2008, 4, 18)) custos: ..."
+    assert explicacao(linha, exp) == exp[0]
+    papel = "operacao ('XP', 'XP-1', '11490605', datetime.date(2008, 6, 2), '{}', 'V') total"
+    assert explicacao(papel.format("PETR4"), exp) == exp[1]
+    assert explicacao(papel.format("VALE3"), exp) is None
+    assert carregar_explicacoes(tmp_path / "nao-existe.csv") == []
+    arquivo.write_text("nota,data\n1,ontem\n", encoding="utf-8")
+    with pytest.raises(GabaritoError, match="divergências conhecidas"):
+        carregar_explicacoes(arquivo)

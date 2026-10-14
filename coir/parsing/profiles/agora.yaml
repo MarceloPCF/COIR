@@ -1,0 +1,5 @@
+# Ágora (2008–2016): layout antigo, D/C antes do valor, resumo em duas colunas
+corretora: AGORA
+prioridade: 10
+ancoras: ["AGORA CORRETORA DE TITULOS", "74.014.747/0001-35"]
+gramaticas: {bovespa: agora}
