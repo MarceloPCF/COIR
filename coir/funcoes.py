@@ -528,12 +528,12 @@ def agrupar_btg(note_df):
     ],as_index=False
     ).agg(
         {
-            'Preço': sum,
-            'Quantidade': sum,
-            'Total': sum,
-            'Custos_Fin': sum,
-            'PM': sum,
-            'IRRF': sum
+            'Preço': 'sum',
+            'Quantidade': 'sum',
+            'Total': 'sum',
+            'Custos_Fin': 'sum',
+            'PM': 'sum',
+            'IRRF': 'sum'
         }
     )
     return note_df_agrupado
@@ -548,12 +548,12 @@ def agrupar(note_df):
     ],as_index=False
     ).agg(
         {
-            'Preço': sum,
-            'Quantidade': sum,
-            'Total': sum,
-            'Custos_Fin': sum,
-            'PM': sum,
-            'IRRF': sum
+            'Preço': 'sum',
+            'Quantidade': 'sum',
+            'Total': 'sum',
+            'Custos_Fin': 'sum',
+            'PM': 'sum',
+            'IRRF': 'sum'
         }
     )
     return note_df_agrupado
@@ -568,12 +568,12 @@ def agrupar_bmf(note_df):
     ],as_index=False
     ).agg(
         {
-            'Quantidade': sum,
-            'Total': sum,
-            'Custos_Fin': sum,
-            'PM': sum,
-            'IRRF': sum,
-            'IR_DT': sum
+            'Quantidade': 'sum',
+            'Total': 'sum',
+            'Custos_Fin': 'sum',
+            'PM': 'sum',
+            'IRRF': 'sum',
+            'IR_DT': 'sum'
         }
     )
     return note_df_agrupado
