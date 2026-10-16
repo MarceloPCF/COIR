@@ -15,8 +15,10 @@ dependencies = [
     "pyxlsb>=1.0.10",
     "pyyaml>=6.0.3",
     "rapidfuzz>=3.14.6",
+    "reportlab>=5.0.1",
     "sqlalchemy>=2.1.4",
     "typer>=0.15",
+    "xlsxwriter>=3.2.9",
 ]
 
 [project.scripts]

@@ -4,6 +4,8 @@
 - gabarito (ferramenta de validação) pode usar parsing, pyxlsb e openpyxl (planilha externa),
   mas não db, ui nem engine.
 - db (SQLAlchemy/Alembic) depende só de domain; servicos orquestra parsing + db (sem ui).
+- reports (xlsx/csv/pdf, ADR 0003) parte só do modelo neutro e do domain: sem banco, motor nem UI;
+  só ela usa xlsxwriter e reportlab, e não lê o relógio (a data de geração vem de fora).
 - Nenhuma dessas camadas importa banco, UI, CLI ou bibliotecas de planilha.
 - engine e domain: sem ``float`` (dinheiro é Decimal) e sem leitura de relógio/aleatoriedade.
 """
@@ -23,18 +25,21 @@ INTERNOS_PERMITIDOS = {
         "coir.gabarito", "coir.domain", "coir.erros", "coir.parsing", "coir.recursos",
     ),
     "db": ("coir.db", "coir.domain", "coir.erros"),
+    "reports": ("coir.reports", "coir.domain", "coir.erros"),
     "servicos": (
         "coir.servicos", "coir.db", "coir.domain", "coir.engine", "coir.erros", "coir.parsing",
+        "coir.reports",
     ),
 }  # fmt: skip
 EXTERNOS_LIBERADOS = {
     "gabarito": ("pyxlsb", "openpyxl"),
     "db": ("sqlalchemy", "alembic", "sqlite3"),
+    "reports": ("xlsxwriter", "reportlab"),
     "servicos": ("sqlalchemy",),
 }
 EXTERNOS_PROIBIDOS = (
     "sqlalchemy", "alembic", "sqlite3", "nicegui", "webview", "typer",
-    "openpyxl", "xlsxwriter", "pyxlsb",
+    "openpyxl", "xlsxwriter", "pyxlsb", "reportlab",
 )  # fmt: skip
 NAO_DETERMINISTICOS = ("random", "time", "secrets", "uuid")
 ATRIBUTOS_RELOGIO = {"now", "today", "utcnow"}
@@ -120,6 +125,18 @@ def test_camada_sem_float_nem_relogio(camada: str) -> None:
         f"{arq.relative_to(RAIZ)} {v}"
         for arq in _arquivos(camada)
         for v in _violacoes_de_determinismo(arq.read_text(encoding="utf-8"))
+    ]
+    assert violacoes == []
+
+
+def test_reports_nao_le_o_relogio() -> None:
+    """A data de geração entra como parâmetro (relatórios reproduzíveis). Float é permitido aqui:
+    medidas de layout do PDF e a gravação de números no xlsx (ADR 0003)."""
+    violacoes = [
+        f"{arq.relative_to(RAIZ)} {v}"
+        for arq in _arquivos("reports")
+        for v in _violacoes_de_determinismo(arq.read_text(encoding="utf-8"))
+        if "float" not in v
     ]
     assert violacoes == []
 

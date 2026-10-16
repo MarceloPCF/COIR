@@ -43,3 +43,7 @@ class ImportacaoError(CoirError):
 class MotorError(CoirError):
     """Livro que o motor fiscal não consegue apurar sem palpite (ex.: exercício sem a opção em
     carteira, venda a termo, custo negativo)."""
+
+
+class ExportacaoError(CoirError):
+    """Relatório inconsistente (linha com colunas a mais ou a menos) ou destino inválido."""
