@@ -9,7 +9,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 DC = Literal["D", "C"]
 CV = Literal["C", "V"]
@@ -177,6 +177,14 @@ class NotaExtraida(Modelo):
         resumo = self.resumo_bovespa or self.resumo_bmf
         assert resumo is not None
         return resumo.irrf + resumo.irrf_day_trade
+
+
+class Cliente(Modelo):
+    """Cliente impresso no cabeçalho da nota. Dado pessoal: fica fora de NotaExtraida (que vai
+    para o banco em JSON e para os candidatos do gabarito) e nunca aparece em repr/log."""
+
+    cpf: str = Field(repr=False)  # só dígitos
+    nome: str | None = Field(default=None, repr=False)
 
 
 class OperacaoExtraida(Modelo):

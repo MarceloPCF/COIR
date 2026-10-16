@@ -1,9 +1,12 @@
 """Tabelas de referência usadas na normalização (carregadas de data/ fora do domínio)."""
 
+import re
 from datetime import date
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
+
+RE_SERIE_OPCAO = re.compile(r"^[A-Z0-9]{4}[A-X]\d")
 
 
 class ContratoFuturo(BaseModel):
@@ -44,4 +47,8 @@ class Referencias(BaseModel):
         for t in self.trocas:
             if t.ticker_impresso == ticker and dia <= t.ate:
                 return t.ticker
+        if RE_SERIE_OPCAO.match(ticker):  # a série segue a troca do ativo-objeto
+            for t in self.trocas:
+                if ticker[:4] == t.ticker_impresso[:4] and dia <= t.ate:
+                    return t.ticker[:4] + ticker[4:]  # RRRPT32 -> BRAVT32
         return ticker

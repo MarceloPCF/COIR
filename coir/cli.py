@@ -161,6 +161,95 @@ def gabarito_resumo(pasta: Path | None = OpcaoCaminho) -> None:
     print(resumo.gerar(carregar(_destino(pasta))))
 
 
+@gabarito_app.command("externo")
+def gabarito_externo(
+    arquivo: Path | None = typer.Argument(
+        None,
+        help="xlsx de operações finalizadas de outro sistema (padrão: o mais recente "
+        "'*Finalizadas*.xlsx' em _relatorios-b3).",
+    ),
+    visao: str = typer.Option("titular", help="Visão do motor: titular, corretora ou conta."),
+    desde: str | None = typer.Option(
+        None, help="Compara a partir de AAAA-MM (marco, ex.: mês seguinte à carteira zerada)."
+    ),
+    banco: Path | None = OpcaoBanco,
+    destino: Path | None = OpcaoCaminho,
+) -> None:
+    """Compara as vendas fechadas de uma planilha externa com o motor (dia, corretora, ativo)."""
+    import csv
+    from collections import Counter
+    from datetime import datetime
+    from decimal import Decimal
+
+    from coir import referencias
+    from coir.domain.fiscal import Visao
+    from coir.gabarito.comparar import Tolerancias
+    from coir.gabarito.exportar import exigir_fora_do_repositorio
+    from coir.gabarito.externo import (
+        carregar_explicacoes,
+        comparar_externo,
+        explicar,
+        ler_planilha_externa,
+        ticker_atual,
+    )
+    from coir.servicos.apuracao import movimentos_banco
+
+    dados = dados_dir(exigir=True)
+    if arquivo is None:
+        candidatos = sorted((dados / "_relatorios-b3").glob("*Finalizadas*.xlsx"))
+        if not candidatos:
+            raise typer.BadParameter("nenhum '*Finalizadas*.xlsx' em _relatorios-b3")
+        arquivo = candidatos[-1]
+    try:
+        vista = Visao(visao)
+    except ValueError as erro:
+        raise typer.BadParameter(str(erro)) from erro
+    marco = None
+    if desde is not None:
+        try:
+            marco = datetime.strptime(desde, "%Y-%m").date()
+        except ValueError as erro:
+            raise typer.BadParameter(f"--desde deve ser AAAA-MM (lido {desde!r})") from erro
+    refs, tol = referencias.carregar(), Tolerancias.carregar()
+    vendas = ler_planilha_externa(arquivo)
+    movs = movimentos_banco(_banco(banco), refs, referencias.carregar_fiscais(),
+                            max(v.data for v in vendas), vista)  # fmt: skip
+    linhas, meses = comparar_externo(vendas, movs, ticker_atual(refs), tol.operacao, tol.mes,
+                                    marco)  # fmt: skip
+    conhecidas = _destino(destino) / "divergencias-externo.csv"
+    linhas = explicar(linhas, carregar_explicacoes(conhecidas))
+    contagem = Counter(x.classe for x in linhas)
+    grandes = sum(1 for x in linhas if x.classe == "diferença" and abs(x.diferenca) > 1)
+    print(f"Planilha externa: {len(vendas)} vendas; {len(linhas)} chaves (dia, corretora, ativo); "
+          f"visão do motor: {vista.value}"
+          + (f"; desde {marco:%m/%Y}" if marco else ""))  # fmt: skip
+    for classe, n in contagem.most_common():
+        extra = f" ({grandes} acima de R$ 1,00)" if classe == "diferença" else ""
+        print(f"  {classe}: {n}{extra}")
+    print(f"Meses x mercado com diferença acima de R$ {tol.mes}: {len(meses)}")
+    for m in meses:
+        aberta = sum((x.diferenca for x in linhas if (x.data.year, x.data.month) == (m.ano, m.mes)
+                      and x.classe not in ("confere", "explicada")), Decimal(0))  # fmt: skip
+        nota = " - explicado venda a venda" if abs(aberta) <= tol.mes else ""
+        print(f"  {m.mes:02d}/{m.ano} {m.mercado}: motor {m.motor:.2f} externo {m.externo:.2f} "
+              f"(dif {m.motor - m.externo:.2f}){nota}")  # fmt: skip
+    pasta = _destino(destino) / "conferencia"
+    exigir_fora_do_repositorio(pasta)
+    pasta.mkdir(parents=True, exist_ok=True)
+    saida = pasta / f"externo-{vista.value}.csv"
+    with saida.open("w", encoding="utf-8", newline="") as f:
+        escrita = csv.writer(f, lineterminator="\n")
+        escrita.writerow(
+            ["data", "corretora", "ticker", "motor", "externo", "diferenca", "classe", "motivo"]
+        )
+        for x in linhas:
+            if x.classe != "confere":
+                escrita.writerow([x.data, x.corretora, x.ticker, f"{x.motor:.2f}",
+                                  f"{x.externo:.2f}", f"{x.diferenca:.2f}", x.classe,
+                                  x.motivo])  # fmt: skip
+    print(f"Detalhe em {saida} (motivos já analisados: {conhecidas})")
+
+
 @app.command("validar-gabarito")
 def validar_gabarito(
     candidato: Path = typer.Option(..., help="Pasta com CSV no formato do gabarito."),
@@ -175,13 +264,20 @@ def validar_gabarito(
     relatorio: Path | None = typer.Option(None, help="Grava todas as divergências neste arquivo."),
 ) -> None:
     """Compara um candidato com o gabarito usando as tolerâncias de data/tolerancias.toml."""
-    from coir.gabarito.comparar import Tolerancias, carregar_explicacoes, comparar, explicacao
+    from coir import referencias
+    from coir.gabarito.comparar import (
+        Tolerancias,
+        carregar_explicacoes,
+        com_tickers_da_data,
+        comparar,
+        explicacao,
+    )
     from coir.gabarito.exportar import carregar
 
     pasta = _destino(gabarito)
     conhecidas = carregar_explicacoes(explicacoes or pasta / "divergencias-conhecidas.csv")
     rel = comparar(
-        carregar(pasta),
+        com_tickers_da_data(carregar(pasta), referencias.carregar()),
         carregar(candidato),
         Tolerancias.carregar(),
         [n.strip() for n in niveis.split(",") if n.strip()],
@@ -363,11 +459,28 @@ def titular_listar(banco: Path | None = OpcaoBanco) -> None:
             print(f"{t.id}: {t.nome}")
 
 
+@titular_app.command("renomear")
+def titular_renomear(
+    id_titular: int = typer.Argument(..., help="Id do titular (coir titular listar)."),
+    nome: str = typer.Option(..., help="Novo nome."),
+    banco: Path | None = OpcaoBanco,
+) -> None:
+    """Troca o nome de um titular (o criado na importação usa o nome impresso na nota)."""
+    from coir.db import repositorio as repo
+    from coir.db.sessao import conectar
+
+    with conectar(_banco(banco)) as fabrica, fabrica.begin() as sessao:
+        titular = repo.renomear_titular(sessao, id_titular, nome)
+        print(f"Titular {titular.id}: {titular.nome}")
+
+
 @app.command("importar")
 def importar(
     pasta: Path | None = typer.Argument(None, help="Pasta dos PDFs (padrão: _notas-corretagens)."),
     titular: str | None = typer.Option(
-        None, help="CPF do titular das contas novas (dispensável com um só titular)."
+        None,
+        help="CPF do titular (opcional: cada nota vai para o CPF impresso nela; só confere "
+        "e cobre notas sem CPF válido).",
     ),
     banco: Path | None = OpcaoBanco,
     explicacoes: Path | None = typer.Option(
@@ -392,6 +505,10 @@ def importar(
     )
     print(f"Notas gravadas: {rel.notas_gravadas} ({rel.operacoes_gravadas} operações); "
           f"já no banco: {rel.notas_ja_no_banco}; rejeitadas: {len(rel.rejeitadas)}")  # fmt: skip
+    if rel.notas_renormalizadas:
+        print(f"Notas já gravadas com operações regravadas: {rel.notas_renormalizadas}")
+    for criado in rel.titulares_criados:
+        print(f"Titular criado: {criado} (coir titular listar / renomear)")
     arquivo_exp = explicacoes or dados / "gabarito" / "divergencias-conhecidas.csv"
     conhecidas = {(e.nota, e.data) for e in carregar_explicacoes(arquivo_exp)}
     novas = [r for r in rel.rejeitadas if (r.nota, r.data) not in conhecidas]
@@ -402,6 +519,120 @@ def importar(
         print(f"  aviso: {aviso}")
     if novas:
         raise typer.Exit(1)
+
+
+@gabarito_app.command("exportar-eventos")
+def gabarito_exportar_eventos(
+    pasta: Path | None = OpcaoCaminho,
+    destino: Path | None = typer.Option(None, help="Padrão: eventos.csv na pasta de dados."),
+) -> None:
+    """Converte os eventos da planilha para o CSV de eventos do COIR (com as contas reais)."""
+    from coir.gabarito.eventos import exportar_eventos
+
+    arquivo = destino or dados_dir(exigir=True) / ARQUIVO_EVENTOS
+    n = exportar_eventos(_destino(pasta), arquivo)
+    print(f"{n} eventos em {arquivo} (revise e acrescente os que a planilha não tinha)")
+
+
+# ------------------------------------------------------------------------------ eventos (F4)
+ARQUIVO_EVENTOS = "eventos.csv"
+eventos_app = typer.Typer(help="Eventos corporativos e de custódia.", no_args_is_help=True)
+app.add_typer(eventos_app, name="eventos")
+
+
+@eventos_app.command("importar")
+def eventos_importar(
+    arquivo: Path | None = typer.Argument(
+        None, help="CSV (padrão: eventos.csv na pasta de dados)."
+    ),
+    banco: Path | None = OpcaoBanco,
+    substituir: bool = typer.Option(
+        False, help="Remove do banco os eventos que não estão mais no CSV."
+    ),
+) -> None:
+    """Grava no banco os eventos novos do CSV (reimportar não duplica)."""
+    from coir.db.sessao import conectar, fazer_backup, migrar
+    from coir.servicos.eventos import importar_eventos, ler_csv
+
+    caminho = _banco(banco)
+    agora = _agora()
+    migrar(caminho, agora)
+    linhas = ler_csv(arquivo or dados_dir(exigir=True) / ARQUIVO_EVENTOS)
+    fazer_backup(caminho, agora)  # regra 8: backup antes de importar
+    with conectar(caminho) as fabrica, fabrica() as sessao:
+        rel = importar_eventos(sessao, linhas, substituir)
+    print(f"Eventos novos: {rel.novos}; já no banco: {rel.ja_no_banco}; removidos: {rel.removidos}")
+    if rel.fora_do_csv:
+        print(
+            f"Aviso: {rel.fora_do_csv} evento(s) no banco que não estão no CSV "
+            "(linha corrigida ou apagada); use --substituir para o banco seguir o CSV"
+        )
+
+
+# ------------------------------------------------------------------------------ apuração (F4)
+def _mes(texto: str) -> tuple[int, int]:
+    import re
+
+    m = re.fullmatch(r"(\d{4})-(\d{2})", texto)
+    if m is None or not 1 <= int(m[2]) <= 12:
+        raise typer.BadParameter("use AAAA-MM")
+    return int(m[1]), int(m[2])
+
+
+@app.command("apurar")
+def apurar(
+    mes: str | None = typer.Argument(None, help="Mês AAAA-MM (padrão: o último apurado)."),
+    ano: int | None = typer.Option(None, help="Resumo dos 12 meses do ano."),
+    banco: Path | None = OpcaoBanco,
+) -> None:
+    """Apuração mensal (comum, day trade, FII), IRRF e DARF, com a memória de cálculo do mês."""
+    from datetime import date
+
+    from coir import referencias
+    from coir.servicos.apuracao import apurar_banco
+    from coir.servicos.relatorio_apuracao import resumo_ano, resumo_mes
+
+    agora = _agora().date()
+    fiscais = referencias.carregar_fiscais()
+    ap = apurar_banco(_banco(banco), referencias.carregar(), fiscais, agora)
+    if ano is not None and mes is not None:
+        raise typer.BadParameter("use AAAA-MM ou --ano, não os dois")
+    if ano is not None:
+        print(resumo_ano(ap, ano))
+        return
+    alvo = _mes(mes) if mes else (agora.year, agora.month)
+    codigo = fiscais.parametros.texto("darf_codigo", date(alvo[0], alvo[1], 1))
+    print(resumo_mes(ap, *alvo, codigo))
+    if alvo == (agora.year, agora.month):
+        print("(mês em andamento: apuração parcial)")
+
+
+@app.command("carteira")
+def carteira(
+    data: str | None = typer.Argument(None, help="Data AAAA-MM-DD (padrão: hoje)."),
+    visao: str = typer.Option(
+        "titular",
+        help="titular (PM fiscal: apuração e IRPF), corretora ou conta (visões operacionais).",
+    ),
+    banco: Path | None = OpcaoBanco,
+) -> None:
+    """Posições abertas e PM no fim do dia, na visão pedida."""
+    from datetime import date
+
+    from coir import referencias
+    from coir.domain.fiscal import Visao
+    from coir.servicos.apuracao import carteira_banco
+    from coir.servicos.relatorio_apuracao import carteira_texto
+
+    try:
+        alvo = date.fromisoformat(data) if data else _agora().date()
+        vista = Visao(visao)
+    except ValueError as erro:
+        raise typer.BadParameter(str(erro)) from erro
+    posicoes, contas = carteira_banco(
+        _banco(banco), referencias.carregar(), referencias.carregar_fiscais(), alvo, vista
+    )
+    print(carteira_texto(posicoes, contas, alvo, vista))
 
 
 def main() -> None:

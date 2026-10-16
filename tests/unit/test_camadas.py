@@ -1,7 +1,8 @@
 """Dependências entre camadas e guardas das regras 1 e 6 (CLAUDE.md).
 
 - engine e parsing dependem só de domain (e de coir.erros); domain não depende de outra camada.
-- gabarito (ferramenta de validação) pode usar parsing e pyxlsb, mas não db, ui nem engine.
+- gabarito (ferramenta de validação) pode usar parsing, pyxlsb e openpyxl (planilha externa),
+  mas não db, ui nem engine.
 - db (SQLAlchemy/Alembic) depende só de domain; servicos orquestra parsing + db (sem ui).
 - Nenhuma dessas camadas importa banco, UI, CLI ou bibliotecas de planilha.
 - engine e domain: sem ``float`` (dinheiro é Decimal) e sem leitura de relógio/aleatoriedade.
@@ -23,11 +24,11 @@ INTERNOS_PERMITIDOS = {
     ),
     "db": ("coir.db", "coir.domain", "coir.erros"),
     "servicos": (
-        "coir.servicos", "coir.db", "coir.domain", "coir.erros", "coir.parsing",
+        "coir.servicos", "coir.db", "coir.domain", "coir.engine", "coir.erros", "coir.parsing",
     ),
 }  # fmt: skip
 EXTERNOS_LIBERADOS = {
-    "gabarito": ("pyxlsb",),
+    "gabarito": ("pyxlsb", "openpyxl"),
     "db": ("sqlalchemy", "alembic", "sqlite3"),
     "servicos": ("sqlalchemy",),
 }
