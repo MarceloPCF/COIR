@@ -10,7 +10,7 @@ Um lote = uma transação: qualquer erro inesperado desfaz tudo. Idempotente:
 
 import hashlib
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -18,9 +18,10 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from coir.db import repositorio as repo
-from coir.db.modelos import ArquivoImportado, Titular
+from coir.db.modelos import ArquivoImportado, NotaCorretagem, Titular
 from coir.db.sessao import conectar, fazer_backup, migrar
-from coir.domain.nota import NotaExtraida, OperacaoExtraida
+from coir.domain.cpf import cpf_valido
+from coir.domain.nota import Cliente, NotaExtraida, OperacaoExtraida
 from coir.domain.referencias import Referencias
 from coir.erros import ExtracaoError, ImportacaoError
 from coir.parsing.extrair import Rejeitada, ResultadoExtracao, extrair_pdf, sem_duplicadas
@@ -37,12 +38,14 @@ class RelatorioImportacao:
     notas_gravadas: int = 0
     operacoes_gravadas: int = 0
     notas_ja_no_banco: int = 0
+    notas_renormalizadas: int = 0  # gravadas antes, com operações regravadas (data/ mudou)
     rejeitadas: list[Rejeitada] = field(default_factory=list)
     avisos: list[str] = field(default_factory=list)
+    titulares_criados: list[str] = field(default_factory=list)  # "nome (id N)", nunca o CPF
 
     @property
     def mudou(self) -> bool:
-        return self.notas_gravadas > 0
+        return self.notas_gravadas > 0 or self.notas_renormalizadas > 0
 
 
 def _titular(sessao: Session, cpf: str | None) -> Titular | None:
@@ -66,7 +69,7 @@ def importar_arquivos(
     """Importa os arquivos numa transação da sessão (que não pode ter uma transação aberta)."""
     rel = RelatorioImportacao()
     with sessao.begin():
-        contas = repo.Contas(sessao, _titular(sessao, titular))
+        contas = repo.Contas(sessao, _titular(sessao, titular), explicito=titular is not None)
         ativos = repo.Ativos(sessao)
         ativos.sincronizar_trocas(refs.trocas)
 
@@ -87,24 +90,37 @@ def importar_arquivos(
                 sessao.add(registro)
             registros[caminho.name] = registro
             rel.arquivos_lidos.append(caminho.name)
-            res = extrator(caminho)
-            lote.notas += res.notas
-            lote.rejeitadas += res.rejeitadas
-            lote.avisos += res.avisos
+            lote.juntar(extrator(caminho))
         lote = sem_duplicadas(lote)
         rel.avisos += lote.avisos
         rel.rejeitadas += lote.rejeitadas
+        clientes = {k: c for k, c in lote.clientes.items() if cpf_valido(c.cpf)}
+        invalidos = sum(1 for n in lote.notas if n.chave in lote.clientes) - len(clientes)
+        if invalidos:
+            rel.avisos.append(f"{invalidos} nota(s) com CPF impresso inválido (ex.: anonimizado): "
+                              "titular pela conta ou por --titular")  # fmt: skip
+        sem_cpf = [n for n in lote.notas if n.chave not in lote.clientes]
+        if sem_cpf:
+            rel.avisos.append(f"{len(sem_cpf)} nota(s) sem CPF do cliente reconhecido (ex.: nota "
+                              f"{sem_cpf[0].numero} de {sem_cpf[0].arquivo}): titular pela conta "
+                              "ou por --titular; confira se o layout mudou")  # fmt: skip
 
         conhecidas = repo.series(sessao)
         novas = {s: c for s, c in classes_das_series(lote.notas, refs).items()
                  if s not in conhecidas}  # fmt: skip
         repo.gravar_series(sessao, novas)
         series = {**novas, **conhecidas}
+        # antes de gravar o lote: só as notas antigas podem ter normalização desatualizada
+        rel.notas_renormalizadas = _renormalizar(sessao, refs, series, ativos)
 
         for nota in lote.notas:
             ops = _normalizar(nota, refs, series, rel)
             if ops is not None:
-                _gravar(sessao, nota, ops, registros[nota.arquivo], contas, ativos, rel)
+                _gravar(sessao, nota, ops, registros[nota.arquivo], contas, ativos, rel,
+                        clientes.get(nota.chave))  # fmt: skip
+        # série de opção gravada agora com a raiz antiga: segue a troca do ativo-objeto
+        ativos.sincronizar_trocas(refs.trocas)
+        rel.titulares_criados = [f"id {t.id}" for t in contas.criados]  # nome: titular listar
         incompletos = {r.arquivo for r in rel.rejeitadas}
         for nome, registro in registros.items():
             registro.completo = nome not in incompletos
@@ -115,6 +131,37 @@ def importar_arquivos(
         rel.notas_ja_no_banco, len(rel.rejeitadas),
     )  # fmt: skip
     return rel
+
+
+def _renormalizar(
+    sessao: Session, refs: Referencias, series: dict[str, str], ativos: repo.Ativos
+) -> int:
+    """As operações são derivadas da nota gravada (json_nota) e de data/: quando a normalização
+    ou as tabelas mudam, as operações das notas antigas são regravadas. O livro não muda."""
+    mudadas = 0
+    for registro, novas in _desatualizadas(sessao, refs, series):
+        repo.substituir_operacoes(sessao, registro, novas, ativos)
+        mudadas += 1
+    if mudadas:
+        log.info("%d nota(s) com operações renormalizadas", mudadas)
+    return mudadas
+
+
+def _desatualizadas(
+    sessao: Session, refs: Referencias, series: dict[str, str]
+) -> Iterator[tuple[NotaCorretagem, list[OperacaoExtraida]]]:
+    """Notas gravadas cujas operações mudam com a normalização e as tabelas atuais."""
+    for registro in repo.notas_gravadas(sessao):
+        nota = NotaExtraida.model_validate_json(registro.json_nota)
+        try:
+            novas = operacoes(nota, refs, series)
+        except ExtracaoError as erro:
+            raise ImportacaoError(
+                f"nota {registro.numero} de {registro.data_pregao} (já no banco) não normaliza "
+                f"com as tabelas atuais: {erro}"
+            ) from erro
+        if novas != repo.operacoes_gravadas(registro):
+            yield registro, novas
 
 
 def _normalizar(
@@ -136,8 +183,14 @@ def _gravar(
     contas: repo.Contas,
     ativos: repo.Ativos,
     rel: RelatorioImportacao,
+    cliente: Cliente | None,
 ) -> None:
-    conta = contas.conta(nota.corretora, nota.conta)  # antes de tudo: titular errado é erro
+    try:  # antes de tudo: titular errado recusa a nota
+        conta = contas.conta_da_nota(nota.corretora, nota.conta, cliente)
+    except repo.ContaRecusada as erro:
+        rel.rejeitadas.append(Rejeitada(nota.arquivo, nota.paginas, f"nota {nota.numero}: {erro}",
+                                        nota.numero, nota.data_pregao))  # fmt: skip
+        return
     existente = repo.nota_por_chave(sessao, nota.chave)
     if existente is None:
         repo.gravar_nota(sessao, nota, ops, arquivo, conta, ativos)
@@ -148,6 +201,11 @@ def _gravar(
         if existente.arquivo.nome != nota.arquivo:
             rel.avisos.append(f"nota {nota.numero} de {nota.arquivo} já importada de "
                               f"{existente.arquivo.nome} (idêntica); ignorada")  # fmt: skip
+    elif repo.mesmo_conteudo(NotaExtraida.model_validate_json(existente.json_nota), nota):
+        rel.notas_ja_no_banco += 1  # o livro fica com a nota gravada primeiro (regra 7)
+        rel.avisos.append(f"nota {nota.numero} de {nota.arquivo}: mesmos negócios e valores da "
+                          f"já importada de {existente.arquivo.nome}, em outro layout; "
+                          "ignorada")  # fmt: skip
     else:
         motivo = (f"nota {nota.numero}: já importada de {existente.arquivo.nome} com conteúdo "
                   "diferente")  # fmt: skip
@@ -176,8 +234,8 @@ def importar_pasta(
     sufixo: str = ".pdf",
 ) -> RelatorioImportacao:
     """Migração (com backup, se houver o que migrar) e importação de todos os arquivos da pasta.
-    Backup antes de importar só quando há arquivo novo ou incompleto: reimportar não gira os
-    backups."""
+    Backup antes de importar só quando há arquivo novo ou incompleto ou operações a regravar:
+    reimportar sem mudança não gira os backups."""
     if not pasta.is_dir():
         raise ImportacaoError(f"pasta de notas não encontrada: {pasta}")
     migrar(banco, agora)
@@ -188,7 +246,8 @@ def importar_pasta(
             pendente = any(
                 (r := repo.arquivo_por_sha(sessao, _sha256(a))) is None or not r.completo
                 for a in arquivos
-            )
+            ) or any(True for _ in _desatualizadas(sessao, refs, repo.series(sessao)))
+            # (data/ mudou: as operações de notas antigas vão ser regravadas, regra 8)
         if pendente:
             fazer_backup(banco, agora)
         with fabrica() as sessao:

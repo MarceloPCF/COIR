@@ -18,6 +18,7 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
+from coir.domain.referencias import Referencias
 from coir.erros import GabaritoError
 from coir.gabarito.modelo import ApuracaoMensalGabarito, Gabarito, OperacaoGabarito, PosicaoGabarito
 from coir.recursos import pasta_data
@@ -219,6 +220,23 @@ def comparar_apuracao(
 
 
 NIVEIS = ("operacoes", "posicoes", "apuracao")  # padrão; também "negocios" e "notas"
+
+
+def com_tickers_da_data(gabarito: Gabarito, refs: Referencias) -> Gabarito:
+    """A planilha às vezes usa o ticker da época (RRRP3) e às vezes o atual (SIMH3); o COIR usa o
+    ticker vigente pela tabela de trocas (data/trocas_ticker.csv). Normaliza antes de comparar."""
+    return gabarito.model_copy(
+        update={
+            "operacoes": [
+                o.model_copy(update={"papel": refs.ticker_na_data(o.papel, o.data)})
+                for o in gabarito.operacoes
+            ],
+            "posicoes": [
+                p.model_copy(update={"papel": refs.ticker_na_data(p.papel, p.data)})
+                for p in gabarito.posicoes
+            ],
+        }
+    )
 
 
 def comparar(

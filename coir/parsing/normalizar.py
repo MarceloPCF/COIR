@@ -116,9 +116,9 @@ def _papel(
                 raise ReferenciaError(f"exercício {primeiro}: ativo-objeto não identificado")
             return objeto, m["serie"]
         return m["serie"], objeto
-    if RE_TICKER.match(primeiro):  # BTG imprime o código
-        return _sem_fracionario(primeiro, mercado), None
-    return _sem_fracionario(_ticker_por_nome(n.especificacao, refs), mercado), None
+    if RE_TICKER.match(primeiro):  # BTG imprime o código (às vezes o fracionário "LREN3F" na VISTA)
+        return _sem_fracionario(primeiro), None
+    return _ticker_por_nome(n.especificacao, refs), None
 
 
 def _ativo_objeto(serie: str, classe: str | None, refs: Referencias) -> str | None:
@@ -127,8 +127,9 @@ def _ativo_objeto(serie: str, classe: str | None, refs: Referencias) -> str | No
     return refs.opcoes_raiz.get(serie[:4])
 
 
-def _sem_fracionario(ticker: str, mercado: str) -> str:
-    return ticker[:-1] if mercado == "FRACIONARIO" and ticker.endswith("F") else ticker
+def _sem_fracionario(ticker: str) -> str:
+    """Código do fracionário (final F) é o mesmo ativo do lote padrão: mesmo PM."""
+    return ticker[:-1] if ticker.endswith("F") else ticker
 
 
 def _ticker_por_nome(especificacao: str, refs: Referencias) -> str:

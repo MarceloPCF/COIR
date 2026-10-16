@@ -166,3 +166,28 @@ class Operacao(Base):
     total: Mapped[Decimal]
     ativo_objeto: Mapped[str | None] = mapped_column(String(20))
     prazo_termo_dias: Mapped[int | None]
+
+
+class EventoCorporativo(Base):
+    """Evento corporativo ou de custódia (fato lançado pelo usuário, regra 7): ajusta quantidade e
+    custo do ativo na conta (C soma, V subtrai) ou transfere a posição para outra conta.
+    ``chave``: hash dos campos, para importar o mesmo CSV de novo sem duplicar."""
+
+    __tablename__ = "evento_corporativo"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chave: Mapped[str] = mapped_column(String(64), unique=True)
+    data: Mapped[date]
+    conta_id: Mapped[int] = mapped_column(ForeignKey("conta.id"), index=True)
+    ativo_id: Mapped[int] = mapped_column(ForeignKey("ativo.id"), index=True)
+    tipo: Mapped[str] = mapped_column(String(20))
+    cv: Mapped[str | None] = mapped_column(String(1))
+    quantidade: Mapped[Decimal | None]
+    valor: Mapped[Decimal]
+    conta_destino_id: Mapped[int | None] = mapped_column(ForeignKey("conta.id"))
+    observacao: Mapped[str] = mapped_column(Text)
+    origem: Mapped[str] = mapped_column(String(20))  # gabarito, ajuste_v2, manual...
+
+    conta: Mapped[Conta] = relationship(foreign_keys=[conta_id])
+    conta_destino: Mapped[Conta | None] = relationship(foreign_keys=[conta_destino_id])
+    ativo: Mapped[Ativo] = relationship()

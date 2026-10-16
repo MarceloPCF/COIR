@@ -2,7 +2,6 @@
 
 | Serviço | Preço | Entrada | Mercados | Ideias para o COIR |
 |---|---|---|---|---|
-| Sencon (sencon.com.br) | B3 R$ 22,90/mês; exterior R$ 29,90/mês | Notas SINACOR, manual | B3 + exterior | Fluxo 3 passos: importar → conferir custódia → DARF; DARF com multa/juros |
 | IRTrade (irtrade.com.br) | não publicado na página lida | 20+ corretoras integradas, parceiro B3 | não detalhado | "Consolidador fiscal" |
 | myProfit (myprofitweb.com) | Básico grátis; Premium R$ 19,90; PRO R$ 29,90 (12x) | B3 automático, PDF de nota, corretoras EUA, cripto | ações, FII, opções, BDR, ETF, futuros, EUA, cripto | Relatórios Excel/PDF; fichas da declaração |
 | ReVar (Receita + B3) | grátis | API B3 + e-CAC | ações, ETF, FII, BDR à vista (derivativos/BTC: fase 2 prevista) | Pede PM inicial e prejuízo acumulado; validação antes do DARF |
@@ -15,6 +14,6 @@
   Alternativa: importar as planilhas exportadas da Área do Investidor.
 - Fora de escopo: exterior, cripto, renda fixa, app mobile.
 
-Fontes: sencon.com.br; irtrade.com.br/calculadora; myprofitweb.com/PricingPro.aspx;
+Fontes: irtrade.com.br/calculadora; myprofitweb.com/PricingPro.aspx;
 clientes.b3.com.br (página ReVar); investalk.bb.com.br (ReVar 2026); mycapital.com.br;
 developers.b3.com.br/apis/api-area-do-investidor.

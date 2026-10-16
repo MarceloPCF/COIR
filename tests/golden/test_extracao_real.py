@@ -11,7 +11,13 @@ from coir import referencias
 from coir.config import dados_dir
 from coir.domain.nota import NotaExtraida, OperacaoExtraida
 from coir.gabarito import candidato
-from coir.gabarito.comparar import Tolerancias, carregar_explicacoes, comparar, explicacao
+from coir.gabarito.comparar import (
+    Tolerancias,
+    carregar_explicacoes,
+    com_tickers_da_data,
+    comparar,
+    explicacao,
+)
 from coir.gabarito.exportar import ARQUIVO_MAPA, PASTA_PRIVADA, carregar
 from coir.gabarito.pseudonimos import MapaPseudonimos
 from coir.parsing.extrair import ResultadoExtracao, extrair_pasta
@@ -44,10 +50,12 @@ def normalizadas(
 
 def test_todas_as_notas_extraidas_e_conciliadas(extracao: tuple[ResultadoExtracao, float]) -> None:
     res, segundos = extracao
-    assert len(res.notas) == 2033
+    assert len(res.notas) == 2034
     assert res.rejeitadas == []
-    assert [a for a in res.avisos if "opção flexível" not in a] == []
-    assert len(res.avisos) == 1
+    # o XP_NC_2024_11.pdf baixado de novo em 2026 traz também a página BM&F do mês
+    esperados = ("opção flexível", "repetida (idêntica)")
+    assert [a for a in res.avisos if not any(e in a for e in esperados)] == []
+    assert len(res.avisos) == 2
     assert segundos < 60
     if not CONHECIDAS.is_file():
         pytest.skip("divergencias-conhecidas.csv ausente na pasta do gabarito")
@@ -62,7 +70,8 @@ def test_candidato_igual_ao_gabarito_ou_explicado(
         pytest.skip("divergencias-conhecidas.csv ausente na pasta do gabarito")
     mapa = MapaPseudonimos.carregar(GABARITO / PASTA_PRIVADA / ARQUIVO_MAPA)
     cand = candidato.montar(normalizadas, mapa)
-    rel = comparar(carregar(GABARITO), cand, Tolerancias.carregar(), ["negocios", "notas"])
+    esperado = com_tickers_da_data(carregar(GABARITO), referencias.carregar())
+    rel = comparar(esperado, cand, Tolerancias.carregar(), ["negocios", "notas"])
     linhas = [f"{d.nivel} {d.chave} {d.campo}" for d in rel.divergencias]
     linhas += rel.faltando + rel.sobrando
     explicacoes = carregar_explicacoes(CONHECIDAS)

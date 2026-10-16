@@ -12,9 +12,10 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-from coir.domain.nota import NotaExtraida, Segmento
+from coir.domain.nota import Cliente, NotaExtraida, Segmento
 from coir.erros import ExtracaoError
 from coir.parsing import bmf, bovespa
+from coir.parsing.cliente import cliente
 from coir.parsing.conciliar import conciliar
 from coir.parsing.numeros import compactar
 from coir.parsing.paginas import Pagina, TipoPagina, classificar
@@ -38,6 +39,14 @@ class ResultadoExtracao:
     notas: list[NotaExtraida] = field(default_factory=list)
     rejeitadas: list[Rejeitada] = field(default_factory=list)
     avisos: list[str] = field(default_factory=list)
+    # cliente impresso em cada nota, pela chave (dado pessoal: fora de NotaExtraida)
+    clientes: dict[tuple[object, ...], Cliente] = field(default_factory=dict)
+
+    def juntar(self, outro: "ResultadoExtracao") -> None:
+        self.notas += outro.notas
+        self.rejeitadas += outro.rejeitadas
+        self.avisos += outro.avisos
+        self.clientes.update(outro.clientes)
 
 
 @dataclass
@@ -91,7 +100,11 @@ def extrair_textos(arquivo: str, textos: Sequence[str]) -> ResultadoExtracao:
         try:
             if g.folhas[0] != 1:
                 raise ExtracaoError(f"folhas fora de sequência: {g.folhas}")
-            res.notas.append(conciliar(_montar(arquivo, g, [textos[i] for i in g.indices])))
+            nota = conciliar(_montar(arquivo, g, [textos[i] for i in g.indices]))
+            res.notas.append(nota)
+            impresso = cliente(textos[g.indices[-1]])  # da última folha, como a conta
+            if impresso is not None:
+                res.clientes[nota.chave] = impresso
         except ExtracaoError as erro:
             rejeitada.motivo = f"nota {g.cabecalho.numero}: {erro}"
             res.rejeitadas.append(rejeitada)
@@ -155,10 +168,7 @@ def extrair_pasta(pasta: Path) -> ResultadoExtracao:
         if not (caminho.is_file() and caminho.suffix.lower() == ".pdf"):
             total.avisos.append(f"ignorado (não é PDF de nota): {caminho.name}")
             continue
-        r = extrair_pdf(caminho)
-        total.notas += r.notas
-        total.rejeitadas += r.rejeitadas
-        total.avisos += r.avisos
+        total.juntar(extrair_pdf(caminho))
     return sem_duplicadas(total)
 
 

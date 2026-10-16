@@ -74,5 +74,5 @@ env/
 Thumbs.db
 desktop.ini
 
-# Referencias de interface (Sencon/myProfit): uso interno, nao publicar
+# Referencias de interface de outros sistemas: uso interno, nao publicar
 docs/referencias/

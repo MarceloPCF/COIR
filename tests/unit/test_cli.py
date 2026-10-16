@@ -61,3 +61,20 @@ def test_banco_titular_e_importar_pasta_vazia(
     r = runner.invoke(app, ["importar"])
     assert r.exit_code == 0, r.output
     assert "Notas gravadas: 0" in r.output
+    r = runner.invoke(app, ["titular", "renomear", "1", "--nome", "Outro Nome"])
+    assert r.exit_code == 0 and "Titular 1: Outro Nome" in r.output
+    (tmp_path / "eventos.csv").write_text(
+        "data,corretora,conta,ticker,tipo,cv,quantidade,valor,corretora_destino,conta_destino,"
+        "observacao,origem\n",
+        encoding="utf-8",
+    )
+    r = runner.invoke(app, ["eventos", "importar"])
+    assert r.exit_code == 0 and "Eventos novos: 0" in r.output, r.output
+    r = runner.invoke(app, ["apurar", "2024-05"])
+    assert r.exit_code == 0 and "nada apurado" in r.output, r.output
+    assert runner.invoke(app, ["apurar", "2024-13"]).exit_code != 0
+    r = runner.invoke(app, ["carteira", "2024-05-31"])
+    assert r.exit_code == 0 and "PM fiscal por titular" in r.output, r.output
+    r = runner.invoke(app, ["carteira", "2024-05-31", "--visao", "corretora"])
+    assert r.exit_code == 0 and "não é o PM do imposto" in r.output, r.output
+    assert runner.invoke(app, ["carteira", "--visao", "banco"]).exit_code != 0

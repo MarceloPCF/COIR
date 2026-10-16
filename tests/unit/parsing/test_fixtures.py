@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from coir.domain.nota import Segmento
+from coir.parsing.cliente import cliente
 from coir.parsing.extrair import extrair_textos
 
 PASTA = Path(__file__).parents[2] / "fixtures" / "notas"
@@ -82,3 +83,18 @@ def test_bmf_custos_ajustes_e_irrf_day_trade() -> None:
     paginas, _ = _ler("xp_2024_01_bmf_novo_ajupos_negativo")
     [ajupos] = extrair_textos("x.pdf", paginas).notas
     assert any(n.quantidade < 0 and n.tipo == "AJUPOS" for n in ajupos.negocios_bmf)
+
+
+@pytest.mark.parametrize("nome", FIXTURES)
+def test_cliente_impresso_na_nota(nome: str) -> None:
+    """CPF (anonimizado) e nome do cliente em todos os layouts, 2008-2026; fora da NotaExtraida."""
+    paginas, _ = _ler(nome)
+    res = extrair_textos(f"{nome}.pdf", paginas)
+    [nota] = res.notas
+    cliente = res.clientes[nota.chave]
+    assert (cliente.cpf, cliente.nome) == ("00000000000", "FULANO DE TAL")
+    assert "cpf" not in nota.model_dump_json()
+
+
+def test_pagina_sem_cpf_nao_tem_cliente() -> None:
+    assert cliente("Cliente\nFULANO DE TAL\nRua Exemplo, 0\n") is None
