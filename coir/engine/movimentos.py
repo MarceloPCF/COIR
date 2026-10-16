@@ -276,10 +276,10 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
         regra = "termo liquidado: entra pelo preço a termo + custos da compra"
         if baixa.resultado or baixa.custo_baixa:
             regra += "; cobre a venda feita antes da liquidação (resultado nesta data)"
-        acao = t.op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT)
+        # o ganho na liquidação do termo nunca é isento (IN RFB 1.585/2015 art. 59 §2º IV)
         livro.registrar(chave, dia, f"termo:{t.op.id}", regra, de=_de(t),
                         categoria=Categoria.COMUM, cv="C", quantidade=t.op.quantidade,
-                        valor=t.valor, custos=t.custos, baixa=baixa, isentavel=acao,
+                        valor=t.valor, custos=t.custos, baixa=baixa, isentavel=False,
                         mes_limite=mes_limite)  # fmt: skip
     mesma_corretora = params.booleano("day_trade_mesma_corretora", dia)
     compras, vendas, exercicios = _day_trade(livro, dia, d.operacoes, mesma_corretora)

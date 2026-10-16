@@ -129,8 +129,8 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   custos rateados pelo volume.
 - **Termo:** entra na carteira na liquidação (pregão + prazo em dias corridos; sem pregão, o
   seguinte), pelo preço a termo + custos da nota de compra. Ações vendidas antes da liquidação
-  deixam a posição vendida; a liquidação a cobre e realiza o resultado nessa data, com o limite de
-  isenção do mês da venda (como na venda a descoberto).
+  deixam a posição vendida; a liquidação a cobre e realiza o resultado nessa data. Esse ganho nunca
+  é isento (IN RFB 1.585/2015 art. 59 §2º IV); a venda entra na soma do limite do mês dela.
 - **ETF de renda fixa:** fora da apuração e do DARF; ganho listado para a DIRPF (Lei 13.043/2014).
 - **Calendário:** dois calendários em `data/feriados.csv` (bancário para o DARF; pregão B3 para
   opções e termo): feriados de São Paulo fecharam a B3 até 2021; 24/12 sem pregão; exceções de 2014
