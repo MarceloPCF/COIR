@@ -229,6 +229,10 @@ class MesApurado(Modelo):
     darf_acumulado: Decimal  # passa ao mês seguinte
     vencimento: date | None
     isento_pme: Decimal = ZERO  # resultado das vendas isentas de PME (perdas não compensam)
+    # parte de day trade (1%) do IRRF, como no programa da Receita (o resto é o de 0,005%)
+    irrf_mes_day_trade: Decimal = ZERO
+    irrf_saldo_day_trade_anterior: Decimal = ZERO
+    irrf_saldo_day_trade: Decimal = ZERO
 
 
 class TributacaoExclusiva(Modelo):

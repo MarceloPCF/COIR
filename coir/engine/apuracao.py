@@ -151,6 +151,7 @@ def _apurar_titular(
         deduzido = min(imposto, disponivel)
         # o IRRF de day trade é consumido primeiro: o saldo dele não vai para a declaração anual
         # (só restituição), o de 0,005% vai (decisão do usuário, 15/10/2026)
+        saldo_dt_anterior = saldo_dt
         saldo_dt = max(saldo_dt + dt - deduzido, ZERO)
         devido = imposto - deduzido
         total = devido + acumulado_darf
@@ -166,6 +167,8 @@ def _apurar_titular(
                 darf_acumulado_anterior=acumulado_darf, darf=darf,
                 darf_acumulado=novo_acumulado, vencimento=venc,
                 isento_pme=centavos(pme.get((titular, ano, mes), ZERO)),
+                irrf_mes_day_trade=dt, irrf_saldo_day_trade_anterior=saldo_dt_anterior,
+                irrf_saldo_day_trade=saldo_dt,
             )
         )  # fmt: skip
         saldo_irrf, acumulado_darf = disponivel - deduzido, novo_acumulado

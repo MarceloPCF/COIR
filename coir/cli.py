@@ -635,6 +635,52 @@ def carteira(
     print(carteira_texto(posicoes, contas, alvo, vista))
 
 
+@app.command("exportar")
+def exportar(
+    ano: int = typer.Option(..., help="Ano-calendário."),
+    titular: int | None = typer.Option(None, help="Id do titular (coir titular listar)."),
+    formato: str = typer.Option("xlsx,csv,pdf", help="Formatos separados por vírgula."),
+    relatorio: str | None = typer.Option(
+        None, help="Relatórios separados por vírgula (padrão: todos; veja a lista no erro)."
+    ),
+    data: str | None = typer.Option(
+        None, help="Data da carteira AAAA-MM-DD (padrão: 31/12 do ano ou hoje)."
+    ),
+    visao: str = typer.Option("titular", help="Visão da carteira: titular, corretora ou conta."),
+    banco: Path | None = OpcaoBanco,
+    destino: Path | None = typer.Option(
+        None, help="Pasta de saída (padrão: relatorios/<ano> na pasta de dados)."
+    ),
+) -> None:
+    """Exporta os relatórios fiscais do ano em xlsx, csv e pdf (sem precisar do Excel)."""
+    from datetime import date
+    from decimal import Decimal
+
+    from coir import referencias
+    from coir.domain.fiscal import Visao
+    from coir.servicos.relatorios import dados_banco
+    from coir.servicos.relatorios import exportar as gravar
+
+    try:
+        dia = date.fromisoformat(data) if data else None
+        vista = Visao(visao)
+    except ValueError as erro:
+        raise typer.BadParameter(str(erro)) from erro
+    dados = dados_banco(_banco(banco), referencias.carregar(), referencias.carregar_fiscais(), ano,
+                        _agora(), titular, dia, vista)  # fmt: skip
+    pasta = destino or dados_dir(exigir=True) / "relatorios" / str(ano)
+    formatos = tuple(f.strip().lower() for f in formato.split(",") if f.strip())
+    chaves = tuple(c.strip() for c in relatorio.split(",")) if relatorio else None
+    arquivos = gravar(dados, pasta, formatos, chaves)
+    meses = [m for m in dados.apuracao.meses if m.titular == dados.titular and m.ano == ano]
+    total = sum((m.darf for m in meses), Decimal(0))
+    print(f"Titular {dados.titular} ({dados.nome}), ano {ano}: {len(arquivos)} arquivo(s) em "
+          f"{pasta}")  # fmt: skip
+    for a in arquivos:
+        print(f"  {a.name}")
+    print(f"DARF do ano: {total:.2f} em {sum(1 for m in meses if m.darf)} mês(es)")
+
+
 def main() -> None:
     """Ponto de entrada: erros de domínio viram mensagem curta e código de saída 1."""
     try:

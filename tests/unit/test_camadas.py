@@ -28,7 +28,7 @@ INTERNOS_PERMITIDOS = {
     "reports": ("coir.reports", "coir.domain", "coir.erros"),
     "servicos": (
         "coir.servicos", "coir.db", "coir.domain", "coir.engine", "coir.erros", "coir.parsing",
-        "coir.reports",
+        "coir.reports", "coir.config",
     ),
 }  # fmt: skip
 EXTERNOS_LIBERADOS = {

@@ -23,7 +23,9 @@ MARGEM = 12 * mm
 FONTE, NEGRITO, CORPO = "Helvetica", "Helvetica-Bold", 7.5
 AVISO = ("Relatório gerado pelo COIR a partir das notas importadas e dos eventos lançados. "
          "Confira antes de declarar; não substitui a orientação de um contador.")  # fmt: skip
-ESTILO_SECAO = ParagraphStyle("secao", fontName=NEGRITO, fontSize=10, spaceBefore=6, spaceAfter=3)
+ESTILO_SECAO = ParagraphStyle(
+    "secao", fontName=NEGRITO, fontSize=10, spaceBefore=6, spaceAfter=3, keepWithNext=1
+)
 CINZA = colors.HexColor("#555555")
 ESTILO_NOTA = ParagraphStyle("nota", fontName=FONTE, fontSize=7, textColor=CINZA)
 
@@ -74,20 +76,35 @@ class _Paginas(Canvas):
 
 
 def _larguras(s: Secao, celulas: list[list[str]], disponivel: float) -> list[float]:
+    """Largura pelo conteúdo; o título da coluna quebra linha (vale a maior palavra dele)."""
     medidas = []
     for c, coluna in enumerate(s.colunas):
-        maior = max([stringWidth(coluna.nome, NEGRITO, CORPO)]
-                    + [stringWidth(linha[c], FONTE, CORPO) for linha in celulas])  # fmt: skip
-        medidas.append(min(maior + 6, 180.0))
+        palavra = max(stringWidth(w, NEGRITO, CORPO) for w in coluna.nome.split())
+        maior = max([palavra] + [stringWidth(linha[c], FONTE, CORPO) for linha in celulas])
+        medidas.append(min(maior + 10, 180.0))  # 6 de padding + folga
     soma = sum(medidas)
     return medidas if soma <= disponivel else [m * disponivel / soma for m in medidas]
+
+
+def _quebrar(texto: str, largura: float) -> str:
+    """Título da coluna em linhas que cabem na largura, sem partir palavra."""
+    linhas: list[str] = []
+    for palavra in texto.split():
+        tentativa = f"{linhas[-1]} {palavra}" if linhas else palavra
+        if linhas and stringWidth(tentativa, NEGRITO, CORPO) <= largura:
+            linhas[-1] = tentativa
+        else:
+            linhas.append(palavra)
+    return "\n".join(linhas)
 
 
 def _tabela(s: Secao, disponivel: float) -> LongTable:
     linhas = [*s.linhas, *((s.total,) if s.total else ())]
     celulas = [[formatar(v, c.tipo) for v, c in zip(linha, s.colunas, strict=True)]
                for linha in linhas]  # fmt: skip
-    dados = [[c.nome for c in s.colunas], *celulas]
+    larguras = _larguras(s, celulas, disponivel)
+    titulos = [_quebrar(c.nome, w - 6) for c, w in zip(s.colunas, larguras, strict=True)]
+    dados: list[list[Any]] = [titulos, *celulas]
     estilo: list[tuple[Any, ...]] = [
         ("FONT", (0, 0), (-1, -1), FONTE, CORPO),
         ("FONT", (0, 0), (-1, 0), NEGRITO, CORPO),
@@ -108,7 +125,7 @@ def _tabela(s: Secao, disponivel: float) -> LongTable:
     if s.total:
         estilo += [("FONT", (0, -1), (-1, -1), NEGRITO, CORPO),
                    ("LINEABOVE", (0, -1), (-1, -1), 0.5, colors.black)]  # fmt: skip
-    tabela = LongTable(dados, colWidths=_larguras(s, celulas, disponivel), repeatRows=1)
+    tabela = LongTable(dados, colWidths=larguras, repeatRows=1, hAlign="LEFT")
     tabela.setStyle(TableStyle(estilo))
     return tabela
 
