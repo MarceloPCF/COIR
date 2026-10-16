@@ -32,7 +32,7 @@ from coir.db.modelos import (
 from coir.db.sessao import abrir, criar_engine, fazer_backup, migrar, revisao_atual, revisao_final
 from coir.db.tipos import DecimalTexto
 from coir.domain.referencias import TrocaTicker
-from coir.erros import BancoError, ImportacaoError
+from coir.erros import BancoError, ImportacaoError, ReferenciaError
 from coir.parsing.extrair import ResultadoExtracao, extrair_textos
 from coir.parsing.normalizar import classes_das_series, operacoes
 from coir.servicos.importacao import importar_arquivos, importar_pasta
@@ -743,3 +743,17 @@ def test_serie_semanal_so_com_strike_antes_do_w() -> None:
 
     assert (m := RE_SEMANAL.search("BOVAA120W1")) is not None and m["semana"] == "1"
     assert RE_SEMANAL.search("ABEVW5") is None and RE_SEMANAL.search("PETRW290") is None
+
+
+def test_futuro_de_mercado_sem_linha_na_apuracao_falha_alto() -> None:
+    """Contrato de um mercado sem linha na apuração (ex.: juros) não cai em "outros" calado."""
+    from coir.servicos.apuracao import _ajustes  # pyright: ignore[reportPrivateUsage]
+
+    texto = (FIXTURES / "xp_2024_01_bmf_novo.txt").read_text(encoding="utf-8")
+    nota = extrair_textos("x.txt", texto.split("\f")).notas[0]
+    raiz = nota.negocios_bmf[0].mercadoria[:3]
+    contratos = tuple(c.model_copy(update={"mercado": "JUROS"}) if c.raiz == raiz else c
+                      for c in REFS.contratos)  # fmt: skip
+    with pytest.raises(ReferenciaError, match="mercado JUROS sem linha"):
+        _ajustes(nota, REFS.model_copy(update={"contratos": contratos}))
+    assert _ajustes(nota, REFS)  # com o cadastro real, funciona

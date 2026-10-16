@@ -456,9 +456,12 @@ def _operacao(nota: NotaCorretagem, o: Operacao) -> OperacaoExtraida:
     )
 
 
-def carregar_notas(sessao: Session) -> list[tuple[NotaExtraida, list[OperacaoExtraida]]]:
-    """Notas gravadas (como extraídas) e suas operações, na ordem de pregão e de gravação."""
-    notas = sessao.scalars(
+def carregar_notas(
+    sessao: Session, titular: int | None = None, ano: int | None = None
+) -> list[tuple[NotaExtraida, list[OperacaoExtraida]]]:
+    """Notas gravadas (como extraídas) e suas operações, na ordem de pregão e de gravação;
+    opcionalmente só as de um titular e de um ano."""
+    consulta = (
         select(NotaCorretagem)
         .options(
             selectinload(NotaCorretagem.operacoes),
@@ -466,6 +469,14 @@ def carregar_notas(sessao: Session) -> list[tuple[NotaExtraida, list[OperacaoExt
         )
         .order_by(NotaCorretagem.data_pregao, NotaCorretagem.id)
     )
+    if titular is not None:
+        consulta = consulta.join(Conta).where(Conta.titular_id == titular)
+    if ano is not None:
+        consulta = consulta.where(
+            NotaCorretagem.data_pregao >= date(ano, 1, 1),
+            NotaCorretagem.data_pregao <= date(ano, 12, 31),
+        )
+    notas = sessao.scalars(consulta)
     return [
         (NotaExtraida.model_validate_json(n.json_nota), [_operacao(n, o) for o in n.operacoes])
         for n in notas

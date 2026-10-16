@@ -295,6 +295,20 @@ def test_termo_liquidado_depois_da_venda_das_acoes_realiza_o_resultado() -> None
     assert categoria(ap, 2024, 3, Categoria.COMUM).imposto == D("594.00")
 
 
+def test_ganho_na_liquidacao_do_termo_nunca_e_isento() -> None:
+    """IN RFB 1.585/2015 art. 59 §2º IV: a isenção de R$ 20 mil não se aplica à alienação no
+    vencimento ou na liquidação antecipada do termo. Compra a termo de 500 a 31,00 (custos 20) em
+    03/01/2024 e venda das 500 a 35,00 (17.500, abaixo do limite) em 01/02/2024, antes da
+    liquidação (04/03): resultado 17.500 - 15.520 = 1.980 em 03/2024, tributável (15% = 297,00)."""
+    livro = Livro()
+    livro.nota(date(2024, 1, 3), livro.op("C", "AAAA3", 500, "31", mercado="TERMO",
+                                          liquidacao=date(2024, 3, 4)), custos="20")  # fmt: skip
+    livro.nota(date(2024, 2, 1), livro.op("V", "AAAA3", 500, "35"))
+    ap = livro.apurar(date(2024, 3, 31))
+    marco = categoria(ap, 2024, 3, Categoria.COMUM)
+    assert (marco.resultado, marco.isento, marco.imposto) == (D(1980), D(0), D("297.00"))
+
+
 # --------------------------------------------------------------------------------------- outros
 def test_compensacao_separada_entre_comum_e_day_trade() -> None:
     """R2: prejuízo de day trade só compensa com ganho de day trade (IN RFB 1.585/2015)."""

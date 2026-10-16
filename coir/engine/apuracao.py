@@ -8,7 +8,8 @@ Fontes (alíquotas e limites vêm de data/parametros_fiscais.csv, com a fonte de
 - Prejuízo: compensa só na mesma categoria, sem prazo (IN RFB 1.585/2015); prejuízo de mês isento
   compensa se `prejuizo_mes_isento_compensavel` (Lei 8.981/1995 art. 72 §8º).
 - IRRF (0,005% e 1%): deduz do imposto do mês; o saldo passa aos meses seguintes do ano; o de
-  dezembro vai para a declaração anual (IN RFB 1.585/2015; decisão do usuário).
+  dezembro vai para a declaração anual (IN RFB 1.585/2015; decisão do usuário). A DARF usa um
+  saldo único; as fichas do programa IRPF recebem o IRRF que cada uma consumiu (`fichas.py`).
 - DARF 6015: abaixo de R$ 10 acumula, inclusive para o ano seguinte (Lei 9.430/1996 art. 68
   §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915).
 """
@@ -23,6 +24,7 @@ from coir.domain.fiscal import (
     Apuracao,
     Categoria,
     Evento,
+    FichaMes,
     Grupo,
     IrrfAnual,
     MesApurado,
@@ -34,6 +36,7 @@ from coir.domain.fiscal import (
 )
 from coir.domain.parametros import Calendario, ParametrosFiscais
 from coir.engine.calendario import fim_do_mes, vencimento_darf
+from coir.engine.fichas import Retido, SaldoPorFicha, irrf_retido
 from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import movimentar
 
@@ -86,12 +89,10 @@ def apurar(
             pme[(m.titular, m.data.year, m.data.month)] += m.resultado
             continue
         por_mes[(m.titular, m.data.year, m.data.month)].append(m)
-    irrf: dict[tuple[int, int, int], tuple[Decimal, Decimal]] = defaultdict(lambda: (ZERO, ZERO))
+    irrf = irrf_retido([n for n in notas if n.data <= ate], movimentos)
     inicio: dict[int, date] = {}
     for n in notas:
         if n.data <= ate:
-            comum, dt = irrf[(n.titular, n.data.year, n.data.month)]
-            irrf[(n.titular, n.data.year, n.data.month)] = (comum + n.irrf, dt + n.irrf_day_trade)
             inicio[n.titular] = min(inicio.get(n.titular, n.data), n.data)
     for e in eventos:
         if e.data <= ate:
@@ -100,7 +101,7 @@ def apurar(
     anuais: list[IrrfAnual] = []
     for titular in sorted(inicio):
         m, a = _apurar_titular(titular, _meses(inicio[titular], ate), por_mes, irrf, pme,
-                               parametros, calendario)  # fmt: skip
+                               parametros, calendario, avisos)  # fmt: skip
         meses += m
         anuais += a
     return Apuracao(movimentos=tuple(movimentos), meses=tuple(meses), exclusiva=tuple(exclusiva),
@@ -117,22 +118,25 @@ def _apurar_titular(
     titular: int,
     meses: Iterable[tuple[int, int]],
     por_mes: dict[tuple[int, int, int], list[Movimento]],
-    irrf: dict[tuple[int, int, int], tuple[Decimal, Decimal]],
+    irrf: dict[tuple[int, int, int], Retido],
     pme: dict[tuple[int, int, int], Decimal],
     params: ParametrosFiscais,
     cal: Calendario,
+    avisos: list[str],
 ) -> tuple[list[MesApurado], list[IrrfAnual]]:
     prejuizo = {c: ZERO for c in Categoria}
     vendas_mes: dict[tuple[int, int], Decimal] = defaultdict(lambda: ZERO)
     for (t, ano, mes), movs in por_mes.items():
         if t == titular:
             vendas_mes[(ano, mes)] = sum((_vendas_no_limite(m, params) for m in movs), ZERO)
-    saldo_irrf = ZERO
-    saldo_dt = ZERO  # parte do saldo que é IRRF de day trade (consumida primeiro)
+    saldo = SaldoPorFicha()
     acumulado_darf = ZERO
-    irrf_ano = (ZERO, ZERO)
+    irrf_ano = Retido()
     saida: list[MesApurado] = []
     anuais: list[IrrfAnual] = []
+    pagos: set[tuple[int, int]] = set()  # meses cuja DARF foi paga (no mês ou acumulada depois)
+    pendentes: list[tuple[int, int]] = []
+    anos: dict[int, tuple[SaldoPorFicha, list[MesApurado]]] = {}
     for ano, mes in meses:
         dia = fim_do_mes(ano, mes)
         movs = por_mes.get((titular, ano, mes), [])
@@ -143,36 +147,54 @@ def _apurar_titular(
             prejuizo[cat] = r.prejuizo_a_compensar
             categorias.append(r)
         imposto = sum((r.imposto for r in categorias), ZERO)
-        if mes == 1:
-            saldo_irrf, saldo_dt, irrf_ano = ZERO, ZERO, (ZERO, ZERO)
-        comum, dt = irrf[(titular, ano, mes)]
-        irrf_ano = (irrf_ano[0] + comum, irrf_ano[1] + dt)
-        disponivel = saldo_irrf + comum + dt
-        deduzido = min(imposto, disponivel)
-        # o IRRF de day trade é consumido primeiro: o saldo dele não vai para a declaração anual
-        # (só restituição), o de 0,005% vai (decisão do usuário, 15/10/2026)
-        saldo_dt = max(saldo_dt + dt - deduzido, ZERO)
+        fii = next(r.imposto for r in categorias if r.categoria is Categoria.FII)
+        if mes == 1 or ano not in anos:
+            saldo, irrf_ano = SaldoPorFicha(), Retido()
+            anos[ano] = (saldo, [])
+        saldo_anterior, saldo_dt_anterior = saldo.saldo, saldo.saldo_day_trade
+        retido = irrf.get((titular, ano, mes), Retido())
+        irrf_ano += retido
+        saldo.reter(mes, retido)
+        # o IRRF de day trade é consumido primeiro pela ficha de comuns: o saldo dele não vai para
+        # a declaração anual (só restituição), o de 0,005% vai (decisão do usuário, 15/10/2026)
+        deduzido = saldo.deduzir(mes, imposto - fii, fii)
         devido = imposto - deduzido
         total = devido + acumulado_darf
+        pendentes.append((ano, mes))
         if total >= params.decimal("darf_minimo", dia):
             darf, novo_acumulado, venc = total, ZERO, vencimento_darf(ano, mes, cal)
+            pagos.update(pendentes)
+            pendentes = []
         else:
             darf, novo_acumulado, venc = ZERO, total, None
-        saida.append(
-            MesApurado(
-                titular=titular, ano=ano, mes=mes, categorias=tuple(categorias), imposto=imposto,
-                irrf_mes=comum + dt, irrf_saldo_anterior=saldo_irrf, irrf_deduzido=deduzido,
-                irrf_saldo=disponivel - deduzido, imposto_devido=devido,
-                darf_acumulado_anterior=acumulado_darf, darf=darf,
-                darf_acumulado=novo_acumulado, vencimento=venc,
-                isento_pme=centavos(pme.get((titular, ano, mes), ZERO)),
-            )
+        apurado = MesApurado(
+            titular=titular, ano=ano, mes=mes, categorias=tuple(categorias), imposto=imposto,
+            irrf_mes=retido.day_trade + retido.lei, irrf_saldo_anterior=saldo_anterior,
+            irrf_deduzido=deduzido, irrf_saldo=saldo.saldo, imposto_devido=devido,
+            darf_acumulado_anterior=acumulado_darf, darf=darf,
+            darf_acumulado=novo_acumulado, vencimento=venc,
+            isento_pme=centavos(pme.get((titular, ano, mes), ZERO)),
+            irrf_mes_day_trade=retido.day_trade, irrf_saldo_day_trade_anterior=saldo_dt_anterior,
+            irrf_saldo_day_trade=saldo.saldo_day_trade,
         )  # fmt: skip
-        saldo_irrf, acumulado_darf = disponivel - deduzido, novo_acumulado
+        saida.append(apurado)
+        anos[ano][1].append(apurado)
+        acumulado_darf = novo_acumulado
         if mes == 12:
-            anuais.append(IrrfAnual(titular=titular, ano=ano, saldo=saldo_irrf,
-                                    saldo_comum=saldo_irrf - saldo_dt, saldo_day_trade=saldo_dt,
-                                    comum=irrf_ano[0], day_trade=irrf_ano[1]))  # fmt: skip
+            anuais.append(IrrfAnual(titular=titular, ano=ano, saldo=saldo.saldo,
+                                    saldo_comum=saldo.saldo - saldo.saldo_day_trade,
+                                    saldo_day_trade=saldo.saldo_day_trade,
+                                    comum=irrf_ano.lei, day_trade=irrf_ano.day_trade))  # fmt: skip
+    fichas: dict[tuple[int, int], tuple[FichaMes, ...]] = {}
+    for ano, (s, ms) in anos.items():
+        do_ano = s.fichas(ms, {m for a, m in pagos if a == ano}, avisos)
+        fichas.update({(ano, mes): f for mes, f in do_ano.items()})
+    saida = [m.model_copy(update={"fichas": fichas[(m.ano, m.mes)]}) for m in saida]
+    anuais = [
+        a.model_copy(update={"saldo_comum_fichas": {
+            f.ficha: f.irrf_a_compensar for f in fichas[(a.ano, 12)]}})
+        for a in anuais
+    ]  # fmt: skip
     return saida, anuais
 
 

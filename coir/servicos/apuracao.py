@@ -41,7 +41,10 @@ from coir.erros import ReferenciaError
 
 RE_PRAZO = re.compile(r"^(?P<mes>\d{2})/(?P<ano>\d{2})$")
 RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é put de novembro
-GRUPOS = {"INDICE": Grupo.INDICE, "DOLAR": Grupo.DOLAR}
+# mercado do contrato (data/contratos_futuros.csv) -> linha da apuração; mercado sem linha aqui
+# (ex.: juros) falha alto em vez de cair em "outros" calado
+GRUPOS = {"INDICE": Grupo.INDICE, "DOLAR": Grupo.DOLAR, "BOI": Grupo.COMMODITY,
+          "CAFE": Grupo.COMMODITY, "MILHO": Grupo.COMMODITY, "SOJA": Grupo.COMMODITY}  # fmt: skip
 TIPOS_SEM_NEGOCIO = ("AJUPOS", "PERMAN")
 
 
@@ -143,10 +146,13 @@ def _ajustes(nota: NotaExtraida, refs: Referencias) -> tuple[AjusteFuturo, ...]:
             if sem_negocio and n.valor == 0:
                 continue  # taxa de permanência zerada de mercadoria sem cadastro
             raise ReferenciaError(f"contrato futuro {n.mercadoria} sem cadastro")
+        if contrato.mercado not in GRUPOS:
+            raise ReferenciaError(f"contrato futuro {n.mercadoria}: mercado {contrato.mercado} "
+                                  "sem linha na apuração (ex.: juros)")  # fmt: skip
         saida.append(
             AjusteFuturo(
                 ordem=i, mercadoria=n.mercadoria,
-                grupo=GRUPOS.get(contrato.mercado, Grupo.COMMODITY), tipo=tipo,
+                grupo=GRUPOS[contrato.mercado], tipo=tipo,
                 valor=_assinado(n), cv=n.cv, quantidade=abs(n.quantidade),
                 vencimento=n.vencimento,
                 volume=Decimal(0) if sem_negocio

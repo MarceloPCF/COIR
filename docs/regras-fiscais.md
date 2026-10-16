@@ -85,6 +85,16 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   seguintes do ano e não passa para janeiro. Em dezembro, o de 0,005% vai para a declaração anual
   (IN 1.585 art. 63 §8º III) e o de day trade só pode ser pedido em restituição (art. 65 §§9º e
   12 II; P&R 715), como em R6. Só conta o IRRF impresso na nota.
+- **IRRF por ficha do IRPF (decisão de 16/10/2026: separar só na declaração):** a DARF continua no
+  saldo único (a lei e a IN não separam o IRRF de FII; Lei 11.033/2004 art. 2º §7º). As fichas do
+  programa (comuns/day trade e FII) recebem o IRRF que cada uma consumiu nesse saldo, mais o
+  retido nela que sobrou; os saldos de dezembro das fichas somam o saldo único (sem uso duplo).
+  - Ordem de consumo: comuns usa o day trade, o 0,005% dela e depois o de FII; FII usa o 0,005%
+    dela, o de comuns e, só se faltar, o day trade (vira aviso: a ficha FII não tem essa linha).
+  - O 0,005% de uma nota mista é repartido pelas vendas comuns de cada ficha (sem day trade nem
+    venda por exercício), por titular, corretora, conta e mês; o centavo residual fica em comuns.
+  - "Imposto pago (calculado)": o a pagar do mês quando a DARF que o cobriu (inclusive acumulada
+    abaixo de R$ 10) já foi emitida.
 - **Exercício de opção:** o ganho da venda de ações por exercício nunca é isento (IN 1.585 art. 59
   §2º IV). O valor dessa venda entra na soma do limite das demais vendas (decisão de 15/10/2026,
   abaixo).
@@ -129,8 +139,8 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   custos rateados pelo volume.
 - **Termo:** entra na carteira na liquidação (pregão + prazo em dias corridos; sem pregão, o
   seguinte), pelo preço a termo + custos da nota de compra. Ações vendidas antes da liquidação
-  deixam a posição vendida; a liquidação a cobre e realiza o resultado nessa data, com o limite de
-  isenção do mês da venda (como na venda a descoberto).
+  deixam a posição vendida; a liquidação a cobre e realiza o resultado nessa data. Esse ganho nunca
+  é isento (IN RFB 1.585/2015 art. 59 §2º IV); a venda entra na soma do limite do mês dela.
 - **ETF de renda fixa:** fora da apuração e do DARF; ganho listado para a DIRPF (Lei 13.043/2014).
 - **Calendário:** dois calendários em `data/feriados.csv` (bancário para o DARF; pregão B3 para
   opções e termo): feriados de São Paulo fecharam a B3 até 2021; 24/12 sem pregão; exceções de 2014
@@ -166,6 +176,35 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - dados do outro sistema: custos de uma nota de exercício e de uma venda de opção não lançados;
   - dados do COIR: séries de opção com custo na bonificação (só a quantidade muda) e custo
     atribuído de uma bonificação diferente do oficial, corrigidos no `eventos.csv`.
+
+## Relatórios (F5, 16/10/2026)
+`coir exportar` monta os relatórios de um titular e um ano só com os valores do motor e das notas
+(regra 12), sem cálculo novo. Saem em xlsx, csv (padrão brasileiro) e PDF (ADR 0003).
+- Escolhas do usuário:
+  - os relatórios mapeados e gratuitos das plataformas de referência, também para a interface (F6);
+  - nome e CPF completo no cabeçalho, mas nunca no nome do arquivo;
+  - csv com `;` e vírgula decimal.
+- A apuração vai até o fim do ano ou até a data de geração: opção que vence depois de hoje não vira
+  pó no relatório do ano em curso.
+- "Renda variável mês a mês" segue a ordem dos blocos do programa da Receita. O IRRF aparece em
+  duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é
+  usado primeiro. As fichas por ano ficam na F8.
+- Fichas do programa: o total de comuns e day trade não leva o imposto de FII, que tem ficha
+  própria. O IRRF de cada ficha segue "IRRF por ficha do IRPF" (acima), com imposto pago.
+- Futuros: cada mercado de `data/contratos_futuros.csv` tem linha na apuração (índice, dólar,
+  commodities em "outros"). Um mercado sem linha (ex.: juros) falha alto.
+- Para a F8 (revisão fiscal da F5):
+  - Bens e Direitos com situação em 31/12 do ano anterior, grupo e código do bem por ano, CNPJ,
+    código de negociação e discriminação;
+  - opções sobre ETF ou índice na linha "outros";
+  - linha "Mercado a termo" para o ganho realizado na liquidação (o usuário manteve o à vista em
+    16/10/2026; rever na F8);
+  - conferir no programa IRPF do ano: a ficha FII sem linha de IR fonte de day trade; ordem de
+    abatimento (day trade antes da Lei 11.033) na ficha de comuns.
+- Ficam para outras fases:
+  - patrimônio e rentabilidade, que precisam de cotação (F10);
+  - proventos (F7);
+  - os relatórios que as plataformas vendem à parte.
 
 ## Pendências do motor (revisão final da F4, 16/10/2026)
 Decididos na revisão: o IRRF de day trade impresso como "projeção" nas notas da XP é o 1% retido

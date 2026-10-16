@@ -140,7 +140,7 @@ class Livro:
         categoria: Categoria, cv: str | None, quantidade: Decimal, valor: Decimal,
         custos: Decimal = ZERO, baixa: Baixa | None = None, venda_acao: Decimal = ZERO,
         isentavel: bool = False, mes_limite: date | None = None, isento_pme: bool = False,
-        toca_posicao: bool = True,
+        toca_posicao: bool = True, base_irrf: Decimal = ZERO,
     ) -> None:  # fmt: skip
         titular, _, ativo, _ = chave
         pos = self.posicoes[chave]
@@ -159,7 +159,7 @@ class Livro:
                 cv=cv,  # type: ignore[arg-type]
                 quantidade=quantidade, valor=valor, custos=custos, custo_baixa=b.custo_baixa,
                 resultado=b.resultado, venda_acao_a_vista=venda_acao, isentavel=isentavel,
-                mes_limite=mes_limite, isento_pme=isento_pme,
+                mes_limite=mes_limite, isento_pme=isento_pme, base_irrf=base_irrf,
                 quantidade_apos=pos.quantidade, custo_apos=pos.custo,
             )
         )  # fmt: skip
@@ -276,10 +276,10 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
         regra = "termo liquidado: entra pelo preço a termo + custos da compra"
         if baixa.resultado or baixa.custo_baixa:
             regra += "; cobre a venda feita antes da liquidação (resultado nesta data)"
-        acao = t.op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT)
+        # o ganho na liquidação do termo nunca é isento (IN RFB 1.585/2015 art. 59 §2º IV)
         livro.registrar(chave, dia, f"termo:{t.op.id}", regra, de=_de(t),
                         categoria=Categoria.COMUM, cv="C", quantidade=t.op.quantidade,
-                        valor=t.valor, custos=t.custos, baixa=baixa, isentavel=acao,
+                        valor=t.valor, custos=t.custos, baixa=baixa, isentavel=False,
                         mes_limite=mes_limite)  # fmt: skip
     mesma_corretora = params.booleano("day_trade_mesma_corretora", dia)
     compras, vendas, exercicios = _day_trade(livro, dia, d.operacoes, mesma_corretora)
@@ -452,11 +452,15 @@ def _aplicar(livro: Livro, dia: date, p: _Peca) -> None:
             f"{dia}: venda a descoberto de {o.op.ticker} (posição {pos.quantidade} após a venda): "
             "confira se falta transferência ou evento; o resultado sai na recompra"
         )
+    # base do IRRF 0,005% (Lei 11.033/2004 art. 2º §§1º e 2º): venda comum, sem exercício, PME
+    # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas
+    base_irrf = p.bruto if (o.op.cv == "V" and o.op.mercado not in MERCADOS_EXERCICIO and not pme
+                            and o.op.tipo is not TipoAtivo.ETF_RF) else ZERO  # fmt: skip
     livro.registrar(chave, dia, f"op:{o.op.id}", p.regra, de=_de(o),
                     categoria=_categoria(o.op.tipo, day_trade=False), cv=o.op.cv,
                     quantidade=p.quantidade, valor=p.valor, custos=p.custos, baixa=baixa,
                     venda_acao=venda_acao, isentavel=isentavel and not pme, mes_limite=mes_limite,
-                    isento_pme=pme)  # fmt: skip
+                    isento_pme=pme, base_irrf=base_irrf)  # fmt: skip
 
 
 def _lote_pme(pos: Posicao, op: OperacaoMotor, dia: date) -> None:

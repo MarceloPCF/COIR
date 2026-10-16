@@ -13,6 +13,7 @@ from coir.erros import ConfiguracaoError
 
 VAR_DADOS = "COIR_DADOS"
 PASTA_PADRAO = "COIR-dados"
+RAIZ_REPOSITORIO = Path(__file__).resolve().parents[1]
 
 log = logging.getLogger(__name__)
 
@@ -39,3 +40,12 @@ def dados_dir(*, exigir: bool = False, ambiente: Mapping[str, str] | None = None
             f"Defina a variável de ambiente {VAR_DADOS} com o caminho correto."
         )
     return pasta
+
+
+def dentro_do_repositorio(destino: Path) -> bool:
+    """Saídas com dados pessoais (gabarito, relatórios) nunca vão para dentro do repositório: nem
+    deste código-fonte nem de qualquer pasta versionada com git (outro clone, worktree)."""
+    alvo = destino.resolve()
+    if alvo == RAIZ_REPOSITORIO or RAIZ_REPOSITORIO in alvo.parents:
+        return True
+    return any((pasta / ".git").exists() for pasta in (alvo, *alvo.parents))
