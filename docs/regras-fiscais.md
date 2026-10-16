@@ -167,6 +167,23 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - dados do COIR: séries de opção com custo na bonificação (só a quantidade muda) e custo
     atribuído de uma bonificação diferente do oficial, corrigidos no `eventos.csv`.
 
+## Relatórios (F5, 16/10/2026)
+`coir exportar` monta os relatórios de um titular e um ano só com os valores do motor e das notas
+(regra 12), sem cálculo novo. Saem em xlsx, csv (padrão brasileiro) e PDF (ADR 0003).
+- Escolhas do usuário:
+  - os relatórios mapeados e gratuitos das plataformas de referência, também para a interface (F6);
+  - nome e CPF completo no cabeçalho, mas nunca no nome do arquivo;
+  - csv com `;` e vírgula decimal.
+- A apuração vai até o fim do ano ou até a data de geração: opção que vence depois de hoje não vira
+  pó no relatório do ano em curso.
+- "Renda variável mês a mês" segue a ordem dos blocos do programa da Receita. O IRRF aparece em
+  duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é
+  usado primeiro. As fichas por ano ficam na F8.
+- Ficam para outras fases:
+  - patrimônio e rentabilidade, que precisam de cotação (F10);
+  - proventos (F7);
+  - os relatórios que as plataformas vendem à parte.
+
 ## Pendências do motor (revisão final da F4, 16/10/2026)
 Decididos na revisão: o IRRF de day trade impresso como "projeção" nas notas da XP é o 1% retido
 sobre o ganho do dia e é deduzido no mês (confirmado pelo usuário); day trade "na mesma instituição
