@@ -6,6 +6,16 @@ from decimal import Decimal
 from functools import cache
 from pathlib import Path
 
+from coir.domain.fiscal import TipoAtivo
+from coir.domain.parametros import (
+    Calendario,
+    IsencaoPME,
+    Parametro,
+    ParametrosFiscais,
+    ReferenciasFiscais,
+    RegraVencimento,
+    TiposAtivo,
+)
 from coir.domain.referencias import ContratoFuturo, Referencias, TrocaTicker
 from coir.erros import ConfiguracaoError
 from coir.parsing.numeros import compactar
@@ -64,3 +74,53 @@ def carregar(pasta: Path | None = None) -> Referencias:
             for t in _linhas(base / "trocas_ticker.csv")
         ),
     )
+
+
+DIAS_SEMANA = {"segunda": 0, "terca": 1, "quarta": 2, "quinta": 3, "sexta": 4}
+
+
+@cache
+def carregar_fiscais(pasta: Path | None = None) -> ReferenciasFiscais:
+    """Parâmetros fiscais, tipos de ativo e calendário (feriados e vencimento de opções)."""
+    base = pasta or pasta_data()
+    parametros = ParametrosFiscais(
+        parametros=tuple(
+            Parametro(nome=p["nome"], valor=p["valor"], inicio=_data(p["inicio"]),
+                      fim=_data(p["fim"]), fonte=p["fonte"])
+            for p in _linhas(base / "parametros_fiscais.csv")
+        )
+    )  # fmt: skip
+    tipos: dict[str, TipoAtivo] = {}
+    for t in _linhas(base / "tipos_ativo.csv"):
+        if t["ticker"] in tipos:
+            raise ConfiguracaoError(f"tipos_ativo.csv: {t['ticker']} repetido")
+        tipos[t["ticker"]] = TipoAtivo(t["tipo"])
+    feriados = _linhas(base / "feriados.csv")
+    anos = {date.fromisoformat(f["data"]).year for f in feriados}
+    regras = tuple(
+        RegraVencimento(inicio=_data(r["inicio"]), fim=_data(r["fim"]),
+                        dia_semana=DIAS_SEMANA[r["dia_semana"]], ordem=int(r["ordem"]),
+                        ajuste=r["ajuste"], fonte=r["fonte"])
+        for r in _linhas(base / "vencimentos_opcoes.csv")
+    )  # fmt: skip
+    excecoes = {
+        e["chave"]: date.fromisoformat(e["data"])
+        for e in _linhas(base / "vencimentos_opcoes_excecoes.csv")
+    }
+    calendario = Calendario(
+        primeiro_ano=min(anos), ultimo_ano=max(anos),
+        nao_uteis=frozenset(date.fromisoformat(f["data"]) for f in feriados
+                            if f["tipo"] == "bancario"),
+        sem_pregao=frozenset(date.fromisoformat(f["data"]) for f in feriados),
+        vencimentos=regras, excecoes_vencimento=excecoes,
+    )  # fmt: skip
+    pme = {
+        p["ticker"]: IsencaoPME(
+            ticker=p["ticker"], aquisicao_desde=date.fromisoformat(p["aquisicao_desde"]),
+            aquisicao_ate=date.fromisoformat(p["aquisicao_ate"]),
+            vendas_ate=date.fromisoformat(p["vendas_ate"]), fonte=p["fonte"],
+        )
+        for p in _linhas(base / "isencao_pme.csv")
+    }  # fmt: skip
+    return ReferenciasFiscais(parametros=parametros, tipos=TiposAtivo(tabela=tipos),
+                              calendario=calendario, pme=pme)  # fmt: skip

@@ -51,7 +51,7 @@ def primeira(fabrica: sessionmaker[Session], arquivos: list[Path]) -> RelatorioI
 
 def test_todas_as_notas_importadas(primeira: RelatorioImportacao) -> None:
     assert primeira.rejeitadas == []
-    assert primeira.notas_gravadas == 2033
+    assert primeira.notas_gravadas == 2034
 
 
 def test_reimportar_nao_muda_nada_e_e_rapido(
@@ -73,11 +73,14 @@ def test_banco_reproduz_a_extracao(
     fabrica: sessionmaker[Session], arquivos: list[Path], primeira: RelatorioImportacao
 ) -> None:
     refs = referencias.carregar()
-    notas = [n for a in arquivos for n in extrair_pdf(a).notas]
+    resultados = [extrair_pdf(a) for a in arquivos]
+    notas = [n for r in resultados for n in r.notas]
+    clientes = {k for r in resultados for k in r.clientes}
+    assert [n.arquivo for n in notas if n.chave not in clientes] == []  # CPF impresso em todas
     series = classes_das_series(notas, refs)
-    esperado: dict[tuple[object, ...], tuple[NotaExtraida, list[OperacaoExtraida]]] = {
-        n.chave: (n, operacoes(n, refs, series)) for n in notas
-    }
+    esperado: dict[tuple[object, ...], tuple[NotaExtraida, list[OperacaoExtraida]]] = {}
+    for n in notas:  # nota em dois PDFs: fica a do primeiro arquivo, como na importação
+        esperado.setdefault(n.chave, (n, operacoes(n, refs, series)))
     with fabrica() as s:
         lidas: dict[tuple[object, ...], tuple[NotaExtraida, list[OperacaoExtraida]]] = {
             n.chave: (n, ops) for n, ops in repo.carregar_notas(s)

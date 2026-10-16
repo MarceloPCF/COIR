@@ -2,7 +2,7 @@
 
 import hashlib
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from datetime import date, timedelta
 
 from sqlalchemy import func, select
@@ -21,8 +21,8 @@ from coir.db.modelos import (
     Titular,
 )
 from coir.domain.cpf import cpf_valido, so_digitos
-from coir.domain.nota import NotaExtraida, OperacaoExtraida, Segmento
-from coir.domain.referencias import TrocaTicker
+from coir.domain.nota import Cliente, NotaExtraida, OperacaoExtraida, Segmento
+from coir.domain.referencias import RE_SERIE_OPCAO, TrocaTicker
 from coir.erros import BancoError, ImportacaoError
 
 UM_DIA = timedelta(days=1)
@@ -45,20 +45,96 @@ def titular_por_cpf(sessao: Session, cpf: str) -> Titular | None:
     return sessao.scalar(select(Titular).where(Titular.cpf == so_digitos(cpf)))
 
 
+def renomear_titular(sessao: Session, id_titular: int, nome: str) -> Titular:
+    titular = sessao.get(Titular, id_titular)
+    if titular is None:
+        raise ImportacaoError(f"titular {id_titular} não existe")
+    if not nome.strip():
+        raise ImportacaoError("nome vazio")
+    titular.nome = nome.strip()
+    return titular
+
+
 def titulares(sessao: Session) -> list[Titular]:
     return list(sessao.scalars(select(Titular).order_by(Titular.nome, Titular.id)))
 
 
 # ---------------------------------------------------------------------------- corretoras e contas
-class Contas:
-    """Corretoras e contas do lote, com cache. Conta nova é do titular do lote; conta existente
-    de outro titular é erro (nunca mistura CPFs)."""
+class ContaRecusada(ImportacaoError):
+    """A nota não pode entrar nesta conta/titular (vira rejeição da nota, não do lote)."""
 
-    def __init__(self, sessao: Session, titular: Titular | None) -> None:
+
+class Contas:
+    """Corretoras, contas e titulares do lote, com cache. Nunca mistura CPFs.
+
+    O titular de cada nota é o do CPF impresso nela (criado na hora, com o nome impresso, se
+    ainda não existe). Sem CPF válido na nota: o dono da conta; conta nova usa o titular padrão
+    (--titular ou o único do banco). Com --titular explícito, nota de outro CPF é recusada.
+    """
+
+    def __init__(self, sessao: Session, padrao: Titular | None, explicito: bool = False) -> None:
         self._sessao = sessao
-        self._titular = titular
+        self._padrao = padrao
+        self._explicito = explicito
         self._corretoras: dict[str, Corretora] = {}
         self._contas: dict[tuple[str, str], Conta] = {}
+        self._por_cpf: dict[str, Titular] = {}
+        self.criados: list[Titular] = []
+
+    def _do_cpf(self, cpf: str) -> Titular | None:
+        if cpf not in self._por_cpf:
+            titular = titular_por_cpf(self._sessao, cpf)
+            if titular is None:
+                return None
+            self._por_cpf[cpf] = titular
+        return self._por_cpf[cpf]
+
+    def _criar(self, cliente: Cliente) -> Titular:
+        titular = adicionar_titular(self._sessao, cliente.cpf, cliente.nome or "Titular")
+        self._por_cpf[cliente.cpf] = titular
+        self.criados.append(titular)
+        return titular
+
+    def conta_da_nota(self, corretora: str, numero: str, cliente: Cliente | None) -> Conta:
+        """Conta da nota, conferindo o titular (ContaRecusada se o CPF não bate). Titular novo só
+        é criado junto com uma conta nova (nota recusada não deixa cadastro)."""
+        dono = None if cliente is None else self._do_cpf(cliente.cpf)
+        padrao = self._padrao
+        outro_cpf = padrao is not None and (dono is None or dono.id != padrao.id)
+        if cliente is not None and self._explicito and outro_cpf:
+            raise ContaRecusada(f"nota da {corretora} é de outro CPF, não do titular de --titular")
+        chave = (corretora, numero)
+        conta = self._contas.get(chave) or self._buscar(corretora, numero)
+        if conta is None:
+            if cliente is not None:
+                titular = dono or self._criar(cliente)
+            elif padrao is not None:
+                titular = padrao
+            else:
+                raise ContaRecusada(
+                    f"conta nova ({corretora}) sem CPF válido na nota e sem titular definido: "
+                    "informe --titular"
+                )
+            conta = Conta(corretora=self.corretora(corretora), numero=numero, titular=titular)
+            self._sessao.add(conta)
+            self._sessao.flush()
+        else:
+            esperado = dono if cliente is not None else (padrao if self._explicito else None)
+            if (cliente is not None and dono is None) or (
+                esperado is not None and conta.titular_id != esperado.id
+            ):
+                raise ContaRecusada(
+                    f"conta da {corretora} já pertence a outro titular; importe esse arquivo no "
+                    "titular dono da conta"
+                )
+        self._contas[chave] = conta
+        return conta
+
+    def _buscar(self, corretora: str, numero: str) -> Conta | None:
+        c = self.corretora(corretora)
+        return self._sessao.scalar(
+            select(Conta).where(Conta.corretora_id == c.id, Conta.numero == numero)
+        )
 
     def corretora(self, nome: str) -> Corretora:
         if nome not in self._corretoras:
@@ -69,30 +145,6 @@ class Contas:
                 self._sessao.flush()
             self._corretoras[nome] = existente
         return self._corretoras[nome]
-
-    def conta(self, corretora: str, numero: str) -> Conta:
-        chave = (corretora, numero)
-        if chave in self._contas:
-            return self._contas[chave]
-        c = self.corretora(corretora)
-        conta = self._sessao.scalar(
-            select(Conta).where(Conta.corretora_id == c.id, Conta.numero == numero)
-        )
-        if conta is None:
-            if self._titular is None:
-                raise ImportacaoError(
-                    f"conta nova ({corretora}) e nenhum titular definido: informe --titular"
-                )
-            conta = Conta(corretora=c, numero=numero, titular=self._titular)
-            self._sessao.add(conta)
-            self._sessao.flush()
-        elif self._titular is not None and conta.titular_id != self._titular.id:
-            raise ImportacaoError(
-                f"conta da {corretora} já pertence a outro titular; importe esse arquivo no "
-                "titular dono da conta"
-            )
-        self._contas[chave] = conta
-        return conta
 
 
 # ---------------------------------------------------------------------------------------- ativos
@@ -149,7 +201,7 @@ class Ativos:
         e troca acrescentada depois de já haver operações gravadas (reatribui o ativo delas).
         Devolve se o histórico mudou."""
         mudou = False
-        for t in trocas:
+        for t in self._com_series(trocas):
             inicio_novo = t.ate + UM_DIA
             antiga = self._cobrindo(t.ticker_impresso, t.ate)
             if antiga is not None and antiga.fim == t.ate:
@@ -180,6 +232,24 @@ class Ativos:
             self._reatribuir_operacoes()
         return mudou
 
+    def _com_series(self, trocas: Iterable[TrocaTicker]) -> Iterator[TrocaTicker]:
+        """Cada troca do ativo-objeto vale também para as séries de opção já vistas com a raiz
+        antiga (EMBRE790 até 31/10/2025 é a EMBJE790 de depois): a série comprada com um código e
+        vendida com o outro é a mesma posição. Gerador: numa troca em cadeia, as séries criadas
+        pela troca anterior já entram na seguinte."""
+        for t in trocas:
+            yield t
+            antiga, nova = t.ticker_impresso[:4], t.ticker[:4]
+            if antiga == nova:
+                continue
+            for serie in sorted(self._por_ticker):
+                if (
+                    serie[:4] == antiga
+                    and RE_SERIE_OPCAO.match(serie)
+                    and self._cobrindo(serie, t.ate)
+                ):
+                    yield TrocaTicker(ticker_impresso=serie, ticker=nova + serie[4:], ate=t.ate)
+
     def _adicionar_id(
         self, ativo_id: int, ticker: str, inicio: date | None, fim: date | None
     ) -> None:
@@ -198,6 +268,14 @@ class Ativos:
         self._sessao.flush()
 
 
+def ativo_existente(sessao: Session, ticker: str, dia: date) -> int | None:
+    """Ativo do ticker na data (vigência que cobre a data), sem criar."""
+    for t in sessao.scalars(select(TickerHistorico).where(TickerHistorico.ticker == ticker)):
+        if (t.inicio is None or t.inicio <= dia) and (t.fim is None or dia <= t.fim):
+            return t.ativo_id
+    return None
+
+
 # --------------------------------------------------------------------------------- séries de opção
 def series(sessao: Session) -> dict[str, str]:
     return {s.serie: s.classe for s in sessao.scalars(select(SerieOpcao))}
@@ -211,6 +289,9 @@ def gravar_series(sessao: Session, novas: dict[str, str]) -> None:
 
 
 # ---------------------------------------------------------------------------------- arquivos/notas
+CAMPOS_CONTEUDO = {"negocios_bovespa", "negocios_bmf", "resumo_bovespa", "resumo_bmf"}
+
+
 def arquivo_por_sha(sessao: Session, sha256: str) -> ArquivoImportado | None:
     return sessao.scalar(select(ArquivoImportado).where(ArquivoImportado.sha256 == sha256))
 
@@ -218,8 +299,26 @@ def arquivo_por_sha(sessao: Session, sha256: str) -> ArquivoImportado | None:
 def hash_conteudo(nota: NotaExtraida) -> str:
     """Hash do que a nota diz (negócios e resumo), sem arquivo/páginas: a mesma nota em outro PDF
     tem o mesmo hash."""
-    campos = {"negocios_bovespa", "negocios_bmf", "resumo_bovespa", "resumo_bmf"}
-    return hashlib.sha256(nota.model_dump_json(include=campos).encode()).hexdigest()
+    return hashlib.sha256(nota.model_dump_json(include=CAMPOS_CONTEUDO).encode()).hexdigest()
+
+
+def mesmo_conteudo(a: NotaExtraida, b: NotaExtraida) -> bool:
+    """A mesma nota gerada de novo pela corretora em outro layout (ex.: XP, 2024 baixada em 2026):
+    mesmos negócios e mesmo resumo; as linhas de custo valem só pelos valores não zerados
+    (categoria e valor), sem rótulo, grupo nem ordem."""
+    return _sem_layout(a) == _sem_layout(b)
+
+
+def _sem_layout(nota: NotaExtraida) -> dict[str, object]:
+    dados: dict[str, object] = nota.model_dump(include=CAMPOS_CONTEUDO)
+    for chave in ("resumo_bovespa", "resumo_bmf"):
+        resumo = dados.get(chave)
+        if isinstance(resumo, dict):
+            custos: list[dict[str, object]] = resumo["custos"]  # type: ignore[assignment]
+            resumo["custos"] = sorted(
+                (str(c["categoria"]), str(c["valor"])) for c in custos if c["valor"] != 0
+            )
+    return dados
 
 
 def nota_por_chave(
@@ -286,26 +385,54 @@ def gravar_nota(
             )
             for i, c in enumerate(custos)
         ],
-        operacoes=[
-            Operacao(
-                ordem=i,
-                categoria=o.categoria,
-                cv=o.cv,
-                papel=o.papel,
-                ticker_impresso=o.ticker_original,
-                ativo_id=ativos.ativo_id(o.ticker_original, o.data),
-                mercado=o.mercado,
-                preco=o.preco,
-                quantidade=o.quantidade,
-                total=o.total,
-                ativo_objeto=o.ativo_objeto,
-                prazo_termo_dias=o.prazo_termo_dias,
-            )
-            for i, o in enumerate(ops)
-        ],
+        operacoes=[_linha_operacao(i, o, ativos) for i, o in enumerate(ops)],
     )
     sessao.add(registro)
     return registro
+
+
+def _linha_operacao(i: int, o: OperacaoExtraida, ativos: Ativos) -> Operacao:
+    return Operacao(
+        ordem=i,
+        categoria=o.categoria,
+        cv=o.cv,
+        papel=o.papel,
+        ticker_impresso=o.ticker_original,
+        ativo_id=ativos.ativo_id(o.ticker_original, o.data),
+        mercado=o.mercado,
+        preco=o.preco,
+        quantidade=o.quantidade,
+        total=o.total,
+        ativo_objeto=o.ativo_objeto,
+        prazo_termo_dias=o.prazo_termo_dias,
+    )
+
+
+def notas_gravadas(sessao: Session) -> list[NotaCorretagem]:
+    return list(
+        sessao.scalars(
+            select(NotaCorretagem).options(
+                selectinload(NotaCorretagem.operacoes),
+                selectinload(NotaCorretagem.conta).selectinload(Conta.corretora),
+            )
+        )
+    )
+
+
+def operacoes_gravadas(registro: NotaCorretagem) -> list[OperacaoExtraida]:
+    return [_operacao(registro, o) for o in registro.operacoes]
+
+
+def substituir_operacoes(
+    sessao: Session, registro: NotaCorretagem, ops: Iterable[OperacaoExtraida], ativos: Ativos
+) -> None:
+    """Operações são derivadas da nota (json_nota + data/): regrava quando a normalização muda."""
+    for antiga in registro.operacoes:
+        sessao.delete(antiga)
+    sessao.flush()
+    sessao.expire(registro, ["operacoes"])
+    registro.operacoes.extend(_linha_operacao(i, o, ativos) for i, o in enumerate(ops))
+    sessao.flush()
 
 
 def _operacao(nota: NotaCorretagem, o: Operacao) -> OperacaoExtraida:

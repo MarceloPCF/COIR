@@ -38,3 +38,8 @@ class BancoError(CoirError):
 
 class ImportacaoError(CoirError):
     """Lote de importação que não pode ser gravado (titular, conta ou arquivos inconsistentes)."""
+
+
+class MotorError(CoirError):
+    """Livro que o motor fiscal não consegue apurar sem palpite (ex.: exercício sem a opção em
+    carteira, venda a termo, custo negativo)."""
