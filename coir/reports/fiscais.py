@@ -13,6 +13,8 @@ from decimal import Decimal
 from coir.domain.fiscal import (
     ZERO,
     Categoria,
+    Ficha,
+    FichaMes,
     Grupo,
     MesApurado,
     Movimento,
@@ -268,16 +270,6 @@ def darfs(d: DadosRelatorio) -> Relatorio:
 
 
 # ------------------------------------------------------------- 3. ordem do programa da Receita
-def _imposto_cdt(m: MesApurado) -> Decimal:
-    """Imposto da ficha de operações comuns e day trade (sem FII, que tem ficha própria)."""
-    return _cat(m, Categoria.COMUM).imposto + _cat(m, Categoria.DAY_TRADE).imposto
-
-
-def _irrf_cdt(m: MesApurado) -> Decimal:
-    """Parte do IRRF deduzido que abate a ficha de comuns e day trade (usada primeiro)."""
-    return min(_imposto_cdt(m), m.irrf_deduzido)
-
-
 def irpf_mensal(d: DadosRelatorio) -> Relatorio:
     meses = _meses(d)
     comum, dt = Categoria.COMUM, Categoria.DAY_TRADE
@@ -339,31 +331,23 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
         _dinheiro("IR fonte (Lei 11.033/2004) meses anteriores"),
         _dinheiro("IR fonte (Lei 11.033/2004) a compensar"),
         _dinheiro("Imposto a pagar"),
-        _dinheiro("DARF do mês (todas as fichas)"),
+        _dinheiro("Imposto pago (calculado)"),
     )
-    linhas = [
-        (
-            MESES[m.mes - 1],
-            _imposto_cdt(m),
-            m.irrf_mes_day_trade,
-            m.irrf_saldo_day_trade_anterior,
-            m.irrf_saldo_day_trade,
-            m.irrf_mes - m.irrf_mes_day_trade,
-            m.irrf_saldo_anterior - m.irrf_saldo_day_trade_anterior,
-            m.irrf_saldo - m.irrf_saldo_day_trade,
-            _imposto_cdt(m) - _irrf_cdt(m),
-            m.darf,
-        )
-        for m in meses
-    ]
+
+    def ficha(f: FichaMes) -> tuple[Valor, ...]:
+        return (f.imposto, f.irrf_day_trade_mes, f.irrf_day_trade_anterior,
+                f.irrf_day_trade_a_compensar, f.irrf_mes, f.irrf_anterior, f.irrf_a_compensar,
+                f.a_pagar, f.pago)  # fmt: skip
+
+    linhas = [(MESES[m.mes - 1], *ficha(m.ficha(Ficha.COMUNS))) for m in meses]
     consolidacao = Secao(
         "Consolidação do mês",
         colunas,
         tuple(linhas),
-        nota="Só comuns e day trade (FII tem ficha própria). O IRRF é um saldo único: abate "
-        "primeiro o imposto desta ficha (o de day trade antes, porque o saldo dele só se "
-        "recupera por restituição) e o resto vai para FII. O DARF soma as fichas e acumula "
-        "abaixo de R$ 10.",
+        nota="Só comuns e day trade (FII tem ficha própria). A DARF deduz o IRRF de um saldo "
+        "único; cada ficha recebe o IRRF que consumiu nele (o de day trade primeiro) e o retido "
+        "nela que sobrou, sem usar o mesmo valor duas vezes. Imposto pago: o a pagar do mês "
+        "quando a DARF que o cobriu (inclusive acumulada abaixo de R$ 10) já foi emitida.",
     )
     colunas = (
         Coluna("Mês"),
@@ -385,16 +369,31 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
         Coluna("Mês"),
         *(Coluna(n.capitalize(), T.PERCENTUAL if n == "alíquota" else T.DINHEIRO) for n in nomes),
     )
-    colunas = (*colunas, _dinheiro("IRRF usado"), _dinheiro("Imposto a pagar"))
-    fiis = meses if _ativa(meses, Categoria.FII) else []
+    colunas = (
+        *colunas,
+        _dinheiro("IR fonte (Lei 11.033/2004) no mês"),
+        _dinheiro("IR fonte (Lei 11.033/2004) meses anteriores"),
+        _dinheiro("IR fonte (Lei 11.033/2004) a compensar"),
+        _dinheiro("Imposto a pagar"),
+        _dinheiro("Imposto pago (calculado)"),
+    )
+    fiis = meses if _ativa(meses, Categoria.FII) or any(
+        m.ficha(Ficha.FII).irrf_mes for m in meses) else []  # fmt: skip
     linhas = []
     for m in fiis:
-        irrf_fii = m.irrf_deduzido - _irrf_cdt(m)
-        imposto_fii = _cat(m, Categoria.FII).imposto
-        linhas.append((MESES[m.mes - 1], *bloco(_cat(m, Categoria.FII)), irrf_fii,
-                       imposto_fii - irrf_fii))  # fmt: skip
-    fii = Secao("Fundos imobiliários e Fiagro", colunas, tuple(linhas),
-)  # fmt: skip
+        f = m.ficha(Ficha.FII)
+        linhas.append((MESES[m.mes - 1], *bloco(_cat(m, Categoria.FII)), f.irrf_mes,
+                       f.irrf_anterior, f.irrf_a_compensar, f.a_pagar, f.pago))  # fmt: skip
+    usado_dt = [m for m in fiis if m.ficha(Ficha.FII).irrf_day_trade_mes]
+    fii = Secao(
+        "Fundos imobiliários e Fiagro",
+        colunas,
+        tuple(linhas),
+        nota="IR fonte: o 0,005% retido em vendas de FII que não abateu a ficha de comuns, mais "
+        "o de comuns que abateu esta ficha."
+        + (" Houve IRRF de day trade deduzido do imposto de FII (sem linha no programa): "
+           + ", ".join(MESES[m.mes - 1] for m in usado_dt) + "." if usado_dt else ""),
+    )  # fmt: skip
     return Relatorio(
         "irpf-mensal",
         "Renda variável mês a mês (ordem do programa IRPF)",
@@ -413,12 +412,25 @@ def irrf_exclusiva(d: DadosRelatorio) -> Relatorio:
         _dinheiro("IRRF de vendas comuns retido"),
         _dinheiro("IRRF day trade retido"),
         _dinheiro("Saldo de vendas comuns (declaração)"),
+        _dinheiro("Na ficha de comuns"),
+        _dinheiro("Na ficha de FII"),
         _dinheiro("Saldo day trade (restituição)"),
     )
     irrf = Secao(
         "IRRF do ano",
         colunas,
-        tuple((a.ano, a.comum, a.day_trade, a.saldo_comum, a.saldo_day_trade) for a in anual),
+        tuple(
+            (
+                a.ano,
+                a.comum,
+                a.day_trade,
+                a.saldo_comum,
+                a.saldo_comum_fichas.get(Ficha.COMUNS, ZERO),
+                a.saldo_comum_fichas.get(Ficha.FII, ZERO),
+                a.saldo_day_trade,
+            )
+            for a in anual
+        ),
         nota=(
             "O saldo de dezembro não passa para janeiro: o de vendas comuns vai para a "
             "declaração anual e o de day trade só por restituição (IN RFB 1.585/2015 "

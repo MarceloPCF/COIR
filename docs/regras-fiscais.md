@@ -85,6 +85,16 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   seguintes do ano e não passa para janeiro. Em dezembro, o de 0,005% vai para a declaração anual
   (IN 1.585 art. 63 §8º III) e o de day trade só pode ser pedido em restituição (art. 65 §§9º e
   12 II; P&R 715), como em R6. Só conta o IRRF impresso na nota.
+- **IRRF por ficha do IRPF (decisão de 16/10/2026: separar só na declaração):** a DARF continua no
+  saldo único (a lei e a IN não separam o IRRF de FII; Lei 11.033/2004 art. 2º §7º). As fichas do
+  programa (comuns/day trade e FII) recebem o IRRF que cada uma consumiu nesse saldo, mais o
+  retido nela que sobrou; os saldos de dezembro das fichas somam o saldo único (sem uso duplo).
+  - Ordem de consumo: comuns usa o day trade, o 0,005% dela e depois o de FII; FII usa o 0,005%
+    dela, o de comuns e, só se faltar, o day trade (vira aviso: a ficha FII não tem essa linha).
+  - O 0,005% de uma nota mista é repartido pelas vendas comuns de cada ficha (sem day trade nem
+    venda por exercício), por titular, corretora, conta e mês; o centavo residual fica em comuns.
+  - "Imposto pago (calculado)": o a pagar do mês quando a DARF que o cobriu (inclusive acumulada
+    abaixo de R$ 10) já foi emitida.
 - **Exercício de opção:** o ganho da venda de ações por exercício nunca é isento (IN 1.585 art. 59
   §2º IV). O valor dessa venda entra na soma do limite das demais vendas (decisão de 15/10/2026,
   abaixo).
@@ -180,16 +190,17 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é
   usado primeiro. As fichas por ano ficam na F8.
 - Fichas do programa: o total de comuns e day trade não leva o imposto de FII, que tem ficha
-  própria. O IRRF é um saldo único: abate primeiro a ficha de comuns e day trade, e o resto vai
-  para FII.
+  própria. O IRRF de cada ficha segue "IRRF por ficha do IRPF" (acima), com imposto pago.
 - Futuros: cada mercado de `data/contratos_futuros.csv` tem linha na apuração (índice, dólar,
   commodities em "outros"). Um mercado sem linha (ex.: juros) falha alto.
 - Para a F8 (revisão fiscal da F5):
   - Bens e Direitos com situação em 31/12 do ano anterior, grupo e código do bem por ano, CNPJ,
     código de negociação e discriminação;
   - opções sobre ETF ou índice na linha "outros";
-  - linha "Mercado a termo" para o ganho realizado na liquidação;
-  - "imposto pago" por ficha.
+  - linha "Mercado a termo" para o ganho realizado na liquidação (o usuário manteve o à vista em
+    16/10/2026; rever na F8);
+  - conferir no programa IRPF do ano: a ficha FII sem linha de IR fonte de day trade; ordem de
+    abatimento (day trade antes da Lei 11.033) na ficha de comuns.
 - Ficam para outras fases:
   - patrimônio e rentabilidade, que precisam de cotação (F10);
   - proventos (F7);

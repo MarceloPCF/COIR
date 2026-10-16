@@ -154,7 +154,8 @@ def test_livro_de_notas_com_custos_por_tipo() -> None:
 def test_ordem_do_irpf_separa_a_ficha_de_fii() -> None:
     """FII tem ficha própria no programa IRPF: o total de comuns/day trade não leva o imposto de
     FII. Junho/2024: comum 30.000 - 20.000 = 10.000 (IR 1.500); FII 11.000 - 10.000 = 1.000 a 20%
-    (IR 200); IRRF de 2 abate primeiro a ficha de comuns -> 1.498 + 200 = DARF 1.698."""
+    (IR 200). IRRF de 2 repartido pelas vendas (FII 2 x 11.000/41.000 = 0,54; comuns 1,46): cada
+    ficha abate o seu -> 1.498,54 + 199,46 = DARF 1.698,00 (a do saldo único)."""
     from coir.domain.fiscal import TipoAtivo
 
     livro = Livro()
@@ -168,9 +169,12 @@ def test_ordem_do_irpf_separa_a_ficha_de_fii() -> None:
     consol = _secao(rel, "Consolidação do mês")
     junho = next(x for x in consol.linhas if x[0] == "Junho")
     assert junho[_coluna(consol, "Total do imposto devido")] == D("1500.00")
-    assert junho[_coluna(consol, "Imposto a pagar")] == D("1498.00")
-    assert junho[_coluna(consol, "DARF do mês (todas as fichas)")] == D("1698.00")
+    assert junho[_coluna(consol, "IR fonte (Lei 11.033/2004) no mês")] == D("1.46")
+    assert junho[_coluna(consol, "Imposto a pagar")] == D("1498.54")
+    assert junho[_coluna(consol, "Imposto pago (calculado)")] == D("1498.54")
     fii = _secao(rel, "Fundos imobiliários e Fiagro")
     jfii = next(x for x in fii.linhas if x[0] == "Junho")
-    assert jfii[_coluna(fii, "Imposto a pagar")] == D("200.00")
-    assert jfii[_coluna(fii, "IRRF usado")] == 0
+    assert jfii[_coluna(fii, "IR fonte (Lei 11.033/2004) no mês")] == D("0.54")
+    assert jfii[_coluna(fii, "Imposto a pagar")] == D("199.46")
+    darf = next(m.darf for m in d.apuracao.meses if m.mes == 6)
+    assert darf == D("1698.00") == D("1498.54") + D("199.46")

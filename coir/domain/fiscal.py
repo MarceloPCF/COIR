@@ -174,6 +174,7 @@ class Movimento(Modelo):
     isentavel: bool = False  # resultado de ação à vista (comum): isento se vendas <= limite
     mes_limite: date | None = None  # recompra de venda a descoberto: o limite é o do mês da venda
     isento_pme: bool = False  # venda de ações de PME (Lei 13.043): fora da apuração e do limite
+    base_irrf: Decimal = ZERO  # venda comum bruta na base do IRRF 0,005% (repartição por ficha)
     quantidade_apos: Decimal
     custo_apos: Decimal  # custo total da posição (negativo se vendida)
 
@@ -213,6 +214,30 @@ class ResultadoCategoria(Modelo):
     imposto: Decimal = ZERO
 
 
+class Ficha(StrEnum):
+    """Fichas de renda variável do programa IRPF (cada uma com imposto e IR fonte próprios)."""
+
+    COMUNS = "comuns"  # operações comuns e day trade
+    FII = "fii"  # fundos imobiliários e Fiagro
+
+
+class FichaMes(Modelo):
+    """Uma ficha do programa IRPF num mês. A DARF usa o saldo único de IRRF; aqui cada ficha
+    recebe o IRRF que ela consumiu nesse saldo, mais o retido nela e nunca usado (a soma dos
+    saldos das fichas é o saldo único, sem usar o mesmo IRRF duas vezes)."""
+
+    ficha: Ficha
+    imposto: Decimal  # imposto devido da ficha
+    irrf_day_trade_mes: Decimal = ZERO  # 1%
+    irrf_day_trade_anterior: Decimal = ZERO
+    irrf_day_trade_a_compensar: Decimal = ZERO
+    irrf_mes: Decimal = ZERO  # 0,005% (Lei 11.033/2004)
+    irrf_anterior: Decimal = ZERO
+    irrf_a_compensar: Decimal = ZERO
+    a_pagar: Decimal = ZERO
+    pago: Decimal = ZERO  # o a pagar do mês quando a DARF que o cobriu já foi emitida
+
+
 class MesApurado(Modelo):
     titular: int
     ano: int
@@ -233,6 +258,13 @@ class MesApurado(Modelo):
     irrf_mes_day_trade: Decimal = ZERO
     irrf_saldo_day_trade_anterior: Decimal = ZERO
     irrf_saldo_day_trade: Decimal = ZERO
+    fichas: tuple[FichaMes, ...] = ()  # comuns/day trade e FII, como no programa IRPF
+
+    def ficha(self, ficha: Ficha) -> FichaMes:
+        for f in self.fichas:
+            if f.ficha is ficha:
+                return f
+        raise LookupError(f"{self.mes:02d}/{self.ano}: ficha {ficha} não apurada")
 
 
 class TributacaoExclusiva(Modelo):
@@ -260,6 +292,7 @@ class IrrfAnual(Modelo):
     saldo_day_trade: Decimal  # 1%: pedido de restituição
     comum: Decimal  # IRRF 0,005% retido no ano
     day_trade: Decimal  # IRRF 1% retido no ano
+    saldo_comum_fichas: dict[Ficha, Decimal] = {}  # saldo_comum por ficha do programa IRPF
 
 
 class Apuracao(Modelo):
