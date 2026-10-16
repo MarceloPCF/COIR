@@ -43,6 +43,9 @@ def dados_dir(*, exigir: bool = False, ambiente: Mapping[str, str] | None = None
 
 
 def dentro_do_repositorio(destino: Path) -> bool:
-    """Saídas com dados pessoais (gabarito, relatórios) nunca vão para dentro do repositório."""
+    """Saídas com dados pessoais (gabarito, relatórios) nunca vão para dentro do repositório: nem
+    deste código-fonte nem de qualquer pasta versionada com git (outro clone, worktree)."""
     alvo = destino.resolve()
-    return alvo == RAIZ_REPOSITORIO or RAIZ_REPOSITORIO in alvo.parents
+    if alvo == RAIZ_REPOSITORIO or RAIZ_REPOSITORIO in alvo.parents:
+        return True
+    return any((pasta / ".git").exists() for pasta in (alvo, *alvo.parents))

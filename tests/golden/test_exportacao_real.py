@@ -52,7 +52,7 @@ def test_todos_os_anos_exportam_e_o_darf_confere(banco: Path, tmp_path: Path) ->
         segundos = time.perf_counter() - inicio
         assert segundos < 30, f"{ano}: {segundos:.1f} s"
         livro = load_workbook(tmp_path / str(ano) / f"coir-{ano}-titular1.xlsx")
-        aba = livro["Resumo fiscal do ano"]
+        aba = livro["Resumo fiscal"]
         linhas = list(aba.iter_rows(values_only=True))
         cab = next(i for i, x in enumerate(linhas) if x[0] == "Mês" and "DARF" in x)
         col = linhas[cab].index("DARF")

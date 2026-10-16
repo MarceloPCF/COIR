@@ -36,7 +36,8 @@ def _dados(livro: Livro, notas: tuple[NotaDoLivro, ...] = ()) -> DadosRelatorio:
     fim = date(2025, 12, 31)
     return DadosRelatorio(
         titular=1, nome="Titular de Teste", cpf=cpf_de_teste(), ano=2025, gerado_em=AGORA,
-        codigo_darf="6015", apuracao=livro.apurar(fim), data_carteira=fim, visao=Visao.TITULAR,
+        codigo_darf="6015", apuracao=livro.apurar(fim), ate=fim, data_carteira=fim,
+        visao=Visao.TITULAR,
         carteira=tuple(livro.carteira(fim)), carteira_fiscal=tuple(livro.carteira(fim)),
         contas={1: "1234"}, notas=notas,
     )  # fmt: skip
@@ -95,8 +96,8 @@ def test_darfs_e_ordem_do_irpf_batem_com_a_apuracao() -> None:
     assert marco[_coluna(mercados, "Day trade: À vista")] == dt.por_grupo[Grupo.A_VISTA] == D(500)
     consol = _secao(irpf, "Consolidação do mês")
     linha = next(x for x in consol.linhas if x[0] == "Março")
-    assert linha[_coluna(consol, "IRRF day trade no mês")] == D(5)
-    assert linha[_coluna(consol, "IRRF 0,005% no mês")] == 0
+    assert linha[_coluna(consol, "IR fonte de day trade no mês")] == D(5)
+    assert linha[_coluna(consol, "IR fonte (Lei 11.033/2004) no mês")] == 0
     outras = _secao(irpf, "Outras informações (só para consulta)")
     fev = next(x for x in outras.linhas if x[0] == "Fevereiro")
     assert fev[2] == D("2994.00")
@@ -148,3 +149,28 @@ def test_livro_de_notas_com_custos_por_tipo() -> None:
     assert linha[_coluna(secao, "Valor das operações")] == resumo.valor_operacoes
     ops = _secao(rel, "Operações (Bovespa)")
     assert len(ops.linhas) == len(notas[0].operacoes)
+
+
+def test_ordem_do_irpf_separa_a_ficha_de_fii() -> None:
+    """FII tem ficha própria no programa IRPF: o total de comuns/day trade não leva o imposto de
+    FII. Junho/2024: comum 30.000 - 20.000 = 10.000 (IR 1.500); FII 11.000 - 10.000 = 1.000 a 20%
+    (IR 200); IRRF de 2 abate primeiro a ficha de comuns -> 1.498 + 200 = DARF 1.698."""
+    from coir.domain.fiscal import TipoAtivo
+
+    livro = Livro()
+    livro.nota(date(2024, 6, 3), livro.op("C", "AAAA3", 2000, "10"),
+               livro.op("C", "XPML11", 100, "100", tipo=TipoAtivo.FII))  # fmt: skip
+    livro.nota(date(2024, 6, 10), livro.op("V", "AAAA3", 2000, "15"),
+               livro.op("V", "XPML11", 100, "110", tipo=TipoAtivo.FII), irrf="2")  # fmt: skip
+    fim = date(2024, 12, 31)
+    d = _dados(livro).model_copy(update={"ano": 2024, "apuracao": livro.apurar(fim), "ate": fim})
+    rel = TODOS["irpf-mensal"](d)
+    consol = _secao(rel, "Consolidação do mês")
+    junho = next(x for x in consol.linhas if x[0] == "Junho")
+    assert junho[_coluna(consol, "Total do imposto devido")] == D("1500.00")
+    assert junho[_coluna(consol, "Imposto a pagar")] == D("1498.00")
+    assert junho[_coluna(consol, "DARF do mês (todas as fichas)")] == D("1698.00")
+    fii = _secao(rel, "Fundos imobiliários e Fiagro")
+    jfii = next(x for x in fii.linhas if x[0] == "Junho")
+    assert jfii[_coluna(fii, "Imposto a pagar")] == D("200.00")
+    assert jfii[_coluna(fii, "IRRF usado")] == 0

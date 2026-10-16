@@ -71,6 +71,7 @@ class Relatorio:
     secoes: tuple[Secao, ...]
     pdf: bool = False  # também sai em PDF
     notas: tuple[str, ...] = field(default=())  # observações gerais (fim do relatório)
+    aba: str = ""  # nome curto da aba no xlsx (até 31 caracteres); vazio = título
 
 
 # ---------------------------------------------------------------------------------- formatação

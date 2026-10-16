@@ -51,7 +51,7 @@ def test_exporta_todos_os_formatos_sem_cpf_no_nome(banco: Path, tmp_path: Path) 
     assert any(n.endswith(".csv") for n in nomes)
     assert not any(cpf_de_teste() in n for n in nomes)
     livro = load_workbook(tmp_path / "saida" / "coir-2023-titular1.xlsx")
-    assert "Livro de notas" in livro.sheetnames and "Resumo fiscal do ano" in livro.sheetnames
+    assert "Livro de notas" in livro.sheetnames and "Resumo fiscal" in livro.sheetnames
 
 
 def test_destino_no_repositorio_e_opcoes_invalidas_falham(banco: Path, tmp_path: Path) -> None:
@@ -83,3 +83,29 @@ def test_comando_exportar(banco: Path, tmp_path: Path, monkeypatch: pytest.Monke
     assert res.exit_code == 0, res.output
     assert "coir-2023-titular1.xlsx" in res.output and "DARF do ano" in res.output
     assert sorted(p.suffix for p in destino.iterdir()) == [".csv"] * 3 + [".xlsx"]
+
+
+def test_guarda_recusa_qualquer_pasta_versionada(tmp_path: Path) -> None:
+    from coir.config import dentro_do_repositorio
+
+    clone = tmp_path / "outro-clone"
+    (clone / ".git").mkdir(parents=True)
+    assert dentro_do_repositorio(clone / "relatorios" / "2025")
+    assert dentro_do_repositorio(RAIZ_REPOSITORIO / "docs" / ".." / "saida")
+    assert not dentro_do_repositorio(tmp_path / "dados" / "relatorios")
+
+
+def test_ano_sem_notas_e_carteira_por_conta(banco: Path, tmp_path: Path) -> None:
+    """Ano sem negócio (2012): os 11 relatórios saem, com seções vazias; carteira por conta traz o
+    número da conta."""
+    from coir.domain.fiscal import Visao
+
+    vazio = dados_banco(banco, REFS, FISCAIS, 2012, AGORA)
+    assert vazio.notas == ()
+    assert len(exportar(vazio, tmp_path / "vazio")) >= 11
+    por_conta = dados_banco(banco, REFS, FISCAIS, 2016, AGORA, visao=Visao.CONTA)
+    from coir.reports.fiscais import carteira
+
+    rel = carteira(por_conta)
+    contas = {x[2] for s in rel.secoes for x in s.linhas}
+    assert contas and contas <= set(por_conta.contas.values())

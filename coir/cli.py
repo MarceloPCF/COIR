@@ -658,7 +658,7 @@ def exportar(
 
     from coir import referencias
     from coir.domain.fiscal import Visao
-    from coir.servicos.relatorios import dados_banco
+    from coir.servicos.relatorios import dados_banco, validar
     from coir.servicos.relatorios import exportar as gravar
 
     try:
@@ -666,16 +666,16 @@ def exportar(
         vista = Visao(visao)
     except ValueError as erro:
         raise typer.BadParameter(str(erro)) from erro
-    dados = dados_banco(_banco(banco), referencias.carregar(), referencias.carregar_fiscais(), ano,
-                        _agora(), titular, dia, vista)  # fmt: skip
     pasta = destino or dados_dir(exigir=True) / "relatorios" / str(ano)
     formatos = tuple(f.strip().lower() for f in formato.split(",") if f.strip())
     chaves = tuple(c.strip() for c in relatorio.split(",")) if relatorio else None
+    validar(pasta, formatos, chaves)
+    dados = dados_banco(_banco(banco), referencias.carregar(), referencias.carregar_fiscais(), ano,
+                        _agora(), titular, dia, vista)  # fmt: skip
     arquivos = gravar(dados, pasta, formatos, chaves)
     meses = [m for m in dados.apuracao.meses if m.titular == dados.titular and m.ano == ano]
     total = sum((m.darf for m in meses), Decimal(0))
-    print(f"Titular {dados.titular} ({dados.nome}), ano {ano}: {len(arquivos)} arquivo(s) em "
-          f"{pasta}")  # fmt: skip
+    print(f"Titular {dados.titular}, ano {ano}: {len(arquivos)} arquivo(s) em {pasta}")
     for a in arquivos:
         print(f"  {a.name}")
     print(f"DARF do ano: {total:.2f} em {sum(1 for m in meses if m.darf)} mês(es)")

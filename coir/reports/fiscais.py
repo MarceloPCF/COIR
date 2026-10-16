@@ -7,6 +7,7 @@ usam o mesmo objeto. Nenhum cálculo fiscal novo aqui: os valores vêm da apura�
 
 from collections import defaultdict
 from collections.abc import Callable, Iterable
+from dataclasses import replace
 from decimal import Decimal
 
 from coir.domain.fiscal import (
@@ -22,7 +23,15 @@ from coir.domain.fiscal import (
 )
 from coir.domain.nota import CategoriaCusto
 from coir.domain.relatorio import DadosRelatorio
-from coir.reports.modelo import Cabecalho, Coluna, Relatorio, Secao, TipoColuna, Valor
+from coir.reports.modelo import (
+    Cabecalho,
+    Coluna,
+    Relatorio,
+    Secao,
+    TipoColuna,
+    Valor,
+    arredondar,
+)
 
 T = TipoColuna
 MESES = (
@@ -61,7 +70,11 @@ def _dinheiro(nome: str) -> Coluna:
 
 
 def _cab(d: DadosRelatorio, periodo: str | None = None) -> Cabecalho:
-    return Cabecalho(d.nome, d.cpf, periodo or f"Ano-calendário {d.ano}", d.gerado_em)
+    if periodo is None:
+        periodo = f"Ano-calendário {d.ano}"
+        if (d.ate.month, d.ate.day) != (12, 31):
+            periodo += f" (parcial, até {d.ate:%d/%m/%Y})"
+    return Cabecalho(d.nome, d.cpf, periodo, d.gerado_em)
 
 
 def _meses(d: DadosRelatorio) -> list[MesApurado]:
@@ -83,6 +96,7 @@ def _ativa(meses: list[MesApurado], categoria: Categoria) -> bool:
         or r.prejuizo_anterior
         or r.prejuizo_a_compensar
         or r.isento
+        or r.vendas_acoes
         or any(r.por_grupo.values())
         for r in (_cat(m, categoria) for m in meses)
     )
@@ -104,7 +118,10 @@ def _total(
             return "Total"
         if i not in somar:
             return None
-        return _soma(v for x in linhas if isinstance(v := x[i], Decimal))
+        # soma das parcelas como aparecem (arredondadas à precisão da coluna)
+        return _soma(
+            arredondar(v, colunas[i].tipo) for x in linhas if isinstance(v := x[i], Decimal)
+        )
 
     return tuple(coluna(i) for i in range(len(colunas)))
 
@@ -161,7 +178,7 @@ def resumo_fiscal(d: DadosRelatorio) -> Relatorio:
         _dinheiro("Imposto devido"),
         _dinheiro("DARF acumulado anterior"),
         _dinheiro("DARF"),
-        _dinheiro("Acumulado (< R$ 10)"),
+        _dinheiro("Acumulado para o mês seguinte"),
         Coluna("Vencimento", T.DATA),
         _dinheiro("Isento PME"),
     )
@@ -188,8 +205,8 @@ def resumo_fiscal(d: DadosRelatorio) -> Relatorio:
             colunas,
             tuple(linhas),
             _total(linhas, colunas, {1, 2, 4, 6, 8, 11}) if linhas else None,
-            nota="IRRF: 0,005% sobre vendas comuns e 1% sobre ganho de day trade, com saldo "
-            "no ano; DARF abaixo de R$ 10 acumula (Lei 9.430/1996 art. 68).",
+            nota="IRRF sobre vendas comuns (Lei 11.033/2004) e sobre ganho de day trade, com "
+            "saldo no ano; DARF abaixo do valor mínimo acumula (Lei 9.430/1996 art. 68).",
         )
     )
     return Relatorio("resumo-fiscal", "Resumo fiscal do ano", _cab(d), tuple(secoes), pdf=True)
@@ -223,7 +240,7 @@ def darfs(d: DadosRelatorio) -> Relatorio:
         Coluna("Notas", T.INTEIRO),
         _dinheiro("Imposto devido"),
         _dinheiro("DARF"),
-        _dinheiro("Acumulado (< R$ 10)"),
+        _dinheiro("Acumulado para o mês seguinte"),
     )
     linhas = []
     for mes in range(1, 13):
@@ -251,6 +268,16 @@ def darfs(d: DadosRelatorio) -> Relatorio:
 
 
 # ------------------------------------------------------------- 3. ordem do programa da Receita
+def _imposto_cdt(m: MesApurado) -> Decimal:
+    """Imposto da ficha de operações comuns e day trade (sem FII, que tem ficha própria)."""
+    return _cat(m, Categoria.COMUM).imposto + _cat(m, Categoria.DAY_TRADE).imposto
+
+
+def _irrf_cdt(m: MesApurado) -> Decimal:
+    """Parte do IRRF deduzido que abate a ficha de comuns e day trade (usada primeiro)."""
+    return min(_imposto_cdt(m), m.irrf_deduzido)
+
+
 def irpf_mensal(d: DadosRelatorio) -> Relatorio:
     meses = _meses(d)
     comum, dt = Categoria.COMUM, Categoria.DAY_TRADE
@@ -305,25 +332,27 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
     colunas = (
         Coluna("Mês"),
         _dinheiro("Total do imposto devido"),
-        _dinheiro("IRRF day trade no mês"),
-        _dinheiro("IRRF day trade meses anteriores"),
-        _dinheiro("IRRF day trade a compensar"),
-        _dinheiro("IRRF 0,005% no mês"),
-        _dinheiro("IRRF 0,005% meses anteriores"),
-        _dinheiro("IRRF 0,005% a compensar"),
+        _dinheiro("IR fonte de day trade no mês"),
+        _dinheiro("IR fonte de day trade meses anteriores"),
+        _dinheiro("IR fonte de day trade a compensar"),
+        _dinheiro("IR fonte (Lei 11.033/2004) no mês"),
+        _dinheiro("IR fonte (Lei 11.033/2004) meses anteriores"),
+        _dinheiro("IR fonte (Lei 11.033/2004) a compensar"),
         _dinheiro("Imposto a pagar"),
+        _dinheiro("DARF do mês (todas as fichas)"),
     )
     linhas = [
         (
             MESES[m.mes - 1],
-            m.imposto,
+            _imposto_cdt(m),
             m.irrf_mes_day_trade,
             m.irrf_saldo_day_trade_anterior,
             m.irrf_saldo_day_trade,
             m.irrf_mes - m.irrf_mes_day_trade,
             m.irrf_saldo_anterior - m.irrf_saldo_day_trade_anterior,
             m.irrf_saldo - m.irrf_saldo_day_trade,
-            m.imposto_devido,
+            _imposto_cdt(m) - _irrf_cdt(m),
+            m.darf,
         )
         for m in meses
     ]
@@ -331,13 +360,16 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
         "Consolidação do mês",
         colunas,
         tuple(linhas),
-        nota="O IRRF de day trade é usado primeiro (o saldo dele só se recupera por restituição).",
+        nota="Só comuns e day trade (FII tem ficha própria). O IRRF é um saldo único: abate "
+        "primeiro o imposto desta ficha (o de day trade antes, porque o saldo dele só se "
+        "recupera por restituição) e o resto vai para FII. O DARF soma as fichas e acumula "
+        "abaixo de R$ 10.",
     )
     colunas = (
         Coluna("Mês"),
         _dinheiro("Total em alienações de ações (Lei 11.033/2004)"),
         _dinheiro("Lucro isento (Lei 11.033/2004)"),
-        _dinheiro("Lucro isento (Lei 13.043/2014)"),
+        _dinheiro("Resultado isento de PME (Lei 13.043/2014 art. 16)"),
     )
     linhas = [
         (MESES[m.mes - 1], _cat(m, comum).vendas_acoes, _cat(m, comum).isento, m.isento_pme)
@@ -353,9 +385,16 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
         Coluna("Mês"),
         *(Coluna(n.capitalize(), T.PERCENTUAL if n == "alíquota" else T.DINHEIRO) for n in nomes),
     )
+    colunas = (*colunas, _dinheiro("IRRF usado"), _dinheiro("Imposto a pagar"))
     fiis = meses if _ativa(meses, Categoria.FII) else []
-    linhas = [(MESES[m.mes - 1], *bloco(_cat(m, Categoria.FII))) for m in fiis]
-    fii = Secao("Fundos imobiliários e Fiagro", colunas, tuple(linhas))
+    linhas = []
+    for m in fiis:
+        irrf_fii = m.irrf_deduzido - _irrf_cdt(m)
+        imposto_fii = _cat(m, Categoria.FII).imposto
+        linhas.append((MESES[m.mes - 1], *bloco(_cat(m, Categoria.FII)), irrf_fii,
+                       imposto_fii - irrf_fii))  # fmt: skip
+    fii = Secao("Fundos imobiliários e Fiagro", colunas, tuple(linhas),
+)  # fmt: skip
     return Relatorio(
         "irpf-mensal",
         "Renda variável mês a mês (ordem do programa IRPF)",
@@ -371,18 +410,21 @@ def irrf_exclusiva(d: DadosRelatorio) -> Relatorio:
     anual = [a for a in d.apuracao.irrf_anual if a.titular == d.titular and a.ano == d.ano]
     colunas = (
         Coluna("Ano", T.INTEIRO),
-        _dinheiro("IRRF 0,005% retido"),
+        _dinheiro("IRRF de vendas comuns retido"),
         _dinheiro("IRRF day trade retido"),
-        _dinheiro("Saldo 0,005% (declaração)"),
+        _dinheiro("Saldo de vendas comuns (declaração)"),
         _dinheiro("Saldo day trade (restituição)"),
     )
     irrf = Secao(
         "IRRF do ano",
         colunas,
         tuple((a.ano, a.comum, a.day_trade, a.saldo_comum, a.saldo_day_trade) for a in anual),
-        nota="O saldo de dezembro não passa para janeiro: o de 0,005% vai para a "
-        "declaração anual e o de day trade só por restituição (IN RFB 1.585/2015 "
-        "arts. 63 e 65).",
+        nota=(
+            "O saldo de dezembro não passa para janeiro: o de vendas comuns vai para a "
+            "declaração anual e o de day trade só por restituição (IN RFB 1.585/2015 "
+            "arts. 63 e 65)."
+        )
+        + ("" if anual else " Ano em curso: o saldo só fecha em dezembro."),
     )
     exclusivas = [
         e for e in d.apuracao.exclusiva if e.titular == d.titular and e.data.year == d.ano
@@ -403,8 +445,9 @@ def irrf_exclusiva(d: DadosRelatorio) -> Relatorio:
         colunas,
         tuple(linhas),
         _total(linhas, colunas, {3, 4, 5}) if linhas else None,
-        nota="Lei 13.043/2014: imposto retido pelo administrador; fora da apuração "
-        "mensal e do DARF.",
+        nota="Lei 13.043/2014 art. 2º: imposto retido na fonte; fora da apuração mensal e do "
+        "DARF. Resultado estimado pelo custo médio do COIR: confira com o informe de "
+        "rendimentos da instituição.",
     )
     return Relatorio(
         "irrf-e-exclusiva",
@@ -684,7 +727,11 @@ def bens_e_direitos(d: DadosRelatorio) -> Relatorio:
     )
     secoes: list[Secao] = []
     blocos = (
-        ("Mercado à vista", lambda p: p.tipo not in (TipoAtivo.OPCAO, TipoAtivo.FUTURO)),
+        (
+            "Ações, ETFs, BDRs e units",
+            lambda p: p.tipo not in (TipoAtivo.OPCAO, TipoAtivo.FUTURO, TipoAtivo.FII),
+        ),
+        ("Fundos imobiliários e Fiagro", lambda p: p.tipo is TipoAtivo.FII),
         ("Opções", lambda p: p.tipo is TipoAtivo.OPCAO),
     )
     for titulo, filtro in blocos:
@@ -705,7 +752,7 @@ def bens_e_direitos(d: DadosRelatorio) -> Relatorio:
     return Relatorio(
         "bens-e-direitos",
         "Bens e Direitos (custo de aquisição)",
-        _cab(d, f"Situação em 31/12/{d.ano}"),
+        _cab(d, f"Situação em {d.ate:%d/%m/%Y}"),
         tuple(secoes),
         pdf=True,
         notas=(
@@ -728,7 +775,7 @@ def livro_notas(d: DadosRelatorio) -> Relatorio:
         Coluna("Segmento"),
         _dinheiro("Valor das operações"),
         _dinheiro("Custos"),
-        _dinheiro("IRRF 0,005%"),
+        _dinheiro("IRRF sobre operações"),
         _dinheiro("IRRF day trade"),
         _dinheiro("Líquido"),
         *(_dinheiro(c.value.replace("_", " ").capitalize()) for c in CUSTOS),
@@ -850,6 +897,15 @@ TODOS: dict[str, Callable[[DadosRelatorio], Relatorio]] = {
 }
 
 
+ABAS = {
+    "resumo-fiscal": "Resumo fiscal", "darfs": "DARFs", "irpf-mensal": "IRPF mês a mês",
+    "irrf-e-exclusiva": "IRRF e exclusiva", "operacoes-finalizadas": "Operações finalizadas",
+    "evolucao": "Evolução", "prejuizos": "Prejuízos", "conferencia-pm": "Conferência do PM",
+    "carteira": "Carteira", "bens-e-direitos": "Bens e Direitos",
+    "livro-de-notas": "Livro de notas",
+}  # fmt: skip
+
+
 def relatorios(d: DadosRelatorio, chaves: Iterable[str] | None = None) -> list[Relatorio]:
     escolhidos = list(TODOS) if chaves is None else list(chaves)
-    return [TODOS[c](d) for c in escolhidos]
+    return [replace(TODOS[c](d), aba=ABAS[c]) for c in escolhidos]

@@ -16,7 +16,14 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import LongTable, Paragraph, SimpleDocTemplate, Spacer, TableStyle
 from reportlab.platypus.flowables import Flowable
 
-from coir.reports.modelo import NUMERICAS, Relatorio, Secao, cpf_formatado, formatar
+from coir.reports.modelo import (
+    NUMERICAS,
+    Relatorio,
+    Secao,
+    TipoColuna,
+    cpf_formatado,
+    formatar,
+)
 
 PAGINA = landscape(A4)
 MARGEM = 12 * mm
@@ -27,6 +34,7 @@ ESTILO_SECAO = ParagraphStyle(
     "secao", fontName=NEGRITO, fontSize=10, spaceBefore=6, spaceAfter=3, keepWithNext=1
 )
 CINZA = colors.HexColor("#555555")
+ESTILO_CELULA = ParagraphStyle("celula", fontName=FONTE, fontSize=CORPO, leading=CORPO + 1.5)
 ESTILO_NOTA = ParagraphStyle("nota", fontName=FONTE, fontSize=7, textColor=CINZA)
 
 
@@ -79,7 +87,7 @@ def _larguras(s: Secao, celulas: list[list[str]], disponivel: float) -> list[flo
     """Largura pelo conteúdo; o título da coluna quebra linha (vale a maior palavra dele)."""
     medidas = []
     for c, coluna in enumerate(s.colunas):
-        palavra = max(stringWidth(w, NEGRITO, CORPO) for w in coluna.nome.split())
+        palavra = max(stringWidth(w, NEGRITO, CORPO) for w in coluna.nome.split() or [""])
         maior = max([palavra] + [stringWidth(linha[c], FONTE, CORPO) for linha in celulas])
         medidas.append(min(maior + 10, 180.0))  # 6 de padding + folga
     soma = sum(medidas)
@@ -104,7 +112,13 @@ def _tabela(s: Secao, disponivel: float) -> LongTable:
                for linha in linhas]  # fmt: skip
     larguras = _larguras(s, celulas, disponivel)
     titulos = [_quebrar(c.nome, w - 6) for c, w in zip(s.colunas, larguras, strict=True)]
-    dados: list[list[Any]] = [titulos, *celulas]
+    corpo: list[list[Any]] = [list(linha) for linha in celulas]
+    for c, (coluna, w) in enumerate(zip(s.colunas, larguras, strict=True)):
+        if coluna.tipo is TipoColuna.TEXTO:  # texto longo quebra linha em vez de invadir a vizinha
+            for linha in corpo:
+                if stringWidth(linha[c], FONTE, CORPO) > w - 6:
+                    linha[c] = Paragraph(_escapar(linha[c]), ESTILO_CELULA)
+    dados: list[list[Any]] = [titulos, *corpo]
     estilo: list[tuple[Any, ...]] = [
         ("FONT", (0, 0), (-1, -1), FONTE, CORPO),
         ("FONT", (0, 0), (-1, 0), NEGRITO, CORPO),

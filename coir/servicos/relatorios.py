@@ -51,7 +51,8 @@ def dados_banco(
         notas, eventos = entradas(sessao, refs, fiscais)
         livro = tuple(NotaDoLivro(nota=n, operacoes=tuple(ops))
                       for n, ops in repo.carregar_notas(sessao, escolhido.id, ano))  # fmt: skip
-        contas = {c.id: c.numero for c in sessao.scalars(select(Conta))}
+        do_titular = select(Conta).where(Conta.titular_id == escolhido.id)
+        contas = {c.id: c.numero for c in sessao.scalars(do_titular)}
         nome, cpf, tid = escolhido.nome, escolhido.cpf, escolhido.id
     params = fiscais.parametros
     fiscal = carteira(notas, eventos, params, ate, Visao.TITULAR)
@@ -60,17 +61,15 @@ def dados_banco(
     return DadosRelatorio(
         titular=tid, nome=nome, cpf=cpf, ano=ano, gerado_em=gerado_em,
         codigo_darf=params.texto("darf_codigo", date(ano, 1, 1)),
-        apuracao=apurar(notas, eventos, params, fiscais.calendario, ate), data_carteira=dia,
+        apuracao=apurar(notas, eventos, params, fiscais.calendario, ate), ate=ate,
+        data_carteira=dia,
         visao=visao, carteira=tuple(na_data), carteira_fiscal=tuple(fiscal), contas=contas,
         notas=livro,
     )  # fmt: skip
 
 
-def exportar(
-    dados: DadosRelatorio, destino: Path, formatos: tuple[str, ...] = FORMATOS,
-    chaves: tuple[str, ...] | None = None,
-) -> list[Path]:  # fmt: skip
-    """Grava os relatórios; o nome dos arquivos não leva CPF (só o cabeçalho, dentro deles)."""
+def validar(destino: Path, formatos: tuple[str, ...], chaves: tuple[str, ...] | None) -> None:
+    """Destino e opções conferidos antes de carregar o banco e rodar o motor."""
     if dentro_do_repositorio(destino):
         raise ExportacaoError(f"destino dentro do repositório ({destino.resolve()}): os "
                               "relatórios têm dados pessoais; use a pasta de dados")  # fmt: skip
@@ -81,6 +80,14 @@ def exportar(
     if desconhecidos:
         raise ExportacaoError(f"relatório desconhecido: {', '.join(desconhecidos)} "
                               f"(disponíveis: {', '.join(TODOS)})")  # fmt: skip
+
+
+def exportar(
+    dados: DadosRelatorio, destino: Path, formatos: tuple[str, ...] = FORMATOS,
+    chaves: tuple[str, ...] | None = None,
+) -> list[Path]:  # fmt: skip
+    """Grava os relatórios; o nome dos arquivos não leva CPF (só o cabeçalho, dentro deles)."""
+    validar(destino, formatos, chaves)
     destino.mkdir(parents=True, exist_ok=True)
     prefixo = f"coir-{dados.ano}-titular{dados.titular}"
     rels = relatorios(dados, chaves)

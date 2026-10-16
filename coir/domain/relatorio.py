@@ -26,6 +26,7 @@ class DadosRelatorio(BaseModel):
     gerado_em: datetime
     codigo_darf: str
     apuracao: Apuracao  # do livro inteiro (o saldo de prejuízo vem de anos anteriores)
+    ate: date  # a apuração vai até aqui: 31/12 ou a data de geração no ano em curso
     data_carteira: date
     visao: Visao
     carteira: tuple[PosicaoAtivo, ...]

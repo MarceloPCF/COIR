@@ -179,6 +179,17 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
 - "Renda variável mês a mês" segue a ordem dos blocos do programa da Receita. O IRRF aparece em
   duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é
   usado primeiro. As fichas por ano ficam na F8.
+- Fichas do programa: o total de comuns e day trade não leva o imposto de FII, que tem ficha
+  própria. O IRRF é um saldo único: abate primeiro a ficha de comuns e day trade, e o resto vai
+  para FII.
+- Futuros: cada mercado de `data/contratos_futuros.csv` tem linha na apuração (índice, dólar,
+  commodities em "outros"). Um mercado sem linha (ex.: juros) falha alto.
+- Para a F8 (revisão fiscal da F5):
+  - Bens e Direitos com situação em 31/12 do ano anterior, grupo e código do bem por ano, CNPJ,
+    código de negociação e discriminação;
+  - opções sobre ETF ou índice na linha "outros";
+  - linha "Mercado a termo" para o ganho realizado na liquidação;
+  - "imposto pago" por ficha.
 - Ficam para outras fases:
   - patrimônio e rentabilidade, que precisam de cotação (F10);
   - proventos (F7);

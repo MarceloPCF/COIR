@@ -111,7 +111,7 @@ def escrever_xlsx(relatorios: list[Relatorio], caminho: Path, agora: datetime) -
     f = _Formatos(livro)
     usados: set[str] = set()
     for rel in relatorios:
-        aba = livro.add_worksheet(_nome_aba(rel.titulo, usados))
+        aba = livro.add_worksheet(_nome_aba(rel.aba or rel.titulo, usados))
         cab = rel.cabecalho
         aba.write_string(0, 0, rel.titulo, f.titulo)
         aba.write_string(1, 0, f"{cab.titular} - CPF {cpf_formatado(cab.cpf)}", f.info)

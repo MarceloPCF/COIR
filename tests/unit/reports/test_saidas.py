@@ -95,8 +95,8 @@ def test_csv_padrao_brasileiro_com_secoes(tmp_path: Path) -> None:
     assert linhas[0] == ["Seção", "Data", "Ativo", "Quantidade", "PM", "Resultado", "%"]
     assert linhas[1] == ["2025 - Janeiro - Bovespa", "02/01/2025", "AAAA0", "100,5", "12,12345678",
                          "1000,00", "12,34%"]  # fmt: skip
-    assert linhas[4][1:] == ["Total", "", "", "", "765,43", ""]
-    assert linhas[5][0] == "2025 - Fevereiro - Bovespa" and len(linhas) == 6
+    assert all("Total" not in x for x in linhas)  # total só no xlsx e no pdf
+    assert linhas[4][0] == "2025 - Fevereiro - Bovespa" and len(linhas) == 5
 
 
 def test_csv_separa_secoes_com_colunas_diferentes(tmp_path: Path) -> None:
@@ -125,3 +125,20 @@ def test_pdf_reproduzivel(tmp_path: Path) -> None:
     a = escrever_pdf(_relatorio(), tmp_path / "a.pdf").read_bytes()
     b = escrever_pdf(_relatorio(), tmp_path / "b.pdf").read_bytes()
     assert a == b
+
+
+def test_pdf_largo_quebra_texto_e_total_arredonda_parcelas(tmp_path: Path) -> None:
+    """Tabela com 14 colunas e texto longo não invade a coluna vizinha (o texto quebra linha);
+    o total soma as parcelas como aparecem (2 casas)."""
+    from coir.reports.fiscais import _total  # pyright: ignore[reportPrivateUsage]
+
+    colunas = (Coluna("Regra"), *(Coluna(f"Coluna número {i}", T.DINHEIRO) for i in range(13)))
+    longo = "venda: resultado = valor - custos - PM x quantidade " * 3
+    linhas: list[tuple[object, ...]] = [(longo, *(D("1.005") for _ in range(13)))] * 3
+    secao = Secao("Larga", colunas, tuple(linhas))  # type: ignore[arg-type]
+    rel = Relatorio("larga", "Larga", _relatorio().cabecalho, (secao,), pdf=True)
+    caminho = escrever_pdf(rel, tmp_path / "larga.pdf")
+    texto = pdfium.PdfDocument(caminho)[0].get_textpage().get_text_range()
+    assert "quantidade" in texto
+    total = _total(list(secao.linhas), colunas, {1})
+    assert total[1] == D("3.00")  # 3 x 1,00 como exibido (a soma exata 3,015 daria 3,02)
