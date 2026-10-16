@@ -9,9 +9,11 @@ authors = [{ name = "MarceloPCF" }]
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.20.0",
+    "nicegui>=3.18.0",
     "openpyxl>=3.1",
     "pydantic>=2.9",
     "pypdfium2>=5.14.0",
+    "pywebview>=6.2.1",
     "pyxlsb>=1.0.10",
     "pyyaml>=6.0.3",
     "rapidfuzz>=3.14.6",
@@ -30,6 +32,7 @@ dev = [
     "pre-commit>=4.0",
     "pyright>=1.1.390",
     "pytest>=8.3",
+    "pytest-asyncio>=1.4.0",
     "ruff>=0.8",
     "types-pyyaml>=6.0.12.20260906",
 ]
