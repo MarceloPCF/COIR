@@ -224,7 +224,7 @@ def _memoria(estado: Estado, m: MesApurado, movs: list[Movimento], mapa: dict[in
             _par("IRRF deduzido", _r(m.irrf_deduzido))
             _par("Saldo de IRRF que passa", _r(m.irrf_saldo))
             _par("Imposto devido", _r(m.imposto_devido))
-            _par("DARF acumulada (abaixo de R$ 10)", _r(m.darf_acumulado_anterior))
+            _par("DARF acumulada (abaixo do mínimo)", _r(m.darf_acumulado_anterior))
             _par("DARF do mês", _r(m.darf), "coir-carimbo" if m.darf else "")
             _par("Acumula para o mês seguinte", _r(m.darf_acumulado))
             if m.vencimento:

@@ -26,7 +26,7 @@ from coir.domain.referencias import Referencias
 from coir.domain.relatorio import DadosRelatorio
 from coir.erros import ExportacaoError
 from coir.parsing.extrair import extrair_pdf
-from coir.servicos import carteira, notas, operacoes
+from coir.servicos import carteira, darf, notas, operacoes
 from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
 from coir.servicos.importacao import Extrator
 from coir.servicos.relatorios import dados_banco
@@ -210,3 +210,16 @@ class Estado:
             ("relatorios", titular, ano, agora.date()),
             lambda: dados_banco(self.banco, self.refs, self.fiscais, ano, agora, titular),
         )
+
+    def darfs(self) -> list[darf.LinhaDarf]:
+        """DARFs do titular e ano escolhidos, com situação e multa até hoje."""
+        if not self.existe or self.titular is None or self.ano is None:
+            return []
+        hoje, titular, ano = self.agora().date(), self.titular, self.ano
+
+        def calcular() -> list[darf.LinhaDarf]:
+            meses = [m for m in self.apuracao(self.fim_do_ano()).meses
+                     if m.titular == titular and m.ano == ano]  # fmt: skip
+            return darf.darfs(meses, darf.pagamentos(self.banco, titular), hoje, self.fiscais)
+
+        return self._guardado(("darfs", titular, ano, hoje), calcular)

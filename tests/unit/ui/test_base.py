@@ -61,4 +61,4 @@ async def test_clicar_na_barra_lateral_troca_de_tela(banco: Path) -> None:
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/")
         user.find(marker="menu/darf").click()
-        await user.should_see("As DARFs do ano, o vencimento, o pagamento e a multa por atraso.")
+        await user.should_see("Nenhuma DARF neste ano.", retries=50)

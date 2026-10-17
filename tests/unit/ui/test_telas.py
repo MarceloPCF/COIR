@@ -224,3 +224,37 @@ async def test_relatorios_mostra_e_exporta(demo: Path, tmp_path: Path) -> None:
         user.find(marker="exportar").click()
         await user.should_see("arquivo(s) gravado(s)", retries=ESPERA)
     assert [p.name for p in destino.iterdir()] == ["coir-2026-titular1.xlsx"]
+
+
+@pytest.mark.asyncio
+async def test_darf_marcar_como_paga(tmp_path: Path) -> None:
+    from datetime import date
+    from decimal import Decimal
+
+    from coir.servicos import darf
+    from tests.unit.test_servicos_darf import MESES
+
+    estado = _estado(tmp_path / "coir.db")
+    estado.agora = lambda: datetime(2026, 4, 2, 10, 0, 0)
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    estado.darfs = lambda: darf.darfs(  # type: ignore[method-assign]
+        MESES, darf.pagamentos(estado.banco, 1), date(2026, 4, 2), estado.fiscais
+    )
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/darf")
+        await user.should_see("2 DARF(s) em atraso", retries=ESPERA)  # jan e fev
+        grade = user.find(marker="grade-darf").elements.pop()
+        assert isinstance(grade, ui.aggrid)
+        fevereiro = next(r for r in grade.options["rowData"] if r["c0"] == "02/2026")
+        assert fevereiro["c5"] == "em atraso"
+        user.find(marker="grade-darf").trigger("rowClicked", {"data": fevereiro})
+        await user.should_see("DARF de fevereiro/2026")
+        await user.should_see("92,19")  # 91,59 + multa de 0,60 até hoje
+        user.find(marker="data-pagamento").clear().type("2026-04-01")
+        user.find(marker="valor-pagamento").clear().type("92,19")
+        user.find(marker="salvar-pagamento").click()
+        await user.should_see("Pagamento registrado", retries=ESPERA)
+        await user.should_see("Pago em 01/04/2026: 92,19", retries=ESPERA)
+    pago = darf.pagamentos(estado.banco, 1)[(2026, 2)]
+    assert (pago.data, pago.valor) == (date(2026, 4, 1), Decimal("92.19"))

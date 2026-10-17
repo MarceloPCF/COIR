@@ -9,3 +9,7 @@ day_trade_mesma_corretora,false,2000-01-01,2010-07-27,Lei 9.959/2000 art. 8º §
 day_trade_mesma_corretora,true,2010-07-28,,MP 497/2010 art. 21 (conv. Lei 12.350/2010): mesma corretora
 darf_minimo,10.00,1997-01-01,,Lei 9.430/1996 art. 68 caput e §1º (abaixo do mínimo acumula)
 darf_codigo,6015,2005-01-01,,Agenda Tributária RFB (código de renda variável PF)
+multa_mora_dia,0.0033,1997-01-01,,"Lei 9.430/1996 art. 61 caput (0,33% por dia de atraso sobre o principal)"
+multa_mora_teto,0.20,1997-01-01,,Lei 9.430/1996 art. 61 §2º (limite de 20%)
+multa_mora_inicio_contagem,rfb,1997-01-01,,RFB/Sicalc (Como calcular multa de mora): do primeiro dia útil após o vencimento; alternativa lei (art. 61 §1º); decisão do usuário (17/10/2026)
+multa_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; decisão do usuário (17/10/2026) até conferir no Sicalc (alternativa ROUND_HALF_UP)

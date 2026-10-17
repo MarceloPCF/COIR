@@ -16,6 +16,7 @@ from coir.ui.telas import (
     apuracao,
     assistente,
     carteira,
+    darf,
     importar,
     notas,
     operacoes,
@@ -50,8 +51,7 @@ GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
     )),
     ("Imposto", (
         Tela("/apuracao", "Apuração mensal", "calculate", apuracao.montar),
-        Tela("/darf", "DARF", "request_quote", _provisoria(
-            "DARF", "As DARFs do ano, o vencimento, o pagamento e a multa por atraso.")),
+        Tela("/darf", "DARF", "request_quote", darf.montar),
         Tela("/relatorios", "Relatórios", "description", relatorios.montar),
     )),
     ("Carteira", (
