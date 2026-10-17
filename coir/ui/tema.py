@@ -106,6 +106,8 @@ h1, h2, h3, .coir-titulo {{ font-family: {FONTE_TITULO}; font-weight: 600; lette
   var(--coir-caneta-fundo); --ag-pinned-row-border: 2px solid var(--coir-linha); }}
 .coir-grade .ag-row-pinned {{ font-weight: 600; background: var(--coir-fundo); }}
 .ag-right-aligned-cell {{ font-variant-numeric: tabular-nums; }}
+.coir-item-ativo {{ background: var(--coir-caneta-fundo); color: var(--coir-caneta);
+  font-weight: 600; }}
 .coir-item-lista {{ border-bottom: 1px solid var(--coir-linha); }}
 .coir-item-lista:last-child {{ border-bottom: none; }}
 .coir-envio {{ box-shadow: none; border: 1px dashed var(--coir-caneta);

@@ -6,11 +6,11 @@ from decimal import Decimal
 from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
+from coir.reports.fiscais import MESES
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos.estado import Estado
 from coir.servicos.operacoes import LinhaOperacao
 from coir.ui import tabela
-from coir.ui.telas.notas import MESES
 
 T = TipoColuna
 COLUNAS = (
@@ -98,8 +98,13 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     def mudar(chave: str, valor: object) -> None:
         filtro[chave] = valor
         linhas = vistas()
-        tabela.atualizar(grade, COLUNAS, _valores(linhas), chaves=[o.id_nota for o in linhas],
-                         total=_total(linhas))  # fmt: skip
+        tabela.atualizar(
+            grade,
+            COLUNAS,
+            _valores(linhas),
+            chaves=[o.id_nota for o in linhas],
+            total=_total(linhas),
+        )
 
     def ao_escolher(chave: str) -> Callable[[ValueChangeEventArguments], None]:
         return lambda e: mudar(chave, e.value)
@@ -126,7 +131,11 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         ).props("outlined dense options-dense").classes("w-[170px]")
         ui.checkbox("Só day trade", on_change=lambda e: mudar("dt", e.value)).mark("filtro-dt")
     grade = tabela.grade(
-        COLUNAS, _valores(todas), chaves=[o.id_nota for o in todas], total=_total(todas),
-        altura="h-[680px]", ao_clicar=lambda nota: ui.navigate.to(f"/notas/{nota}"),
-    )  # fmt: skip
+        COLUNAS,
+        _valores(todas),
+        chaves=[o.id_nota for o in todas],
+        total=_total(todas),
+        altura="h-[680px]",
+        ao_clicar=lambda nota: ui.navigate.to(f"/notas/{nota}"),
+    )
     grade.mark("grade-operacoes")

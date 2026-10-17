@@ -188,3 +188,30 @@ def test_estado_guarda_notas_e_livro_ate_o_banco_mudar(demo: Path) -> None:
     estado.titular, estado.ano = 1, 2026
     assert estado.lista_notas() is estado.lista_notas()
     assert estado.livro() is estado.livro()
+
+
+def test_nota_de_origem_de_cada_movimento() -> None:
+    from coir.servicos.carteira import nota_de
+
+    mapa = {12: 3, 7: 2}
+    assert nota_de("op:12,13", mapa) == 3
+    assert nota_de("termo:7", mapa) == 2
+    assert nota_de("nota:4", mapa) == 4
+    assert nota_de("evento:9", mapa) is None
+    assert nota_de("vencimento", mapa) is None
+
+
+def test_posicoes_e_trilha_do_titular(demo: Path) -> None:
+    from datetime import date
+
+    from coir.domain.fiscal import Visao
+    from coir.servicos.carteira import posicoes, trilha
+
+    estado = Estado(demo)
+    ate = date(2026, 10, 16)
+    carteira, contas = estado.carteira(ate, Visao.TITULAR)
+    linhas = posicoes(carteira, contas, 1)
+    assert linhas and all(p.quantidade != 0 and p.corretora == "" for p in linhas)
+    passos = trilha(estado.movimentos(ate, Visao.TITULAR), 1, linhas[0], ate)
+    assert passos and passos[-1].quantidade_apos == linhas[0].quantidade
+    assert passos[-1].custo_apos == linhas[0].custo

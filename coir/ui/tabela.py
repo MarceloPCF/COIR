@@ -73,8 +73,10 @@ def grade(
     larguras: Sequence[int | None] | None = None,
     altura: str = "h-[520px]",
     ao_clicar: Callable[[object], object] | None = None,
+    pelo_conteudo: bool = False,
 ) -> ui.aggrid:
-    """Grade com ordenação, colunas redimensionáveis, total fixo no rodapé e clique na linha."""
+    """Grade com ordenação, colunas redimensionáveis, total fixo no rodapé e clique na linha.
+    `pelo_conteudo`: colunas na largura do conteúdo, com rolagem lateral (tabelas largas)."""
     definicoes = [_coluna(i, c, larguras[i] if larguras else None) for i, c in enumerate(colunas)]
     opcoes: dict[str, Any] = {
         "columnDefs": definicoes,
@@ -89,8 +91,10 @@ def grade(
     }
     if len(valores) <= POUCAS_LINHAS:  # a grade cresce com as linhas, sem área vazia
         opcoes["domLayout"] = "autoHeight"
-        altura = ""
-    tabela = ui.aggrid(opcoes, theme="balham", auto_size_columns=not larguras)
+        altura = "h-auto"
+    if pelo_conteudo:
+        opcoes["autoSizeStrategy"] = {"type": "fitCellContents"}
+    tabela = ui.aggrid(opcoes, theme="balham", auto_size_columns=not (larguras or pelo_conteudo))
     tabela.classes(f"coir-grade w-full {altura}")
     if ao_clicar is not None:
         clicar = ao_clicar
@@ -115,7 +119,7 @@ def secao(s: Secao, altura: str = "h-[520px]") -> ui.aggrid:
     """Uma seção de relatório (reports.modelo) na tela."""
     if s.titulo:
         ui.label(s.titulo).classes("coir-titulo text-base")
-    tabela = grade(s.colunas, s.linhas, total=s.total, altura=altura)
+    tabela = grade(s.colunas, s.linhas, total=s.total, altura=altura, pelo_conteudo=True)
     if s.nota:
         ui.label(s.nota).classes("coir-subtitulo text-xs")
     return tabela

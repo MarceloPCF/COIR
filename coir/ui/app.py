@@ -12,7 +12,16 @@ from nicegui.events import ValueChangeEventArguments
 
 from coir.servicos.estado import Estado
 from coir.ui import tema
-from coir.ui.telas import assistente, importar, notas, operacoes, provisoria
+from coir.ui.telas import (
+    apuracao,
+    assistente,
+    carteira,
+    importar,
+    notas,
+    operacoes,
+    provisoria,
+    relatorios,
+)
 
 Avisar = Callable[[], object]  # a tela mudou o banco: o topo (titulares, anos) se refaz
 Montar = Callable[[Estado, Avisar], None]
@@ -40,17 +49,13 @@ GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
         Tela("/operacoes", "Operações", "list_alt", operacoes.montar),
     )),
     ("Imposto", (
-        Tela("/apuracao", "Apuração mensal", "calculate", _provisoria(
-            "Apuração mensal", "O resultado de cada mês por categoria e a memória de cálculo.")),
+        Tela("/apuracao", "Apuração mensal", "calculate", apuracao.montar),
         Tela("/darf", "DARF", "request_quote", _provisoria(
             "DARF", "As DARFs do ano, o vencimento, o pagamento e a multa por atraso.")),
-        Tela("/relatorios", "Relatórios", "description", _provisoria(
-            "Relatórios", "Os relatórios do ano na tela e a exportação em xlsx, csv e pdf.")),
+        Tela("/relatorios", "Relatórios", "description", relatorios.montar),
     )),
     ("Carteira", (
-        Tela("/carteira", "Carteira e preço médio", "account_balance_wallet", _provisoria(
-            "Carteira e preço médio", "A posição numa data e a trilha do preço médio de cada "
-            "ativo.")),
+        Tela("/carteira", "Carteira e preço médio", "account_balance_wallet", carteira.montar),
     )),
     ("Sistema", (
         Tela("/cadastros", "Cadastros", "badge", _provisoria(

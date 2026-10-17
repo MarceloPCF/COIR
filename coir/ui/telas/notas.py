@@ -8,26 +8,13 @@ from decimal import Decimal
 from nicegui import run, ui
 
 from coir.erros import CoirError
+from coir.reports.fiscais import MESES
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import notas
 from coir.servicos.estado import Estado
 from coir.ui import tabela
 
 T = TipoColuna
-MESES = (
-    "Janeiro",
-    "Fevereiro",
-    "Março",
-    "Abril",
-    "Maio",
-    "Junho",
-    "Julho",
-    "Agosto",
-    "Setembro",
-    "Outubro",
-    "Novembro",
-    "Dezembro",
-)
 COLUNAS_LISTA = (
     Coluna("Data", T.DATA),
     Coluna("Corretora"),
@@ -198,10 +185,17 @@ def _detalhe(d: notas.DetalheNota) -> None:
         with ui.column().classes("min-w-[380px] flex-[1.1] gap-2"):
             _pdf(d)
     ops: list[tuple[Valor, ...]] = [
-        (o.cv, o.mercado, o.papel, o.quantidade, o.preco, o.total,
-         "DT" if o.categoria == "DAY_TRADE" else "")
+        (
+            o.cv,
+            o.mercado,
+            o.papel,
+            o.quantidade,
+            o.preco,
+            o.total,
+            "DT" if o.categoria == "DAY_TRADE" else "",
+        )
         for o in d.operacoes
-    ]  # fmt: skip
+    ]
     ui.label(f"Operações ({len(ops)})").classes("coir-campo-rotulo")
     tabela.grade(COLUNAS_OPS, ops, altura="h-[300px]")
 

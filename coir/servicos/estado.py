@@ -20,13 +20,16 @@ from coir.config import dados_dir, salvar_dados_dir
 from coir.db import repositorio as repo
 from coir.db.modelos import EventoCorporativo, NotaCorretagem
 from coir.db.sessao import NOME_BANCO, conectar, migrar
-from coir.domain.fiscal import Apuracao
+from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias
+from coir.domain.relatorio import DadosRelatorio
+from coir.erros import ExportacaoError
 from coir.parsing.extrair import extrair_pdf
-from coir.servicos import notas, operacoes
-from coir.servicos.apuracao import apurar_banco
+from coir.servicos import carteira, notas, operacoes
+from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
 from coir.servicos.importacao import Extrator
+from coir.servicos.relatorios import dados_banco
 
 log = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -175,3 +178,35 @@ class Estado:
         titular, ano = self.titular, self.ano
         return self._guardado(("operacoes", titular, ano),
                               lambda: operacoes.livro(self.banco, titular, ano))  # fmt: skip
+
+    def carteira(self, ate: date, visao: Visao) -> tuple[list[PosicaoAtivo], dict[int, str]]:
+        """Posições de todos os titulares no fim de `ate`, na visão pedida."""
+        return self._guardado(
+            ("carteira", ate, visao),
+            lambda: carteira_banco(self.banco, self.refs, self.fiscais, ate, visao),
+        )
+
+    def movimentos(self, ate: date, visao: Visao) -> list[Movimento]:
+        return self._guardado(
+            ("movimentos", ate, visao),
+            lambda: movimentos_banco(self.banco, self.refs, self.fiscais, ate, visao),
+        )
+
+    def notas_das_operacoes(self) -> dict[int, int]:
+        return self._guardado(("op->nota",), lambda: carteira.notas_das_operacoes(self.banco))
+
+    def fim_do_ano(self) -> date:
+        """Data de referência do ano escolhido: 31/12 ou hoje, o que vier antes."""
+        hoje = self.agora().date()
+        ano = self.ano or hoje.year
+        return min(date(ano, 12, 31), hoje)
+
+    def dados_relatorio(self) -> DadosRelatorio:
+        """Dados dos relatórios do titular e ano escolhidos (gerados hoje)."""
+        if self.ano is None:
+            raise ExportacaoError("escolha o ano")
+        agora, titular, ano = self.agora(), self.titular, self.ano
+        return self._guardado(
+            ("relatorios", titular, ano, agora.date()),
+            lambda: dados_banco(self.banco, self.refs, self.fiscais, ano, agora, titular),
+        )

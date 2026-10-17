@@ -179,3 +179,48 @@ async def test_endereco_de_nota_invalido(demo: Path) -> None:
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/notas/abc")
         await user.should_see("Nota 'abc' inválida.")
+
+
+@pytest.mark.asyncio
+async def test_carteira_abre_a_trilha_do_pm(demo: Path) -> None:
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/carteira")
+        await user.should_see("posições em", retries=ESPERA)
+        grade = user.find(marker="grade-carteira").elements.pop()
+        assert isinstance(grade, ui.aggrid)
+        linha = grade.options["rowData"][0]
+        user.find(marker="grade-carteira").trigger("rowClicked", {"data": linha})
+        await user.should_see(f"Trilha do PM: {linha['c0']}", retries=ESPERA)
+
+
+@pytest.mark.asyncio
+async def test_apuracao_abre_a_memoria_do_mes(demo: Path) -> None:
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/apuracao")
+        await user.should_see("Apurado até 16/10/2026", retries=ESPERA)
+        grade = user.find(marker="grade-apuracao").elements.pop()
+        assert isinstance(grade, ui.aggrid)
+        agosto = next(r for r in grade.options["rowData"] if r["c0"] == "Agosto")
+        user.find(marker="grade-apuracao").trigger("rowClicked", {"data": agosto})
+        await user.should_see("Memória de agosto de 2026")
+        await user.should_see("1. Limite de isenção (ações à vista)")
+        await user.should_see("Movimentos do mês com resultado (13)")
+
+
+@pytest.mark.asyncio
+async def test_relatorios_mostra_e_exporta(demo: Path, tmp_path: Path) -> None:
+    estado = _estado(demo)
+    destino = tmp_path / "relatorios"
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/relatorios")
+        await user.should_see("Resumo fiscal do ano", retries=ESPERA)
+        user.find(marker="relatorio-livro-de-notas").click()
+        await user.should_see("Livro de notas", retries=ESPERA)
+        user.find(marker="formato-pdf").click()  # desmarca
+        user.find(marker="formato-csv").click()
+        user.find(marker="pasta-relatorios").clear().type(str(destino))
+        user.find(marker="exportar").click()
+        await user.should_see("arquivo(s) gravado(s)", retries=ESPERA)
+    assert [p.name for p in destino.iterdir()] == ["coir-2026-titular1.xlsx"]
