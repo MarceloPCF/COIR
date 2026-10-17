@@ -15,7 +15,7 @@ from coir.db.modelos import ArquivoImportado, Conta, NotaCorretagem
 from coir.db.repositorio import operacoes_gravadas
 from coir.db.sessao import conectar
 from coir.domain.nota import NotaExtraida, OperacaoExtraida
-from coir.erros import ConciliacaoError, ExtracaoError
+from coir.erros import BancoError, ConciliacaoError, ExtracaoError
 from coir.parsing.conciliar import conciliar
 
 PASTA_NOTAS = "_notas-corretagens"
@@ -101,7 +101,8 @@ def _conferencias(nota: NotaExtraida) -> tuple[Conferencia, ...]:
             Conferencia("Líquido", r.liquido.assinado),
         )
     r2 = nota.resumo_bmf
-    assert r2 is not None
+    if r2 is None:
+        raise ExtracaoError(f"nota {nota.numero} sem resumo")
     negocios = sum((n.valor if n.dc == "C" else -n.valor for n in nota.negocios_bmf), Decimal(0))
     return (
         Conferencia("Valor dos negócios", r2.valor_negocios.assinado, negocios),
@@ -122,7 +123,9 @@ def detalhe(banco: Path, dados: Path, id_nota: int) -> DetalheNota:
                 selectinload(NotaCorretagem.arquivo),
                 selectinload(NotaCorretagem.operacoes),
             )
-        ).one()
+        ).one_or_none()
+        if registro is None:
+            raise BancoError(f"nota {id_nota} não existe no banco")
         resumo, ops = _resumo(registro), tuple(operacoes_gravadas(registro))
         nota = NotaExtraida.model_validate_json(registro.json_nota)
     try:
@@ -137,7 +140,10 @@ def detalhe(banco: Path, dados: Path, id_nota: int) -> DetalheNota:
 
 def pagina_png(pdf: Path, pagina: int, largura: int = 1100) -> bytes:
     """Página (1..n) do PDF em PNG, com `largura` pixels."""
-    documento = pdfium.PdfDocument(pdf)
+    try:
+        documento = pdfium.PdfDocument(pdf)
+    except (OSError, pdfium.PdfiumError) as erro:
+        raise ExtracaoError(f"não foi possível abrir {pdf.name}: {erro}") from erro
     try:
         if not 1 <= pagina <= len(documento):
             raise ExtracaoError(f"{pdf.name}: página {pagina} não existe ({len(documento)})")

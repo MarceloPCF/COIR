@@ -175,8 +175,7 @@ def _detalhe(d: notas.DetalheNota) -> None:
                             f"coir-numero text-right {classe}"
                         )
             resumo = d.nota.resumo_bovespa or d.nota.resumo_bmf
-            assert resumo is not None
-            custos = [c for c in resumo.custos if c.valor]
+            custos = [c for c in resumo.custos if c.valor] if resumo else []
             ui.label("Custos (itens zerados omitidos)").classes("coir-campo-rotulo")
             with ui.grid(columns="1fr auto").classes("coir-folha w-full gap-x-4 gap-y-0 py-2"):
                 for c in custos:

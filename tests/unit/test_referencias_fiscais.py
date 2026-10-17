@@ -45,3 +45,13 @@ def test_isencao_pme_por_vigencia_da_compra() -> None:
     prio = FISCAIS.pme["PRIO3"]
     assert prio.compra_elegivel(date(2020, 6, 1)) and not prio.compra_elegivel(date(2021, 2, 1))
     assert prio.vendas_ate == date(2023, 12, 31)
+
+
+def test_calendario_cobre_o_ano_seguinte() -> None:
+    """Revisão S1: o vencimento da DARF de dezembro e a multa precisam dos feriados do ano
+    seguinte; sem eles, as telas de imposto falham. Este teste avisa com um ano de folga."""
+    from datetime import date
+
+    from coir import referencias
+
+    assert referencias.carregar_fiscais().calendario.ultimo_ano >= date.today().year + 1

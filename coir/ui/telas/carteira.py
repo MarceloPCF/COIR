@@ -2,6 +2,7 @@
 e, ao escolher um ativo, a trilha do PM ao lado (cada passo com a regra e a nota de origem)."""
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
@@ -60,6 +61,12 @@ def _total(linhas: list[carteira.LinhaPosicao], visao: Visao) -> tuple[Valor, ..
     return (f"{len(linhas)} posições", "", *([""] * vazias), None, None, compradas)
 
 
+@dataclass
+class _Escolha:
+    data: date
+    visao: Visao
+
+
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("Carteira e preço médio").classes("coir-titulo-pagina")
     ui.label(
@@ -67,13 +74,11 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         "por titular: um custo médio por ativo, somando todas as corretoras e contas (IN RFB "
         "1.585/2015 art. 58). As visões por corretora e conta servem para conferir a custódia."
     ).classes("coir-subtitulo")
-    escolha: dict[str, object] = {"data": estado.fim_do_ano(), "visao": Visao.TITULAR}
+    escolha = _Escolha(estado.fim_do_ano(), Visao.TITULAR)
 
     with ui.row().classes("w-full items-center gap-3"):
-        inicial = escolha["data"]
-        assert isinstance(inicial, date)
         campo_data = (
-            ui.input("Posição em", value=inicial.isoformat())
+            ui.input("Posição em", value=escolha.data.isoformat())
             .props("outlined dense type=date")
             .classes("w-[170px]")
             .mark("data-carteira")
@@ -93,8 +98,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     linhas: list[carteira.LinhaPosicao] = []
 
     async def carregar() -> None:
-        ate, visao = escolha["data"], escolha["visao"]
-        assert isinstance(ate, date) and isinstance(visao, Visao)
+        ate, visao = escolha.data, escolha.visao
         lista.clear()
         with lista:
             ui.spinner(size="lg")
@@ -131,8 +135,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     async def abrir(indice: int) -> None:
         p = linhas[indice]
-        ate, visao = escolha["data"], escolha["visao"]
-        assert isinstance(ate, date) and isinstance(visao, Visao)
+        ate, visao = escolha.data, escolha.visao
         movs = await run.io_bound(estado.movimentos, ate, visao)
         mapa = await run.io_bound(estado.notas_das_operacoes)
         if movs is None or mapa is None:
@@ -145,10 +148,11 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     def mudar(chave: str, valor: object) -> None:
         if chave == "data":
             try:
-                valor = date.fromisoformat(str(valor))
+                escolha.data = date.fromisoformat(str(valor))
             except ValueError:
                 return
-        escolha[chave] = valor
+        else:
+            escolha.visao = Visao(str(valor))
         ui.timer(0.01, carregar, once=True)
 
     ui.timer(0.01, carregar, once=True)

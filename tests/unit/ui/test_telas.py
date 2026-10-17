@@ -267,7 +267,8 @@ async def test_painel_mostra_darf_pendencias_e_grafico(demo: Path) -> None:
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/")
         await user.should_see("Painel de 2026")
-        await user.should_see("Nada a pagar neste ano.", retries=ESPERA)
+        await user.should_see("Competência 02/2023", retries=ESPERA)  # atraso de outro ano
+        await user.should_see("DARF(s) em atraso (2023")
         await user.should_see("aviso(s) do motor no ano")
         grafico = user.find(marker="grafico-resultado").elements.pop()
         assert isinstance(grafico, ui.echart)
@@ -282,7 +283,7 @@ async def test_cadastros_adiciona_e_renomeia_titular(tmp_path: Path) -> None:
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/cadastros")
         await user.should_see("Primeiro")
-        await user.should_see("CPF ***.***.247-25 · id 1")  # nunca o CPF inteiro
+        await user.should_see("CPF ***.***.247-** · id 1")  # nunca o CPF inteiro
         user.find(marker="novo-titular").click()
         user.find(marker="novo-nome").type("Segundo")
         user.find(marker="novo-cpf").type(cpf_de_teste("111444777"))

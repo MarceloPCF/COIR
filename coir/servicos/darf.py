@@ -5,6 +5,7 @@ A DARF é a do motor (``MesApurado.darf``); o pagamento é um fato lançado pelo
 muda a apuração. Juros Selic ficam para a F7.
 """
 
+import calendar
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -23,6 +24,7 @@ from coir.erros import ImportacaoError
 
 log = logging.getLogger(__name__)
 PASTA_COMPROVANTES = "comprovantes"
+LIMITE_COMPROVANTE = 10 * 1024 * 1024
 ZERO = Decimal(0)
 
 
@@ -31,6 +33,7 @@ class Situacao(StrEnum):
     EM_ATRASO = "em atraso"
     PAGA = "paga"
     ACUMULADA = "acumulada"  # abaixo do mínimo: soma à do mês seguinte (Lei 9.430 art. 68 §1º)
+    EM_APURACAO = "em apuração"  # o mês ainda não acabou: o valor é parcial
 
 
 @dataclass(frozen=True)
@@ -57,6 +60,11 @@ class LinhaDarf:
         return self.principal + (self.multa.valor if self.multa else ZERO)
 
     @property
+    def pago_em_atraso(self) -> bool:
+        p, v = self.pagamento, self.vencimento
+        return p is not None and v is not None and p.data > v
+
+    @property
     def diferenca(self) -> Decimal | None:
         """Pago menos devido (principal + multa): negativo = falta pagar; positivo = a maior."""
         return None if self.pagamento is None else self.pagamento.valor - self.total
@@ -81,7 +89,11 @@ def darfs(
         competencia = date(m.ano, m.mes, 1)
         codigo = fiscais.parametros.texto("darf_codigo", competencia)
         pago = pagos.get((m.ano, m.mes))
-        if m.darf > 0 and m.vencimento is not None:
+        if (m.ano, m.mes) >= (hoje.year, hoje.month):
+            if m.darf > 0 or m.darf_acumulado > 0:
+                linhas.append(LinhaDarf(m.ano, m.mes, codigo, None, m.darf + m.darf_acumulado,
+                                        Situacao.EM_APURACAO, None, pago))  # fmt: skip
+        elif m.darf > 0 and m.vencimento is not None:
             multa: MultaMora | None = None
             if pago is not None:
                 situacao = Situacao.PAGA
@@ -108,21 +120,25 @@ def registrar_pagamento(
 ) -> None:  # fmt: skip
     """Grava (ou substitui) o pagamento da DARF da competência; o comprovante (PDF) vai para
     ``<dados>/comprovantes/<ano>/`` com nome sem CPF."""
+    if not 1 <= mes <= 12:
+        raise ImportacaoError(f"competência inválida: {mes:02d}/{ano}")
     if valor <= 0:
         raise ImportacaoError("informe o valor pago")
     if data_pagamento > agora.date():
         raise ImportacaoError("a data do pagamento não pode ser futura")
-    if data_pagamento < date(ano, mes, 1):
-        raise ImportacaoError("a data do pagamento é anterior à competência")
-    relativo: str | None = None
+    fim = date(ano, mes, calendar.monthrange(ano, mes)[1])
+    if data_pagamento < fim:
+        raise ImportacaoError("a data do pagamento é anterior ao fim da competência")
+    relativo: Path | None = None
     if comprovante is not None:
         nome, conteudo = comprovante
         if not conteudo.startswith(b"%PDF"):
             raise ImportacaoError(f"o comprovante não é PDF: {Path(nome).name}")
-        destino = Path(PASTA_COMPROVANTES) / str(ano) / f"darf-{ano}-{mes:02d}-titular{titular}.pdf"
-        (dados / destino).parent.mkdir(parents=True, exist_ok=True)
-        (dados / destino).write_bytes(conteudo)
-        relativo = destino.as_posix()
+        if len(conteudo) > LIMITE_COMPROVANTE:
+            raise ImportacaoError("o comprovante passa de 10 MB")
+        relativo = (
+            Path(PASTA_COMPROVANTES) / str(ano) / f"darf-{ano}-{mes:02d}-titular{titular}.pdf"
+        )
     with conectar(banco) as fabrica, fabrica.begin() as s:
         if s.get(Titular, titular) is None:
             raise ImportacaoError(f"titular {titular} não cadastrado")
@@ -134,9 +150,15 @@ def registrar_pagamento(
             s.add(registro)
         registro.data_pagamento = data_pagamento
         registro.valor_pago = valor
-        registro.comprovante = relativo or registro.comprovante
         registro.observacao = observacao.strip()
         registro.registrado_em = agora
+        if relativo is not None and comprovante is not None:
+            try:  # dentro da transação: se o arquivo falhar, o registro não entra
+                (dados / relativo).parent.mkdir(parents=True, exist_ok=True)
+                (dados / relativo).write_bytes(comprovante[1])
+            except OSError as erro:
+                raise ImportacaoError(f"não foi possível guardar o comprovante: {erro}") from erro
+            registro.comprovante = relativo.as_posix()
     log.info("pagamento de DARF registrado: titular %d, %02d/%d", titular, mes, ano)
 
 

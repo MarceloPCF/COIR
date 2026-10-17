@@ -51,10 +51,30 @@ def test_trocar_pasta_de_dados_grava_e_zera_a_escolha(tmp_path: Path) -> None:
     gravadas: list[Path] = []
     estado = Estado(tmp_path / "a" / "coir.db")
     estado.titular, estado.ano = 1, 2026
-    estado.trocar_dados(tmp_path / "b", salvar=gravadas.append)
-    assert estado.banco == tmp_path / "b" / "coir.db"
+    estado.trocar_dados(tmp_path / "b", AGORA, salvar=gravadas.append)
+    assert estado.banco == tmp_path / "b" / "coir.db" and estado.existe  # banco criado antes
     assert gravadas == [tmp_path / "b"] and estado.titular is None
     assert estado.pasta_notas == tmp_path / "b" / "_notas-corretagens"
+
+
+def test_pasta_de_dados_nunca_dentro_de_um_repositorio(tmp_path: Path) -> None:
+    from coir.config import RAIZ_REPOSITORIO
+
+    gravadas: list[Path] = []
+    estado = Estado(tmp_path / "coir.db")
+    with pytest.raises(ConfiguracaoError, match="repositório"):
+        estado.trocar_dados(RAIZ_REPOSITORIO / "dados", AGORA, salvar=gravadas.append)
+    assert gravadas == [] and estado.banco == tmp_path / "coir.db"
+
+
+def test_pasta_que_falha_nao_fica_gravada(tmp_path: Path) -> None:
+    gravadas: list[Path] = []
+    estado = Estado(tmp_path / "coir.db")
+    arquivo = tmp_path / "nao-e-pasta"
+    arquivo.write_text("x", encoding="utf-8")
+    with pytest.raises(OSError):
+        estado.trocar_dados(arquivo, AGORA, salvar=gravadas.append)
+    assert gravadas == []
 
 
 # --------------------------------------------------------------------------------- cadastros
@@ -229,12 +249,19 @@ def test_registro_de_atividades_nunca_grava_cpf(tmp_path: Path) -> None:
         formatado = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
         logging.getLogger("coir.teste").info("nota do CPF %s importada", formatado)
         logging.getLogger("coir.teste").info("outro %s no texto", cpf)
+        pontos = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}.{cpf[9:]}"  # formato das notas antigas
+        try:
+            raise ValueError(f"falhou com {pontos} [parameters: ('{formatado}', 'Fulano')]")
+        except ValueError:
+            logging.getLogger("coir.teste").exception("erro no traceback")
         for h in logging.getLogger().handlers:
             h.flush()
         linhas = ler_registro(tmp_path)
         assert arquivo == tmp_path / "logs" / "coir.log"
         assert any("nota do CPF *** importada" in x for x in linhas)
-        assert not any(cpf[6:9] in x for x in linhas)
+        texto = "\n".join(linhas)
+        assert cpf[6:9] not in texto and "Fulano" not in texto
+        assert "[parameters: ***]" in texto and "erro no traceback" in texto
     finally:
         raiz = logging.getLogger()
         for h in [h for h in raiz.handlers if getattr(h, "baseFilename", "") == str(arquivo)]:
@@ -274,7 +301,60 @@ def test_backup_restaurar_volta_o_banco_e_guarda_o_atual(tmp_path: Path) -> None
 
 def test_cadastros_mostra_contas_e_tickers(demo: Path) -> None:
     [titular] = cadastros.titulares(demo)
-    assert titular.cpf == "***.***.247-25" and "XP 0" in titular.contas
+    assert titular.cpf == "***.***.247-**" and "XP 0" in titular.contas
     contas = cadastros.contas(demo)
     assert sum(c.notas for c in contas) == len(notas.listar(demo, None, None))
     assert any(t.ticker == "CSMG3" for t in cadastros.tickers(demo))
+
+
+def test_restaurar_backup_de_esquema_antigo_guarda_o_banco_atual(tmp_path: Path) -> None:
+    """Revisão B1: restaurar um backup da revisão 0002 não pode apagar a cópia do banco atual
+    (antes, a migração do restaurado sobrescrevia o backup feito no mesmo segundo)."""
+    import sqlite3
+
+    from alembic import command
+
+    from coir.db.sessao import _config_alembic, criar_engine  # pyright: ignore[reportPrivateUsage]
+    from coir.servicos import manutencao
+
+    estado = Estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    cadastros.adicionar_titular(estado.banco, cpf_de_teste(), "Antigo")
+    engine = criar_engine(estado.banco)
+    with engine.begin() as c:
+        config = _config_alembic()
+        config.attributes["connection"] = c
+        command.downgrade(config, "0002")
+    engine.dispose()
+    antigo = manutencao.fazer_agora(estado.banco, AGORA)  # backup na revisão 0002
+    estado.preparar(AGORA)  # volta à última revisão (faz outro backup no mesmo segundo)
+    cadastros.renomear_titular(estado.banco, 1, "Atual")
+    atual = manutencao.restaurar(estado.banco, antigo, AGORA)  # o mesmo segundo de novo
+    assert atual is not None and atual != antigo
+    assert [t.nome for t in cadastros.titulares(estado.banco)] == ["Antigo"]
+    copia = sqlite3.connect(atual)
+    try:
+        assert copia.execute("select nome from titular").fetchall() == [("Atual",)]
+    finally:
+        copia.close()
+    assert len({b.caminho for b in manutencao.backups(estado.banco)}) == 3
+
+
+def test_nota_inexistente_e_erro_de_dominio(demo: Path) -> None:
+    from coir.erros import BancoError
+
+    with pytest.raises(BancoError, match="não existe"):
+        notas.detalhe(demo, demo.parent, 99999)
+
+
+def test_divergencias_conhecidas_lidas_do_csv(tmp_path: Path) -> None:
+    from datetime import date
+
+    from coir.servicos.importacao import divergencias_conhecidas
+
+    assert divergencias_conhecidas(tmp_path) == frozenset()
+    (tmp_path / "gabarito").mkdir()
+    (tmp_path / "gabarito" / "divergencias-conhecidas.csv").write_text(
+        "nota,data,papel,motivo\n9,2026-08-03,,teste\n", encoding="utf-8"
+    )
+    assert divergencias_conhecidas(tmp_path) == frozenset({("9", date(2026, 8, 3))})

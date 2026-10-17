@@ -33,7 +33,7 @@ def renomear_titular(banco: Path, id_titular: int, nome: str) -> None:
 class TitularCadastro:
     id: int
     nome: str
-    cpf: str  # mascarado: só os 5 últimos dígitos
+    cpf: str  # mascarado: só três dígitos do meio (sem os verificadores)
     contas: tuple[str, ...]  # "XP 0000123"
 
 
@@ -59,7 +59,7 @@ class TickerCadastro:
 
 def mascarar_cpf(cpf: str) -> str:
     d = so_digitos(cpf)
-    return f"***.***.{d[6:9]}-{d[9:]}" if len(d) == 11 else "***"
+    return f"***.***.{d[6:9]}-**" if len(d) == 11 else "***"
 
 
 def titulares(banco: Path) -> list[TitularCadastro]:

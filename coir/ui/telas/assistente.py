@@ -4,11 +4,13 @@ Abre sozinho enquanto não houver banco ou titular. A custódia inicial e o prej
 anteriores ficam para os lançamentos manuais (F7).
 """
 
+import os
 from collections.abc import Callable
 from pathlib import Path
 
 from nicegui import ui
 
+from coir.config import VAR_DADOS, configurar_registro
 from coir.domain.cpf import cpf_valido
 from coir.erros import CoirError
 from coir.servicos import cadastros
@@ -45,6 +47,11 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 .mark("pasta-dados")
             )
             situacao = ui.label(_contar_pdfs(estado.dados)).classes("coir-subtitulo text-sm")
+            if os.environ.get(VAR_DADOS, "").strip():
+                ui.label(
+                    f"A variável {VAR_DADOS} está definida neste computador: ela continua "
+                    "escolhendo a pasta nas próximas aberturas."
+                ).classes("coir-carimbo text-sm")
             campo.on_value_change(lambda e: situacao.set_text(_contar_pdfs(Path(e.value or "."))))
 
             def confirmar_pasta() -> None:
@@ -53,8 +60,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                     ui.notify("Informe a pasta de dados.", type="warning")
                     return
                 try:
-                    estado.trocar_dados(Path(texto).expanduser())
-                    estado.preparar(estado.agora())
+                    estado.trocar_dados(Path(texto).expanduser(), estado.agora())
+                    configurar_registro(estado.dados)
                 except (CoirError, OSError) as erro:
                     ui.notify(f"Não foi possível usar a pasta: {erro}", type="negative")
                     return

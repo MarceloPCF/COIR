@@ -47,3 +47,10 @@ estes requisitos:
   fica maior, por causa dos arquivos de front-end do NiceGUI.
 - O Windows 10/11 atual já traz o WebView2. Máquinas antigas sem ele caem no navegador, com o
   mesmo app.
+- O servidor local não tem autenticação: escuta só em `127.0.0.1`, numa porta livre sorteada a
+  cada abertura. Outro programa do mesmo computador poderia acessá-lo; o risco é baixo para um
+  app de um usuário, mas fica registrado (revisão da F6).
+- O estado (titular, ano, cache) é um por processo: feito para uma janela. Duas abas do
+  navegador apontando para o mesmo app compartilham a escolha de titular e ano.
+- Erros de banco (travado por outra janela ou pela CLI) e de arquivo viram erros de domínio nos
+  serviços; a interface só mostra a mensagem.

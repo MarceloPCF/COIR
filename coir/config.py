@@ -32,7 +32,7 @@ def dados_dir(*, exigir: bool = False, ambiente: Mapping[str, str] | None = None
     """
     env = os.environ if ambiente is None else ambiente
     valor = env.get(VAR_DADOS, "").strip()
-    escolhida = _ler_config(env).get("dados", "")
+    escolhida = "" if valor else _ler_config(env).get("dados", "")  # a variável manda
     if valor:
         pasta = Path(valor).expanduser()
         origem = VAR_DADOS
@@ -74,15 +74,22 @@ def _ler_config(ambiente: Mapping[str, str]) -> dict[str, object]:
     return dados  # type: ignore[return-value]
 
 
-def salvar_dados_dir(pasta: Path, ambiente: Mapping[str, str] | None = None) -> Path:
-    """Grava a pasta de dados escolhida na interface (vale nas próximas aberturas)."""
-    env = os.environ if ambiente is None else ambiente
+def _gravar_config(chave: str, valor: str, env: Mapping[str, str]) -> Path:
+    """Grava uma chave na configuração (arquivo temporário + troca atômica)."""
     arquivo = arquivo_config(env)
     if arquivo is None:
         raise ConfiguracaoError(f"sem lugar para a configuração: defina {VAR_CONFIG}")
-    dados = {**_ler_config(env), "dados": str(pasta)}
+    dados = {**_ler_config(env), chave: valor}
     arquivo.parent.mkdir(parents=True, exist_ok=True)
-    arquivo.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporario = arquivo.with_suffix(".tmp")
+    temporario.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(temporario, arquivo)
+    return arquivo
+
+
+def salvar_dados_dir(pasta: Path, ambiente: Mapping[str, str] | None = None) -> Path:
+    """Grava a pasta de dados escolhida na interface (vale nas próximas aberturas)."""
+    arquivo = _gravar_config("dados", str(pasta), os.environ if ambiente is None else ambiente)
     log.info("pasta de dados gravada na configuração: %s", arquivo)
     return arquivo
 
@@ -104,27 +111,22 @@ def ler_preferencia(chave: str, ambiente: Mapping[str, str] | None = None) -> st
 
 
 def salvar_preferencia(chave: str, valor: str, ambiente: Mapping[str, str] | None = None) -> None:
-    env = os.environ if ambiente is None else ambiente
-    arquivo = arquivo_config(env)
-    if arquivo is None:
-        raise ConfiguracaoError(f"sem lugar para a configuração: defina {VAR_CONFIG}")
-    dados = {**_ler_config(env), chave: valor}
-    arquivo.parent.mkdir(parents=True, exist_ok=True)
-    arquivo.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
+    _gravar_config(chave, valor, os.environ if ambiente is None else ambiente)
 
 
 # ------------------------------------------------------------------- registro de atividades
 ARQUIVO_REGISTRO = Path("logs") / "coir.log"
-RE_CPF = re.compile(r"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")
+RE_CPF = re.compile(r"\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2}")  # sem limite de palavra: mascara a mais
+RE_PARAMETROS = re.compile(r"\[parameters: .*?\]", re.DOTALL)  # erros do SQLAlchemy
 
 
-class _SemCpf(logging.Filter):
-    """Última barreira: nenhum número com cara de CPF chega ao arquivo de registro."""
+class _FormatoSemDados(logging.Formatter):
+    """Última barreira: mascara o texto final (mensagem e traceback) antes de ir ao arquivo:
+    números com cara de CPF e os parâmetros de SQL (que podem trazer CPF e nome)."""
 
-    def filter(self, record: logging.LogRecord) -> bool:
-        record.msg = RE_CPF.sub("***", record.getMessage())
-        record.args = None
-        return True
+    def format(self, record: logging.LogRecord) -> str:
+        texto = RE_PARAMETROS.sub("[parameters: ***]", super().format(record))
+        return RE_CPF.sub("***", texto)
 
 
 def configurar_registro(dados: Path) -> Path:
@@ -136,8 +138,7 @@ def configurar_registro(dados: Path) -> Path:
         return arquivo
     manipulador = RotatingFileHandler(arquivo, maxBytes=1_000_000, backupCount=5,
                                       encoding="utf-8")  # fmt: skip
-    manipulador.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
-    manipulador.addFilter(_SemCpf())
+    manipulador.setFormatter(_FormatoSemDados("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     manipulador.setLevel(logging.INFO)
     raiz.addHandler(manipulador)
     logging.getLogger("alembic").setLevel(logging.WARNING)  # "Context impl" a cada conexão

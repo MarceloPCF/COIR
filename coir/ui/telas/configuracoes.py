@@ -98,7 +98,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     with _secao(
         "Registro de atividades",
         f"As últimas linhas de {ARQUIVO_REGISTRO.as_posix()} na pasta de dados: importações, "
-        "backups, migrações e erros. O registro nunca grava CPF nem nome.",
+        "backups, migrações e erros. O registro mascara CPF e não grava os dados das consultas.",
     ):
         registro = ui.log(max_lines=300).classes("w-full h-[320px] text-xs").mark("registro")
 

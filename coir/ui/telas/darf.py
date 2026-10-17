@@ -4,7 +4,7 @@ numerados (como no formulário), a multa de mora e o registro do pagamento com o
 import calendar
 from collections.abc import Callable
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from nicegui import events, run, ui
 
@@ -14,6 +14,7 @@ from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import darf
 from coir.servicos.estado import Estado
 from coir.ui import tabela
+from coir.ui.entrada import valor_br
 
 T = TipoColuna
 COLUNAS = (
@@ -30,6 +31,7 @@ CLASSES = {
     darf.Situacao.A_PAGAR: "coir-carimbo",
     darf.Situacao.PAGA: "coir-positivo",
     darf.Situacao.ACUMULADA: "coir-subtitulo",
+    darf.Situacao.EM_APURACAO: "coir-subtitulo",
 }
 
 
@@ -50,14 +52,6 @@ def _valores(linhas: list[darf.LinhaDarf]) -> list[tuple[Valor, ...]]:
         )
         for x in linhas
     ]
-
-
-def _decimal(texto: str) -> Decimal | None:
-    try:
-        valor = Decimal(texto.replace(".", "").replace(",", ".").strip())
-    except InvalidOperation:
-        return None
-    return valor if valor.is_finite() else None
 
 
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
@@ -136,6 +130,12 @@ def _documento(
     with ui.row().classes("items-baseline gap-3"):
         ui.label(f"DARF de {MESES[x.mes - 1].lower()}/{x.ano}").classes("coir-titulo text-lg")
         ui.label(x.situacao.value).classes(f"text-sm font-semibold {CLASSES[x.situacao]}")
+    if x.situacao is darf.Situacao.EM_APURACAO:
+        ui.label(
+            f"O mês ainda não acabou: {_r(x.principal)} é o imposto apurado até hoje e muda com as "
+            "próximas notas. A DARF sai depois do fim do mês."
+        ).classes("coir-vazio w-full")
+        return
     if x.situacao is darf.Situacao.ACUMULADA:
         ui.label(
             f"{_r(x.principal)} abaixo do valor mínimo da DARF: soma-se à DARF do mês seguinte "
@@ -155,7 +155,8 @@ def _documento(
             "coir-negativo" if multa and multa.valor else "",
         )
         _campo("09", "Valor dos juros", "— (F7)")
-        _campo("10", "Valor total", _r(x.total), "font-semibold")
+        rotulo = "Valor total (sem os juros)" if multa and multa.valor else "Valor total"
+        _campo("10", rotulo, _r(x.total), "font-semibold")
     if multa and multa.dias:
         ate = "pagamento" if x.pagamento else "hoje (estimativa)"
         ajuste = " (data não útil: vale o próximo dia útil)" if multa.ajustado else ""
@@ -178,6 +179,11 @@ def _documento(
                 ui.label(
                     f"Pago a menor: faltam {_r(-dif)} (gere a DARF complementar no Sicalc)."
                 ).classes("coir-negativo text-sm")
+            elif dif is not None and dif > 0 and x.pago_em_atraso:
+                ui.label(
+                    f"Diferença de {_r(dif)}: em pagamento atrasado, provavelmente os juros "
+                    "Selic, que o COIR ainda não calcula."
+                ).classes("coir-subtitulo text-sm")
             elif dif is not None and dif > 0:
                 ui.label(f"Pago a maior: {_r(dif)} (restituição pelo PER/DCOMP).").classes(
                     "coir-carimbo text-sm"
@@ -191,6 +197,7 @@ def _documento(
                 await run.io_bound(
                     darf.excluir_pagamento, estado.banco, estado.titular or 0, x.ano, x.mes
                 )
+                estado.invalidar()
                 ui.notify("Registro de pagamento desfeito.")
                 await _chamar(recarregar, (x.ano, x.mes))
 
@@ -249,7 +256,7 @@ def _formulario(
             except ValueError:
                 ui.notify("Data inválida.", type="warning")
                 return
-            pago = _decimal(valor.value or "")
+            pago = valor_br(valor.value or "")
             if pago is None:
                 ui.notify("Valor inválido.", type="warning")
                 return
@@ -270,6 +277,7 @@ def _formulario(
             except CoirError as erro:
                 ui.notify(str(erro), type="negative")
                 return
+            estado.invalidar()
             ui.notify("Pagamento registrado.", type="positive")
             await _chamar(recarregar, (x.ano, x.mes))
 

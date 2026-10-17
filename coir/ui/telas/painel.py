@@ -10,7 +10,7 @@ from coir.domain.fiscal import Apuracao, Categoria, MesApurado
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import TipoColuna, formatar
-from coir.servicos import darf, notas
+from coir.servicos import darf, notas, painel
 from coir.servicos.estado import Estado
 from coir.ui import tema
 
@@ -48,6 +48,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         try:
             apuracao = await run.io_bound(estado.apuracao, estado.fim_do_ano())
             darfs = await run.io_bound(estado.darfs)
+            todas = await run.io_bound(estado.darfs_todos_os_anos)
             incompletos = await run.io_bound(notas.arquivos_incompletos, estado.banco)
         except CoirError as erro:
             corpo.clear()
@@ -55,41 +56,50 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 ui.label(f"Não foi possível apurar: {erro}").classes("coir-negativo")
             return
         espera.delete()
-        if apuracao is None or darfs is None or incompletos is None:
+        if apuracao is None or darfs is None or todas is None or incompletos is None:
             return
         with corpo:
-            _conteudo(estado, apuracao, darfs, incompletos)
+            _conteudo(estado, apuracao, darfs, todas, incompletos)
 
     ui.timer(0.01, carregar, once=True)
 
 
 def _conteudo(
-    estado: Estado, apuracao: Apuracao, darfs: list[darf.LinhaDarf], incompletos: list[str]
+    estado: Estado,
+    apuracao: Apuracao,
+    darfs: list[darf.LinhaDarf],
+    todas: list[darf.LinhaDarf],
+    incompletos: list[str],
 ) -> None:
+    """`darfs`: as do ano escolhido (números); `todas`: as de todos os anos (pendências)."""
     meses = [m for m in apuracao.meses if m.titular == estado.titular and m.ano == estado.ano]
     avisos = [a for a in apuracao.avisos if a[:4] == str(estado.ano) or not a[:4].isdigit()]
-    atrasadas = [x for x in darfs if x.situacao is darf.Situacao.EM_ATRASO]
-    a_pagar = sorted((x for x in darfs if x.situacao is darf.Situacao.A_PAGAR),
-                     key=lambda x: x.vencimento or x.ano)  # fmt: skip
+    atrasadas = [x for x in todas if x.situacao is darf.Situacao.EM_ATRASO]
     with ui.row().classes("w-full items-stretch gap-4"):
         with _cartao("DARF da vez").mark("cartao-darf"):
-            proxima = (atrasadas or a_pagar or [None])[0]
-            if proxima is None:
-                ui.label("Nada a pagar neste ano.").classes("coir-titulo text-xl")
+            vez = painel.da_vez(todas)
+            if vez is None:
+                ui.label("Nada a pagar.").classes("coir-titulo text-xl")
             else:
-                classe = "coir-negativo" if proxima in atrasadas else "coir-carimbo"
-                ui.label(_r(proxima.total)).classes(f"coir-numero text-3xl {classe}")
-                vence = f"{proxima.vencimento:%d/%m/%Y}" if proxima.vencimento else ""
-                ui.label(f"Competência {proxima.mes:02d}/{proxima.ano} · vence {vence} · "
-                         f"{proxima.situacao.value}").classes("text-sm")  # fmt: skip
-            ui.button("Ver as DARFs", icon="request_quote",
-                      on_click=lambda: ui.navigate.to("/darf")).props("flat dense")  # fmt: skip
+                classe = "coir-negativo" if vez in atrasadas else "coir-carimbo"
+                ui.label(_r(vez.total)).classes(f"coir-numero text-3xl {classe}")
+                vence = f"{vez.vencimento:%d/%m/%Y}" if vez.vencimento else ""
+                juros = " (sem os juros)" if vez.multa and vez.multa.valor else ""
+                ui.label(
+                    f"Competência {vez.mes:02d}/{vez.ano} · vence {vence} · "
+                    f"{vez.situacao.value}{juros}"
+                ).classes("text-sm")
+            ui.button(
+                "Ver as DARFs", icon="request_quote", on_click=lambda: ui.navigate.to("/darf")
+            ).props("flat dense")
         with _cartao("Pendências").mark("cartao-pendencias"):
+            anos = sorted({x.ano for x in atrasadas})
             itens = [
-                (len(atrasadas), "DARF(s) em atraso", "/darf"),
+                (len(atrasadas), "DARF(s) em atraso"
+                 + (f" ({', '.join(map(str, anos))})" if anos else ""), "/darf"),
                 (len(incompletos), "arquivo(s) com nota rejeitada", "/importar"),
                 (len(avisos), "aviso(s) do motor no ano", "/apuracao"),
-            ]
+            ]  # fmt: skip
             if not any(n for n, _, _ in itens):
                 ui.label("Nenhuma pendência.").classes("coir-positivo")
             for n, texto, rota in itens:
@@ -98,33 +108,34 @@ def _conteudo(
                         ui.icon("error_outline", size="18px").classes("coir-carimbo")
                         ui.link(f"{n} {texto}", rota).classes("text-sm")
         with _cartao("Atalhos"):
-            ui.button("Importar notas", icon="upload_file",
-                      on_click=lambda: ui.navigate.to("/importar")).props("outline")  # fmt: skip
-            ui.button("Exportar relatórios", icon="description",
-                      on_click=lambda: ui.navigate.to("/relatorios")).props("outline")  # fmt: skip
+            ui.button(
+                "Importar notas", icon="upload_file", on_click=lambda: ui.navigate.to("/importar")
+            ).props("outline")
+            ui.button(
+                "Exportar relatórios",
+                icon="description",
+                on_click=lambda: ui.navigate.to("/relatorios"),
+            ).props("outline")
     if not meses:
         ui.label("Nada apurado neste ano: importe as notas.").classes("coir-vazio w-full")
         return
-    _numeros(meses, darfs)
+    _numeros(painel.resumo(meses, darfs), MESES[meses[-1].mes - 1].lower())
     _grafico(meses)
 
 
-def _numeros(meses: list[MesApurado], darfs: list[darf.LinhaDarf]) -> None:
-    ultimo = meses[-1]
-    resultado = sum((_resultado(m, c) for m in meses for c, _, _ in SERIES), ZERO)
-    imposto = sum((m.imposto_devido for m in meses), ZERO)
-    pagas = sum(1 for x in darfs if x.situacao is darf.Situacao.PAGA)
-    com_darf = sum(1 for x in darfs if x.situacao is not darf.Situacao.ACUMULADA)
-    prejuizo = sum((r.prejuizo_a_compensar for r in ultimo.categorias), ZERO)
+def _numeros(r: painel.ResumoAno, ultimo_mes: str) -> None:
+    curtas = {Categoria.COMUM: "comum", Categoria.DAY_TRADE: "DT", Categoria.FII: "FII"}
     with ui.row().classes("w-full gap-8 coir-folha").mark("numeros-ano"):
         for rotulo, valor in (
-            ("Resultado tributável do ano", _r(resultado)),
-            ("Imposto devido", _r(imposto)),
-            ("DARFs pagas", f"{pagas} de {com_darf}"),
-            (f"Prejuízo a compensar ({MESES[ultimo.mes - 1].lower()})", _r(prejuizo)),
-        ):
+            ("Resultado do ano, antes da compensação (sem o isento)",
+             " · ".join(f"{curtas[c]} {_r(v)}" for c, v in r.resultado.items())),
+            ("Imposto devido no ano (depois do IRRF)", _r(r.imposto_devido)),
+            ("DARFs pagas", f"{r.darfs_pagas} de {r.darfs_emitidas}"),
+            (f"Prejuízo a compensar em {ultimo_mes}",
+             " · ".join(f"{curtas[c]} {_r(v)}" for c, v in r.prejuizo_a_compensar.items())),
+        ):  # fmt: skip
             with ui.column().classes("gap-0"):
-                ui.label(valor).classes("coir-numero text-2xl")
+                ui.label(valor).classes("coir-numero text-lg")
                 ui.label(rotulo).classes("coir-campo-rotulo")
 
 

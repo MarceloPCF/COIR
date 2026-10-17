@@ -16,9 +16,10 @@ class Backup:
 
 
 def _quando(arquivo: Path) -> datetime | None:
+    """coir-AAAAMMDD-HHMMSS[-NN].db -> data e hora do backup."""
     try:
-        return datetime.strptime(arquivo.stem.split("-", 1)[1], "%Y%m%d-%H%M%S")
-    except (IndexError, ValueError):
+        return datetime.strptime("-".join(arquivo.stem.split("-")[1:3]), "%Y%m%d-%H%M%S")
+    except ValueError:
         return None
 
 

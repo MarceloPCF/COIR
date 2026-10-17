@@ -29,7 +29,7 @@ INTERNOS_PERMITIDOS = {
     "reports": ("coir.reports", "coir.domain", "coir.erros"),
     "servicos": (
         "coir.servicos", "coir.db", "coir.domain", "coir.engine", "coir.erros", "coir.parsing",
-        "coir.reports", "coir.config", "coir.referencias", "coir.gabarito",
+        "coir.reports", "coir.config", "coir.referencias",
     ),
     # interface: só apresenta; dados e cálculos vêm dos serviços (nunca motor ou banco direto)
     "ui": ("coir.ui", "coir.servicos", "coir.reports", "coir.domain", "coir.config", "coir.erros"),

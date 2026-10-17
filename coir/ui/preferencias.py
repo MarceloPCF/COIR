@@ -30,7 +30,10 @@ def escolher_tema(nome: str) -> None:
     escuro = _ESCUROS.get(ui.context.client)
     if escuro is not None:
         escuro.set_value(TEMAS[nome])
-    salvar_preferencia("tema", nome)
+    try:
+        salvar_preferencia("tema", nome)
+    except ConfiguracaoError as erro:
+        ui.notify(f"O tema vale só nesta janela: {erro}", type="warning")
 
 
 def alternar_tema() -> None:

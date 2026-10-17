@@ -8,12 +8,13 @@ Um lote = uma transação: qualquer erro inesperado desfaz tudo. Idempotente:
   cadastrar o ativo em data/ativos.csv); as notas dele já gravadas são ignoradas.
 """
 
+import csv
 import hashlib
 import logging
 from collections import Counter
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -83,7 +84,10 @@ def importar_arquivos(
         for feitos, caminho in enumerate(arquivos):
             if progresso is not None:
                 progresso(feitos, len(arquivos), caminho.name)
-            dados = caminho.read_bytes()
+            try:
+                dados = caminho.read_bytes()
+            except OSError as erro:
+                raise ImportacaoError(f"não foi possível ler {caminho.name}: {erro}") from erro
             sha = hashlib.sha256(dados).hexdigest()  # mesmo cálculo de _sha256
             registro = repo.arquivo_por_sha(sessao, sha)
             if registro is not None and registro.completo:
@@ -298,7 +302,10 @@ def copiar_para_pasta(arquivos: Sequence[tuple[str, bytes]], pasta: Path) -> lis
             n += 1
             destino = pasta / f"{base.stem}-{n}{base.suffix}"
         if not destino.exists():
-            destino.write_bytes(dados)
+            try:
+                destino.write_bytes(dados)
+            except OSError as erro:
+                raise ImportacaoError(f"não foi possível guardar {base.name}: {erro}") from erro
             log.info("PDF guardado na pasta das notas: %s", destino.name)
         if destino in destinos:
             continue
@@ -360,8 +367,14 @@ def por_arquivo(
 
 
 def divergencias_conhecidas(dados: Path) -> frozenset[tuple[str, object]]:
-    """(nota, data) das rejeições já analisadas (gabarito/divergencias-conhecidas.csv)."""
-    from coir.gabarito.comparar import carregar_explicacoes
-
+    """(nota, data) das rejeições já analisadas (gabarito/divergencias-conhecidas.csv, colunas
+    nota e data AAAA-MM-DD); sem o arquivo, nenhuma."""
     arquivo = dados / "gabarito" / "divergencias-conhecidas.csv"
-    return frozenset((e.nota, e.data) for e in carregar_explicacoes(arquivo))
+    if not arquivo.is_file():
+        return frozenset()
+    with arquivo.open(encoding="utf-8", newline="") as entrada:
+        try:
+            return frozenset((x["nota"].strip(), date.fromisoformat(x["data"].strip()))
+                             for x in csv.DictReader(entrada))  # fmt: skip
+        except (KeyError, ValueError) as erro:
+            raise ImportacaoError(f"{arquivo.name} ilegível: {erro}") from erro

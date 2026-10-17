@@ -18,7 +18,7 @@ from coir.domain.fiscal import Visao
 from coir.servicos.estado import Estado
 from coir.ui.app import INICIO, TELAS, montar
 
-pytestmark = pytest.mark.golden
+pytestmark = [pytest.mark.golden, pytest.mark.slow]
 REAL = dados_dir() / NOME_BANCO
 AGORA = datetime(2026, 10, 17, 12, 0, 0)
 

@@ -16,7 +16,7 @@ from typing import TypeVar
 from sqlalchemy import func, select
 
 from coir import referencias
-from coir.config import dados_dir, salvar_dados_dir
+from coir.config import dados_dir, dentro_do_repositorio, salvar_dados_dir
 from coir.db import repositorio as repo
 from coir.db.modelos import EventoCorporativo, NotaCorretagem
 from coir.db.sessao import NOME_BANCO, conectar, migrar
@@ -24,7 +24,7 @@ from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias
 from coir.domain.relatorio import DadosRelatorio
-from coir.erros import ExportacaoError
+from coir.erros import ConfiguracaoError, ExportacaoError
 from coir.parsing.extrair import extrair_pdf
 from coir.servicos import carteira, darf, notas, operacoes
 from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
@@ -57,6 +57,7 @@ class Estado:
         self.extrator: Extrator = extrair_pdf  # leitura dos PDFs (textos nos testes)
         self._cache: dict[tuple[object, ...], object] = {}
         self._trava = Lock()
+        self._travas: dict[tuple[object, ...], Lock] = {}
 
     # ----------------------------------------------------------------------------- banco
     @property
@@ -78,15 +79,20 @@ class Estado:
         return self.existe and bool(self.titulares())
 
     def trocar_dados(
-        self, pasta: Path, salvar: Callable[[Path], object] = salvar_dados_dir
+        self, pasta: Path, agora: datetime, salvar: Callable[[Path], object] = salvar_dados_dir
     ) -> None:
-        """Passa a usar outra pasta de dados (e a grava para as próximas aberturas)."""
-        if pasta.resolve() == self.dados.resolve():
-            return
-        salvar(pasta)
-        self.banco = pasta / NOME_BANCO
-        self.titular = self.ano = None
-        self.invalidar()
+        """Passa a usar outra pasta de dados: cria ou migra o banco nela e só então a grava na
+        configuração (pasta que falha não fica gravada). Nunca dentro de um repositório."""
+        if dentro_do_repositorio(pasta):
+            raise ConfiguracaoError(f"a pasta de dados não pode ficar num repositório: {pasta}")
+        banco = pasta / NOME_BANCO
+        if pasta.resolve() != self.dados.resolve():
+            pasta.mkdir(parents=True, exist_ok=True)
+            migrar(banco, agora)
+            salvar(pasta)
+            self.banco = banco
+            self.titular = self.ano = None
+        self.preparar(agora)
 
     def preparar(self, agora: datetime) -> None:
         """Cria ou migra o banco (com backup antes de migrar um banco existente)."""
@@ -108,13 +114,24 @@ class Estado:
             self._cache.clear()
 
     def _guardado(self, chave: tuple[object, ...], calcular: Callable[[], T]) -> T:
-        chave = (*chave, self._marca())
+        """Calcula uma vez por marca do banco; telas que pedem a mesma chave ao mesmo tempo
+        esperam o primeiro cálculo (uma trava por chave). Entradas de marcas antigas saem."""
+        marca = self._marca()
+        chave = (*chave, marca)
         with self._trava:
             if chave in self._cache:
                 return self._cache[chave]  # type: ignore[return-value]
-        valor = calcular()
-        with self._trava:
-            self._cache[chave] = valor
+            trava = self._travas.setdefault(chave, Lock())
+        with trava:
+            with self._trava:
+                if chave in self._cache:
+                    return self._cache[chave]  # type: ignore[return-value]
+            valor = calcular()
+            with self._trava:
+                for velha in [k for k in self._cache if k[-1] != marca]:
+                    del self._cache[velha]
+                self._cache[chave] = valor
+                self._travas.pop(chave, None)
         return valor
 
     # ------------------------------------------------------------------------- consultas
@@ -223,3 +240,15 @@ class Estado:
             return darf.darfs(meses, darf.pagamentos(self.banco, titular), hoje, self.fiscais)
 
         return self._guardado(("darfs", titular, ano, hoje), calcular)
+
+    def darfs_todos_os_anos(self) -> list[darf.LinhaDarf]:
+        """DARFs do titular em todos os anos (pendências do painel), com a multa até hoje."""
+        if not self.existe or self.titular is None:
+            return []
+        hoje, titular = self.agora().date(), self.titular
+
+        def calcular() -> list[darf.LinhaDarf]:
+            meses = [m for m in self.apuracao(hoje).meses if m.titular == titular]
+            return darf.darfs(meses, darf.pagamentos(self.banco, titular), hoje, self.fiscais)
+
+        return self._guardado(("darfs-todos", titular, hoje), calcular)
