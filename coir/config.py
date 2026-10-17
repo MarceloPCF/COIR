@@ -8,7 +8,9 @@ O caminho vem da variável de ambiente ``COIR_DADOS``; sem ela, da pasta escolhi
 import json
 import logging
 import os
+import re
 from collections.abc import Mapping
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from coir.erros import ConfiguracaoError
@@ -92,3 +94,61 @@ def dentro_do_repositorio(destino: Path) -> bool:
     if alvo == RAIZ_REPOSITORIO or RAIZ_REPOSITORIO in alvo.parents:
         return True
     return any((pasta / ".git").exists() for pasta in (alvo, *alvo.parents))
+
+
+# ------------------------------------------------------------------------------- preferências
+def ler_preferencia(chave: str, ambiente: Mapping[str, str] | None = None) -> str | None:
+    """Preferência da interface gravada na configuração (ex.: tema)."""
+    valor = _ler_config(os.environ if ambiente is None else ambiente).get(chave)
+    return valor if isinstance(valor, str) else None
+
+
+def salvar_preferencia(chave: str, valor: str, ambiente: Mapping[str, str] | None = None) -> None:
+    env = os.environ if ambiente is None else ambiente
+    arquivo = arquivo_config(env)
+    if arquivo is None:
+        raise ConfiguracaoError(f"sem lugar para a configuração: defina {VAR_CONFIG}")
+    dados = {**_ler_config(env), chave: valor}
+    arquivo.parent.mkdir(parents=True, exist_ok=True)
+    arquivo.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+# ------------------------------------------------------------------- registro de atividades
+ARQUIVO_REGISTRO = Path("logs") / "coir.log"
+RE_CPF = re.compile(r"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")
+
+
+class _SemCpf(logging.Filter):
+    """Última barreira: nenhum número com cara de CPF chega ao arquivo de registro."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = RE_CPF.sub("***", record.getMessage())
+        record.args = None
+        return True
+
+
+def configurar_registro(dados: Path) -> Path:
+    """Registro de atividades em ``<dados>/logs/coir.log`` (rotativo, 1 MB x 5)."""
+    arquivo = dados / ARQUIVO_REGISTRO
+    arquivo.parent.mkdir(parents=True, exist_ok=True)
+    raiz = logging.getLogger()
+    if any(getattr(h, "baseFilename", None) == str(arquivo) for h in raiz.handlers):
+        return arquivo
+    manipulador = RotatingFileHandler(arquivo, maxBytes=1_000_000, backupCount=5,
+                                      encoding="utf-8")  # fmt: skip
+    manipulador.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    manipulador.addFilter(_SemCpf())
+    manipulador.setLevel(logging.INFO)
+    raiz.addHandler(manipulador)
+    logging.getLogger("alembic").setLevel(logging.WARNING)  # "Context impl" a cada conexão
+    if raiz.level > logging.INFO or raiz.level == logging.NOTSET:
+        raiz.setLevel(logging.INFO)
+    return arquivo
+
+
+def ler_registro(dados: Path, linhas: int = 300) -> list[str]:
+    """As últimas linhas do registro de atividades (vazio se ainda não há registro)."""
+    arquivo = dados / ARQUIVO_REGISTRO
+    if not arquivo.is_file():
+        return []
+    return arquivo.read_text(encoding="utf-8", errors="replace").splitlines()[-linhas:]

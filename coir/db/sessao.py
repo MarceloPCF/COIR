@@ -119,3 +119,36 @@ def fazer_backup(banco: Path, agora: datetime, manter: int = MANTER_BACKUPS) -> 
         velho.unlink()
     log.info("backup do banco: %s", destino)
     return destino
+
+
+def listar_backups(banco: Path) -> list[Path]:
+    """Backups do banco, do mais recente ao mais antigo."""
+    pasta = banco.parent / "backups"
+    return sorted(pasta.glob(f"{banco.stem}-*.db"), reverse=True) if pasta.is_dir() else []
+
+
+def restaurar_backup(banco: Path, origem: Path, agora: datetime) -> Path | None:
+    """Volta o banco a um backup da pasta ``backups/``. Antes, o banco atual vira um backup
+    (desfaz a restauração); depois, o restaurado é migrado à última revisão."""
+    if origem.resolve() not in {b.resolve() for b in listar_backups(banco)}:
+        raise BancoError(f"backup desconhecido: {origem.name}")
+    memoria = sqlite3.connect(":memory:")
+    try:
+        leitura = sqlite3.connect(f"file:{origem.as_posix()}?mode=ro", uri=True)
+        try:
+            leitura.backup(memoria)  # lido antes de girar os backups (o mais antigo sai)
+        finally:
+            leitura.close()
+        atual = fazer_backup(banco, agora)
+        destino = sqlite3.connect(banco)
+        try:
+            with destino:
+                memoria.backup(destino)
+        finally:
+            destino.close()
+    finally:
+        memoria.close()
+    log.info("banco restaurado do backup %s (o anterior ficou em %s)", origem.name,
+             atual.name if atual else "-")  # fmt: skip
+    migrar(banco, agora)
+    return atual

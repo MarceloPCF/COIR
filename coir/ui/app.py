@@ -11,16 +11,18 @@ from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
 from coir.servicos.estado import Estado
-from coir.ui import tema
+from coir.ui import preferencias, tema
 from coir.ui.telas import (
     apuracao,
     assistente,
+    cadastros,
     carteira,
+    configuracoes,
     darf,
     importar,
     notas,
     operacoes,
-    provisoria,
+    painel,
     relatorios,
 )
 
@@ -37,13 +39,8 @@ class Tela:
     exige_dados: bool = True  # sem banco ou titular, abre o assistente no lugar
 
 
-def _provisoria(titulo: str, descricao: str) -> Montar:
-    return lambda estado, avisar: provisoria.montar(titulo, descricao)
-
-
 GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
-    ("", (Tela("/", "Painel", "space_dashboard", _provisoria(
-        "Painel", "Resumo do ano do titular: DARF do mês, avisos e evolução do resultado.")),)),
+    ("", (Tela("/", "Painel", "space_dashboard", painel.montar),)),
     ("Notas", (
         Tela("/importar", "Importar notas", "upload_file", importar.montar),
         Tela("/notas", "Notas", "receipt_long", notas.montar),
@@ -58,12 +55,9 @@ GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
         Tela("/carteira", "Carteira e preço médio", "account_balance_wallet", carteira.montar),
     )),
     ("Sistema", (
-        Tela("/cadastros", "Cadastros", "badge", _provisoria(
-            "Cadastros", "Titulares, contas, corretoras, ativos e parâmetros fiscais."),
-            exige_dados=False),
-        Tela("/configuracoes", "Configurações", "settings", _provisoria(
-            "Configurações", "Pasta de dados, tema, backups e o registro de atividades."),
-            exige_dados=False),
+        Tela("/cadastros", "Cadastros", "badge", cadastros.montar, exige_dados=False),
+        Tela("/configuracoes", "Configurações", "settings", configuracoes.montar,
+             exige_dados=False),
     )),
 )  # fmt: skip
 TELAS = tuple(t for _, telas in GRUPOS for t in telas)
@@ -101,7 +95,7 @@ def _nota(estado: Estado, avisar: Avisar) -> Callable[[str], None]:
 def montar(estado: Estado) -> None:
     """Página raiz (uma por janela)."""
     tema.aplicar()
-    escuro = ui.dark_mode(value=None)  # segue o sistema até o usuário escolher
+    preferencias.aplicar_tema()  # sistema, claro ou escuro (Configurações)
     estado.escolher_padrao(estado.agora().date())
     paginas: ui.sub_pages | None = None
 
@@ -133,7 +127,7 @@ def montar(estado: Estado) -> None:
         ui.space()
         with ui.row().classes("items-center gap-4"):
             seletores()
-        ui.button(icon="contrast", on_click=lambda: escuro.set_value(not escuro.value)).props(
+        ui.button(icon="contrast", on_click=preferencias.alternar_tema).props(
             "flat round").tooltip("Tema claro ou escuro")  # fmt: skip
 
     with (

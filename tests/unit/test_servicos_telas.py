@@ -215,3 +215,66 @@ def test_posicoes_e_trilha_do_titular(demo: Path) -> None:
     passos = trilha(estado.movimentos(ate, Visao.TITULAR), 1, linhas[0], ate)
     assert passos and passos[-1].quantidade_apos == linhas[0].quantidade
     assert passos[-1].custo_apos == linhas[0].custo
+
+
+# ------------------------------------------------------- registro, preferências e backups
+def test_registro_de_atividades_nunca_grava_cpf(tmp_path: Path) -> None:
+    import logging
+
+    from coir.config import configurar_registro, ler_registro
+
+    arquivo = configurar_registro(tmp_path)
+    try:
+        cpf = cpf_de_teste()
+        formatado = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+        logging.getLogger("coir.teste").info("nota do CPF %s importada", formatado)
+        logging.getLogger("coir.teste").info("outro %s no texto", cpf)
+        for h in logging.getLogger().handlers:
+            h.flush()
+        linhas = ler_registro(tmp_path)
+        assert arquivo == tmp_path / "logs" / "coir.log"
+        assert any("nota do CPF *** importada" in x for x in linhas)
+        assert not any(cpf[6:9] in x for x in linhas)
+    finally:
+        raiz = logging.getLogger()
+        for h in [h for h in raiz.handlers if getattr(h, "baseFilename", "") == str(arquivo)]:
+            raiz.removeHandler(h)
+            h.close()
+
+
+def test_preferencia_de_tema_fica_na_configuracao(tmp_path: Path) -> None:
+    from coir.config import ler_preferencia, salvar_preferencia
+
+    ambiente = {VAR_CONFIG: str(tmp_path / "config.json")}
+    assert ler_preferencia("tema", ambiente) is None
+    salvar_preferencia("tema", "escuro", ambiente)
+    salvar_dados_dir(tmp_path / "dados", ambiente)  # não apaga a preferência
+    assert ler_preferencia("tema", ambiente) == "escuro"
+
+
+def test_backup_restaurar_volta_o_banco_e_guarda_o_atual(tmp_path: Path) -> None:
+    from coir.erros import BancoError
+    from coir.servicos import manutencao
+
+    estado = Estado(tmp_path / "coir.db")
+    with pytest.raises(BancoError, match="ainda não há banco"):
+        manutencao.fazer_agora(estado.banco, AGORA)
+    estado.preparar(AGORA)
+    cadastros.adicionar_titular(estado.banco, cpf_de_teste(), "Antes")
+    copia = manutencao.fazer_agora(estado.banco, AGORA)
+    cadastros.renomear_titular(estado.banco, 1, "Depois")
+    depois = datetime(2026, 10, 16, 13, 0, 0)
+    atual = manutencao.restaurar(estado.banco, copia, depois)
+    assert [t.nome for t in cadastros.titulares(estado.banco)] == ["Antes"]
+    assert atual is not None and [b.feito_em for b in manutencao.backups(estado.banco)] == [
+        depois, AGORA]  # fmt: skip
+    with pytest.raises(BancoError, match="desconhecido"):
+        manutencao.restaurar(estado.banco, tmp_path / "outro.db", depois)
+
+
+def test_cadastros_mostra_contas_e_tickers(demo: Path) -> None:
+    [titular] = cadastros.titulares(demo)
+    assert titular.cpf == "***.***.247-25" and "XP 0" in titular.contas
+    contas = cadastros.contas(demo)
+    assert sum(c.notas for c in contas) == len(notas.listar(demo, None, None))
+    assert any(t.ticker == "CSMG3" for t in cadastros.tickers(demo))

@@ -5,9 +5,11 @@ Só escuta em 127.0.0.1: nada da carteira sai do computador.
 
 import logging
 import sys
+from datetime import datetime
 
 from nicegui import native, ui
 
+from coir.config import configurar_registro
 from coir.servicos.estado import Estado
 from coir.ui.app import montar
 
@@ -39,6 +41,9 @@ def tem_webview2() -> bool:
 
 def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None,
             abrir: bool = True) -> None:  # fmt: skip
+    if estado.existe:  # banco de versão anterior: migra (com backup) antes de abrir as telas
+        estado.preparar(datetime.now())
+    configurar_registro(estado.dados)
     nativo = not navegador and tem_webview2()
     if not navegador and not nativo:
         log.warning("WebView2 não encontrado: o COIR abre no navegador padrão")

@@ -9,6 +9,7 @@ from nicegui import ui
 from nicegui.elements.upload_files import SmallFileUpload
 from nicegui.testing.user_simulation import user_simulation
 
+from coir.servicos import manutencao
 from coir.servicos.cadastros import adicionar_titular
 from coir.servicos.estado import Estado
 from coir.servicos.notas import listar
@@ -258,3 +259,66 @@ async def test_darf_marcar_como_paga(tmp_path: Path) -> None:
         await user.should_see("Pago em 01/04/2026: 92,19", retries=ESPERA)
     pago = darf.pagamentos(estado.banco, 1)[(2026, 2)]
     assert (pago.data, pago.valor) == (date(2026, 4, 1), Decimal("92.19"))
+
+
+@pytest.mark.asyncio
+async def test_painel_mostra_darf_pendencias_e_grafico(demo: Path) -> None:
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/")
+        await user.should_see("Painel de 2026")
+        await user.should_see("Nada a pagar neste ano.", retries=ESPERA)
+        await user.should_see("aviso(s) do motor no ano")
+        grafico = user.find(marker="grafico-resultado").elements.pop()
+        assert isinstance(grafico, ui.echart)
+        assert [s["name"] for s in grafico.options["series"]] == ["Comum", "Day trade", "FII"]
+
+
+@pytest.mark.asyncio
+async def test_cadastros_adiciona_e_renomeia_titular(tmp_path: Path) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Primeiro")
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/cadastros")
+        await user.should_see("Primeiro")
+        await user.should_see("CPF ***.***.247-25 · id 1")  # nunca o CPF inteiro
+        user.find(marker="novo-titular").click()
+        user.find(marker="novo-nome").type("Segundo")
+        user.find(marker="novo-cpf").type(cpf_de_teste("111444777"))
+        user.find(marker="cadastrar-titular").click()
+        await user.should_see("Titular cadastrado.", retries=ESPERA)
+        user.find(marker="renomear-1").click()
+        user.find(marker="nome-novo").clear().type("Primeiro Renomeado")
+        user.find(marker="salvar-nome").click()
+        await user.should_see("Primeiro Renomeado")
+    assert sorted(t.nome for t in estado.titulares()) == ["Primeiro Renomeado", "Segundo"]
+
+
+@pytest.mark.asyncio
+async def test_configuracoes_backup_restaurar_e_tema(
+    tmp_path: Path, configuracao_temporaria: Path
+) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Antes")
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/configuracoes")
+        await user.should_see("Nenhum backup ainda.")
+        user.find(marker="fazer-backup").click()
+        await user.should_see("Backup feito", retries=ESPERA)
+        from coir.servicos.cadastros import renomear_titular
+
+        renomear_titular(estado.banco, 1, "Depois")
+        estado.agora = lambda: datetime(2026, 10, 16, 12, 5, 0)  # outro nome de backup
+        [copia] = manutencao.backups(estado.banco)
+        user.find(marker=f"restaurar-{copia.caminho.name}").click()
+        user.find(marker="confirmar-restaurar").click()
+        await user.should_see("Banco restaurado", retries=ESPERA)
+        radio = user.find(marker="tema").elements.pop()
+        assert isinstance(radio, ui.radio)
+        radio.set_value("escuro")
+        await user.should_see("Configurações")
+    assert [t.nome for t in estado.titulares()] == ["Antes"]
+    assert len(list((tmp_path / "backups").glob("coir-*.db"))) == 2  # o de antes da restauração
+    assert json.loads(configuracao_temporaria.read_text(encoding="utf-8"))["tema"] == "escuro"

@@ -11,7 +11,7 @@ import pypdfium2 as pdfium  # pyright: ignore[reportMissingTypeStubs]
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from coir.db.modelos import Conta, NotaCorretagem
+from coir.db.modelos import ArquivoImportado, Conta, NotaCorretagem
 from coir.db.repositorio import operacoes_gravadas
 from coir.db.sessao import conectar
 from coir.domain.nota import NotaExtraida, OperacaoExtraida
@@ -149,3 +149,10 @@ def pagina_png(pdf: Path, pagina: int, largura: int = 1100) -> bytes:
         return saida.getvalue()
     finally:
         documento.close()
+
+
+def arquivos_incompletos(banco: Path) -> list[str]:
+    """PDFs com nota rejeitada na última importação (relidos na próxima)."""
+    with conectar(banco) as fabrica, fabrica() as s:
+        consulta = select(ArquivoImportado.nome).where(ArquivoImportado.completo.is_(False))
+        return sorted(s.scalars(consulta))
