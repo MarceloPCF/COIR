@@ -7,8 +7,8 @@
   vencimento até o pagamento. Parâmetro ``multa_mora_inicio_contagem`` (``rfb`` ou ``lei``);
   decisão do usuário (17/10/2026): ``rfb``, o que a Receita cobra de fato.
 - Pagamento em dia não útil vale no próximo dia útil (glossário do Sicalc; decisão do usuário).
-- Centavos: a lei é omissa; ``multa_mora_arredondamento`` (ROUND_DOWN, decisão do usuário até
-  conferir no Sicalc).
+- Centavos: a lei é omissa; o Sicalc trunca (``multa_mora_arredondamento = ROUND_DOWN``,
+  conferido pelo usuário em 17/10/2026).
 - DARF abaixo do mínimo acumulada não tem multa: o vencimento é o do período em que o total
   chega ao mínimo (art. 68 §1º), e é esse vencimento que entra aqui.
 """

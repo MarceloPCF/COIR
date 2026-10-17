@@ -4,8 +4,9 @@ Fontes: Lei 9.430/1996 art. 61 caput (0,33% por dia), §1º (contagem a partir d
 ao vencimento até o pagamento) e §2º (teto de 20%); RFB, "Como calcular multa de mora" e
 glossário do Sicalc (contagem a partir do primeiro dia útil seguinte ao vencimento; pagamento
 em dia não útil vale no próximo dia útil); art. 68 §1º (valor abaixo de R$ 10 acumula e vence
-com o último período). Decisões do usuário (17/10/2026): contagem como a Receita (``rfb``),
-centavos truncados (ROUND_DOWN) e data não útil ajustada.
+com o último período). Decisões do usuário (17/10/2026): contagem como a Receita (``rfb``) e
+data não útil ajustada. Centavos truncados (ROUND_DOWN), conferido no Sicalc pelo usuário
+(caso C8b: competência 08/2026, consolidação em 07/10/2026, multa 28,51).
 """
 
 from datetime import date
@@ -52,6 +53,9 @@ def _multa(principal: str, vencimento: date, pagamento: date, **troca: str) -> t
         ("C7", "10000.00", date(2025, 12, 30), date(2026, 4, 15), 104, "0.20", "2000.00"),
         # C8: 7 dias = 2,31% de 1.234,57 = 28,518567 -> 28,51 truncado
         ("C8", "1234.57", date(2025, 9, 30), date(2025, 10, 7), 7, "0.0231", "28.51"),
+        # C8b: o mesmo caso calculado no Sicalc pelo usuário (17/10/2026): vence quarta 30/09/2026,
+        # consolidado em 07/10/2026 -> multa 28,51 (Sicalc trunca)
+        ("C8b", "1234.57", date(2026, 9, 30), date(2026, 10, 7), 7, "0.0231", "28.51"),
         # C9: jan/26 6,40 + fev/26 5,10 = 11,50 acumulado vence com fevereiro (31/03/2026);
         # pago em 01/04: 1 dia = 0,03795 -> 0,03 (nada contado desde o vencimento de janeiro)
         ("C9", "11.50", date(2026, 3, 31), date(2026, 4, 1), 1, "0.0033", "0.03"),

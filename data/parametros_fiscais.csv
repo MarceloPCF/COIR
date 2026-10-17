@@ -12,4 +12,4 @@ darf_codigo,6015,2005-01-01,,Agenda Tributária RFB (código de renda variável 
 multa_mora_dia,0.0033,1997-01-01,,"Lei 9.430/1996 art. 61 caput (0,33% por dia de atraso sobre o principal)"
 multa_mora_teto,0.20,1997-01-01,,Lei 9.430/1996 art. 61 §2º (limite de 20%)
 multa_mora_inicio_contagem,rfb,1997-01-01,,RFB/Sicalc (Como calcular multa de mora): do primeiro dia útil após o vencimento; alternativa lei (art. 61 §1º); decisão do usuário (17/10/2026)
-multa_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; decisão do usuário (17/10/2026) até conferir no Sicalc (alternativa ROUND_HALF_UP)
+multa_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido pelo usuário em 17/10/2026: R$ 1234.57 x 0.0231 = 28.518567 -> 28.51)

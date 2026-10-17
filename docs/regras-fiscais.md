@@ -216,9 +216,10 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   vencimento cai antes de fim de semana ou feriado.
 - Pagamento informado em dia não útil vale no próximo dia útil (glossário do Sicalc; decisão do
   usuário). A tela avisa o ajuste.
-- Centavos: a lei é omissa; decisão do usuário (provisória): truncar
-  (`multa_mora_arredondamento = ROUND_DOWN`). Pendente: conferir no Sicalc (6015, competência
-  08/2025, R$ 1.234,57, pago em 07/10/2025: 28,51 = trunca; 28,52 = arredonda).
+- Centavos: a lei é omissa; o Sicalc trunca (`multa_mora_arredondamento = ROUND_DOWN`).
+  Conferido pelo usuário em 17/10/2026: 6015, competência 08/2026, R$ 1.234,57, vencimento
+  30/09/2026, consolidação em 07/10/2026 → multa 28,51 (7 dias, 2,31% = 28,518567) e juros
+  12,34 (1% do mês do pagamento; caso para a F7).
 - DARF acumulada abaixo do mínimo não tem multa; vence com o período em que o total chega ao
   mínimo (art. 68 §1º), e a multa conta desse vencimento.
 - O pagamento é um fato lançado pelo usuário (tabela `darf_pagamento`, comprovante em
