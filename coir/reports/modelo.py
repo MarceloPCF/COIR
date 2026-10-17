@@ -21,10 +21,11 @@ class TipoColuna(StrEnum):
     QUANTIDADE = "quantidade"  # até 8 casas, sem zeros à direita
     DINHEIRO = "dinheiro"  # 2 casas
     PM = "pm"  # 8 casas (preço médio, custo unitário)
+    PRECO = "preco"  # preço negociado: de 2 a 8 casas, sem zeros à direita além da 2ª
     PERCENTUAL = "percentual"  # fração: 0,1234 = 12,34%
 
 
-CASAS = {TipoColuna.DINHEIRO: 2, TipoColuna.PM: 8, TipoColuna.QUANTIDADE: 8,
+CASAS = {TipoColuna.DINHEIRO: 2, TipoColuna.PM: 8, TipoColuna.PRECO: 8, TipoColuna.QUANTIDADE: 8,
          TipoColuna.PERCENTUAL: 4, TipoColuna.INTEIRO: 0}  # fmt: skip
 NUMERICAS = frozenset(CASAS)
 
@@ -99,9 +100,11 @@ def formatar(valor: Valor, tipo: TipoColuna, milhar: bool = True) -> str:
     match tipo:
         case TipoColuna.PERCENTUAL:
             return numero_br(numero * 100, 2, milhar) + "%"
-        case TipoColuna.QUANTIDADE:
+        case TipoColuna.QUANTIDADE | TipoColuna.PRECO:
             q = arredondar(numero, tipo).normalize()
             casas = max(0, -q.as_tuple().exponent)  # type: ignore[operator]
+            if tipo is TipoColuna.PRECO:
+                casas = max(casas, 2)
             return numero_br(q, casas, milhar)
         case _:
             return numero_br(arredondar(numero, tipo), CASAS.get(tipo, 2), milhar)

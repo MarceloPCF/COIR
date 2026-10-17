@@ -681,6 +681,22 @@ def exportar(
     print(f"DARF do ano: {total:.2f} em {sum(1 for m in meses if m.darf)} mês(es)")
 
 
+@app.command("ui")
+def abrir_ui(
+    banco: Path | None = OpcaoBanco,
+    navegador: bool = typer.Option(False, help="Abre no navegador em vez da janela própria."),
+    porta: int | None = typer.Option(None, help="Porta local (padrão: uma livre)."),
+    abrir: bool = typer.Option(True, help="Abre a janela/navegador ao iniciar."),
+) -> None:
+    """Abre a interface do COIR (janela própria; sem WebView2, o navegador padrão)."""
+    from coir.db.sessao import NOME_BANCO
+    from coir.servicos.estado import Estado
+    from coir.ui.janela import iniciar
+
+    iniciar(Estado(banco or dados_dir() / NOME_BANCO), navegador=navegador, porta=porta,
+            abrir=abrir)  # fmt: skip
+
+
 def main() -> None:
     """Ponto de entrada: erros de domínio viram mensagem curta e código de saída 1."""
     try:

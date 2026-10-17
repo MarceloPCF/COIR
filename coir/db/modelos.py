@@ -191,3 +191,21 @@ class EventoCorporativo(Base):
     conta: Mapped[Conta] = relationship(foreign_keys=[conta_id])
     conta_destino: Mapped[Conta | None] = relationship(foreign_keys=[conta_destino_id])
     ativo: Mapped[Ativo] = relationship()
+
+
+class DarfPagamento(Base):
+    """Pagamento de uma DARF (fato lançado pelo usuário): competência, data e valor pagos e o
+    comprovante guardado em ``<dados>/comprovantes/`` (nome sem CPF)."""
+
+    __tablename__ = "darf_pagamento"
+    __table_args__ = (UniqueConstraint("titular_id", "ano", "mes"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"))
+    ano: Mapped[int]  # competência (mês de apuração)
+    mes: Mapped[int]
+    data_pagamento: Mapped[date]
+    valor_pago: Mapped[Decimal]
+    comprovante: Mapped[str | None] = mapped_column(Text)  # caminho relativo à pasta de dados
+    observacao: Mapped[str] = mapped_column(Text)
+    registrado_em: Mapped[datetime]
