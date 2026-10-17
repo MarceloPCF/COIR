@@ -5,7 +5,6 @@ Só escuta em 127.0.0.1: nada da carteira sai do computador.
 
 import logging
 import sys
-from datetime import date
 
 from nicegui import native, ui
 
@@ -44,7 +43,7 @@ def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None
     if not navegador and not nativo:
         log.warning("WebView2 não encontrado: o COIR abre no navegador padrão")
     ui.run(
-        lambda: montar(estado, date.today),
+        lambda: montar(estado),
         title="COIR", host="127.0.0.1", port=porta or native.find_open_port(),
         native=nativo, window_size=(1440, 900) if nativo else None, reload=False,
         show=abrir and not nativo, language="pt-BR", dark=None, show_welcome_message=False,

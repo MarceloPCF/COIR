@@ -1,0 +1,181 @@
+"""F6: fluxos das telas 1, 3, 4 e 5 sem navegador (assistente, importar, notas, operações)."""
+
+import json
+from datetime import datetime
+from pathlib import Path
+
+import pytest
+from nicegui import ui
+from nicegui.elements.upload_files import SmallFileUpload
+from nicegui.testing.user_simulation import user_simulation
+
+from coir.servicos.cadastros import adicionar_titular
+from coir.servicos.estado import Estado
+from coir.servicos.notas import listar
+from coir.ui.app import montar
+from tests.apoio import cpf_de_teste
+from tools.banco_demo import criar, extrator, notas
+
+AGORA = datetime(2026, 10, 16, 12, 0, 0)
+ESPERA = 80  # tentativas de 0,1 s (a importação roda numa thread)
+
+
+def _estado(banco: Path) -> Estado:
+    estado = Estado(banco)
+    estado.agora = lambda: AGORA
+    estado.extrator = extrator(cpf_de_teste())
+    return estado
+
+
+@pytest.fixture(scope="module")
+def demo(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return criar(tmp_path_factory.mktemp("demo"))
+
+
+@pytest.mark.asyncio
+async def test_assistente_do_zero_pasta_titular_e_notas(
+    tmp_path: Path, configuracao_temporaria: Path
+) -> None:
+    estado = _estado(tmp_path / "inicial" / "coir.db")
+    dados = tmp_path / "meus-dados"
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/")
+        await user.should_see("Bem-vindo ao COIR")
+        user.find(marker="pasta-dados").clear().type(str(dados))
+        user.find(marker="continuar-pasta").click()
+        await user.should_see("Quem é o titular das notas?")
+        assert estado.banco == dados / "coir.db" and estado.existe
+        assert json.loads(configuracao_temporaria.read_text(encoding="utf-8")) == {
+            "dados": str(dados)
+        }
+        user.find(marker="nome").type("Titular Novo")
+        user.find(marker="cpf").type(cpf_de_teste())
+        user.find(marker="cadastrar").click()
+        await user.should_see("Importe as notas de corretagem")
+        await user.should_see("Titular Novo")  # já no seletor do topo
+        assert estado.pronto
+        user.find(marker="concluir").click()
+        await user.should_see("Painel")
+
+
+@pytest.mark.asyncio
+async def test_assistente_recusa_cpf_invalido(tmp_path: Path) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/")
+        user.find(marker="continuar-pasta").click()
+        await user.should_see("Quem é o titular das notas?")
+        user.find(marker="nome").type("Fulano")
+        user.find(marker="cpf").type("11111111111")
+        user.find(marker="cadastrar").click()
+        await user.should_see("CPF inválido")
+    assert estado.titulares() == []
+
+
+@pytest.mark.asyncio
+async def test_importar_pdfs_escolhidos_copia_para_a_pasta_e_mostra_cada_arquivo(
+    tmp_path: Path,
+) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    arquivos = notas()[:2]
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/importar")
+        await user.should_see("Importar notas")
+        [envio] = user.find(ui.upload).elements
+        assert isinstance(envio, ui.upload)
+        await envio.handle_uploads(
+            [SmallFileUpload(f"{a.stem}.pdf", "application/pdf", a.read_bytes()) for a in arquivos]
+        )
+        await user.should_see("notas gravadas", retries=ESPERA)
+        for a in arquivos:
+            await user.should_see(f"{a.stem}.pdf")
+    copiados = sorted(p.name for p in estado.pasta_notas.iterdir())
+    assert copiados == sorted(f"{a.stem}.pdf" for a in arquivos)
+    assert len(listar(estado.banco, None, None)) >= len(arquivos)
+
+
+@pytest.mark.asyncio
+async def test_importar_a_pasta_das_notas(tmp_path: Path) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    estado.pasta_notas.mkdir()
+    origem = notas()[0]
+    (estado.pasta_notas / f"{origem.stem}.pdf").write_bytes(origem.read_bytes())
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/importar")
+        user.find(marker="importar-pasta").click()
+        await user.should_see("notas gravadas", retries=ESPERA)
+        await user.should_see("gravado")
+    assert listar(estado.banco, None, None)
+    assert [p.name for p in estado.pasta_notas.iterdir()] == [f"{origem.stem}.pdf"]  # sem cópia
+
+
+@pytest.mark.asyncio
+async def test_notas_abre_a_nota_com_a_conciliacao(demo: Path) -> None:
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/notas")
+        await user.should_see("Escolha uma nota na lista.")
+        lista = user.find(marker="lista-notas").elements.pop()
+        assert isinstance(lista, ui.aggrid)
+        primeira = lista.options["rowData"][0]
+        user.find(marker="lista-notas").trigger("rowClicked", {"data": primeira})
+        await user.should_see("Conciliada", retries=ESPERA)
+        await user.should_see("não está na pasta das notas")  # fixtures: sem PDF
+
+
+@pytest.mark.asyncio
+async def test_notas_filtra_pelo_numero(demo: Path) -> None:
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/notas")
+        lista = user.find(marker="lista-notas").elements.pop()
+        assert isinstance(lista, ui.aggrid)
+        total = len(lista.options["rowData"])
+        numero = lista.options["rowData"][0]["c2"]
+        user.find(marker="filtro-numero").type(numero)
+        await user.should_see(f"de {total} nota")
+        assert all(numero in r["c2"] for r in lista.options["rowData"])
+
+
+@pytest.mark.asyncio
+async def test_operacoes_filtra_por_ativo_e_soma_no_rodape(demo: Path) -> None:
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/operacoes")
+        grade = user.find(marker="grade-operacoes").elements.pop()
+        assert isinstance(grade, ui.aggrid)
+        linhas = grade.options["rowData"]
+        assert linhas and grade.options["pinnedBottomRowData"][0]["c0"] == (
+            f"{len(linhas)} operações"
+        )
+        ativo = linhas[0]["c4"]
+        user.find(marker="filtro-ativo").type(ativo)
+        await user.should_see("Operações")
+        assert {r["c4"] for r in grade.options["rowData"]} <= {
+            r["c4"] for r in linhas if ativo in r["c4"]
+        }
+
+
+@pytest.mark.asyncio
+async def test_clicar_numa_operacao_abre_a_nota(demo: Path) -> None:
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/operacoes")
+        grade = user.find(marker="grade-operacoes").elements.pop()
+        assert isinstance(grade, ui.aggrid)
+        linha = grade.options["rowData"][0]
+        user.find(marker="grade-operacoes").trigger("rowClicked", {"data": linha})
+        await user.should_see(f"Nota {linha['c3']}", retries=ESPERA)
+        await user.should_see("Conciliada", retries=ESPERA)
+
+
+@pytest.mark.asyncio
+async def test_endereco_de_nota_invalido(demo: Path) -> None:
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/notas/abc")
+        await user.should_see("Nota 'abc' inválida.")

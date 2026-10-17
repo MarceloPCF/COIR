@@ -6,13 +6,16 @@ do modelo neutro de `coir.reports`.
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date
 
 from nicegui import ui
+from nicegui.events import ValueChangeEventArguments
 
 from coir.servicos.estado import Estado
 from coir.ui import tema
-from coir.ui.telas import provisoria
+from coir.ui.telas import assistente, importar, notas, operacoes, provisoria
+
+Avisar = Callable[[], object]  # a tela mudou o banco: o topo (titulares, anos) se refaz
+Montar = Callable[[Estado, Avisar], None]
 
 
 @dataclass(frozen=True)
@@ -20,26 +23,21 @@ class Tela:
     rota: str
     rotulo: str
     icone: str
-    montar: Callable[[Estado], None]
-    descricao: str = ""
+    montar: Montar
+    exige_dados: bool = True  # sem banco ou titular, abre o assistente no lugar
 
 
-def _provisoria(titulo: str, descricao: str) -> Callable[[Estado], None]:
-    return lambda estado: provisoria.montar(titulo, descricao)
+def _provisoria(titulo: str, descricao: str) -> Montar:
+    return lambda estado, avisar: provisoria.montar(titulo, descricao)
 
 
 GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
     ("", (Tela("/", "Painel", "space_dashboard", _provisoria(
         "Painel", "Resumo do ano do titular: DARF do mês, avisos e evolução do resultado.")),)),
     ("Notas", (
-        Tela("/importar", "Importar notas", "upload_file", _provisoria(
-            "Importar notas", "Escolha os PDFs das notas de corretagem; o COIR confere cada nota "
-            "antes de gravar.")),
-        Tela("/notas", "Notas", "receipt_long", _provisoria(
-            "Notas", "As notas gravadas, com os dados extraídos ao lado da página do PDF.")),
-        Tela("/operacoes", "Operações", "list_alt", _provisoria(
-            "Operações", "O livro de operações do ano, com filtros por ativo, corretora e "
-            "mercado.")),
+        Tela("/importar", "Importar notas", "upload_file", importar.montar),
+        Tela("/notas", "Notas", "receipt_long", notas.montar),
+        Tela("/operacoes", "Operações", "list_alt", operacoes.montar),
     )),
     ("Imposto", (
         Tela("/apuracao", "Apuração mensal", "calculate", _provisoria(
@@ -56,44 +54,80 @@ GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
     )),
     ("Sistema", (
         Tela("/cadastros", "Cadastros", "badge", _provisoria(
-            "Cadastros", "Titulares, contas, corretoras, ativos e parâmetros fiscais.")),
+            "Cadastros", "Titulares, contas, corretoras, ativos e parâmetros fiscais."),
+            exige_dados=False),
         Tela("/configuracoes", "Configurações", "settings", _provisoria(
-            "Configurações", "Pasta de dados, tema, backups e o registro de atividades.")),
+            "Configurações", "Pasta de dados, tema, backups e o registro de atividades."),
+            exige_dados=False),
     )),
 )  # fmt: skip
 TELAS = tuple(t for _, telas in GRUPOS for t in telas)
+INICIO = Tela("/inicio", "Primeiros passos", "flag", assistente.montar, exige_dados=False)
 
 
 def _ir(rota: str) -> Callable[[], None]:
     return lambda: ui.navigate.to(rota)
 
 
-def _construtor(tela: Tela, estado: Estado) -> Callable[[], None]:
-    return lambda: tela.montar(estado)
+def _construtor(tela: Tela, estado: Estado, avisar: Avisar) -> Callable[[], None]:
+    def construir() -> None:
+        if tela.exige_dados and not estado.pronto:
+            assistente.montar(estado, avisar)
+        else:
+            tela.montar(estado, avisar)
+
+    return construir
 
 
-def montar(estado: Estado, hoje: Callable[[], date] = date.today) -> None:
+def _nota(estado: Estado, avisar: Avisar) -> Callable[[str], None]:
+    """Uma nota direto pelo endereço (/notas/<id>), vinda da tela de operações."""
+
+    def construir(nota: str) -> None:
+        if not estado.pronto:
+            assistente.montar(estado, avisar)
+        elif nota.isdigit():
+            notas.montar(estado, avisar, int(nota))
+        else:
+            ui.label(f"Nota {nota!r} inválida.").classes("coir-vazio w-full")
+
+    return construir
+
+
+def montar(estado: Estado) -> None:
     """Página raiz (uma por janela)."""
     tema.aplicar()
     escuro = ui.dark_mode(value=None)  # segue o sistema até o usuário escolher
-    estado.escolher_padrao(hoje())
+    estado.escolher_padrao(estado.agora().date())
     paginas: ui.sub_pages | None = None
 
     def recarregar() -> None:
         if paginas is not None:
             paginas.refresh()
 
-    with ui.header().classes("coir-topo items-center gap-4 px-4 py-2"):
-        ui.label("COIR").classes("coir-marca")
-        ui.space()
+    def escolher(atributo: str) -> Callable[[ValueChangeEventArguments], None]:
+        def mudar(e: ValueChangeEventArguments) -> None:
+            setattr(estado, atributo, e.value)
+            recarregar()
+
+        return mudar
+
+    @ui.refreshable
+    def seletores() -> None:
+        hoje = estado.agora().date()
+        estado.escolher_padrao(hoje)
         titulares = {t.id: t.nome for t in estado.titulares()}
         if titulares:
             ui.select(titulares, label="Titular", value=estado.titular,
-                      on_change=lambda e: (setattr(estado, "titular", e.value), recarregar()),
+                      on_change=escolher("titular"),
                       ).props("outlined dense options-dense").classes("min-w-[220px]")  # fmt: skip
-        ui.select(estado.anos(hoje()), label="Ano", value=estado.ano,
-                  on_change=lambda e: (setattr(estado, "ano", e.value), recarregar()),
+        ui.select(estado.anos(hoje), label="Ano", value=estado.ano, on_change=escolher("ano"),
                   ).props("outlined dense options-dense").classes("w-[110px]")  # fmt: skip
+
+    with ui.header().classes("coir-topo items-center gap-4 px-4 py-2"):
+        ui.label("COIR").classes("coir-marca")
+        ui.space()
+        with ui.row().classes("items-center gap-4"):
+            seletores()
         ui.button(icon="contrast", on_click=lambda: escuro.set_value(not escuro.value)).props(
             "flat round").tooltip("Tema claro ou escuro")  # fmt: skip
 
@@ -112,4 +146,8 @@ def montar(estado: Estado, hoje: Callable[[], date] = date.today) -> None:
                     ui.item_section(t.rotulo)
 
     with ui.column().classes("w-full max-w-[1400px] mx-auto px-6 py-5 gap-4"):
-        paginas = ui.sub_pages({t.rota: _construtor(t, estado) for t in TELAS})
+        rotas: dict[str, Callable[..., None]] = {
+            t.rota: _construtor(t, estado, seletores.refresh) for t in (*TELAS, INICIO)
+        }
+        rotas["/notas/{nota}"] = _nota(estado, seletores.refresh)
+        paginas = ui.sub_pages(rotas).classes("w-full")

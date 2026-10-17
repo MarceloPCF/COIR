@@ -10,6 +10,7 @@ Um lote = uma transação: qualquer erro inesperado desfaz tudo. Idempotente:
 
 import hashlib
 import logging
+from collections import Counter
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -29,6 +30,7 @@ from coir.parsing.normalizar import classes_das_series, operacoes
 
 log = logging.getLogger(__name__)
 Extrator = Callable[[Path], ResultadoExtracao]
+Progresso = Callable[[int, int, str], None]  # (feitos, total, arquivo em leitura)
 
 
 @dataclass
@@ -42,6 +44,8 @@ class RelatorioImportacao:
     rejeitadas: list[Rejeitada] = field(default_factory=list)
     avisos: list[str] = field(default_factory=list)
     titulares_criados: list[str] = field(default_factory=list)  # "nome (id N)", nunca o CPF
+    gravadas_por_arquivo: Counter[str] = field(default_factory=Counter[str])
+    repetidas_por_arquivo: Counter[str] = field(default_factory=Counter[str])  # já no banco
 
     @property
     def mudou(self) -> bool:
@@ -65,6 +69,7 @@ def importar_arquivos(
     agora: datetime,
     titular: str | None = None,
     extrator: Extrator = extrair_pdf,
+    progresso: Progresso | None = None,
 ) -> RelatorioImportacao:
     """Importa os arquivos numa transação da sessão (que não pode ter uma transação aberta)."""
     rel = RelatorioImportacao()
@@ -75,7 +80,9 @@ def importar_arquivos(
 
         registros: dict[str, ArquivoImportado] = {}
         lote = ResultadoExtracao()
-        for caminho in arquivos:
+        for feitos, caminho in enumerate(arquivos):
+            if progresso is not None:
+                progresso(feitos, len(arquivos), caminho.name)
             dados = caminho.read_bytes()
             sha = hashlib.sha256(dados).hexdigest()  # mesmo cálculo de _sha256
             registro = repo.arquivo_por_sha(sessao, sha)
@@ -124,6 +131,8 @@ def importar_arquivos(
         incompletos = {r.arquivo for r in rel.rejeitadas}
         for nome, registro in registros.items():
             registro.completo = nome not in incompletos
+        if progresso is not None:
+            progresso(len(arquivos), len(arquivos), "")
     log.info(
         "importação: %d arquivos lidos, %d ignorados, %d notas gravadas, %d já no banco, "
         "%d rejeitadas",
@@ -196,13 +205,16 @@ def _gravar(
         repo.gravar_nota(sessao, nota, ops, arquivo, conta, ativos)
         rel.notas_gravadas += 1
         rel.operacoes_gravadas += len(ops)
+        rel.gravadas_por_arquivo[nota.arquivo] += 1
     elif existente.hash_conteudo == repo.hash_conteudo(nota):
         rel.notas_ja_no_banco += 1
+        rel.repetidas_por_arquivo[nota.arquivo] += 1
         if existente.arquivo.nome != nota.arquivo:
             rel.avisos.append(f"nota {nota.numero} de {nota.arquivo} já importada de "
                               f"{existente.arquivo.nome} (idêntica); ignorada")  # fmt: skip
     elif repo.mesmo_conteudo(NotaExtraida.model_validate_json(existente.json_nota), nota):
         rel.notas_ja_no_banco += 1  # o livro fica com a nota gravada primeiro (regra 7)
+        rel.repetidas_por_arquivo[nota.arquivo] += 1
         rel.avisos.append(f"nota {nota.numero} de {nota.arquivo}: mesmos negócios e valores da "
                           f"já importada de {existente.arquivo.nome}, em outro layout; "
                           "ignorada")  # fmt: skip
@@ -232,15 +244,31 @@ def importar_pasta(
     titular: str | None = None,
     extrator: Extrator = extrair_pdf,
     sufixo: str = ".pdf",
+    progresso: Progresso | None = None,
 ) -> RelatorioImportacao:
-    """Migração (com backup, se houver o que migrar) e importação de todos os arquivos da pasta.
-    Backup antes de importar só quando há arquivo novo ou incompleto ou operações a regravar:
-    reimportar sem mudança não gira os backups."""
+    """Migração (com backup, se houver o que migrar) e importação de todos os arquivos da pasta."""
     if not pasta.is_dir():
         raise ImportacaoError(f"pasta de notas não encontrada: {pasta}")
-    migrar(banco, agora)
     previos = RelatorioImportacao()
     arquivos = arquivos_da_pasta(pasta, previos, sufixo)
+    rel = importar_lista(banco, arquivos, refs, agora, titular, extrator, progresso)
+    rel.avisos = previos.avisos + rel.avisos
+    return rel
+
+
+def importar_lista(
+    banco: Path,
+    arquivos: Sequence[Path],
+    refs: Referencias,
+    agora: datetime,
+    titular: str | None = None,
+    extrator: Extrator = extrair_pdf,
+    progresso: Progresso | None = None,
+) -> RelatorioImportacao:
+    """Migração (com backup, se houver o que migrar) e importação dos arquivos num lote.
+    Backup antes de importar só quando há arquivo novo ou incompleto ou operações a regravar:
+    reimportar sem mudança não gira os backups."""
+    migrar(banco, agora)
     with conectar(banco) as fabrica:
         with fabrica() as sessao:
             pendente = any(
@@ -251,10 +279,89 @@ def importar_pasta(
         if pendente:
             fazer_backup(banco, agora)
         with fabrica() as sessao:
-            rel = importar_arquivos(sessao, arquivos, refs, agora, titular, extrator)
-    rel.avisos = previos.avisos + rel.avisos
-    return rel
+            return importar_arquivos(sessao, arquivos, refs, agora, titular, extrator, progresso)
+
+
+def copiar_para_pasta(arquivos: Sequence[tuple[str, bytes]], pasta: Path) -> list[Path]:
+    """Guarda os PDFs escolhidos na tela na pasta das notas (o PDF fica ao lado dos dados, para
+    a conferência). Arquivo igual já na pasta não é copiado de novo; nome repetido com conteúdo
+    diferente ganha sufixo (-2, -3...), sem sobrescrever."""
+    pasta.mkdir(parents=True, exist_ok=True)
+    destinos: list[Path] = []
+    for nome, dados in arquivos:
+        base = Path(Path(nome).name)  # nunca sai da pasta (nome vindo do navegador)
+        if base.suffix.lower() != ".pdf" or base.stem in ("", ".", ".."):
+            raise ImportacaoError(f"não é PDF: {nome}")
+        sha = hashlib.sha256(dados).hexdigest()
+        destino, n = pasta / base.name, 1
+        while destino.exists() and _sha256(destino) != sha:
+            n += 1
+            destino = pasta / f"{base.stem}-{n}{base.suffix}"
+        if not destino.exists():
+            destino.write_bytes(dados)
+            log.info("PDF guardado na pasta das notas: %s", destino.name)
+        if destino in destinos:
+            continue
+        destinos.append(destino)
+    return destinos
+
+
+def copiar_arquivos(origens: Sequence[Path], pasta: Path) -> list[Path]:
+    """Como `copiar_para_pasta`, para arquivos já no disco (pasta escolhida fora da de notas)."""
+    copias: list[Path] = []
+    for o in origens:
+        if o.parent.resolve() == pasta.resolve():
+            copias.append(o)
+        else:
+            copias += [c for c in copiar_para_pasta([(o.name, o.read_bytes())], pasta)
+                       if c not in copias]  # fmt: skip
+    return copias
 
 
 def _sha256(caminho: Path) -> str:
     return hashlib.sha256(caminho.read_bytes()).hexdigest()
+
+
+@dataclass(frozen=True)
+class ResultadoArquivo:
+    """Uma linha da tela de importação."""
+
+    arquivo: str
+    situacao: str  # gravado, repetido, rejeitado, aviso
+    notas: int  # notas gravadas deste arquivo
+    detalhes: tuple[str, ...]  # motivos (com as páginas) e avisos
+    conhecida: bool = False  # todas as rejeições já explicadas (divergências conhecidas)
+
+
+def por_arquivo(
+    rel: RelatorioImportacao, conhecidas: frozenset[tuple[str, object]] = frozenset()
+) -> list[ResultadoArquivo]:
+    """O relatório do lote arquivo a arquivo, na ordem em que foram escolhidos."""
+    linhas: list[ResultadoArquivo] = []
+    for nome in [*rel.arquivos_lidos, *rel.arquivos_ignorados]:
+        rejeitadas = [r for r in rel.rejeitadas if r.arquivo == nome]
+        avisos = tuple(a for a in rel.avisos if nome in a)
+        gravadas = rel.gravadas_por_arquivo[nome]
+        detalhes = (
+            tuple(f"pág. {', '.join(map(str, r.paginas)) or '?'}: {r.motivo}" for r in rejeitadas)
+            + avisos
+        )
+        if rejeitadas:
+            situacao = "rejeitado"
+        elif nome in rel.arquivos_ignorados or (not gravadas and rel.repetidas_por_arquivo[nome]):
+            situacao = "repetido"
+        elif avisos:
+            situacao = "aviso"
+        else:
+            situacao = "gravado"
+        conhecida = bool(rejeitadas) and all((r.nota, r.data) in conhecidas for r in rejeitadas)
+        linhas.append(ResultadoArquivo(nome, situacao, gravadas, detalhes, conhecida))
+    return linhas
+
+
+def divergencias_conhecidas(dados: Path) -> frozenset[tuple[str, object]]:
+    """(nota, data) das rejeições já analisadas (gabarito/divergencias-conhecidas.csv)."""
+    from coir.gabarito.comparar import carregar_explicacoes
+
+    arquivo = dados / "gabarito" / "divergencias-conhecidas.csv"
+    return frozenset((e.nota, e.data) for e in carregar_explicacoes(arquivo))

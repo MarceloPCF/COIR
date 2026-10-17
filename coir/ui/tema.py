@@ -97,12 +97,22 @@ h1, h2, h3, .coir-titulo {{ font-family: {FONTE_TITULO}; font-weight: 600; lette
 .coir-carimbo {{ color: var(--coir-carimbo); }}
 .coir-vazio {{ border: 1px dashed var(--coir-linha); border-radius: 6px; padding: 32px;
   color: var(--coir-tinta-suave); text-align: left; }}
-.ag-theme-balham, .ag-theme-balham-dark {{ --ag-font-family: {FONTE_TEXTO}; --ag-font-size: 13px;
+.coir-grade .ag-root-wrapper {{ --ag-font-family: {FONTE_TEXTO}; --ag-font-size: 13px;
   --ag-background-color: var(--coir-superficie); --ag-header-background-color: var(--coir-fundo);
   --ag-border-color: var(--coir-linha); --ag-foreground-color: var(--coir-tinta);
+  --ag-text-color: var(--coir-tinta); --ag-header-text-color: var(--coir-tinta-suave);
+  --ag-row-border-color: var(--coir-linha); --ag-odd-row-background-color: var(--coir-superficie);
   --ag-row-hover-color: var(--coir-caneta-fundo); --ag-selected-row-background-color:
-  var(--coir-caneta-fundo); }}
+  var(--coir-caneta-fundo); --ag-pinned-row-border: 2px solid var(--coir-linha); }}
+.coir-grade .ag-row-pinned {{ font-weight: 600; background: var(--coir-fundo); }}
 .ag-right-aligned-cell {{ font-variant-numeric: tabular-nums; }}
+.coir-item-lista {{ border-bottom: 1px solid var(--coir-linha); }}
+.coir-item-lista:last-child {{ border-bottom: none; }}
+.coir-envio {{ box-shadow: none; border: 1px dashed var(--coir-caneta);
+  background: var(--coir-caneta-fundo); }}
+.coir-envio .q-uploader__header {{ background: transparent; color: var(--coir-caneta); }}
+.coir-envio .q-uploader__subtitle {{ display: none; }}
+.coir-envio .q-uploader__list {{ min-height: 0; padding: 0 8px; }}
 :focus-visible {{ outline: 2px solid var(--coir-caneta); outline-offset: 2px; }}
 @media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important;
   animation: none !important; }} }}
@@ -115,3 +125,4 @@ def aplicar() -> None:
               positive=CLARO.positivo, negative=CLARO.negativo, warning=CLARO.carimbo,
               dark=ESCURO.fundo, dark_page=ESCURO.fundo)  # fmt: skip
     ui.add_css(CSS)
+    ui.button.default_props("no-caps unelevated")

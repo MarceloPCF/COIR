@@ -16,14 +16,17 @@ from typing import TypeVar
 from sqlalchemy import func, select
 
 from coir import referencias
-from coir.config import dados_dir
+from coir.config import dados_dir, salvar_dados_dir
 from coir.db import repositorio as repo
 from coir.db.modelos import EventoCorporativo, NotaCorretagem
 from coir.db.sessao import NOME_BANCO, conectar, migrar
 from coir.domain.fiscal import Apuracao
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias
+from coir.parsing.extrair import extrair_pdf
+from coir.servicos import notas, operacoes
 from coir.servicos.apuracao import apurar_banco
+from coir.servicos.importacao import Extrator
 
 log = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -47,6 +50,8 @@ class Estado:
         self.fiscais = fiscais or referencias.carregar_fiscais()
         self.titular: int | None = None
         self.ano: int | None = None
+        self.agora: Callable[[], datetime] = datetime.now  # relógio (fixo nos testes)
+        self.extrator: Extrator = extrair_pdf  # leitura dos PDFs (textos nos testes)
         self._cache: dict[tuple[object, ...], object] = {}
         self._trava = Lock()
 
@@ -54,6 +59,31 @@ class Estado:
     @property
     def existe(self) -> bool:
         return self.banco.is_file()
+
+    @property
+    def dados(self) -> Path:
+        """Pasta de dados: a do banco (as notas, backups e relatórios ficam ao lado dele)."""
+        return self.banco.parent
+
+    @property
+    def pasta_notas(self) -> Path:
+        return self.dados / notas.PASTA_NOTAS
+
+    @property
+    def pronto(self) -> bool:
+        """Banco criado e ao menos um titular: senão, a interface abre o assistente."""
+        return self.existe and bool(self.titulares())
+
+    def trocar_dados(
+        self, pasta: Path, salvar: Callable[[Path], object] = salvar_dados_dir
+    ) -> None:
+        """Passa a usar outra pasta de dados (e a grava para as próximas aberturas)."""
+        if pasta.resolve() == self.dados.resolve():
+            return
+        salvar(pasta)
+        self.banco = pasta / NOME_BANCO
+        self.titular = self.ano = None
+        self.invalidar()
 
     def preparar(self, agora: datetime) -> None:
         """Cria ou migra o banco (com backup antes de migrar um banco existente)."""
@@ -110,7 +140,8 @@ class Estado:
                 ]  # fmt: skip
             validas = [d for d in datas if d is not None]
             inicio = min((d.year for d in validas), default=hoje.year)
-            return list(range(max(hoje.year, *(d.year for d in validas)), inicio - 1, -1))
+            fim = max([hoje.year, *(d.year for d in validas)])
+            return list(range(fim, inicio - 1, -1))
 
         return self._guardado(("anos", hoje.year), ler)
 
@@ -128,3 +159,19 @@ class Estado:
         return self._guardado(
             ("apuracao", ate), lambda: apurar_banco(self.banco, self.refs, self.fiscais, ate)
         )
+
+    def lista_notas(self) -> list[notas.ResumoNota]:
+        """Notas do titular e ano escolhidos."""
+        if not self.existe:
+            return []
+        titular, ano = self.titular, self.ano
+        return self._guardado(("notas", titular, ano),
+                              lambda: notas.listar(self.banco, titular, ano))  # fmt: skip
+
+    def livro(self) -> list[operacoes.LinhaOperacao]:
+        """Livro de operações do titular e ano escolhidos."""
+        if not self.existe or self.ano is None:
+            return []
+        titular, ano = self.titular, self.ano
+        return self._guardado(("operacoes", titular, ano),
+                              lambda: operacoes.livro(self.banco, titular, ano))  # fmt: skip
