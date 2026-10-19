@@ -1079,8 +1079,10 @@ def arquivo_unico(current_path,cpf,normal_df,daytrade_df):
     reprocessamento = 0
     #Fechar excel aberto para evitar erro no processamento
     result = subprocess.run(["taskkill", "/f", "/im", "excel.exe"],
-    capture_output=True, text=True)
-    if "não foi encontrado" in result.stderr:
+    capture_output=True, text=True, errors='replace')
+    # Python 3.15 usa UTF-8 por padrão; a saída do taskkill vem na página de código do Windows,
+    # por isso a decodificação tolera caracteres inválidos e a mensagem é verificada com cuidado.
+    if result.returncode != 0:
         print("Cofirmado: programa Excel fechado.")
     
     try:

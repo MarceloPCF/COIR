@@ -368,7 +368,7 @@ def principal():
 
     if excel_fechado == 'S':
         result = subprocess.run(["taskkill", "/f", "/im", "excel.exe"],
-                                 capture_output=True, text=True)
+                                 capture_output=True, text=True, errors='replace')
         if result.returncode == 0:
             print("Confirmado: programa Excel foi encerrado.")
         else:
