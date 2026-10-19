@@ -32,11 +32,11 @@ import coir.corretoras.nao_validada
 # =================================================================================================
 # Verifica se está rodando a versão correta do Python
 # =================================================================================================
-VERSAO_MINIMA = (3, 9, 2)
+VERSAO_MINIMA = (3, 12, 0)
 if sys.version_info < VERSAO_MINIMA:
     VERSAO_PYTHON = str(platform.python_version())
     MENSAGEM1 = f"Versao do interpretador python ({VERSAO_PYTHON}) inadequada.\n"
-    MENSAGEM2 = "Este programa requer Python 3.9.2 ou superior.\n"
+    MENSAGEM2 = "Este programa requer Python 3.12 ou superior.\n"
 
     sys.stdout.write(MENSAGEM1)
     sys.stdout.write(MENSAGEM2)
@@ -79,7 +79,7 @@ MODULO = ''
 #    print(str(e))
 #    instalar_modulo(MODULO)    
 try:
-    MODULO = 'openpyxl==3.0.9'
+    MODULO = 'openpyxl==3.1.5'
     import openpyxl
 except ImportError as e:
     print("-" * 100)
@@ -87,7 +87,7 @@ except ImportError as e:
     instalar_modulo(MODULO)
 
 try:
-    MODULO = 'xlwings==0.24.9'
+    MODULO = 'xlwings==0.37.7'
     import xlwings
 except ImportError as e:
     print("-" * 100)
@@ -95,14 +95,14 @@ except ImportError as e:
     instalar_modulo(MODULO)
 
 try:
-    MODULO = 'tabula-py==2.3.0'
+    MODULO = 'tabula-py==2.10.0'
     import tabula
 except ImportError as e:
     print("-" * 100)
     print(str(e))
     instalar_modulo(MODULO)
 
-# numpy==1.21.5
+# numpy: versão fixada em requirements.txt
 
 # try:
 #     MODULO="pyxlsb==1.0.10"

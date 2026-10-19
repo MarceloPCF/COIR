@@ -1,11 +1,8 @@
 # Bibliotecas necessarias para executar o COIR.py
 # Instalar com:  python -m pip install -r requirements.txt
-openpyxl==3.0.9
-pandas==2.3.3
-tabula-py==2.3.0
-xlwings==0.24.9
-# pandas 2.3.3 e numpy 2.0.2 sao as ultimas versoes que ainda suportam o Python 3.9
-# (o pacote para Windows embute o Python 3.9.7).
-numpy==2.0.2
-# setuptools 81 ou superior nao inclui o pkg_resources, que o tabula-py 2.3.0 usa.
-setuptools==69.5.1
+# Testado com Python 3.15 em Windows 64 bits. Minimo: Python 3.12 (exigido pelo numpy 2.5).
+openpyxl==3.1.5
+pandas==3.0.6
+tabula-py==2.10.0
+xlwings==0.37.7
+numpy==2.5.4
