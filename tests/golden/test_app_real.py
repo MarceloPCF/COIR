@@ -1,10 +1,10 @@
 """F6: o estado do app calcula os dados de todas as telas com o banco real (2008-2026) e cada tela
 abre sem erro; a apuração inicial leva segundos e as telas seguintes vêm do cache.
 
-Roda numa CÓPIA do coir.db do usuário (tmp_path): nunca migra nem grava o banco real.
+Roda numa CÓPIA do coir.db do usuário, com as planilhas da B3 importadas (conftest): nunca migra
+nem grava o banco real.
 """
 
-import sqlite3
 import time
 from datetime import datetime
 from pathlib import Path
@@ -12,33 +12,13 @@ from pathlib import Path
 import pytest
 from nicegui.testing.user_simulation import user_simulation
 
-from coir.config import VAR_CONFIG, dados_dir
-from coir.db.sessao import NOME_BANCO
+from coir.config import VAR_CONFIG
 from coir.domain.fiscal import Visao
 from coir.servicos.estado import Estado
 from coir.ui.app import INICIO, TELAS, montar
 
 pytestmark = [pytest.mark.golden, pytest.mark.slow]
-REAL = dados_dir() / NOME_BANCO
 AGORA = datetime(2026, 10, 17, 12, 0, 0)
-
-
-@pytest.fixture(scope="module")
-def copia(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    if not REAL.is_file():
-        pytest.skip("coir.db real ausente")
-    destino = tmp_path_factory.mktemp("app") / NOME_BANCO
-    origem = sqlite3.connect(f"file:{REAL.as_posix()}?mode=ro", uri=True)
-    alvo = sqlite3.connect(destino)
-    try:
-        with alvo:
-            origem.backup(alvo)
-    finally:
-        alvo.close()
-        origem.close()
-    estado = Estado(destino)
-    estado.preparar(AGORA)  # migra a cópia (o banco real fica como está)
-    return destino
 
 
 def _estado(banco: Path) -> Estado:
@@ -65,8 +45,12 @@ def test_dados_de_todas_as_telas_em_todos_os_anos(copia: Path) -> None:
             for visao in Visao:
                 estado.carteira(fim, visao)
             estado.movimentos(fim, Visao.TITULAR)
+            estado.opcoes()
+            estado.futuros()
             if any(m.titular == titular.id and m.ano == ano for m in estado.apuracao(fim).meses):
                 estado.dados_relatorio()
+        estado.proventos()
+        estado.conciliacoes()
     inicio = time.perf_counter()
     estado.livro()
     estado.darfs()
@@ -79,6 +63,9 @@ CONTEUDO = {
     "/operacoes": "Clique numa operação", "/apuracao": "Apurado até", "/darf": "DARF",
     "/relatorios": "Resumo fiscal do ano", "/carteira": "posições em", "/cadastros": "CPF ***",
     "/configuracoes": "Registro de atividades", "/inicio": "Bem-vindo ao COIR",
+    "/opcoes": "Prêmio das abertas", "/futuros": "Resultado de 2026",
+    "/proventos": "Dividendos · isentos (09)", "/outros-custos": "Total do ano:",
+    "/conciliacao": "Posição em ",
 }  # fmt: skip
 
 
