@@ -125,7 +125,7 @@ def test_decimal_texto_recusa_float() -> None:
 # ---------------------------------------------------------------------------------- migração
 def test_migracao_cria_esquema_igual_aos_modelos(banco: Path) -> None:
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == revisao_final() == "0002"
+    assert revisao_atual(engine) == revisao_final() == "0003"
     with engine.connect() as c:
         ctx = MigrationContext.configure(c, opts={"compare_type": True})
         assert compare_metadata(ctx, Base.metadata) == []
@@ -148,11 +148,30 @@ def test_banco_da_revisao_anterior_migra_com_backup(tmp_path: Path) -> None:
     engine.dispose()
     migrar(banco, AGORA)
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == "0002"
+    assert revisao_atual(engine) == "0003"
     engine.dispose()
     with abrir(banco)() as s:
         assert [t.nome for t in repo.titulares(s)] == ["Titular de Teste"]
     assert len(list((tmp_path / "backups").glob("coir-*.db"))) == 1
+    engine.dispose()
+
+
+def test_migracao_0003_desce_e_sobe(tmp_path: Path) -> None:
+    """A tabela de pagamentos de DARF (F6) sai no downgrade e volta no upgrade."""
+    from alembic import command
+    from sqlalchemy import inspect
+
+    from coir.db.sessao import _config_alembic  # pyright: ignore[reportPrivateUsage]
+
+    banco = tmp_path / "coir.db"
+    migrar(banco, AGORA)
+    engine = criar_engine(banco)
+    for alvo, tem in (("0002", False), ("0003", True)):
+        with engine.begin() as c:
+            config = _config_alembic()
+            config.attributes["connection"] = c
+            (command.downgrade if alvo == "0002" else command.upgrade)(config, alvo)
+        assert ("darf_pagamento" in inspect(engine).get_table_names()) is tem
     engine.dispose()
 
 

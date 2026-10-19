@@ -4,6 +4,7 @@
 - gabarito (ferramenta de validação) pode usar parsing, pyxlsb e openpyxl (planilha externa),
   mas não db, ui nem engine.
 - db (SQLAlchemy/Alembic) depende só de domain; servicos orquestra parsing + db (sem ui).
+- ui (NiceGUI, ADR 0004) só apresenta: usa servicos, reports e domain, nunca engine nem db.
 - reports (xlsx/csv/pdf, ADR 0003) parte só do modelo neutro e do domain: sem banco, motor nem UI;
   só ela usa xlsxwriter e reportlab, e não lê o relógio (a data de geração vem de fora).
 - Nenhuma dessas camadas importa banco, UI, CLI ou bibliotecas de planilha.
@@ -28,14 +29,17 @@ INTERNOS_PERMITIDOS = {
     "reports": ("coir.reports", "coir.domain", "coir.erros"),
     "servicos": (
         "coir.servicos", "coir.db", "coir.domain", "coir.engine", "coir.erros", "coir.parsing",
-        "coir.reports", "coir.config",
+        "coir.reports", "coir.config", "coir.referencias",
     ),
+    # interface: só apresenta; dados e cálculos vêm dos serviços (nunca motor ou banco direto)
+    "ui": ("coir.ui", "coir.servicos", "coir.reports", "coir.domain", "coir.config", "coir.erros"),
 }  # fmt: skip
 EXTERNOS_LIBERADOS = {
     "gabarito": ("pyxlsb", "openpyxl"),
     "db": ("sqlalchemy", "alembic", "sqlite3"),
     "reports": ("xlsxwriter", "reportlab"),
     "servicos": ("sqlalchemy",),
+    "ui": ("nicegui", "webview"),
 }
 EXTERNOS_PROIBIDOS = (
     "sqlalchemy", "alembic", "sqlite3", "nicegui", "webview", "typer",

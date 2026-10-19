@@ -32,6 +32,7 @@ FORMATOS = {
     TipoColuna.QUANTIDADE: "#,##0.########;[Red]-#,##0.########",
     TipoColuna.DINHEIRO: "#,##0.00;[Red]-#,##0.00",
     TipoColuna.PM: "#,##0.00000000;[Red]-#,##0.00000000",
+    TipoColuna.PRECO: "#,##0.00######;[Red]-#,##0.00######",
     TipoColuna.PERCENTUAL: "0.00%;[Red]-0.00%",
     TipoColuna.DATA: "dd/mm/yyyy",
 }

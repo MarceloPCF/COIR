@@ -295,6 +295,16 @@ class IrrfAnual(Modelo):
     saldo_comum_fichas: dict[Ficha, Decimal] = {}  # saldo_comum por ficha do programa IRPF
 
 
+class MultaMora(Modelo):
+    """Multa de mora de uma DARF paga (ou a pagar) depois do vencimento."""
+
+    pagamento: date  # data considerada (dia não útil vai para o próximo dia útil)
+    ajustado: bool  # a data informada não era dia útil
+    dias: int  # dias de atraso contados
+    percentual: Decimal  # já limitado ao teto
+    valor: Decimal
+
+
 class Apuracao(Modelo):
     movimentos: tuple[Movimento, ...]
     meses: tuple[MesApurado, ...]

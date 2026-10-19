@@ -206,6 +206,30 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - proventos (F7);
   - os relatórios que as plataformas vendem à parte.
 
+## DARF paga em atraso: multa de mora (F6, 17/10/2026)
+`coir/engine/darf.py`; casos conferidos à mão em `tests/fiscal_cases/test_multa_mora.py`.
+- 0,33% por dia de atraso sobre o principal, com teto de 20% (Lei 9.430/1996 art. 61 caput e
+  §2º). Os percentuais ficam em `data/parametros_fiscais.csv`, com vigência pela competência.
+- Contagem: a lei (§1º) conta do dia seguinte ao vencimento; a Receita (Sicalc e "Como calcular
+  multa de mora") conta do primeiro dia útil seguinte. Decisão do usuário: como a Receita
+  (`multa_mora_inicio_contagem = rfb`); `lei` continua disponível. As duas só diferem quando o
+  vencimento cai antes de fim de semana ou feriado.
+- Pagamento informado em dia não útil vale no próximo dia útil (glossário do Sicalc; decisão do
+  usuário). A tela avisa o ajuste.
+- Centavos: a lei é omissa; o Sicalc trunca (`multa_mora_arredondamento = ROUND_DOWN`).
+  Conferido pelo usuário em 17/10/2026: 6015, competência 08/2026, R$ 1.234,57, vencimento
+  30/09/2026, consolidação em 07/10/2026 → multa 28,51 (7 dias, 2,31% = 28,518567) e juros
+  12,34 (1% do mês do pagamento; caso para a F7).
+- DARF acumulada abaixo do mínimo não tem multa; vence com o período em que o total chega ao
+  mínimo (art. 68 §1º), e a multa conta desse vencimento.
+- O pagamento é um fato lançado pelo usuário (tabela `darf_pagamento`, comprovante em
+  `<dados>/comprovantes/<ano>/`, nome sem CPF) e não muda a apuração. Pago a menor ou a maior: a
+  tela mostra a diferença (DARF complementar no Sicalc; restituição pelo PER/DCOMP), sem
+  imputação automática.
+- A denúncia espontânea (CTN art. 138; STJ REsp 1.149.022/SP; Súmula 360) fica como nota na tela:
+  o COIR calcula como o Sicalc.
+- Juros Selic: F7.
+
 ## Pendências do motor (revisão final da F4, 16/10/2026)
 Decididos na revisão: o IRRF de day trade impresso como "projeção" nas notas da XP é o 1% retido
 sobre o ganho do dia e é deduzido no mês (confirmado pelo usuário); day trade "na mesma instituição
