@@ -58,7 +58,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("DARF").classes("coir-titulo-pagina")
     ui.label(
         f"As DARFs de {estado.ano} de renda variável, o vencimento, o pagamento e a multa de "
-        "mora por atraso (Lei 9.430/1996 art. 61). Os juros Selic entram numa próxima versão."
+        "e os juros de mora por atraso (Lei 9.430/1996 art. 61)."
     ).classes("coir-subtitulo")
     with ui.row().classes("w-full items-start gap-4"):
         lista = ui.column().classes("min-w-[520px] flex-[1.2] gap-2")
@@ -154,9 +154,10 @@ def _documento(
             _r(multa.valor) if multa else "0,00",
             "coir-negativo" if multa and multa.valor else "",
         )
-        _campo("09", "Valor dos juros", "— (F7)")
-        rotulo = "Valor total (sem os juros)" if multa and multa.valor else "Valor total"
-        _campo("10", rotulo, _r(x.total), "font-semibold")
+        juros = x.juros
+        _campo("09", "Valor dos juros", _r(juros.valor) if juros else "0,00",
+               "coir-negativo" if juros and juros.valor else "")  # fmt: skip
+        _campo("10", "Valor total", _r(x.total), "font-semibold")
     if multa and multa.dias:
         ate = "pagamento" if x.pagamento else "hoje (estimativa)"
         ajuste = " (data não útil: vale o próximo dia útil)" if multa.ajustado else ""
@@ -169,6 +170,21 @@ def _documento(
             "haver discussão sobre a exclusão da multa (CTN art. 138; STJ REsp 1.149.022/SP; "
             "Súmula 360): consulte um profissional."
         ).classes("coir-subtitulo text-xs")
+    juros = x.juros
+    if juros and juros.valor:
+        selic = " + ".join(f"{m} {formatar(t, T.QUANTIDADE)}%" for m, t in juros.taxas)
+        ui.label(
+            f"Juros: {formatar(juros.percentual, T.PERCENTUAL)} do principal = Selic dos meses "
+            f"entre o vencimento e o pagamento ({selic or 'nenhum mês'}) + 1% no mês do "
+            f"pagamento ({juros.pagamento:%m/%Y})."
+        ).classes("coir-subtitulo text-xs")
+    if juros and juros.meses_sem_taxa:
+        faltam = ", ".join(juros.meses_sem_taxa)
+        texto = (f"A tabela Selic do COIR não tem {faltam}: atualize a tabela; os juros estão "
+                 "menores que os devidos." if x.pagamento else
+                 f"Estimativa: a Selic de {faltam} ainda não está na tabela; os juros finais "
+                 "serão maiores. Confira no Sicalc antes de pagar.")  # fmt: skip
+        ui.label(texto).classes("coir-carimbo text-xs")
     p = x.pagamento
     if p is not None:
         with ui.column().classes("coir-folha w-full gap-1"):
@@ -179,10 +195,10 @@ def _documento(
                 ui.label(
                     f"Pago a menor: faltam {_r(-dif)} (gere a DARF complementar no Sicalc)."
                 ).classes("coir-negativo text-sm")
-            elif dif is not None and dif > 0 and x.pago_em_atraso:
+            elif dif is not None and dif > 0 and x.juros and x.juros.meses_sem_taxa:
                 ui.label(
-                    f"Diferença de {_r(dif)}: em pagamento atrasado, provavelmente os juros "
-                    "Selic, que o COIR ainda não calcula."
+                    f"Diferença de {_r(dif)}: provavelmente a Selic dos meses ainda sem taxa na "
+                    "tabela do COIR."
                 ).classes("coir-subtitulo text-sm")
             elif dif is not None and dif > 0:
                 ui.label(f"Pago a maior: {_r(dif)} (restituição pelo PER/DCOMP).").classes(

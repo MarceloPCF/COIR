@@ -41,19 +41,23 @@ MESES = [
 
 
 def test_situacao_e_multa_de_cada_darf() -> None:
-    pagos = {(2026, 1): darf.Pagamento(date(2026, 3, 3), D("120.80"), None, "")}
+    pagos = {(2026, 1): darf.Pagamento(date(2026, 3, 3), D("122.00"), None, "")}
     linhas = darf.darfs(MESES, pagos, AGORA.date(), FISCAIS)
     assert [(x.mes, x.situacao) for x in linhas] == [
         (12, darf.Situacao.ACUMULADA), (1, darf.Situacao.PAGA), (2, darf.Situacao.EM_ATRASO),
         (3, darf.Situacao.A_PAGAR), (4, darf.Situacao.EM_APURACAO)]  # fmt: skip
     acumulada, paga, atrasada, a_pagar, em_apuracao = linhas
     # paga em 03/03 (terça), venceu sexta 27/02: conta de 02/03 (1º dia útil) = 2 dias = 0,66%
-    # 120,00 x 0,66% = 0,792 -> 0,79 (truncado); total 120,79; pago 120,80 -> 0,01 a maior
+    # 120,00 x 0,66% = 0,792 -> 0,79 (truncado); juros: pago no mês seguinte ao do vencimento,
+    # só o 1% = 1,20 (Lei 9.430/1996 art. 61 §3º); total 121,99; pago 122,00 -> 0,01 a maior
     assert paga.multa is not None and (paga.multa.dias, paga.multa.valor) == (2, D("0.79"))
-    assert paga.diferenca == D("0.01") and paga.pago_em_atraso  # a diferença: juros (F7)
-    # vence terça 31/03; hoje 02/04: 2 dias; 91,59 x 0,66% = 0,604494 -> 0,60
+    assert paga.juros is not None and paga.juros.valor == D("1.20")
+    assert paga.diferenca == D("0.01") and paga.pago_em_atraso
+    # vence terça 31/03; hoje 02/04: 2 dias; 91,59 x 0,66% = 0,604494 -> 0,60; juros de abril
+    # (mês seguinte ao do vencimento): 1% = 0,9159 -> 0,91; total 93,10
     assert atrasada.multa is not None and atrasada.multa.valor == D("0.60")
-    assert atrasada.total == D("92.19") and atrasada.diferenca is None
+    assert atrasada.juros is not None and atrasada.juros.valor == D("0.91")
+    assert atrasada.total == D("93.10") and atrasada.diferenca is None
     assert acumulada.vencimento is None and acumulada.multa is None
     assert a_pagar.multa is None and a_pagar.total == D("18.20")
     assert em_apuracao.vencimento is None and em_apuracao.total == D("12.00")

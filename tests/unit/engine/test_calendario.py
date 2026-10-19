@@ -114,3 +114,11 @@ def test_liquidacao_de_termo_no_pregao_seguinte() -> None:
     assert liquidacao_termo(date(2024, 1, 3), 60, CAL) == date(2024, 3, 4)  # 03/03 é domingo
     assert liquidacao_termo(date(2021, 1, 14), 30, CAL) == date(2021, 2, 17)  # sáb + Carnaval
     assert dia_de_pregao(date(2024, 12, 24), CAL) is False and dia_util(date(2024, 12, 24), CAL)
+
+
+def test_calendario_cobre_2028() -> None:
+    """DARF de 2027 e opções com vencimento em 2028: Carnaval de 2028 em 28-29/02 (ano
+    bissexto; Páscoa em 16/04) e o último dia útil do ano em 29/12 (31/12 é domingo)."""
+    assert pascoa(2028) == date(2028, 4, 16)
+    assert not dia_util(date(2028, 2, 29), CAL) and not dia_util(date(2028, 12, 29), CAL)
+    assert dia_util(date(2028, 12, 28), CAL)

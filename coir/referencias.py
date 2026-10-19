@@ -4,6 +4,7 @@ import csv
 from datetime import date
 from decimal import Decimal
 from functools import cache
+from itertools import pairwise
 from pathlib import Path
 
 from coir.domain.fiscal import TipoAtivo
@@ -53,6 +54,9 @@ def carregar(pasta: Path | None = None) -> Referencias:
             raiz=c["raiz"],
             mercado=c["mercado"],
             multiplicador=Decimal(c["multiplicador"]),
+            moeda=c["moeda"],  # type: ignore[arg-type]  (validado pelo modelo)
+            liquidacao=c["liquidacao"],  # type: ignore[arg-type]
+            grupo=c["grupo"],
             inicio=_data(c["inicio"]),
             fim=_data(c["fim"]),
         )
@@ -73,10 +77,29 @@ def carregar(pasta: Path | None = None) -> Referencias:
             )
             for t in _linhas(base / "trocas_ticker.csv")
         ),
+        instituicoes_b3=_mapa(base / "instituicoes_b3.csv", "prefixo", "corretora"),
     )
 
 
 DIAS_SEMANA = {"segunda": 0, "terca": 1, "quarta": 2, "quinta": 3, "sexta": 4}
+
+
+def _selic(arquivo: Path) -> dict[tuple[int, int], Decimal]:
+    """Selic mensal (% a.m., BCB SGS 4390): meses completos, contíguos, sem repetição, 2 casas."""
+    selic: dict[tuple[int, int], Decimal] = {}
+    for x in _linhas(arquivo):
+        try:
+            mes = (int(x["mes"][:4]), int(x["mes"][5:7]))
+            taxa = Decimal(x["taxa"])
+        except (ValueError, ArithmeticError) as erro:
+            raise ConfiguracaoError(f"{arquivo.name}: linha ilegível {x}") from erro
+        if mes in selic or taxa < 0 or taxa != taxa.quantize(Decimal("0.01")):
+            raise ConfiguracaoError(f"{arquivo.name}: {x['mes']} repetido ou taxa inválida")
+        selic[mes] = taxa
+    for (a1, m1), (a2, m2) in pairwise(sorted(selic)):
+        if (a2, m2) != ((a1 + 1, 1) if m1 == 12 else (a1, m1 + 1)):
+            raise ConfiguracaoError(f"{arquivo.name}: falta a Selic depois de {m1:02d}/{a1}")
+    return selic
 
 
 @cache
@@ -122,5 +145,6 @@ def carregar_fiscais(pasta: Path | None = None) -> ReferenciasFiscais:
         )
         for p in _linhas(base / "isencao_pme.csv")
     }  # fmt: skip
+    selic = _selic(base / "selic_mensal.csv")
     return ReferenciasFiscais(parametros=parametros, tipos=TiposAtivo(tabela=tipos),
-                              calendario=calendario, pme=pme)  # fmt: skip
+                              calendario=calendario, pme=pme, selic=selic)  # fmt: skip

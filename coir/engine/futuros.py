@@ -25,6 +25,7 @@ from coir.domain.fiscal import (
     Grupo,
     Movimento,
     NotaMotor,
+    PosicaoFuturo,
     TipoAjuste,
     TipoAtivo,
 )
@@ -38,6 +39,7 @@ class _Contrato:
     quantidade: Decimal = ZERO  # contratos: comprado > 0, vendido < 0
     acumulado: Decimal = ZERO  # ajustes e custos da posição aberta, ainda não realizados
     vencimento: date | None = None
+    entrega_fisica: bool = False
     origens: set[tuple[int, str]] = field(default_factory=lambda: set[tuple[int, str]]())
 
     def origem(self) -> tuple[int | None, str | None]:
@@ -49,8 +51,10 @@ class _Contrato:
 
 
 def movimentos_futuros(
-    notas: Iterable[NotaMotor], ate: date, avisos: list[str] | None = None
-) -> list[Movimento]:
+    notas: Iterable[NotaMotor], ate: date, avisos: list[str] | None = None,
+    abertas: list[PosicaoFuturo] | None = None,
+) -> list[Movimento]:  # fmt: skip
+    """Resultados realizados até `ate`; `abertas` recebe os contratos ainda em aberto."""
     saida: list[Movimento] = []
     contratos: dict[tuple[int, str], _Contrato] = {}
     por_dia: dict[date, list[NotaMotor]] = defaultdict(list)
@@ -74,12 +78,20 @@ def movimentos_futuros(
             saida += _linha(contratos, nota, a, custo, avisos)
         for (titular, mercadoria), c in list(contratos.items()):
             if c.quantidade and c.vencimento == dia:
+                if c.entrega_fisica and avisos is not None:
+                    avisos.append(f"{dia}: {mercadoria} com {c.quantidade} contrato(s) aberto(s) "
+                                  "no vencimento; a liquidação por entrega física está fora do "
+                                  "escopo: o resultado é o dos ajustes acumulados")  # fmt: skip
                 saida.append(_mov(dia, titular, c.origem(), mercadoria, c.grupo, Categoria.COMUM,
                                   "futuro: vencimento do contrato, resultado = ajustes acumulados",
                                   c.acumulado, ZERO, "vencimento"))  # fmt: skip
                 c.quantidade, c.acumulado = ZERO, ZERO
                 c.origens.clear()
-    for (_, mercadoria), c in sorted(contratos.items()):
+    for (titular, mercadoria), c in sorted(contratos.items()):
+        if c.quantidade and abertas is not None:
+            abertas.append(PosicaoFuturo(titular=titular, mercadoria=mercadoria, grupo=c.grupo,
+                                         quantidade=c.quantidade, acumulado=c.acumulado,
+                                         vencimento=c.vencimento))  # fmt: skip
         if c.quantidade and c.vencimento is None and avisos is not None:
             avisos.append(f"{mercadoria}: posição de {c.quantidade} contrato(s) sem vencimento "
                           "conhecido; o resultado só sai no encerramento")  # fmt: skip
@@ -101,6 +113,7 @@ def _linha(
     chave = (nota.titular, a.mercadoria)
     c = contratos.setdefault(chave, _Contrato(a.grupo))
     c.vencimento = a.vencimento or c.vencimento
+    c.entrega_fisica = c.entrega_fisica or a.entrega_fisica
     if a.tipo is TipoAjuste.AJUPOS:
         if c.quantidade == 0:  # posição de antes do livro: não há abertura para diferir
             if avisos is not None:

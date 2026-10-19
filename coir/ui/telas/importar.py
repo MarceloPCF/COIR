@@ -18,6 +18,7 @@ from coir.servicos.importacao import (
     importar_lista,
     por_arquivo,
 )
+from coir.ui.telas import importar_b3
 
 ICONES = {
     "gravado": ("check_circle", "coir-positivo"),
@@ -201,10 +202,17 @@ def _linha(x: ResultadoArquivo) -> None:
 
 
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
-    ui.label("Importar notas").classes("coir-titulo-pagina")
-    ui.label(
-        "Escolha os PDFs das notas de corretagem. O COIR confere cada nota (negócios, custos "
-        "e líquido) antes de gravar; a que não fecha ao centavo não entra, e o motivo "
-        "aparece abaixo. Importar de novo o mesmo arquivo não duplica nada.",
-    ).classes("coir-subtitulo")
-    area(estado, ao_mudar)
+    ui.label("Importar").classes("coir-titulo-pagina")
+    with ui.tabs().props("no-caps align=left").classes("w-full") as abas:
+        t_notas = ui.tab("Notas de corretagem (PDF)").mark("aba-notas")
+        t_b3 = ui.tab("Planilhas da B3 (xlsx)").mark("aba-b3")
+    with ui.tab_panels(abas, value=t_notas).classes("w-full bg-transparent"):
+        with ui.tab_panel(t_notas).classes("p-0 pt-3 gap-3"):
+            ui.label(
+                "Escolha os PDFs das notas de corretagem. O COIR confere cada nota (negócios, "
+                "custos e líquido) antes de gravar; a que não fecha ao centavo não entra, e o "
+                "motivo aparece abaixo. Importar de novo o mesmo arquivo não duplica nada.",
+            ).classes("coir-subtitulo")
+            area(estado, ao_mudar)
+        with ui.tab_panel(t_b3).classes("p-0 pt-3"):
+            importar_b3.area(estado, ao_mudar)

@@ -276,6 +276,22 @@ def ativo_existente(sessao: Session, ticker: str, dia: date) -> int | None:
     return None
 
 
+def ativo_pelo_codigo_antigo(sessao: Session, ticker: str, dia: date) -> int | None:
+    """Ativo que usou ``ticker`` até antes de ``dia`` e trocou de código (ex.: VIIAL35, depois
+    BHIAL35): o código antigo, escrito depois da troca, ainda é desse ativo."""
+    ativos = {
+        t.ativo_id
+        for t in sessao.scalars(select(TickerHistorico).where(TickerHistorico.ticker == ticker))
+        if t.fim is not None and t.fim < dia
+    }
+    vigentes = {
+        t.ativo_id
+        for t in sessao.scalars(select(TickerHistorico).where(TickerHistorico.ativo_id.in_(ativos)))
+        if (t.inicio is None or t.inicio <= dia) and (t.fim is None or dia <= t.fim)
+    }
+    return next(iter(vigentes)) if len(vigentes) == 1 else None
+
+
 # --------------------------------------------------------------------------------- séries de opção
 def series(sessao: Session) -> dict[str, str]:
     return {s.serie: s.classe for s in sessao.scalars(select(SerieOpcao))}

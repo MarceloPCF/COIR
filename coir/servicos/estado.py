@@ -22,13 +22,15 @@ from coir.db.modelos import EventoCorporativo, NotaCorretagem
 from coir.db.sessao import NOME_BANCO, conectar, migrar
 from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
 from coir.domain.parametros import ReferenciasFiscais
+from coir.domain.proventos import Provento
 from coir.domain.referencias import Referencias
 from coir.domain.relatorio import DadosRelatorio
-from coir.erros import ConfiguracaoError, ExportacaoError
+from coir.erros import CoirError, ConfiguracaoError, ExportacaoError
 from coir.parsing.extrair import extrair_pdf
-from coir.servicos import carteira, darf, notas, operacoes
+from coir.servicos import carteira, conciliacao, darf, derivativos, notas, operacoes
 from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
-from coir.servicos.importacao import Extrator
+from coir.servicos.importacao import Extrator, aplicar_tabelas
+from coir.servicos.proventos import proventos_banco
 from coir.servicos.relatorios import dados_banco
 
 log = logging.getLogger(__name__)
@@ -52,6 +54,7 @@ class Estado:
         self.refs = refs or referencias.carregar()
         self.fiscais = fiscais or referencias.carregar_fiscais()
         self.titular: int | None = None
+        self.aviso_tabelas: str | None = None  # erro ao aplicar data/ ao abrir (preparar)
         self.ano: int | None = None
         self.agora: Callable[[], datetime] = datetime.now  # relógio (fixo nos testes)
         self.extrator: Extrator = extrair_pdf  # leitura dos PDFs (textos nos testes)
@@ -95,9 +98,16 @@ class Estado:
         self.preparar(agora)
 
     def preparar(self, agora: datetime) -> None:
-        """Cria ou migra o banco (com backup antes de migrar um banco existente)."""
+        """Cria ou migra o banco (com backup antes de migrar um banco existente) e aplica as
+        tabelas de data/ que mudaram depois da importação (ex.: troca de ticker nova)."""
         self.banco.parent.mkdir(parents=True, exist_ok=True)
         migrar(self.banco, agora)
+        self.aviso_tabelas = None
+        try:
+            aplicar_tabelas(self.banco, self.refs, agora)
+        except CoirError as erro:  # o app abre; a próxima importação mostra o erro de novo
+            log.warning("tabelas de data/ não aplicadas ao banco: %s", erro)
+            self.aviso_tabelas = f"As tabelas de referência não foram aplicadas ao banco: {erro}"
         self.invalidar()
 
     def _marca(self) -> tuple[int, ...]:
@@ -252,3 +262,53 @@ class Estado:
             return darf.darfs(meses, darf.pagamentos(self.banco, titular), hoje, self.fiscais)
 
         return self._guardado(("darfs-todos", titular, hoje), calcular)
+
+    def proventos(self) -> tuple[list[Provento], list[str]]:
+        """Proventos do titular escolhido (todos os anos) e os avisos."""
+        if not self.existe or self.titular is None:
+            return [], []
+        titular = self.titular
+        return self._guardado(
+            ("proventos", titular), lambda: proventos_banco(self.banco, self.fiscais, titular)
+        )
+
+    def conciliacoes(self) -> list[conciliacao.Conciliacao]:
+        """B3 x COIR em cada data com posição da B3 importada (titular escolhido)."""
+        if not self.existe or self.titular is None:
+            return []
+        titular = self.titular
+
+        def calcular() -> list[conciliacao.Conciliacao]:
+            saida: list[conciliacao.Conciliacao] = []
+            anterior = None
+            for dia in conciliacao.datas_b3(self.banco, titular):
+                saida.append(conciliacao.conciliar(self.banco, self.refs, self.fiscais, titular,
+                                                   dia, anterior))  # fmt: skip
+                anterior = dia
+            return saida
+
+        return self._guardado(("conciliacoes", titular), calcular)
+
+    def opcoes(self) -> list[derivativos.CicloOpcao]:
+        """Ciclos das séries de opção do titular até o fim do ano escolhido (ou hoje)."""
+        if not self.existe or self.titular is None:
+            return []
+        ate, titular = self.fim_do_ano(), self.titular
+
+        def calcular() -> list[derivativos.CicloOpcao]:
+            posicoes, _ = self.carteira(ate, Visao.TITULAR)
+            objetos = derivativos.objetos(self.banco, self.refs)
+            return derivativos.ciclos_opcoes(self.movimentos(ate, Visao.TITULAR), posicoes,
+                                             titular, objetos, self.refs)  # fmt: skip
+
+        return self._guardado(("opcoes", titular, ate), calcular)
+
+    def futuros(self) -> derivativos.Futuros | None:
+        """Futuros do titular até o fim do ano escolhido (ou hoje)."""
+        if not self.existe or self.titular is None:
+            return None
+        ate, titular = self.fim_do_ano(), self.titular
+        return self._guardado(
+            ("futuros", titular, ate),
+            lambda: derivativos.futuros_banco(self.banco, self.refs, self.fiscais, titular, ate),
+        )

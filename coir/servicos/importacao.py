@@ -17,11 +17,13 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from coir.config import VERSAO
 from coir.db import repositorio as repo
 from coir.db.modelos import ArquivoImportado, NotaCorretagem, Titular
-from coir.db.sessao import conectar, fazer_backup, migrar
+from coir.db.sessao import conectar, fazer_backup, marca_do_banco, migrar
 from coir.domain.cpf import cpf_valido
 from coir.domain.nota import Cliente, NotaExtraida, OperacaoExtraida
 from coir.domain.referencias import Referencias
@@ -286,16 +288,66 @@ def importar_lista(
             return importar_arquivos(sessao, arquivos, refs, agora, titular, extrator, progresso)
 
 
-def copiar_para_pasta(arquivos: Sequence[tuple[str, bytes]], pasta: Path) -> list[Path]:
-    """Guarda os PDFs escolhidos na tela na pasta das notas (o PDF fica ao lado dos dados, para
-    a conferência). Arquivo igual já na pasta não é copiado de novo; nome repetido com conteúdo
-    diferente ganha sufixo (-2, -3...), sem sobrescrever."""
+def marca_das_tabelas(refs: Referencias) -> int:
+    """Resumo de data/ e da versão do COIR (o que muda a normalização), em 31 bits: fica no
+    ``PRAGMA user_version`` do banco, que o Alembic não usa."""
+    texto = f"{VERSAO}|{refs.model_dump_json()}"
+    return int(hashlib.sha256(texto.encode()).hexdigest()[:7], 16)
+
+
+def aplicar_tabelas(banco: Path, refs: Referencias, agora: datetime) -> bool:
+    """data/ mudou depois da importação (troca de ticker acrescentada, normalização nova): aplica
+    ao banco já importado, sem esperar a próxima importação de notas. Backup antes de gravar
+    (regra 8); sem mudança, não grava nem gira os backups. Só confere quando data/ ou a versão
+    mudaram desde a última conferência (marca no banco). Devolve se o banco mudou."""
+    if not banco.is_file():
+        return False
+    marca = marca_das_tabelas(refs)
+    if marca_do_banco(banco) == marca:
+        return False
+    mudou = _aplicar_no_banco(banco, refs, agora)
+    marca_do_banco(banco, marca)
+    return mudou
+
+
+def _aplicar_no_banco(banco: Path, refs: Referencias, agora: datetime) -> bool:
+    with conectar(banco) as fabrica:
+        with fabrica() as sessao:
+            transacao = sessao.begin()
+            try:
+                mudou = _aplicar_tabelas(sessao, refs)
+            finally:
+                transacao.rollback()  # só a verificação: grava depois do backup
+        if not mudou:
+            return False
+        fazer_backup(banco, agora)
+        with fabrica() as sessao, sessao.begin():
+            _aplicar_tabelas(sessao, refs)
+    log.info("tabelas de data/ aplicadas ao banco já importado")
+    return True
+
+
+def _aplicar_tabelas(sessao: Session, refs: Referencias) -> bool:
+    if sessao.scalar(select(NotaCorretagem.id).limit(1)) is None:
+        return False  # banco sem notas: a primeira importação sincroniza as trocas
+    ativos = repo.Ativos(sessao)
+    trocou = ativos.sincronizar_trocas(refs.trocas)
+    return _renormalizar(sessao, refs, repo.series(sessao), ativos) > 0 or trocou
+
+
+def copiar_para_pasta(
+    arquivos: Sequence[tuple[str, bytes]], pasta: Path, extensao: str = ".pdf"
+) -> list[Path]:
+    """Guarda os arquivos escolhidos na tela numa pasta de dados (PDFs das notas, para a
+    conferência; planilhas da B3). Arquivo igual já na pasta não é copiado de novo; nome repetido
+    com conteúdo diferente ganha sufixo (-2, -3...), sem sobrescrever."""
     pasta.mkdir(parents=True, exist_ok=True)
     destinos: list[Path] = []
     for nome, dados in arquivos:
         base = Path(Path(nome).name)  # nunca sai da pasta (nome vindo do navegador)
-        if base.suffix.lower() != ".pdf" or base.stem in ("", ".", ".."):
-            raise ImportacaoError(f"não é PDF: {nome}")
+        if base.suffix.lower() != extensao or base.stem in ("", ".", ".."):
+            tipo = "PDF" if extensao == ".pdf" else f"arquivo {extensao}"
+            raise ImportacaoError(f"não é {tipo}: {nome}")
         sha = hashlib.sha256(dados).hexdigest()
         destino, n = pasta / base.name, 1
         while destino.exists() and _sha256(destino) != sha:

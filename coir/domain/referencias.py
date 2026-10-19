@@ -1,8 +1,10 @@
 """Tabelas de referência usadas na normalização (carregadas de data/ fora do domínio)."""
 
 import re
+import unicodedata
 from datetime import date
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -10,11 +12,20 @@ RE_SERIE_OPCAO = re.compile(r"^[A-Z0-9]{4}[A-X]\d")
 
 
 class ContratoFuturo(BaseModel):
+    """Contrato futuro da B3 (data/contratos_futuros.csv).
+
+    ``moeda``: da cotação (café e soja CME em US$; o ajuste impresso na nota já vem em R$).
+    ``liquidacao``: FISICA = entrega da mercadoria no vencimento (fora do escopo: o COIR avisa).
+    ``grupo``: linha da apuração e do IRPF (indice, dolar, commodity = "outros")."""
+
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     raiz: str
     mercado: str
     multiplicador: Decimal
+    moeda: Literal["BRL", "USD"] = "BRL"
+    liquidacao: Literal["FINANCEIRA", "FISICA"] = "FINANCEIRA"
+    grupo: str = "indice"
     inicio: date | None = None
     fim: date | None = None
 
@@ -42,6 +53,13 @@ class Referencias(BaseModel):
     contratos: tuple[ContratoFuturo, ...]
     sufixos: tuple[str, ...]  # sufixos de governança removidos do nome de pregão (compactos)
     trocas: tuple[TrocaTicker, ...] = ()
+    instituicoes_b3: dict[str, str] = {}  # prefixo do nome compactado -> corretora (perfil)
+
+    def corretora_b3(self, instituicao: str) -> str | None:
+        """Instituição como a B3 escreve ("XP INVESTIMENTOS CCTVM S/A.") -> corretora do COIR."""
+        chave = re.sub(r"[^A-Z0-9]", "", unicodedata.normalize("NFKD", instituicao.upper())
+                       .encode("ascii", "ignore").decode())  # fmt: skip
+        return next((c for p, c in self.instituicoes_b3.items() if chave.startswith(p)), None)
 
     def ticker_na_data(self, ticker: str, dia: date) -> str:
         for t in self.trocas:

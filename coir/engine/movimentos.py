@@ -25,6 +25,7 @@ from coir.domain.fiscal import (
     Evento,
     Grupo,
     Movimento,
+    NaturezaEvento,
     NotaMotor,
     OperacaoMotor,
     PosicaoAtivo,
@@ -251,6 +252,10 @@ def _executar(
         if evento.data <= ate:
             livro.tickers.setdefault(evento.ativo, evento.ticker)
             livro.tipos.setdefault(evento.ativo, evento.tipo_ativo)
+            if evento.ativo_destino is not None and evento.ticker_destino is not None:
+                livro.tickers.setdefault(evento.ativo_destino, evento.ticker_destino)
+                livro.tipos.setdefault(evento.ativo_destino,
+                                       evento.tipo_ativo_destino or evento.tipo_ativo)  # fmt: skip
             dias[evento.data].eventos.append(evento)
     for venc in vencimentos:
         if venc <= ate:
@@ -261,8 +266,25 @@ def _executar(
 
 
 def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) -> None:
+    # cisões depois dos demais eventos do dia (agrupadas por posição de origem e destino)
+    cisoes: dict[tuple[Chave, int | None], list[Evento]] = defaultdict(list)
     for evento in sorted(d.eventos, key=lambda e: e.id):
-        _evento(livro, evento)
+        if evento.tipo is TipoEvento.CISAO:
+            # as contas que formam a posição (visão por titular) entram juntas: o custo repartido
+            # é o de antes do evento, não o que sobra depois da primeira conta
+            cisoes[(_chave_evento(livro, evento), evento.ativo_destino)].append(evento)
+        elif evento.tipo is TipoEvento.INCORPORACAO:
+            _incorporacao(livro, evento, params)
+        elif evento.tipo is TipoEvento.LEILAO_FRACAO:
+            _leilao_fracao(livro, evento, params)
+        else:
+            _evento(livro, evento)
+    origens = [chave for chave, _ in cisoes]
+    for (chave, _), grupo in cisoes.items():
+        if origens.count(chave) > 1:  # o percentual é sobre o custo de antes de todas
+            raise MotorError(f"cisão de {grupo[0].ticker} ({grupo[0].data}) para dois ativos no "
+                             "mesmo dia (não implementado)")  # fmt: skip
+        _cisao(livro, chave, grupo)
     for t in sorted(d.termos, key=lambda t: (t.nota.id, t.op.ordem)):
         chave = livro.chave(t.nota.titular, _de(t), t.op.ativo)
         pos = livro.posicoes[chave]
@@ -509,11 +531,144 @@ def _exercicio(livro: Livro, dia: date, o: _Op) -> None:
                                REGRA_EXERCICIO[(op.mercado, op.cv)]))  # fmt: skip
 
 
-def _evento(livro: Livro, e: Evento) -> None:
+def _chave_evento(livro: Livro, e: Evento) -> Chave:
     de = (e.conta, e.corretora)
     chave = livro.chave(e.titular, de, e.ativo)
     if e.tipo_ativo is TipoAtivo.OPCAO:  # evento na série (ajuste da B3): a posição aberta
         chave = livro.chave_opcao(e.titular, de, e.ativo, e.data) or chave
+    return chave
+
+
+def _nome(e: Evento) -> str:
+    return f"{e.tipo.value.lower()} de {e.ticker} ({e.data})"
+
+
+def _origem_do_evento(livro: Livro, e: Evento, chave: Chave) -> Posicao:
+    """Posição de A (origem de incorporação, cisão ou leilão de fração): tem de existir, ter a
+    quantidade do evento e não ser lote de PME nem venda a descoberto de ação."""
+    pos = livro.posicoes[chave]
+    if not e.quantidade or e.quantidade <= 0:
+        raise MotorError(f"{_nome(e)} sem a quantidade de origem")
+    if pos.quantidade == 0 or e.quantidade > abs(pos.quantidade):
+        raise MotorError(f"{_nome(e)}: quantidade {e.quantidade} e posição {pos.quantidade} na "
+                         f"conta {e.corretora} {e.conta} (confira data, conta e "
+                         "quantidade)")  # fmt: skip
+    if pos.quantidade < 0 and e.tipo_ativo is not TipoAtivo.OPCAO:
+        raise MotorError(f"{_nome(e)}: posição vendida a descoberto na data do evento")
+    if pos.pme_ate is not None:
+        raise MotorError(f"{_nome(e)}: lote isento de PME (controle separado não implementado)")
+    return pos
+
+
+def _destino(livro: Livro, e: Evento, chave: Chave, sinal: int) -> Chave:
+    """Chave de B (a série de destino herda o vencimento da de origem). Posição de B no sentido
+    contrário (ex.: B vendido antes da data do evento) falha alto: o evento cobriria a venda."""
+    if e.ativo_destino is None:
+        raise MotorError(f"{_nome(e)} sem o ativo de destino")
+    destino = livro.chave(e.titular, (e.conta, e.corretora), e.ativo_destino, chave[3])
+    if livro.posicoes[destino].quantidade * sinal < 0:
+        raise MotorError(
+            f"{_nome(e)}: posição em {e.ticker_destino} no sentido contrário "
+            f"({livro.posicoes[destino].quantidade}); venda de B antes do evento? (use a data ex)"
+        )
+    return destino
+
+
+def _incorporacao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
+    """Incorporação, fusão, conversão ou ajuste de série: a quantidade de A sai sem resultado e
+    B entra com o mesmo custo (IN RFB 1.585/2015 art. 58 §6º; ajuste de série da B3: sem efeito
+    fiscal, o custo é o dos prêmios, art. 60 §2º). A data de aquisição continua a original."""
+    if e.natureza is None or not e.quantidade_destino or e.quantidade_destino <= 0:
+        raise MotorError(f"{_nome(e)} sem a natureza ou a quantidade de destino")
+    if e.natureza is NaturezaEvento.INCORPORACAO_ACOES:
+        tratamento = params.texto("incorporacao_acoes_tratamento", e.data)
+        if tratamento != "custo_mantido":
+            raise MotorError(f"incorporação de ações: tratamento {tratamento!r} não implementado")
+    chave = _chave_evento(livro, e)
+    pos = _origem_do_evento(livro, e, chave)
+    sinal = 1 if pos.quantidade > 0 else -1
+    destino = _destino(livro, e, chave, sinal)
+    de = (e.conta, e.corretora)
+    quantidade = e.quantidade or ZERO
+    custo = pos.baixar_sem_resultado(quantidade)
+    regra = f"incorporação ({e.natureza.value.lower()}, IN 1.585 art. 58 §6º): "
+    livro.registrar(chave, e.data, f"evento:{e.id}",
+                    regra + f"sai para {e.ticker_destino} com o custo, sem resultado", de=de,
+                    categoria=Categoria.COMUM, cv="V" if sinal > 0 else "C",
+                    quantidade=quantidade, valor=custo)  # fmt: skip
+    livro.posicoes[destino].ajustar(e.quantidade_destino * sinal, custo)
+    livro.registrar(destino, e.data, f"evento:{e.id}",
+                    regra + f"entra no lugar de {e.ticker} com o mesmo custo", de=de,
+                    categoria=Categoria.COMUM, cv="C" if sinal > 0 else "V",
+                    quantidade=e.quantidade_destino, valor=custo)  # fmt: skip
+
+
+def _cisao(livro: Livro, chave: Chave, grupo: list[Evento]) -> None:
+    """Cisão: o percentual do custo de A divulgado pela companhia vai para B, sem resultado (IN
+    RFB 1.585/2015 art. 58 §6º: na proporção fixada pela assembleia). A quantidade de A não
+    muda. Os eventos das contas que formam a mesma posição (visão por titular) somam a quantidade
+    de origem, que tem de ser a posição inteira."""
+    e0 = grupo[0]
+    percentuais = {e.percentual_custo for e in grupo}
+    if None in percentuais:
+        raise MotorError(f"{_nome(e0)} sem o percentual de custo: informe o da companhia (aviso "
+                         "aos acionistas) no evento")  # fmt: skip
+    if len(percentuais) > 1:
+        raise MotorError(f"{_nome(e0)}: percentuais de custo diferentes entre as contas")
+    p = e0.percentual_custo or ZERO
+    if not ZERO < p < 1:
+        raise MotorError(f"{_nome(e0)}: percentual de custo {p} fora do intervalo (0, 1)")
+    if any(not e.quantidade_destino or e.quantidade_destino <= 0 for e in grupo):
+        raise MotorError(f"{_nome(e0)} sem a quantidade de {e0.ticker_destino} recebida")
+    pos = livro.posicoes[chave]
+    for e in grupo:
+        _origem_do_evento(livro, e, chave)
+    base = sum((e.quantidade or ZERO for e in grupo), ZERO)
+    if base != pos.quantidade:
+        raise MotorError(f"{_nome(e0)}: quantidade de origem {base} diferente da posição "
+                         f"{pos.quantidade} (lance o evento de cada conta)")  # fmt: skip
+    total = pos.custo * p  # custo de antes do evento
+    destino = _destino(livro, e0, chave, 1)
+    restante = total
+    for i, e in enumerate(grupo):
+        custo = restante if i == len(grupo) - 1 else total * (e.quantidade or ZERO) / base
+        restante -= custo
+        de = (e.conta, e.corretora)
+        pos.ajustar(ZERO, -custo)
+        livro.registrar(chave, e.data, f"evento:{e.id}",
+                        f"cisão: {p * 100}% do custo vai para {e.ticker_destino}, sem resultado "
+                        "(a quantidade não muda)", de=de, categoria=Categoria.COMUM, cv="V",
+                        quantidade=ZERO, valor=custo)  # fmt: skip
+        livro.posicoes[destino].ajustar(e.quantidade_destino or ZERO, custo)
+        livro.registrar(destino, e.data, f"evento:{e.id}",
+                        f"cisão: recebida de {e.ticker} com {p * 100}% do custo", de=de,
+                        categoria=Categoria.COMUM, cv="C",
+                        quantidade=e.quantidade_destino or ZERO, valor=custo)  # fmt: skip
+
+
+def _leilao_fracao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
+    """Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo
+    PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro
+    leilao_fracao_isentavel (decisão do usuário de 19/10/2026: entra no limite do mês do crédito,
+    que é a data do evento)."""
+    chave = _chave_evento(livro, e)
+    pos = _origem_do_evento(livro, e, chave)
+    if pos.quantidade < 0:
+        raise MotorError(f"{_nome(e)} em posição vendida")
+    quantidade = e.quantidade or ZERO
+    baixa = pos.vender(quantidade, e.valor)
+    acao = e.tipo_ativo in (TipoAtivo.ACAO, TipoAtivo.UNIT)
+    isentavel = acao and params.booleano("leilao_fracao_isentavel", e.data)
+    livro.registrar(chave, e.data, f"evento:{e.id}",
+                    "leilão de fração: venda pelo valor líquido recebido - PM x quantidade",
+                    de=(e.conta, e.corretora), categoria=_categoria(e.tipo_ativo, False),
+                    cv="V", quantidade=quantidade, valor=e.valor, baixa=baixa,
+                    venda_acao=e.valor if isentavel else ZERO, isentavel=isentavel)  # fmt: skip
+
+
+def _evento(livro: Livro, e: Evento) -> None:
+    de = (e.conta, e.corretora)
+    chave = _chave_evento(livro, e)
     pos = livro.posicoes[chave]
     if e.tipo is TipoEvento.TRANSFERENCIA:
         if e.conta_destino is None or e.corretora_destino is None:
@@ -567,7 +722,7 @@ def _evento(livro: Livro, e: Evento) -> None:
         # só a subscrição abre posição; nos demais o evento cairia numa posição que não existe
         raise MotorError(
             f"evento {e.tipo.value} de {e.ticker} ({e.data}) sem posição na conta "
-            f"{e.corretora} {e.conta} (confira data, conta e ticker no eventos.csv)"
+            f"{e.corretora} {e.conta} (confira data, conta e ticker do evento)"
         )
     if e.tipo is TipoEvento.REDUCAO_CAPITAL and pos.custo + custo < 0 < pos.quantidade:
         raise MotorError(f"redução de capital de {e.ticker} ({e.data}) maior que o custo")

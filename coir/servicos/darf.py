@@ -1,8 +1,9 @@
 """DARFs do ano para a tela: situação (a pagar, paga, em atraso, acumulada abaixo do mínimo), a
-multa de mora (motor, Lei 9.430/1996 art. 61) e o registro do pagamento com o comprovante.
+multa e os juros de mora (motor, Lei 9.430/1996 art. 61) e o registro do pagamento com o
+comprovante.
 
 A DARF é a do motor (``MesApurado.darf``); o pagamento é um fato lançado pelo usuário e não
-muda a apuração. Juros Selic ficam para a F7.
+muda a apuração.
 """
 
 import calendar
@@ -17,9 +18,9 @@ from sqlalchemy import select
 
 from coir.db.modelos import DarfPagamento, Titular
 from coir.db.sessao import conectar
-from coir.domain.fiscal import MesApurado, MultaMora
+from coir.domain.fiscal import JurosMora, MesApurado, MultaMora
 from coir.domain.parametros import ReferenciasFiscais
-from coir.engine.darf import multa_mora
+from coir.engine.darf import juros_mora, multa_mora
 from coir.erros import ImportacaoError
 
 log = logging.getLogger(__name__)
@@ -54,10 +55,12 @@ class LinhaDarf:
     situacao: Situacao
     multa: MultaMora | None  # paga: até o pagamento; em atraso: estimada até hoje
     pagamento: Pagamento | None
+    juros: JurosMora | None = None  # Selic + 1% (mesmas datas da multa)
 
     @property
     def total(self) -> Decimal:
-        return self.principal + (self.multa.valor if self.multa else ZERO)
+        return (self.principal + (self.multa.valor if self.multa else ZERO)
+                + (self.juros.valor if self.juros else ZERO))  # fmt: skip
 
     @property
     def pago_em_atraso(self) -> bool:
@@ -66,7 +69,8 @@ class LinhaDarf:
 
     @property
     def diferenca(self) -> Decimal | None:
-        """Pago menos devido (principal + multa): negativo = falta pagar; positivo = a maior."""
+        """Pago menos devido (principal + multa + juros): negativo = falta pagar; positivo = a
+        maior."""
         return None if self.pagamento is None else self.pagamento.valor - self.total
 
 
@@ -95,18 +99,21 @@ def darfs(
                                         Situacao.EM_APURACAO, None, pago))  # fmt: skip
         elif m.darf > 0 and m.vencimento is not None:
             multa: MultaMora | None = None
+            juros: JurosMora | None = None
+            ate: date | None = None
             if pago is not None:
-                situacao = Situacao.PAGA
-                multa = multa_mora(m.darf, competencia, m.vencimento, pago.data,
-                                   fiscais.parametros, fiscais.calendario)  # fmt: skip
+                situacao, ate = Situacao.PAGA, pago.data
             elif hoje > m.vencimento:
-                situacao = Situacao.EM_ATRASO
-                multa = multa_mora(m.darf, competencia, m.vencimento, hoje, fiscais.parametros,
-                                   fiscais.calendario)  # fmt: skip
+                situacao, ate = Situacao.EM_ATRASO, hoje
             else:
                 situacao = Situacao.A_PAGAR
+            if ate is not None:
+                multa = multa_mora(m.darf, competencia, m.vencimento, ate, fiscais.parametros,
+                                   fiscais.calendario)  # fmt: skip
+                juros = juros_mora(m.darf, competencia, m.vencimento, ate, fiscais.parametros,
+                                   fiscais.calendario, fiscais.selic)  # fmt: skip
             linhas.append(LinhaDarf(m.ano, m.mes, codigo, m.vencimento, m.darf, situacao, multa,
-                                    pago))  # fmt: skip
+                                    pago, juros))  # fmt: skip
         elif m.darf_acumulado > 0:
             linhas.append(LinhaDarf(m.ano, m.mes, codigo, None, m.darf_acumulado,
                                     Situacao.ACUMULADA, None, pago))  # fmt: skip

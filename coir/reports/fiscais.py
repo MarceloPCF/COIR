@@ -24,6 +24,7 @@ from coir.domain.fiscal import (
     Visao,
 )
 from coir.domain.nota import CategoriaCusto
+from coir.domain.proventos import Provento, TipoProvento
 from coir.domain.relatorio import DadosRelatorio
 from coir.reports.modelo import (
     Cabecalho,
@@ -894,6 +895,89 @@ def livro_notas(d: DadosRelatorio) -> Relatorio:
     )
 
 
+# --------------------------------------------------------------------------------- 12. proventos
+NOME_PROVENTO = {
+    TipoProvento.DIVIDENDO: "Dividendo", TipoProvento.JCP: "JCP",
+    TipoProvento.RENDIMENTO_FII: "Rendimento de FII", TipoProvento.REEMBOLSO_BTC: "Reembolso BTC",
+    TipoProvento.RESTITUICAO_CAPITAL: "Restituição de capital",
+    TipoProvento.FORA_DO_ESCOPO: "Fora da v3.0",
+}  # fmt: skip
+
+
+def _por_empresa(lista: list[Provento], jcp: bool = False) -> Secao | None:
+    grupos: dict[tuple[str, str], list[Provento]] = defaultdict(list)
+    for p in lista:
+        grupos[(p.codigo[:4], p.empresa)].append(p)
+    if jcp:
+        colunas = (Coluna("Empresa"), Coluna("Códigos"), _dinheiro("Líquido (código 10)"),
+                   _dinheiro("Bruto (estimado)"), _dinheiro("IRRF (estimado)"))  # fmt: skip
+    else:
+        colunas = (Coluna("Empresa"), Coluna("Códigos"), _dinheiro("Valor"))
+    linhas: list[tuple[Valor, ...]] = []
+    for (_, empresa), ps in sorted(grupos.items()):
+        codigos = ", ".join(sorted({p.codigo for p in ps}))
+        liquido = _soma(p.liquido for p in ps)
+        if jcp:
+            linhas.append((empresa, codigos, liquido, _soma(p.bruto for p in ps),
+                           _soma(p.irrf for p in ps)))  # fmt: skip
+        else:
+            linhas.append((empresa, codigos, liquido))
+    if not linhas:
+        return None
+    return Secao("", colunas, tuple(linhas), _total(linhas, colunas, set(range(2, len(colunas)))))
+
+
+def proventos(d: DadosRelatorio) -> Relatorio:
+    """Proventos do ano para o IRPF (declarados no ano: o JCP creditado no ano e pago no seguinte
+    entra no ano do crédito, decisão do usuário de 19/10/2026)."""
+    do_ano = [p for p in d.proventos if p.ano_declaracao == d.ano]
+    secoes: list[Secao] = []
+    blocos = (
+        (TipoProvento.DIVIDENDO, "Dividendos (rendimentos isentos, código 09)", False,
+         "Lei 9.249/1995 art. 10. A partir de 2026, veja os avisos da Lei 15.270/2025."),
+        (TipoProvento.JCP, "Juros sobre capital próprio (tributação exclusiva, código 10)", True,
+         "Valor líquido creditado; bruto e IRRF estimados pela alíquota retida (15% até 2025, "
+         "17,5% desde 2026, LC 224/2025): vale o informe da empresa."),
+        (TipoProvento.RENDIMENTO_FII, "Rendimentos de FII e Fiagro (isentos)", False,
+         "Lei 11.033/2004 art. 3º III: isentos para pessoa física se o fundo cumpre os "
+         "requisitos."),
+        (TipoProvento.ATUALIZACAO, "Atualização de proventos pela Selic (tributação exclusiva)",
+         True, "Lei 8.981/1995 art. 65 §4º c; IRRF retido pela empresa (renda fixa). Código 06 ou "
+         "12 na ficha exclusiva, conforme o informe da empresa."),
+        (TipoProvento.REEMBOLSO_BTC, "Reembolsos de proventos de ações emprestadas (BTC)", False,
+         "IN RFB 1.585/2015 art. 74 até 2025; desde 2026 (Lei 15.265/2025) isento por equivalência "
+         "para dividendos (lei omissa)."),
+    )  # fmt: skip
+    for tipo, titulo, jcp, nota in blocos:
+        secao = _por_empresa([p for p in do_ano if p.tipo is tipo], jcp)
+        if secao is not None:
+            secoes.append(replace(secao, titulo=titulo, nota=nota))
+    a_receber = [p for p in do_ano if p.a_receber_em_31_12]
+    if a_receber:
+        colunas = (Coluna("Empresa"), Coluna("Código"), Coluna("Pago em", T.DATA),
+                   _dinheiro("Líquido a receber"))  # fmt: skip
+        linhas: list[tuple[Valor, ...]] = [
+            (p.empresa, p.codigo, p.data, p.liquido) for p in a_receber
+        ]
+        secoes.append(Secao(f"JCP creditado e a receber em 31/12/{d.ano} (Bens e Direitos 99.07)",
+                            colunas, tuple(linhas), _total(linhas, colunas, {3})))  # fmt: skip
+    colunas = (Coluna("Data", T.DATA), Coluna("Código"), Coluna("Tipo"), Coluna("Instituição"),
+               Coluna("Quantidade", T.QUANTIDADE), _dinheiro("Líquido"), _dinheiro("Bruto"),
+               _dinheiro("IRRF"), Coluna("Observação"))  # fmt: skip
+    ordenados = sorted(do_ano, key=lambda p: (p.data, p.codigo))
+    todos: list[tuple[Valor, ...]] = [
+        (p.data, p.codigo, NOME_PROVENTO[p.tipo], p.instituicao, p.quantidade, p.liquido, p.bruto,
+         p.irrf, p.observacao) for p in ordenados
+    ]  # fmt: skip
+    secoes.append(Secao("Lançamentos do ano (movimentação da B3)", colunas, tuple(todos)))
+    avisos = tuple(a for a in d.avisos_proventos if f"{d.ano}" in a[:10])
+    return Relatorio(
+        "proventos", "Proventos recebidos", _cab(d), tuple(secoes), pdf=True,
+        notas=(*avisos, "Fonte: movimentação da Área do Investidor da B3. O CNPJ da fonte "
+               "pagadora está no informe de rendimentos da empresa."),
+    )  # fmt: skip
+
+
 TODOS: dict[str, Callable[[DadosRelatorio], Relatorio]] = {
     "resumo-fiscal": resumo_fiscal,
     "darfs": darfs,
@@ -906,6 +990,7 @@ TODOS: dict[str, Callable[[DadosRelatorio], Relatorio]] = {
     "carteira": carteira,
     "bens-e-direitos": bens_e_direitos,
     "livro-de-notas": livro_notas,
+    "proventos": proventos,
 }
 
 
@@ -914,7 +999,7 @@ ABAS = {
     "irrf-e-exclusiva": "IRRF e exclusiva", "operacoes-finalizadas": "Operações finalizadas",
     "evolucao": "Evolução", "prejuizos": "Prejuízos", "conferencia-pm": "Conferência do PM",
     "carteira": "Carteira", "bens-e-direitos": "Bens e Direitos",
-    "livro-de-notas": "Livro de notas",
+    "livro-de-notas": "Livro de notas", "proventos": "Proventos",
 }  # fmt: skip
 
 

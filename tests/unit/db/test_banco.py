@@ -35,7 +35,7 @@ from coir.domain.referencias import TrocaTicker
 from coir.erros import BancoError, ImportacaoError, ReferenciaError
 from coir.parsing.extrair import ResultadoExtracao, extrair_textos
 from coir.parsing.normalizar import classes_das_series, operacoes
-from coir.servicos.importacao import importar_arquivos, importar_pasta
+from coir.servicos.importacao import aplicar_tabelas, importar_arquivos, importar_pasta
 from tests.apoio import cpf_de_teste
 
 FIXTURES = Path(__file__).parents[2] / "fixtures" / "notas"
@@ -125,7 +125,7 @@ def test_decimal_texto_recusa_float() -> None:
 # ---------------------------------------------------------------------------------- migração
 def test_migracao_cria_esquema_igual_aos_modelos(banco: Path) -> None:
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == revisao_final() == "0003"
+    assert revisao_atual(engine) == revisao_final() == "0005"
     with engine.connect() as c:
         ctx = MigrationContext.configure(c, opts={"compare_type": True})
         assert compare_metadata(ctx, Base.metadata) == []
@@ -148,7 +148,7 @@ def test_banco_da_revisao_anterior_migra_com_backup(tmp_path: Path) -> None:
     engine.dispose()
     migrar(banco, AGORA)
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == "0003"
+    assert revisao_atual(engine) == "0005"
     engine.dispose()
     with abrir(banco)() as s:
         assert [t.nome for t in repo.titulares(s)] == ["Titular de Teste"]
@@ -657,9 +657,9 @@ def test_eventos_do_csv_entram_uma_vez_e_ticker_desconhecido_falha(
     for ruim in ("-100", "NaN", "Infinity"):
         with fabrica() as s, pytest.raises(ImportacaoError, match="linha 2: quantidade"):
             importar_eventos(s, [linha | {"data": "2015-12-02", "quantidade": ruim}])
-    with fabrica() as s, pytest.raises(ImportacaoError, match="sem quantidade"):
+    with fabrica() as s, pytest.raises(ImportacaoError, match="informe a quantidade"):
         importar_eventos(s, [linha | {"data": "2015-12-02", "quantidade": ""}])
-    with fabrica() as s, pytest.raises(ImportacaoError, match="redução de capital sem valor"):
+    with fabrica() as s, pytest.raises(ImportacaoError, match="reducao capital: informe o valor"):
         importar_eventos(s, [linha | {"data": "2015-12-02", "tipo": "REDUCAO_CAPITAL",
                                       "cv": "V", "quantidade": ""}])  # fmt: skip
 
@@ -771,8 +771,79 @@ def test_futuro_de_mercado_sem_linha_na_apuracao_falha_alto() -> None:
     texto = (FIXTURES / "xp_2024_01_bmf_novo.txt").read_text(encoding="utf-8")
     nota = extrair_textos("x.txt", texto.split("\f")).notas[0]
     raiz = nota.negocios_bmf[0].mercadoria[:3]
-    contratos = tuple(c.model_copy(update={"mercado": "JUROS"}) if c.raiz == raiz else c
+    contratos = tuple(c.model_copy(update={"grupo": "juros"}) if c.raiz == raiz else c
                       for c in REFS.contratos)  # fmt: skip
-    with pytest.raises(ReferenciaError, match="mercado JUROS sem linha"):
+    with pytest.raises(ReferenciaError, match="grupo juros sem linha"):
         _ajustes(nota, REFS.model_copy(update={"contratos": contratos}))
     assert _ajustes(nota, REFS)  # com o cadastro real, funciona
+
+
+def test_troca_nova_vale_no_banco_ja_importado_ao_abrir(
+    banco: Path, fabrica: sessionmaker[Session], tmp_path: Path
+) -> None:
+    """Troca acrescentada em trocas_ticker.csv depois da importação: vale ao abrir o banco (sem
+    esperar a próxima nota), com backup antes; abrir de novo não grava nem faz outro backup."""
+    _importar(fabrica, _todas(tmp_path / "notas"))
+    with fabrica() as s:
+        op = s.scalars(select(Operacao).where(Operacao.mercado == "VISTA")).first()
+        assert op is not None
+        ticker, dia = op.ticker_impresso, s.get_one(NotaCorretagem, op.nota_id).data_pregao
+    refs = REFS.model_copy(update={"trocas": (*REFS.trocas, _troca(ticker, "NOVO3", dia))})
+    assert aplicar_tabelas(banco, refs, AGORA)
+    backups = sorted((banco.parent / "backups").glob("*.db"))
+    assert len(backups) == 1
+    with fabrica() as s:
+        ativos = repo.Ativos(s)
+        assert ativos.ativo_id("NOVO3", dia + timedelta(days=30)) == ativos.ativo_id(ticker, dia)
+    assert not aplicar_tabelas(banco, refs, AGORA + timedelta(seconds=1))
+    assert sorted((banco.parent / "backups").glob("*.db")) == backups
+
+
+def test_migracao_0005_desce_e_sobe(tmp_path: Path) -> None:
+    """Os campos de incorporação/cisão e as propostas ignoradas (F7a) saem e voltam."""
+    from alembic import command
+    from sqlalchemy import inspect
+
+    from coir.db.sessao import _config_alembic  # pyright: ignore[reportPrivateUsage]
+
+    banco = tmp_path / "coir.db"
+    migrar(banco, AGORA)
+    engine = criar_engine(banco)
+    for alvo, tem in (("0004", False), ("0005", True)):
+        with engine.begin() as c:
+            config = _config_alembic()
+            config.attributes["connection"] = c
+            (command.downgrade if alvo == "0004" else command.upgrade)(config, alvo)
+        colunas = {c["name"] for c in inspect(engine).get_columns("evento_corporativo")}
+        assert ("natureza" in colunas) is tem
+        assert ("proposta_ignorada" in inspect(engine).get_table_names()) is tem
+    engine.dispose()
+
+
+def test_tabelas_com_erro_nao_impedem_abrir_o_app(
+    banco: Path, fabrica: sessionmaker[Session], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Revisão F7a A2: erro ao aplicar data/ ao banco vira aviso (o app abre); sem mudança em
+    data/, abrir de novo não confere as notas outra vez (marca no banco)."""
+    from coir.servicos import estado as modulo
+    from coir.servicos import importacao
+    from coir.servicos.estado import Estado
+
+    _importar(fabrica, _todas(tmp_path / "notas"))
+
+    def falha(*_: object) -> bool:
+        raise ImportacaoError("nota 1 não normaliza")
+
+    monkeypatch.setattr(modulo, "aplicar_tabelas", falha)
+    e = Estado(banco)
+    e.preparar(AGORA)
+    assert e.aviso_tabelas is not None and "não normaliza" in e.aviso_tabelas
+    monkeypatch.undo()
+    chamadas: list[int] = []
+    original = importacao._aplicar_no_banco  # pyright: ignore[reportPrivateUsage]
+    monkeypatch.setattr(
+        importacao, "_aplicar_no_banco", lambda *a: chamadas.append(1) or original(*a)
+    )  # type: ignore[func-returns-value]
+    importacao.aplicar_tabelas(banco, REFS, AGORA)
+    importacao.aplicar_tabelas(banco, REFS, AGORA)
+    assert chamadas == [1]

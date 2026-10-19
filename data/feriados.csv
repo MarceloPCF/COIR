@@ -260,3 +260,16 @@ data,tipo,descricao
 2027-11-15,bancario,Proclamação da República
 2027-12-24,pregao,Véspera de Natal (sem pregão)
 2027-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2028-02-28,bancario,Carnaval (segunda)
+2028-02-29,bancario,Carnaval (terça)
+2028-04-14,bancario,Sexta-feira Santa
+2028-04-21,bancario,Tiradentes
+2028-05-01,bancario,Dia do Trabalho
+2028-06-15,bancario,Corpus Christi
+2028-09-07,bancario,Independência
+2028-10-12,bancario,Nossa Senhora Aparecida
+2028-11-02,bancario,Finados
+2028-11-15,bancario,Proclamação da República
+2028-11-20,bancario,Consciência Negra (Lei 14.759/2023)
+2028-12-25,bancario,Natal
+2028-12-29,bancario,Último dia útil do ano (sem expediente bancário)

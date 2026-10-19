@@ -92,10 +92,11 @@ class AjusteFuturo(Modelo):
     grupo: Grupo  # INDICE, DOLAR ou COMMODITY
     tipo: TipoAjuste
     valor: Decimal  # crédito positivo, débito negativo
-    volume: Decimal  # base do rateio de custos (preço x quantidade x multiplicador; AJUPOS = 0)
+    volume: Decimal  # base do rateio de custos, em R$ (preço x qtd x multiplicador; AJUPOS = 0)
     cv: CV | None = None  # negócio normal: compra ou venda
     quantidade: Decimal = ZERO  # contratos do negócio
     vencimento: date | None = None  # vencimento do contrato (encerra a posição que sobrar)
+    entrega_fisica: bool = False  # contrato liquidado por entrega (ex.: café): fora do escopo
 
     @property
     def day_trade(self) -> bool:
@@ -116,6 +117,30 @@ class NotaMotor(Modelo):
     ajustes: tuple[AjusteFuturo, ...] = ()
 
 
+class PosicaoFuturo(Modelo):
+    """Contrato futuro em aberto: os ajustes e custos acumulados ainda não realizados."""
+
+    titular: int
+    mercadoria: str
+    grupo: Grupo
+    quantidade: Decimal  # comprado > 0, vendido < 0
+    acumulado: Decimal
+    vencimento: date | None
+
+
+class OutroCusto(Modelo):
+    """Custo dedutível lançado pelo usuário num mês (ex.: taxas de aluguel de ações - BTC): reduz o
+    resultado da categoria no mês (como a aba BTC_Outros da planilha v2)."""
+
+    id: int
+    titular: int
+    ano: int
+    mes: int
+    categoria: Categoria  # COMUM ou DAY_TRADE
+    valor: Decimal  # positivo
+    descricao: str = ""
+
+
 class TipoEvento(StrEnum):
     DESDOBRAMENTO = "DESDOBRAMENTO"
     GRUPAMENTO = "GRUPAMENTO"
@@ -123,12 +148,32 @@ class TipoEvento(StrEnum):
     SUBSCRICAO = "SUBSCRICAO"
     REDUCAO_CAPITAL = "REDUCAO_CAPITAL"
     TRANSFERENCIA = "TRANSFERENCIA"  # custódia entre contas do mesmo titular
+    INCORPORACAO = "INCORPORACAO"  # troca de A por B com o custo (ver NaturezaEvento)
+    CISAO = "CISAO"  # parte do custo de A vai para B, pelo percentual da companhia
+    LEILAO_FRACAO = "LEILAO_FRACAO"  # fração vendida em leilão pela companhia (alienação)
+
+
+class NaturezaEvento(StrEnum):
+    """Natureza da INCORPORACAO (a regra fiscal muda com ela)."""
+
+    INCORPORACAO_SOCIEDADE = "INCORPORACAO_SOCIEDADE"  # Lei 6.404 art. 227
+    INCORPORACAO_ACOES = "INCORPORACAO_ACOES"  # Lei 6.404 art. 252 (divergência RFB x Judiciário)
+    FUSAO = "FUSAO"  # Lei 6.404 art. 228
+    CONVERSAO = "CONVERSAO"  # de classe na mesma companhia (ex.: PN -> ON)
+    AJUSTE_SERIE = "AJUSTE_SERIE"  # série de opção com código ou quantidade ajustados pela B3
+
+
+TIPOS_COM_DESTINO = frozenset({TipoEvento.INCORPORACAO, TipoEvento.CISAO})
 
 
 class Evento(Modelo):
     """Evento corporativo ou de custódia. Ajuste de posição: C soma quantidade e custo, V
     subtrai (como na aba Eventos_B3 do gabarito). Transferência: move a quantidade (None = toda
-    a posição) da conta para a conta de destino, com o custo proporcional."""
+    a posição) da conta para a conta de destino, com o custo proporcional.
+
+    Incorporação e cisão (sem C/V): ``quantidade`` é a quantidade de origem (a da conta) e
+    ``quantidade_destino`` a de B recebida; na cisão, ``percentual_custo`` é a parte do custo de
+    A que vai para B. Leilão de fração (sem C/V): ``quantidade`` vendida por ``valor`` líquido."""
 
     id: int
     data: date
@@ -144,6 +189,12 @@ class Evento(Modelo):
     valor: Decimal = ZERO
     conta_destino: int | None = None
     corretora_destino: str | None = None
+    ativo_destino: int | None = None
+    ticker_destino: str | None = None
+    tipo_ativo_destino: TipoAtivo | None = None
+    quantidade_destino: Decimal | None = None
+    natureza: NaturezaEvento | None = None
+    percentual_custo: Decimal | None = None  # cisão: fração do custo de A que vai para B (0..1)
     observacao: str = ""
 
 
@@ -303,6 +354,17 @@ class MultaMora(Modelo):
     dias: int  # dias de atraso contados
     percentual: Decimal  # já limitado ao teto
     valor: Decimal
+
+
+class JurosMora(Modelo):
+    """Juros de mora de uma DARF paga (ou a pagar) depois do vencimento (regra 12: guarda os meses
+    e as taxas usados)."""
+
+    pagamento: date  # data considerada (dia não útil vai para o próximo dia útil)
+    percentual: Decimal  # Selic dos meses entre o vencimento e o pagamento + 1% do mês do pagamento
+    valor: Decimal
+    taxas: tuple[tuple[str, Decimal], ...] = ()  # ("MM/AAAA", % a.m.) somados
+    meses_sem_taxa: tuple[str, ...] = ()  # depois do último mês da tabela: valor estimado
 
 
 class Apuracao(Modelo):

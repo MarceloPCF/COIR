@@ -22,6 +22,7 @@ from coir.domain.fiscal import (
     Evento,
     Grupo,
     Movimento,
+    NaturezaEvento,
     NotaMotor,
     OperacaoMotor,
     PosicaoAtivo,
@@ -38,17 +39,17 @@ from coir.engine.calendario import liquidacao_termo, vencimento_opcao
 from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import carteira, movimentar
 from coir.erros import ReferenciaError
+from coir.parsing import futuros
+from coir.servicos import outros_custos
 
 RE_PRAZO = re.compile(r"^(?P<mes>\d{2})/(?P<ano>\d{2})$")
 RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é put de novembro
-# mercado do contrato (data/contratos_futuros.csv) -> linha da apuração; mercado sem linha aqui
+# linha da apuração de cada contrato: coluna grupo de data/contratos_futuros.csv; grupo sem linha
 # (ex.: juros) falha alto em vez de cair em "outros" calado
-GRUPOS = {"INDICE": Grupo.INDICE, "DOLAR": Grupo.DOLAR, "BOI": Grupo.COMMODITY,
-          "CAFE": Grupo.COMMODITY, "MILHO": Grupo.COMMODITY, "SOJA": Grupo.COMMODITY}  # fmt: skip
-TIPOS_SEM_NEGOCIO = ("AJUPOS", "PERMAN")
+GRUPOS_FUTUROS = {Grupo.INDICE, Grupo.DOLAR, Grupo.COMMODITY}
 
 
-class _Tickers:
+class Tickers:
     """(ticker, data) -> ativo, só leitura (a opção exercida já foi negociada antes)."""
 
     def __init__(self, sessao: Session) -> None:
@@ -92,7 +93,7 @@ def _vencimento(prazo: str, serie: str, refs: ReferenciasFiscais) -> date:
 
 
 def _nota_bovespa(
-    registro: NotaCorretagem, nota: NotaExtraida, refs: ReferenciasFiscais, tickers: _Tickers
+    registro: NotaCorretagem, nota: NotaExtraida, refs: ReferenciasFiscais, tickers: Tickers
 ) -> tuple[OperacaoMotor, ...]:
     ops: list[OperacaoMotor] = []
     for o, negocio in zip(registro.operacoes, nota.negocios_bovespa, strict=True):
@@ -123,40 +124,28 @@ def _nota_bovespa(
 
 
 def _ajustes(nota: NotaExtraida, refs: Referencias) -> tuple[AjusteFuturo, ...]:
+    conversao = futuros.conversao_do_volume(nota, refs)  # volume em R$ (câmbio implícito)
     saida: list[AjusteFuturo] = []
     for i, n in enumerate(nota.negocios_bmf):
-        contrato = next(
-            (
-                c
-                for c in refs.contratos
-                if c.raiz == n.mercadoria[:3] and c.vigente(nota.data_pregao)
-            ),
-            None,
-        )
-        sem_negocio = any(t in n.tipo.upper() for t in TIPOS_SEM_NEGOCIO)
-        if n.day_trade:
-            tipo = TipoAjuste.DAY_TRADE
-        elif "AJUPOS" in n.tipo.upper():
-            tipo = TipoAjuste.AJUPOS
-        elif sem_negocio:
-            tipo = TipoAjuste.OUTRO
-        else:
-            tipo = TipoAjuste.NORMAL
+        tipo = futuros.tipo(n)
+        contrato = futuros.contrato(n, refs, nota.data_pregao)
         if contrato is None:
-            if sem_negocio and n.valor == 0:
+            if tipo is TipoAjuste.OUTRO and n.valor == 0:
                 continue  # taxa de permanência zerada de mercadoria sem cadastro
             raise ReferenciaError(f"contrato futuro {n.mercadoria} sem cadastro")
-        if contrato.mercado not in GRUPOS:
-            raise ReferenciaError(f"contrato futuro {n.mercadoria}: mercado {contrato.mercado} "
+        grupo = next((g for g in GRUPOS_FUTUROS if g.value == contrato.grupo), None)
+        if grupo is None:
+            raise ReferenciaError(f"contrato futuro {n.mercadoria}: grupo {contrato.grupo} "
                                   "sem linha na apuração (ex.: juros)")  # fmt: skip
+        sem_negocio = tipo in (TipoAjuste.AJUPOS, TipoAjuste.OUTRO)
+        volume = abs(n.preco * n.quantidade * contrato.multiplicador)
         saida.append(
             AjusteFuturo(
-                ordem=i, mercadoria=n.mercadoria,
-                grupo=GRUPOS[contrato.mercado], tipo=tipo,
+                ordem=i, mercadoria=n.mercadoria, grupo=grupo, tipo=tipo,
                 valor=_assinado(n), cv=n.cv, quantidade=abs(n.quantidade),
                 vencimento=n.vencimento,
-                volume=Decimal(0) if sem_negocio
-                else abs(n.preco * n.quantidade * contrato.multiplicador),
+                volume=Decimal(0) if sem_negocio else volume * conversao.get(n.mercadoria, 1),
+                entrega_fisica=contrato.liquidacao == "FISICA",
             )
         )  # fmt: skip
     return tuple(saida)
@@ -169,7 +158,7 @@ def _assinado(n: NegocioBMF) -> Decimal:
 def entradas(
     sessao: Session, refs: Referencias, fiscais: ReferenciasFiscais
 ) -> tuple[list[NotaMotor], list[Evento]]:
-    tickers = _Tickers(sessao)
+    tickers = Tickers(sessao)
     notas: list[NotaMotor] = []
     registros = sessao.scalars(
         select(NotaCorretagem)
@@ -201,6 +190,8 @@ def entradas(
         .order_by(EventoCorporativo.id)
     ):
         ticker = tickers.ticker(e.ativo_id, e.data)
+        destino = None if e.ativo_destino_id is None else tickers.ticker(e.ativo_destino_id,
+                                                                         e.data)  # fmt: skip
         eventos.append(
             Evento(
                 id=e.id, data=e.data, titular=e.conta.titular_id, conta=e.conta_id,
@@ -210,7 +201,11 @@ def entradas(
                 cv=e.cv,  # type: ignore[arg-type]
                 quantidade=e.quantidade, valor=e.valor, conta_destino=e.conta_destino_id,
                 corretora_destino=e.conta_destino.corretora.nome if e.conta_destino else None,
-                observacao=e.observacao,
+                ativo_destino=e.ativo_destino_id, ticker_destino=destino,
+                tipo_ativo_destino=None if destino is None else _tipo_evento(fiscais, destino),
+                quantidade_destino=e.quantidade_destino,
+                natureza=None if e.natureza is None else NaturezaEvento(e.natureza),
+                percentual_custo=e.percentual_custo, observacao=e.observacao,
             )
         )  # fmt: skip
     return notas, eventos
@@ -248,4 +243,5 @@ def apurar_banco(
 ) -> Apuracao:
     with conectar(banco) as fabrica, fabrica() as sessao:
         notas, eventos = entradas(sessao, refs, fiscais)
-    return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate)
+        custos = outros_custos.do_banco(sessao)
+    return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos)

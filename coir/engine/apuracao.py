@@ -30,6 +30,7 @@ from coir.domain.fiscal import (
     MesApurado,
     Movimento,
     NotaMotor,
+    OutroCusto,
     ResultadoCategoria,
     TipoAtivo,
     TributacaoExclusiva,
@@ -39,6 +40,7 @@ from coir.engine.calendario import fim_do_mes, vencimento_darf
 from coir.engine.fichas import Retido, SaldoPorFicha, irrf_retido
 from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import movimentar
+from coir.erros import MotorError
 
 CENTAVO = Decimal("0.01")
 ALIQUOTAS = {
@@ -71,11 +73,13 @@ def apurar(
     parametros: ParametrosFiscais,
     calendario: Calendario,
     ate: date,
+    outros_custos: Sequence[OutroCusto] = (),
 ) -> Apuracao:
     """Apuração de todos os titulares, mês a mês, até o mês de `ate` (visão por titular)."""
     avisos: list[str] = []
     movimentos = movimentar(notas, eventos, parametros, ate, avisos=avisos)
     movimentos += movimentos_futuros(notas, ate, avisos)
+    movimentos += [m for c in outros_custos if (m := _outro_custo(c)).data <= ate]
     movimentos.sort(key=lambda m: m.data)
     por_mes: dict[tuple[int, int, int], list[Movimento]] = defaultdict(list)
     exclusiva: list[TributacaoExclusiva] = []
@@ -112,6 +116,21 @@ def _exclusiva(m: Movimento) -> TributacaoExclusiva:
     return TributacaoExclusiva(data=m.data, titular=m.titular, ativo=m.ativo or 0, ticker=m.ticker,
                                quantidade=m.quantidade, alienacao=m.valor, custo=m.custo_baixa,
                                resultado=m.resultado)  # fmt: skip
+
+
+def _outro_custo(c: OutroCusto) -> Movimento:
+    """Outro custo dedutível do mês como movimento (regra 12: aparece na memória do mês)."""
+    if c.categoria is Categoria.FII or c.valor < 0:
+        raise MotorError(f"outro custo {c.id}: categoria {c.categoria} ou valor {c.valor} inválido")
+    return Movimento(
+        data=fim_do_mes(c.ano, c.mes), titular=c.titular, conta=None, corretora=None, ativo=None,
+        ticker="", origem=f"custo:{c.id}",
+        regra="outros custos dedutíveis lançados pelo usuário: reduzem o resultado do mês"
+        + (f" ({c.descricao})" if c.descricao else ""),
+        categoria=c.categoria, grupo=Grupo.A_VISTA, tipo=TipoAtivo.ACAO, cv=None,
+        quantidade=ZERO, valor=ZERO, custos=c.valor, resultado=-c.valor,
+        quantidade_apos=ZERO, custo_apos=ZERO,
+    )  # fmt: skip
 
 
 def _apurar_titular(
