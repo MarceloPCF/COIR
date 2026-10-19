@@ -99,13 +99,10 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         with resultado, ui.column().classes("coir-folha w-full gap-0 p-0"):
             for a in rel.arquivos:
                 with ui.row().classes("coir-item-lista w-full items-start gap-3 px-4 py-2"):
-                    icone = (
-                        "check_circle"
-                        if a.tipo and a.novas
-                        else "drag_handle"
-                        if a.tipo
-                        else ("info")
-                    )
+                    if a.tipo is None:
+                        icone = "info"  # não é planilha da B3 reconhecida, ou já importada
+                    else:
+                        icone = "check_circle" if a.novas else "drag_handle"
                     ui.icon(icone, size="20px").classes("coir-positivo" if a.novas else "")
                     with ui.column().classes("gap-0 grow min-w-0"):
                         ui.label(a.arquivo).classes("font-medium break-all")

@@ -186,11 +186,29 @@ class EventoCorporativo(Base):
     valor: Mapped[Decimal]
     conta_destino_id: Mapped[int | None] = mapped_column(ForeignKey("conta.id"))
     observacao: Mapped[str] = mapped_column(Text)
-    origem: Mapped[str] = mapped_column(String(20))  # gabarito, ajuste_v2, manual...
+    origem: Mapped[str] = mapped_column(String(20))  # gabarito, ajuste_v2, manual, b3...
+    # incorporação e cisão: ativo recebido (B), quantidade de B, natureza e percentual do custo
+    ativo_destino_id: Mapped[int | None] = mapped_column(ForeignKey("ativo.id"))
+    quantidade_destino: Mapped[Decimal | None]
+    natureza: Mapped[str | None] = mapped_column(String(24))
+    percentual_custo: Mapped[Decimal | None]
 
     conta: Mapped[Conta] = relationship(foreign_keys=[conta_id])
     conta_destino: Mapped[Conta | None] = relationship(foreign_keys=[conta_destino_id])
-    ativo: Mapped[Ativo] = relationship()
+    ativo: Mapped[Ativo] = relationship(foreign_keys=[ativo_id])
+    ativo_destino: Mapped[Ativo | None] = relationship(foreign_keys=[ativo_destino_id])
+
+
+class PropostaIgnorada(Base):
+    """Linha da movimentação da B3 que o usuário marcou para não virar evento (a proposta some da
+    tela 7). ``chave``: a da linha em ``movimentacao_b3``."""
+
+    __tablename__ = "proposta_ignorada"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"))
+    chave: Mapped[str] = mapped_column(String(64), unique=True)
+    ignorada_em: Mapped[datetime]
 
 
 class DarfPagamento(Base):

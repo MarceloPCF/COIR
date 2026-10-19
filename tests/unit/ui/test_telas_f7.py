@@ -10,14 +10,14 @@ from nicegui import ui
 from nicegui.elements.upload_files import SmallFileUpload
 from nicegui.testing.user_simulation import user_simulation
 
-from coir.domain.fiscal import Categoria
-from coir.servicos import outros_custos
+from coir.domain.fiscal import Categoria, TipoEvento
+from coir.servicos import eventos, outros_custos
 from coir.servicos.b3 import importar_planilhas
 from coir.servicos.cadastros import adicionar_titular
 from coir.ui.app import montar
 from coir.ui.telas.opcoes import do_ano
 from tests.apoio import cpf_de_teste
-from tests.unit.test_importador_b3 import CAB_ACOES, CAB_OPCOES, movimentacao, planilha
+from tests.unit.test_importador_b3 import CAB_ACOES, CAB_MOV, CAB_OPCOES, movimentacao, planilha
 from tests.unit.ui.test_telas import AGORA, ESPERA, _estado
 from tools.banco_demo import criar
 
@@ -158,3 +158,64 @@ async def test_importar_planilhas_da_b3(tmp_path: Path) -> None:
     assert (estado.dados / "_relatorios-b3" / arquivo.name).exists()
     estado.titular = 1
     assert [p.data for p in estado.proventos()[0]] == [date(2026, 9, 15)] * 2
+
+
+@pytest.mark.asyncio
+async def test_eventos_lanca_a_proposta_da_b3_e_recusa_o_que_nao_fecha(tmp_path: Path) -> None:
+    """Tela 7: a proposta (desdobro da movimentação) vira evento com a data ex; uma incorporação
+    maior que a posição não é gravada e o motivo aparece."""
+    banco = criar(tmp_path / "demo")
+    agora_b3 = "AGORA CORRETORA DE TITULOS E VALORES MOBILIARIOS S/A"
+    movimentos = planilha(tmp_path / "movimentacao-2023.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "03/03/2023", "Desdobro", "GGBR4 - GERDAU S.A.", agora_b3, 300, "-", "-"],
+    ]})  # fmt: skip
+    importar_planilhas(banco, [movimentos], 1, AGORA)
+    estado = _estado(banco)
+    estado.titular, estado.ano = 1, 2023
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/eventos")
+        await user.should_see("Propostas da B3 (1)", retries=ESPERA)
+        await user.should_see("Eventos lançados (0)")
+        linha = _grade(user, "grade-propostas").options["rowData"][0]
+        user.find(marker="grade-propostas").trigger("rowClicked", {"data": linha})
+        await user.should_see("Proposta da B3: Desdobro GGBR4")
+        [data] = user.find(marker="data-evento").elements
+        assert isinstance(data, ui.input)
+        data.set_value("2023-03-01")  # data ex (a B3 traz o crédito)
+        user.find(marker="gravar-evento").click()
+        await user.should_see("Eventos lançados (1)", retries=ESPERA)
+        await user.should_see("Propostas da B3 (0)")
+        [tipo] = user.find(marker="tipo-evento").elements
+        assert isinstance(tipo, ui.select)
+        tipo.set_value("INCORPORACAO")
+        await user.should_see("Ativo recebido")
+        user.find(marker="ativo-evento").type("GGBR4")
+        user.find(marker="quantidade-evento").type("1000")  # a posição é 600
+        user.find(marker="recebido-evento").type("GOAU4")
+        user.find(marker="qtd-recebida-evento").type("500")
+        user.find(marker="gravar-evento").click()
+        await user.should_see("não fecha com as operações", retries=ESPERA)
+        await user.should_see("Eventos lançados (1)")
+    [evento] = eventos.listar(banco, 1)
+    assert (evento.dados.tipo, evento.dados.data, evento.dados.origem) == (
+        TipoEvento.DESDOBRAMENTO,
+        date(2023, 3, 1),
+        "b3",
+    )
+
+
+@pytest.mark.asyncio
+async def test_carteira_exporta_a_posicao_da_data(demo: Path) -> None:
+    """A posição exportada tem arquivos próprios (não sobrescreve os relatórios do ano)."""
+    estado = _estado(demo)
+    estado.titular, estado.ano = 1, 2023
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/carteira")
+        await user.should_see("posições em", retries=ESPERA)
+        user.find(marker="exportar-carteira").click()
+        await user.should_see("exportada", retries=ESPERA)
+    pasta = demo.parent / "relatorios" / "carteira"
+    nomes = sorted(p.name for p in pasta.iterdir())
+    prefixo = "coir-carteira-2023-12-31-por-titular-titular1"
+    assert nomes and all(n.startswith(prefixo) for n in nomes)

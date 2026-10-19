@@ -170,3 +170,16 @@ def restaurar_backup(banco: Path, origem: Path, agora: datetime) -> Path | None:
              atual.name if atual else "-")  # fmt: skip
     migrar(banco, agora, backup=False)  # o banco anterior já está em `atual`
     return atual
+
+
+def marca_do_banco(banco: Path, nova: int | None = None) -> int:
+    """``PRAGMA user_version`` (o Alembic não usa): a marca das tabelas de data/ já aplicadas ao
+    banco. Com ``nova``, grava antes de ler."""
+    con = sqlite3.connect(banco)
+    try:
+        if nova is not None:
+            con.execute(f"PRAGMA user_version = {int(nova)}")
+            con.commit()
+        return int(con.execute("PRAGMA user_version").fetchone()[0])
+    finally:
+        con.close()

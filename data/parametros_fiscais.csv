@@ -21,3 +21,7 @@ dividendos_limite_mensal_mesma_pj,50000.00,2026-01-01,,Lei 15.270/2025 (Lei 9.25
 aliquota_irrf_dividendos_acima_limite,0.10,2026-01-01,,Lei 15.270/2025 (Lei 9.250 art. 6º-A caput e §§1º e 2º)
 reembolso_btc_dividendos_isento,true,2005-01-01,2025-12-31,IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
 reembolso_btc_dividendos_isento,true,2026-01-01,,Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: isento por equivalência (decisão do usuário 19/10/2026; rever se a RFB se manifestar)
+incorporacao_acoes_tratamento,custo_mantido,1976-12-15,,"Lei 6.404 art. 252: custo das ações entregues mantido nas recebidas (TRF1/TRF3/TRF4; decisão do usuário 19/10/2026). A RFB diverge (SC Cosit 224/2014: alienação, ganho de capital no GCAP); a tela de Eventos avisa"
+leilao_fracao_isentavel,true,1976-12-15,,"sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (decisão do usuário 19/10/2026)"
+reembolso_btc_norma_omissa,false,2005-01-01,2025-12-31,IN RFB 1.585/2015 art. 74 §1º I a (reembolso de dividendos de BTC expressamente isento)
+reembolso_btc_norma_omissa,true,2026-01-01,,Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: a tela de proventos avisa (isento por equivalência)

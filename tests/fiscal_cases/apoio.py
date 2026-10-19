@@ -17,6 +17,7 @@ from coir.domain.fiscal import (
     Grupo,
     MesApurado,
     Movimento,
+    NaturezaEvento,
     NotaMotor,
     OperacaoMotor,
     PosicaoAtivo,
@@ -88,8 +89,11 @@ class Livro:
         self, dia: date, ticker: str, tipo: TipoEvento, cv: str | None = None,
         quantidade: str | None = None, valor: str = "0", conta: int = 1,
         destino: int | None = None, tipo_ativo: TipoAtivo = TipoAtivo.ACAO,
-        corretora: str = "XP", corretora_destino: str | None = None,
+        corretora: str = "XP", corretora_destino: str | None = None, para: str | None = None,
+        quantidade_destino: str | None = None, natureza: NaturezaEvento | None = None,
+        percentual: str | None = None,
     ) -> None:  # fmt: skip
+        """`para`: ativo de destino de incorporação e cisão (B)."""
         self.eventos.append(
             Evento(
                 id=next(self._ids), data=dia, titular=self.titular, conta=conta,
@@ -99,6 +103,9 @@ class Livro:
                 quantidade=None if quantidade is None else D(quantidade), valor=D(valor),
                 conta_destino=destino,
                 corretora_destino=None if destino is None else corretora_destino or corretora,
+                ativo_destino=None if para is None else self.ativo(para), ticker_destino=para,
+                quantidade_destino=None if quantidade_destino is None else D(quantidade_destino),
+                natureza=natureza, percentual_custo=None if percentual is None else D(percentual),
             )
         )  # fmt: skip
 

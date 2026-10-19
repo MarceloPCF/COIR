@@ -13,7 +13,10 @@ from collections.abc import Mapping
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+from coir import __version__
 from coir.erros import ConfiguracaoError
+
+VERSAO = __version__  # para as camadas que não importam o pacote raiz
 
 VAR_DADOS = "COIR_DADOS"
 VAR_CONFIG = "COIR_CONFIG"  # outro arquivo de configuração (testes, instalação portátil)

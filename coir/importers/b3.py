@@ -114,8 +114,14 @@ def _numero(v: Any, contexto: str) -> Decimal | None:
         raise ImportacaoError(f"{contexto}: número ilegível {v!r}")
     if isinstance(v, int | float):
         return Decimal(str(v))
-    texto = _texto(v).replace(".", "").replace(",", ".")
-    try:
+    texto = _texto(v)
+    if "," in texto:  # 1.234,56
+        texto = texto.replace(".", "").replace(",", ".")
+    elif all(len(g) == 3 for g in texto.split(".")[1:]):  # 1.000 (milhar) ou 1000
+        texto = texto.replace(".", "")
+    elif texto.count(".") > 1:  # 1.2.3: nem milhar nem decimal
+        raise ImportacaoError(f"{contexto}: número ilegível {v!r}")
+    try:  # "0.5": um ponto sem três casas depois é o decimal
         return Decimal(texto)
     except InvalidOperation as erro:
         raise ImportacaoError(f"{contexto}: número ilegível {v!r}") from erro

@@ -88,12 +88,12 @@ def validar(destino: Path, formatos: tuple[str, ...], chaves: tuple[str, ...] | 
 
 def exportar(
     dados: DadosRelatorio, destino: Path, formatos: tuple[str, ...] = FORMATOS,
-    chaves: tuple[str, ...] | None = None,
+    chaves: tuple[str, ...] | None = None, prefixo: str | None = None,
 ) -> list[Path]:  # fmt: skip
     """Grava os relatórios; o nome dos arquivos não leva CPF (só o cabeçalho, dentro deles)."""
     validar(destino, formatos, chaves)
     destino.mkdir(parents=True, exist_ok=True)
-    prefixo = f"coir-{dados.ano}-titular{dados.titular}"
+    prefixo = prefixo or f"coir-{dados.ano}-titular{dados.titular}"
     rels = relatorios(dados, chaves)
     saida: list[Path] = []
     if "xlsx" in formatos:
@@ -104,3 +104,15 @@ def exportar(
     if "pdf" in formatos:
         saida += [escrever_pdf(r, destino / f"{prefixo}-{r.chave}.pdf") for r in rels if r.pdf]
     return saida
+
+
+def exportar_carteira(
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, titular: int, dia: date,
+    visao: Visao, agora: datetime, destino: Path, formatos: tuple[str, ...] = FORMATOS,
+) -> list[Path]:  # fmt: skip
+    """A carteira de uma data e visão (tela Carteira), em arquivos próprios: não sobrescreve os
+    relatórios do ano."""
+    validar(destino, formatos, ("carteira",))
+    dados = dados_banco(banco, refs, fiscais, dia.year, agora, titular, dia, visao)
+    prefixo = f"coir-carteira-{dia:%Y-%m-%d}-por-{visao.value}-titular{titular}"
+    return exportar(dados, destino, formatos, ("carteira",), prefixo)

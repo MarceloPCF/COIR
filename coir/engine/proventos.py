@@ -164,7 +164,7 @@ def _provento(
             obs = f"rendimento em {tipo_ativo.value} sem dividendo ou JCP no mesmo dia: fora"
     elif x.movimentacao == REEMBOLSO:
         tipo = TipoProvento.REEMBOLSO_BTC
-        if x.data.year >= 2026:
+        if params.booleano("reembolso_btc_norma_omissa", x.data):
             obs = (
                 "reembolso de BTC: a Lei 15.265/2025 é omissa para dividendos; isento por "
                 "equivalência (confira com o contador)"

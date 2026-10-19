@@ -11,7 +11,7 @@ from nicegui import run, ui
 from coir.domain.fiscal import Movimento, Visao
 from coir.erros import CoirError
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
-from coir.servicos import carteira
+from coir.servicos import carteira, relatorios
 from coir.servicos.estado import Estado
 from coir.ui import tabela
 
@@ -90,7 +90,33 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             on_change=lambda e: mudar("visao", Visao(e.value)),
         ).props("outlined dense options-dense").classes("w-[190px]").mark("visao")
         resumo = ui.label("").classes("coir-subtitulo text-sm")
+        botao_exportar = (
+            ui.button("Exportar esta posição", icon="download")
+            .props("flat")
+            .mark("exportar-carteira")
+        )
     campo_data.on_value_change(lambda e: mudar("data", e.value))
+
+    async def exportar() -> None:
+        if estado.titular is None:
+            return
+        pasta = estado.dados / "relatorios" / "carteira"
+        botao_exportar.set_enabled(False)
+        try:
+            arquivos = await run.io_bound(
+                relatorios.exportar_carteira, estado.banco, estado.refs, estado.fiscais,
+                estado.titular, escolha.data, escolha.visao, estado.agora(), pasta,
+            )  # fmt: skip
+        except (CoirError, OSError) as erro:
+            ui.notify(f"Exportação não feita: {erro}", type="negative", multi_line=True)
+            return
+        finally:
+            botao_exportar.set_enabled(True)
+        if arquivos:
+            ui.notify(f"Posição de {escolha.data:%d/%m/%Y} exportada: {len(arquivos)} arquivo(s) "
+                      f"em {pasta}", type="positive", multi_line=True)  # fmt: skip
+
+    botao_exportar.on_click(exportar)
 
     with ui.row().classes("w-full items-start gap-4"):
         lista = ui.column().classes("min-w-[440px] flex-[0.8] gap-2")

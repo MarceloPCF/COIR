@@ -20,6 +20,7 @@ from coir.ui.telas import (
     conciliacao,
     configuracoes,
     darf,
+    eventos,
     futuros,
     importar,
     notas,
@@ -60,6 +61,7 @@ GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
     )),
     ("Carteira", (
         Tela("/carteira", "Carteira e preço médio", "account_balance_wallet", carteira.montar),
+        Tela("/eventos", "Eventos", "event_repeat", eventos.montar),
         Tela("/opcoes", "Opções", "swap_vert", opcoes.montar),
         Tela("/futuros", "Futuros", "show_chart", futuros.montar),
         Tela("/conciliacao", "Conciliação com a B3", "fact_check", conciliacao.montar),
@@ -155,6 +157,8 @@ def montar(estado: Estado) -> None:
                     ui.item_section(t.rotulo)
 
     with ui.column().classes("w-full max-w-[1400px] mx-auto px-6 py-5 gap-4"):
+        if estado.aviso_tabelas:
+            ui.label(estado.aviso_tabelas).classes("coir-carimbo text-sm").mark("aviso-tabelas")
         rotas: dict[str, Callable[..., None]] = {
             t.rota: _construtor(t, estado, seletores.refresh) for t in (*TELAS, INICIO)
         }

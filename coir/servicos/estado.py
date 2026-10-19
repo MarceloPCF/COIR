@@ -25,7 +25,7 @@ from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.proventos import Provento
 from coir.domain.referencias import Referencias
 from coir.domain.relatorio import DadosRelatorio
-from coir.erros import ConfiguracaoError, ExportacaoError
+from coir.erros import CoirError, ConfiguracaoError, ExportacaoError
 from coir.parsing.extrair import extrair_pdf
 from coir.servicos import carteira, conciliacao, darf, derivativos, notas, operacoes
 from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
@@ -54,6 +54,7 @@ class Estado:
         self.refs = refs or referencias.carregar()
         self.fiscais = fiscais or referencias.carregar_fiscais()
         self.titular: int | None = None
+        self.aviso_tabelas: str | None = None  # erro ao aplicar data/ ao abrir (preparar)
         self.ano: int | None = None
         self.agora: Callable[[], datetime] = datetime.now  # relógio (fixo nos testes)
         self.extrator: Extrator = extrair_pdf  # leitura dos PDFs (textos nos testes)
@@ -101,7 +102,12 @@ class Estado:
         tabelas de data/ que mudaram depois da importação (ex.: troca de ticker nova)."""
         self.banco.parent.mkdir(parents=True, exist_ok=True)
         migrar(self.banco, agora)
-        aplicar_tabelas(self.banco, self.refs, agora)
+        self.aviso_tabelas = None
+        try:
+            aplicar_tabelas(self.banco, self.refs, agora)
+        except CoirError as erro:  # o app abre; a próxima importação mostra o erro de novo
+            log.warning("tabelas de data/ não aplicadas ao banco: %s", erro)
+            self.aviso_tabelas = f"As tabelas de referência não foram aplicadas ao banco: {erro}"
         self.invalidar()
 
     def _marca(self) -> tuple[int, ...]:

@@ -224,3 +224,15 @@ def test_liquidacao_d_mais_2_e_d_mais_3() -> None:
     assert _liquidacao(date(2023, 12, 28), "VISTA", fiscais) == date(2024, 1, 3)
     assert _liquidacao(date(2019, 5, 2), "VISTA", fiscais) == date(2019, 5, 7)
     assert _liquidacao(date(2023, 12, 28), "CALL", fiscais) is None
+
+
+@pytest.mark.parametrize(
+    ("texto", "esperado"),
+    [("1.000", D(1000)), ("1.234,56", D("1234.56")), ("0.5", D("0.5")), ("12,5", D("12.5")),
+     ("1.000.000", D(1000000)), ("3.669", D(3669))],
+)  # fmt: skip
+def test_numero_em_texto_milhar_e_decimal(texto: str, esperado: Decimal) -> None:
+    """Revisão F7a: "0.5" é meio (antes virava 5); um ponto com três casas depois é milhar."""
+    assert b3._numero(texto, "teste") == esperado  # pyright: ignore[reportPrivateUsage]
+    with pytest.raises(ImportacaoError, match="ilegível"):
+        b3._numero("1.2.3", "teste")  # pyright: ignore[reportPrivateUsage]

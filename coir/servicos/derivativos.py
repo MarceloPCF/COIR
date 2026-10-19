@@ -69,25 +69,55 @@ def ciclos_opcoes(
     for m in movimentos:
         if m.titular == titular and m.tipo is TipoAtivo.OPCAO and m.ativo is not None:
             por_serie[m.ticker].append(m)
-    ciclos: list[CicloOpcao] = []
-    for ticker, movs in por_serie.items():
-        objeto = objetos.get(ticker) or refs.opcoes_raiz.get(ticker[:4]) or ticker[:4]
+    trechos: list[list[Movimento]] = []
+    for movs in por_serie.values():
         atual: list[Movimento] = []
         for m in sorted(movs, key=lambda m: m.data):
             atual.append(m)
             if m.quantidade_apos == 0:
-                ciclos.append(_ciclo(ticker, objeto, atual, None))
+                trechos.append(atual)
                 atual = []
         if atual:
-            ciclos.append(_ciclo(ticker, objeto, atual, vencimentos.get(ticker)))
+            trechos.append(atual)
+    ciclos: list[CicloOpcao] = []
+    for passos in _ligar_conversoes(trechos):
+        ticker = passos[-1].ticker
+        objeto = objetos.get(ticker) or refs.opcoes_raiz.get(ticker[:4]) or ticker[:4]
+        aberta = passos[-1].quantidade_apos != 0
+        ciclos.append(_ciclo(ticker, objeto, passos, vencimentos.get(ticker) if aberta else None))
     return sorted(ciclos, key=lambda c: (c.fim, c.ticker), reverse=True)
+
+
+def _ligar_conversoes(trechos: list[list[Movimento]]) -> list[list[Movimento]]:
+    """Série convertida pela B3 (incorporação/ajuste de série: código novo, mesmo custo): o trecho
+    da série antiga, que termina no evento, continua no da nova, que começa no mesmo evento."""
+
+    def conversao(m: Movimento) -> bool:
+        return m.origem.startswith("evento:") and m.regra.startswith("incorporação")
+
+    seguintes = {t[0].origem: t for t in trechos if conversao(t[0])}
+    usados: set[int] = set()
+    saida: list[list[Movimento]] = []
+    for t in trechos:
+        if id(t) in usados or (conversao(t[0]) and t[0].origem in {
+                x[-1].origem for x in trechos if x is not t}):  # fmt: skip
+            continue  # continuação: entra junto com a série antiga
+        cadeia = list(t)
+        while conversao(cadeia[-1]) and cadeia[-1].origem in seguintes:
+            proximo = seguintes.pop(cadeia[-1].origem)
+            usados.add(id(proximo))
+            cadeia += proximo
+        saida.append(cadeia)
+    return saida
 
 
 def _ciclo(
     ticker: str, objeto: str, passos: list[Movimento], vencimento: date | None
 ) -> CicloOpcao:
     ultimo = passos[-1]
-    premio = sum(((m.valor if m.cv == "V" else -m.valor) for m in passos if m.cv), ZERO)
+    # o custo levado por um evento (conversão de série) não é prêmio pago nem recebido
+    premio = sum(((m.valor if m.cv == "V" else -m.valor) for m in passos
+                  if m.cv and not m.origem.startswith("evento:")), ZERO)  # fmt: skip
     maior = max((m.quantidade_apos for m in passos), key=abs)
     if ultimo.quantidade_apos:
         situacao, posicao = "aberta", ultimo.quantidade_apos

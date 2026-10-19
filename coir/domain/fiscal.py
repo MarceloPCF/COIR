@@ -148,12 +148,32 @@ class TipoEvento(StrEnum):
     SUBSCRICAO = "SUBSCRICAO"
     REDUCAO_CAPITAL = "REDUCAO_CAPITAL"
     TRANSFERENCIA = "TRANSFERENCIA"  # custódia entre contas do mesmo titular
+    INCORPORACAO = "INCORPORACAO"  # troca de A por B com o custo (ver NaturezaEvento)
+    CISAO = "CISAO"  # parte do custo de A vai para B, pelo percentual da companhia
+    LEILAO_FRACAO = "LEILAO_FRACAO"  # fração vendida em leilão pela companhia (alienação)
+
+
+class NaturezaEvento(StrEnum):
+    """Natureza da INCORPORACAO (a regra fiscal muda com ela)."""
+
+    INCORPORACAO_SOCIEDADE = "INCORPORACAO_SOCIEDADE"  # Lei 6.404 art. 227
+    INCORPORACAO_ACOES = "INCORPORACAO_ACOES"  # Lei 6.404 art. 252 (divergência RFB x Judiciário)
+    FUSAO = "FUSAO"  # Lei 6.404 art. 228
+    CONVERSAO = "CONVERSAO"  # de classe na mesma companhia (ex.: PN -> ON)
+    AJUSTE_SERIE = "AJUSTE_SERIE"  # série de opção com código ou quantidade ajustados pela B3
+
+
+TIPOS_COM_DESTINO = frozenset({TipoEvento.INCORPORACAO, TipoEvento.CISAO})
 
 
 class Evento(Modelo):
     """Evento corporativo ou de custódia. Ajuste de posição: C soma quantidade e custo, V
     subtrai (como na aba Eventos_B3 do gabarito). Transferência: move a quantidade (None = toda
-    a posição) da conta para a conta de destino, com o custo proporcional."""
+    a posição) da conta para a conta de destino, com o custo proporcional.
+
+    Incorporação e cisão (sem C/V): ``quantidade`` é a quantidade de origem (a da conta) e
+    ``quantidade_destino`` a de B recebida; na cisão, ``percentual_custo`` é a parte do custo de
+    A que vai para B. Leilão de fração (sem C/V): ``quantidade`` vendida por ``valor`` líquido."""
 
     id: int
     data: date
@@ -169,6 +189,12 @@ class Evento(Modelo):
     valor: Decimal = ZERO
     conta_destino: int | None = None
     corretora_destino: str | None = None
+    ativo_destino: int | None = None
+    ticker_destino: str | None = None
+    tipo_ativo_destino: TipoAtivo | None = None
+    quantidade_destino: Decimal | None = None
+    natureza: NaturezaEvento | None = None
+    percentual_custo: Decimal | None = None  # cisão: fração do custo de A que vai para B (0..1)
     observacao: str = ""
 
 

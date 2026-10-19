@@ -22,6 +22,7 @@ from coir.domain.fiscal import (
     Evento,
     Grupo,
     Movimento,
+    NaturezaEvento,
     NotaMotor,
     OperacaoMotor,
     PosicaoAtivo,
@@ -48,7 +49,7 @@ RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é pu
 GRUPOS_FUTUROS = {Grupo.INDICE, Grupo.DOLAR, Grupo.COMMODITY}
 
 
-class _Tickers:
+class Tickers:
     """(ticker, data) -> ativo, só leitura (a opção exercida já foi negociada antes)."""
 
     def __init__(self, sessao: Session) -> None:
@@ -92,7 +93,7 @@ def _vencimento(prazo: str, serie: str, refs: ReferenciasFiscais) -> date:
 
 
 def _nota_bovespa(
-    registro: NotaCorretagem, nota: NotaExtraida, refs: ReferenciasFiscais, tickers: _Tickers
+    registro: NotaCorretagem, nota: NotaExtraida, refs: ReferenciasFiscais, tickers: Tickers
 ) -> tuple[OperacaoMotor, ...]:
     ops: list[OperacaoMotor] = []
     for o, negocio in zip(registro.operacoes, nota.negocios_bovespa, strict=True):
@@ -157,7 +158,7 @@ def _assinado(n: NegocioBMF) -> Decimal:
 def entradas(
     sessao: Session, refs: Referencias, fiscais: ReferenciasFiscais
 ) -> tuple[list[NotaMotor], list[Evento]]:
-    tickers = _Tickers(sessao)
+    tickers = Tickers(sessao)
     notas: list[NotaMotor] = []
     registros = sessao.scalars(
         select(NotaCorretagem)
@@ -189,6 +190,8 @@ def entradas(
         .order_by(EventoCorporativo.id)
     ):
         ticker = tickers.ticker(e.ativo_id, e.data)
+        destino = None if e.ativo_destino_id is None else tickers.ticker(e.ativo_destino_id,
+                                                                         e.data)  # fmt: skip
         eventos.append(
             Evento(
                 id=e.id, data=e.data, titular=e.conta.titular_id, conta=e.conta_id,
@@ -198,7 +201,11 @@ def entradas(
                 cv=e.cv,  # type: ignore[arg-type]
                 quantidade=e.quantidade, valor=e.valor, conta_destino=e.conta_destino_id,
                 corretora_destino=e.conta_destino.corretora.nome if e.conta_destino else None,
-                observacao=e.observacao,
+                ativo_destino=e.ativo_destino_id, ticker_destino=destino,
+                tipo_ativo_destino=None if destino is None else _tipo_evento(fiscais, destino),
+                quantidade_destino=e.quantidade_destino,
+                natureza=None if e.natureza is None else NaturezaEvento(e.natureza),
+                percentual_custo=e.percentual_custo, observacao=e.observacao,
             )
         )  # fmt: skip
     return notas, eventos

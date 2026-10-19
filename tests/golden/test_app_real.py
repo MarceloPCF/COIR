@@ -66,6 +66,7 @@ CONTEUDO = {
     "/opcoes": "Prêmio das abertas", "/futuros": "Resultado de 2026",
     "/proventos": "Dividendos · isentos (09)", "/outros-custos": "Total do ano:",
     "/conciliacao": "Posição em ",
+    "/eventos": "Eventos lançados (",
 }  # fmt: skip
 
 
