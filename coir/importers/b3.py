@@ -7,9 +7,11 @@ Cuidados do formato (exportações de 2019-11 a 2026-09):
 - números vêm como número (float do xlsx, convertido com ``str`` para não herdar a imprecisão) ou
   como texto com ponto de milhar ("1.000");
 - a planilha consolidada termina com uma linha vazia e uma linha "Total";
+- o consolidado mensal pode repetir séries de opção com Produto " - Opção" (sem o nome);
 - cabeçalho desconhecido falha alto (a B3 mudou o layout).
 """
 
+from collections import Counter
 from collections.abc import Iterator
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -229,6 +231,8 @@ def posicao(caminho: Path, data: date | None = None) -> list[LinhaPosicao]:
     for aba, colunas, origem in derivativos:
         if aba not in abas:
             continue
+        nomeadas: list[LinhaPosicao] = []
+        sem_nome: list[LinhaPosicao] = []
         for i, x in enumerate(_linhas(caminho, aba, colunas), 2):
             contexto = f"{caminho.name}, {origem}, linha {i}"
             quantidade = _numero(x["Quantidade"], contexto) or Decimal(0)
@@ -236,9 +240,29 @@ def posicao(caminho: Path, data: date | None = None) -> list[LinhaPosicao]:
             if condicao not in ("LANÇADOR", "COMPRADOR", "VENDIDO", "COMPRADO", "VENDEDOR"):
                 raise ImportacaoError(f"{contexto}: condição {x['Condição']!r}")
             vendida = condicao in ("LANÇADOR", "VENDIDO", "VENDEDOR")
-            codigo = _texto(x.get("Código de Negociação")) or _codigo(_texto(x["Produto"]))
-            saida.append(LinhaPosicao(
+            produto = _texto(x["Produto"])
+            codigo = _texto(x.get("Código de Negociação")) or _codigo(produto)
+            destino = sem_nome if produto.startswith("-") else nomeadas
+            destino.append(LinhaPosicao(
                 data=data, instituicao=_texto(x["Instituição"]), conta="", codigo=codigo,
                 isin="", quantidade=-quantidade if vendida else quantidade, origem=origem,
             ))  # fmt: skip
+        saida += nomeadas + _sem_as_copias(sem_nome, nomeadas)
     return saida
+
+
+def _sem_as_copias(
+    sem_nome: list[LinhaPosicao], nomeadas: list[LinhaPosicao]
+) -> list[LinhaPosicao]:
+    """O consolidado mensal da B3 (visto em set/2026) repete séries com Produto " - Opção", sem o
+    nome: a linha igual a uma com nome (instituição, código, quantidade) é cópia e sai; a sem
+    par fica (é a única informação da posição)."""
+    pares = Counter((x.instituicao, x.codigo, x.quantidade) for x in nomeadas)
+    ficam: list[LinhaPosicao] = []
+    for x in sem_nome:
+        chave = (x.instituicao, x.codigo, x.quantidade)
+        if pares[chave]:
+            pares[chave] -= 1
+        else:
+            ficam.append(x)
+    return ficam

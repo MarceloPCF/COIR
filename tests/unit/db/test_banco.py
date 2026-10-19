@@ -35,7 +35,7 @@ from coir.domain.referencias import TrocaTicker
 from coir.erros import BancoError, ImportacaoError, ReferenciaError
 from coir.parsing.extrair import ResultadoExtracao, extrair_textos
 from coir.parsing.normalizar import classes_das_series, operacoes
-from coir.servicos.importacao import importar_arquivos, importar_pasta
+from coir.servicos.importacao import aplicar_tabelas, importar_arquivos, importar_pasta
 from tests.apoio import cpf_de_teste
 
 FIXTURES = Path(__file__).parents[2] / "fixtures" / "notas"
@@ -776,3 +776,24 @@ def test_futuro_de_mercado_sem_linha_na_apuracao_falha_alto() -> None:
     with pytest.raises(ReferenciaError, match="grupo juros sem linha"):
         _ajustes(nota, REFS.model_copy(update={"contratos": contratos}))
     assert _ajustes(nota, REFS)  # com o cadastro real, funciona
+
+
+def test_troca_nova_vale_no_banco_ja_importado_ao_abrir(
+    banco: Path, fabrica: sessionmaker[Session], tmp_path: Path
+) -> None:
+    """Troca acrescentada em trocas_ticker.csv depois da importação: vale ao abrir o banco (sem
+    esperar a próxima nota), com backup antes; abrir de novo não grava nem faz outro backup."""
+    _importar(fabrica, _todas(tmp_path / "notas"))
+    with fabrica() as s:
+        op = s.scalars(select(Operacao).where(Operacao.mercado == "VISTA")).first()
+        assert op is not None
+        ticker, dia = op.ticker_impresso, s.get_one(NotaCorretagem, op.nota_id).data_pregao
+    refs = REFS.model_copy(update={"trocas": (*REFS.trocas, _troca(ticker, "NOVO3", dia))})
+    assert aplicar_tabelas(banco, refs, AGORA)
+    backups = sorted((banco.parent / "backups").glob("*.db"))
+    assert len(backups) == 1
+    with fabrica() as s:
+        ativos = repo.Ativos(s)
+        assert ativos.ativo_id("NOVO3", dia + timedelta(days=30)) == ativos.ativo_id(ticker, dia)
+    assert not aplicar_tabelas(banco, refs, AGORA + timedelta(seconds=1))
+    assert sorted((banco.parent / "backups").glob("*.db")) == backups

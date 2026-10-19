@@ -39,6 +39,7 @@ from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import carteira, movimentar
 from coir.erros import ReferenciaError
 from coir.parsing import futuros
+from coir.servicos import outros_custos
 
 RE_PRAZO = re.compile(r"^(?P<mes>\d{2})/(?P<ano>\d{2})$")
 RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é put de novembro
@@ -235,4 +236,5 @@ def apurar_banco(
 ) -> Apuracao:
     with conectar(banco) as fabrica, fabrica() as sessao:
         notas, eventos = entradas(sessao, refs, fiscais)
-    return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate)
+        custos = outros_custos.do_banco(sessao)
+    return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos)

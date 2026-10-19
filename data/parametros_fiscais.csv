@@ -15,3 +15,9 @@ multa_mora_inicio_contagem,rfb,1997-01-01,,RFB/Sicalc (Como calcular multa de mo
 multa_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido pelo usuário em 17/10/2026: R$ 1234.57 x 0.0231 = 28.518567 -> 28.51)
 juros_mora_mes_pagamento,0.01,1997-01-01,,Lei 9.430/1996 art. 61 §3º c/c art. 5º §3º (1% no mês do pagamento; Selic acumulada nos meses entre o vencimento e o pagamento)
 juros_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido pelo usuário em 17/10/2026: R$ 1234.57 x 0.01 = 12.3457 -> 12.34)
+aliquota_irrf_jcp,0.15,1996-01-01,2025-12-31,Lei 9.249/1995 art. 9º §2º (15% na data do pagamento ou crédito)
+aliquota_irrf_jcp,0.175,2026-01-01,,"LC 224/2025 art. 8º e art. 14 III (17,5% pago ou creditado desde 01/01/2026)"
+dividendos_limite_mensal_mesma_pj,50000.00,2026-01-01,,Lei 15.270/2025 (Lei 9.250 art. 6º-A): acima de R$ 50 mil no mês da mesma PJ há retenção de 10% sobre o total
+aliquota_irrf_dividendos_acima_limite,0.10,2026-01-01,,Lei 15.270/2025 (Lei 9.250 art. 6º-A caput e §§1º e 2º)
+reembolso_btc_dividendos_isento,true,2005-01-01,2025-12-31,IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
+reembolso_btc_dividendos_isento,true,2026-01-01,,Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: isento por equivalência (decisão do usuário 19/10/2026; rever se a RFB se manifestar)

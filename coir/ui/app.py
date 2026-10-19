@@ -17,12 +17,17 @@ from coir.ui.telas import (
     assistente,
     cadastros,
     carteira,
+    conciliacao,
     configuracoes,
     darf,
+    futuros,
     importar,
     notas,
+    opcoes,
     operacoes,
+    outros_custos,
     painel,
+    proventos,
     relatorios,
 )
 
@@ -49,10 +54,15 @@ GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
     ("Imposto", (
         Tela("/apuracao", "Apuração mensal", "calculate", apuracao.montar),
         Tela("/darf", "DARF", "request_quote", darf.montar),
+        Tela("/proventos", "Proventos", "payments", proventos.montar),
+        Tela("/outros-custos", "Outros custos", "receipt", outros_custos.montar),
         Tela("/relatorios", "Relatórios", "description", relatorios.montar),
     )),
     ("Carteira", (
         Tela("/carteira", "Carteira e preço médio", "account_balance_wallet", carteira.montar),
+        Tela("/opcoes", "Opções", "swap_vert", opcoes.montar),
+        Tela("/futuros", "Futuros", "show_chart", futuros.montar),
+        Tela("/conciliacao", "Conciliação com a B3", "fact_check", conciliacao.montar),
     )),
     ("Sistema", (
         Tela("/cadastros", "Cadastros", "badge", cadastros.montar, exige_dados=False),

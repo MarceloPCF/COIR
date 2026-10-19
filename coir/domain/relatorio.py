@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 from coir.domain.fiscal import Apuracao, PosicaoAtivo, Visao
 from coir.domain.nota import NotaExtraida, OperacaoExtraida
+from coir.domain.proventos import Provento
 
 
 class NotaDoLivro(BaseModel):
@@ -33,3 +34,5 @@ class DadosRelatorio(BaseModel):
     carteira_fiscal: tuple[PosicaoAtivo, ...]  # sempre por titular (Bens e Direitos)
     contas: dict[int, str]  # id da conta -> número impresso (carteira por conta)
     notas: tuple[NotaDoLivro, ...]  # do titular, no ano
+    proventos: tuple[Provento, ...] = ()  # do titular (todos os anos: o relatório filtra)
+    avisos_proventos: tuple[str, ...] = ()

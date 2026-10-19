@@ -117,6 +117,30 @@ class NotaMotor(Modelo):
     ajustes: tuple[AjusteFuturo, ...] = ()
 
 
+class PosicaoFuturo(Modelo):
+    """Contrato futuro em aberto: os ajustes e custos acumulados ainda não realizados."""
+
+    titular: int
+    mercadoria: str
+    grupo: Grupo
+    quantidade: Decimal  # comprado > 0, vendido < 0
+    acumulado: Decimal
+    vencimento: date | None
+
+
+class OutroCusto(Modelo):
+    """Custo dedutível lançado pelo usuário num mês (ex.: taxas de aluguel de ações - BTC): reduz o
+    resultado da categoria no mês (como a aba BTC_Outros da planilha v2)."""
+
+    id: int
+    titular: int
+    ano: int
+    mes: int
+    categoria: Categoria  # COMUM ou DAY_TRADE
+    valor: Decimal  # positivo
+    descricao: str = ""
+
+
 class TipoEvento(StrEnum):
     DESDOBRAMENTO = "DESDOBRAMENTO"
     GRUPAMENTO = "GRUPAMENTO"

@@ -57,7 +57,7 @@ def test_todos_os_relatorios_saem_com_cabecalho_do_titular() -> None:
     assert all(r.cabecalho.cpf == cpf_de_teste() and r.cabecalho.gerado_em == AGORA for r in rels)
     assert {r.chave for r in rels if r.pdf} == {
         "resumo-fiscal", "darfs", "irpf-mensal", "irrf-e-exclusiva", "operacoes-finalizadas",
-        "carteira", "bens-e-direitos",
+        "carteira", "bens-e-direitos", "proventos",
     }  # fmt: skip
 
 

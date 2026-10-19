@@ -25,6 +25,7 @@ from coir.domain.fiscal import (
     Grupo,
     Movimento,
     NotaMotor,
+    PosicaoFuturo,
     TipoAjuste,
     TipoAtivo,
 )
@@ -50,8 +51,10 @@ class _Contrato:
 
 
 def movimentos_futuros(
-    notas: Iterable[NotaMotor], ate: date, avisos: list[str] | None = None
-) -> list[Movimento]:
+    notas: Iterable[NotaMotor], ate: date, avisos: list[str] | None = None,
+    abertas: list[PosicaoFuturo] | None = None,
+) -> list[Movimento]:  # fmt: skip
+    """Resultados realizados até `ate`; `abertas` recebe os contratos ainda em aberto."""
     saida: list[Movimento] = []
     contratos: dict[tuple[int, str], _Contrato] = {}
     por_dia: dict[date, list[NotaMotor]] = defaultdict(list)
@@ -84,7 +87,11 @@ def movimentos_futuros(
                                   c.acumulado, ZERO, "vencimento"))  # fmt: skip
                 c.quantidade, c.acumulado = ZERO, ZERO
                 c.origens.clear()
-    for (_, mercadoria), c in sorted(contratos.items()):
+    for (titular, mercadoria), c in sorted(contratos.items()):
+        if c.quantidade and abertas is not None:
+            abertas.append(PosicaoFuturo(titular=titular, mercadoria=mercadoria, grupo=c.grupo,
+                                         quantidade=c.quantidade, acumulado=c.acumulado,
+                                         vencimento=c.vencimento))  # fmt: skip
         if c.quantidade and c.vencimento is None and avisos is not None:
             avisos.append(f"{mercadoria}: posição de {c.quantidade} contrato(s) sem vencimento "
                           "conhecido; o resultado só sai no encerramento")  # fmt: skip

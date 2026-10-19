@@ -97,6 +97,23 @@ def test_posicao_do_consolidado_anual(tmp_path: Path) -> None:
         ("opcao", "ITSAL110", D(-1000))]  # fmt: skip
 
 
+def test_posicao_sem_a_copia_da_serie_sem_nome(tmp_path: Path) -> None:
+    """Consolidado mensal de set/2026: a B3 repetiu séries com Produto " - Opção" (a negociação
+    do mês confirma uma posição só); a linha sem nome e sem par fica."""
+    btg = "BANCO BTG PACTUAL S/A."
+    caminho = planilha(tmp_path / "relatorio-consolidado-mensal-2026-setembro.xlsx", {
+        "Posição - Opções": [CAB_OPCOES,
+                             [" - Opção", btg, "Compra", "Opção", "TAEEK451", "K451",
+                              "Lançador", 1000],
+                             [" - Opção", btg, "Compra", "Opção", "COGNL45", "L45",
+                              "Comprador", 2000],
+                             ["Opção de Compra - TAEEK451", btg, "Compra", "Opção", "TAEEK451",
+                              "K451", "Lançador", 1000]],
+    })  # fmt: skip
+    assert sorted((p.codigo, p.quantidade) for p in b3.posicao(caminho)) == [
+        ("COGNL45", D(2000)), ("TAEEK451", D(-1000))]  # fmt: skip
+
+
 @pytest.mark.parametrize(
     ("nome", "data"),
     [("relatorio-consolidado-mensal-2026-setembro.xlsx", date(2026, 9, 30)),
@@ -149,3 +166,61 @@ def test_reimportar_a_posicao_da_mesma_data_substitui(tmp_path: Path) -> None:
 
     with conectar(estado.banco) as fabrica, fabrica() as s:
         assert list(s.scalars(select(PosicaoB3.quantidade))) == [D(1600)]
+
+
+def test_proventos_saem_da_movimentacao_importada(tmp_path: Path) -> None:
+    from coir.domain.proventos import TipoProvento
+
+    estado = Estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    importar_planilhas(estado.banco, [movimentacao(tmp_path)], 1, AGORA)
+    estado.titular = 1
+    lista, avisos = estado.proventos()
+    assert [p.tipo for p in lista] == [TipoProvento.DIVIDENDO, TipoProvento.DIVIDENDO]
+    assert any("sem valor" in a for a in avisos)  # JCP da planilha de teste sem valor
+
+
+# ------------------------------------------------------------------------------- conciliação
+def test_conciliacao_com_o_consolidado(tmp_path: Path) -> None:
+    """Banco de demonstração em 31/01/2024 (Ágora GGBR4 300; BTG opções IRBRE35 600 e IRBRI258
+    300): a B3 mostra GGBR4 300 na Ágora, IRBRE35 600 e uma ação que o COIR não tem."""
+    from coir import referencias
+    from coir.servicos.conciliacao import conciliar, datas_b3
+    from tools.banco_demo import criar
+
+    banco = criar(tmp_path / "demo")
+    agora = "Ágora Corretora de Títulos"
+    btg = "BANCO BTG PACTUAL S/A."
+    consolidado = planilha(tmp_path / "relatorio-consolidado-mensal-2024-janeiro.xlsx", {
+        "Posição - Ações": [CAB_ACOES,
+                            ["GGBR4 - GERDAU", agora, "1", "GGBR4", "-", "BRGGBRACNPR8", "PN",
+                             "ITAU", 300],
+                            ["ITSA4 - ITAUSA", btg, "2", "ITSA4", "-", "BRITSAACNPR7", "PN",
+                             "ITAU", 50],
+                            ["XPTO11 - RENDA FIXA", btg, "2", "221005547", "-", "-", "-", "-", 1]],
+        "Posição - Opções": [CAB_OPCOES, ["Opção", btg, "Compra", "Opção", "IRBRE35", "E35",
+                                          "Comprador", 600]],
+    })  # fmt: skip
+    importar_planilhas(banco, [consolidado], 1, AGORA)
+    assert datas_b3(banco, 1) == [date(2024, 1, 31)]
+    c = conciliar(banco, referencias.carregar(), referencias.carregar_fiscais(), 1,
+                  date(2024, 1, 31))  # fmt: skip
+    por_codigo = {x.codigo: x for x in c.linhas}
+    assert por_codigo["GGBR4"].confere and por_codigo["IRBRE35"].confere
+    assert (por_codigo["ITSA4"].b3, por_codigo["ITSA4"].coir) == (D(50), D(0))
+    assert "só na B3" in por_codigo["ITSA4"].causa
+    assert por_codigo["IRBRI258"].diferenca == D(300)  # só no COIR
+    assert any("221005547" in a for a in c.avisos)  # renda fixa: fora
+
+
+def test_liquidacao_d_mais_2_e_d_mais_3() -> None:
+    """Ações liquidam em D+2 pregões desde 27/05/2019 (antes D+3); 28/12/2023 (qui) -> 03/01/2024
+    (29/12 e 01/01 sem pregão)."""
+    from coir import referencias
+    from coir.servicos.conciliacao import _liquidacao  # pyright: ignore[reportPrivateUsage]
+
+    fiscais = referencias.carregar_fiscais()
+    assert _liquidacao(date(2023, 12, 28), "VISTA", fiscais) == date(2024, 1, 3)
+    assert _liquidacao(date(2019, 5, 2), "VISTA", fiscais) == date(2019, 5, 7)
+    assert _liquidacao(date(2023, 12, 28), "CALL", fiscais) is None

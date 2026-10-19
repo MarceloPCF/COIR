@@ -77,6 +77,7 @@ def carregar(pasta: Path | None = None) -> Referencias:
             )
             for t in _linhas(base / "trocas_ticker.csv")
         ),
+        instituicoes_b3=_mapa(base / "instituicoes_b3.csv", "prefixo", "corretora"),
     )
 
 

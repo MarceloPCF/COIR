@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from coir.db import repositorio as repo
@@ -284,6 +285,36 @@ def importar_lista(
             fazer_backup(banco, agora)
         with fabrica() as sessao:
             return importar_arquivos(sessao, arquivos, refs, agora, titular, extrator, progresso)
+
+
+def aplicar_tabelas(banco: Path, refs: Referencias, agora: datetime) -> bool:
+    """data/ mudou depois da importação (troca de ticker acrescentada, normalização nova): aplica
+    ao banco já importado, sem esperar a próxima importação de notas. Backup antes de gravar
+    (regra 8); sem mudança, não grava nem gira os backups. Devolve se o banco mudou."""
+    if not banco.is_file():
+        return False
+    with conectar(banco) as fabrica:
+        with fabrica() as sessao:
+            transacao = sessao.begin()
+            try:
+                mudou = _aplicar_tabelas(sessao, refs)
+            finally:
+                transacao.rollback()  # só a verificação: grava depois do backup
+        if not mudou:
+            return False
+        fazer_backup(banco, agora)
+        with fabrica() as sessao, sessao.begin():
+            _aplicar_tabelas(sessao, refs)
+    log.info("tabelas de data/ aplicadas ao banco já importado")
+    return True
+
+
+def _aplicar_tabelas(sessao: Session, refs: Referencias) -> bool:
+    if sessao.scalar(select(NotaCorretagem.id).limit(1)) is None:
+        return False  # banco sem notas: a primeira importação sincroniza as trocas
+    ativos = repo.Ativos(sessao)
+    trocou = ativos.sincronizar_trocas(refs.trocas)
+    return _renormalizar(sessao, refs, repo.series(sessao), ativos) > 0 or trocou
 
 
 def copiar_para_pasta(

@@ -1,6 +1,7 @@
 """Tabelas de referência usadas na normalização (carregadas de data/ fora do domínio)."""
 
 import re
+import unicodedata
 from datetime import date
 from decimal import Decimal
 from typing import Literal
@@ -52,6 +53,13 @@ class Referencias(BaseModel):
     contratos: tuple[ContratoFuturo, ...]
     sufixos: tuple[str, ...]  # sufixos de governança removidos do nome de pregão (compactos)
     trocas: tuple[TrocaTicker, ...] = ()
+    instituicoes_b3: dict[str, str] = {}  # prefixo do nome compactado -> corretora (perfil)
+
+    def corretora_b3(self, instituicao: str) -> str | None:
+        """Instituição como a B3 escreve ("XP INVESTIMENTOS CCTVM S/A.") -> corretora do COIR."""
+        chave = re.sub(r"[^A-Z0-9]", "", unicodedata.normalize("NFKD", instituicao.upper())
+                       .encode("ascii", "ignore").decode())  # fmt: skip
+        return next((c for p, c in self.instituicoes_b3.items() if chave.startswith(p)), None)
 
     def ticker_na_data(self, ticker: str, dia: date) -> str:
         for t in self.trocas:

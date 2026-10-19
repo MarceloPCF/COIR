@@ -24,7 +24,9 @@ from coir.reports.fiscais import TODOS, relatorios
 from coir.reports.saida_csv import escrever_csv
 from coir.reports.saida_pdf import escrever_pdf
 from coir.reports.saida_xlsx import escrever_xlsx
+from coir.servicos import outros_custos
 from coir.servicos.apuracao import entradas
+from coir.servicos.proventos import proventos_banco
 
 FORMATOS = ("xlsx", "csv", "pdf")
 
@@ -49,11 +51,13 @@ def dados_banco(
             if escolhido is None:
                 raise ExportacaoError(f"titular {titular} não cadastrado")
         notas, eventos = entradas(sessao, refs, fiscais)
+        custos = outros_custos.do_banco(sessao)
         livro = tuple(NotaDoLivro(nota=n, operacoes=tuple(ops))
                       for n, ops in repo.carregar_notas(sessao, escolhido.id, ano))  # fmt: skip
         do_titular = select(Conta).where(Conta.titular_id == escolhido.id)
         contas = {c.id: c.numero for c in sessao.scalars(do_titular)}
         nome, cpf, tid = escolhido.nome, escolhido.cpf, escolhido.id
+    lista_proventos, avisos_proventos = proventos_banco(banco, fiscais, tid)
     params = fiscais.parametros
     fiscal = carteira(notas, eventos, params, ate, Visao.TITULAR)
     na_data = fiscal if (visao, dia) == (Visao.TITULAR, ate) else carteira(notas, eventos, params,
@@ -61,10 +65,10 @@ def dados_banco(
     return DadosRelatorio(
         titular=tid, nome=nome, cpf=cpf, ano=ano, gerado_em=gerado_em,
         codigo_darf=params.texto("darf_codigo", date(ano, 1, 1)),
-        apuracao=apurar(notas, eventos, params, fiscais.calendario, ate), ate=ate,
+        apuracao=apurar(notas, eventos, params, fiscais.calendario, ate, custos), ate=ate,
         data_carteira=dia,
         visao=visao, carteira=tuple(na_data), carteira_fiscal=tuple(fiscal), contas=contas,
-        notas=livro,
+        notas=livro, proventos=tuple(lista_proventos), avisos_proventos=tuple(avisos_proventos),
     )  # fmt: skip
 
 

@@ -252,6 +252,28 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   aberta no vencimento (liquidação física): o resultado é o dos ajustes e o COIR avisa.
 - A linha da apuração de cada contrato (índice, dólar, "outros") está em `data/contratos_futuros.csv`.
 
+## Proventos (F7a, 19/10/2026)
+`coir/engine/proventos.py`, a partir da movimentação da B3; casos em `tests/fiscal_cases/test_proventos.py`.
+- Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09. BDR, ETF e FII com
+  "Dividendo": fora da v3.0, listados com aviso (BDR não é isento, Lei 14.754/2023).
+- JCP: exclusivo (código 10, pelo líquido). O preço unitário da B3 é o bruto por ação, o que mostra a
+  alíquota retida (15% até 2025; 17,5% desde 2026, LC 224/2025 art. 8º, pela data do pagamento ou do
+  crédito). Pago em 2026 com 15% = creditado em 2025: declarado no ano do crédito, com o crédito a
+  receber em 31/12 (Bens e Direitos 99.07) — decisão do usuário. Bruto e IRRF estimados (vale o
+  informe).
+- Rendimento de FII/Fiagro: isento (Lei 11.033 art. 3º III).
+- "Rendimento" em ação pago junto com dividendo ou JCP (BB, BB Seguridade, Caixa Seguridade): é a
+  atualização do provento pela Selic; tributação exclusiva como renda fixa (Lei 8.981/1995 art. 65
+  §4º c; Lei 11.033 art. 1º), como as fontes retêm (22,5% nos dados reais); código 06 ou 12 conforme
+  o informe. Alternativa (acessório segue o principal, SC Cosit 67/2024) não adotada.
+- Reembolso de BTC ao doador: isento até 2025 (IN 1.585 art. 74); desde 2026 a Lei 15.265/2025 é
+  omissa para dividendos: isento por equivalência, com aviso (parâmetro; decisão do usuário).
+- Restituição de capital: reduz o custo (IN 1.585 art. 58 §8º), proposta como evento; não é
+  rendimento. Acima do custo: o motor falha alto.
+- "- Transferido": pares que se anulam (provento acompanhando a transferência de custódia).
+- Lei 15.270/2025 (desde 2026): só aviso, somando os dividendos líquidos da mesma empresa (raiz do
+  código) no mês: acima de R$ 50 mil, ou acima de R$ 45 mil como "possível retenção".
+
 ## Pendências do motor (revisão final da F4, 16/10/2026)
 Decididos na revisão: o IRRF de day trade impresso como "projeção" nas notas da XP é o 1% retido
 sobre o ganho do dia e é deduzido no mês (confirmado pelo usuário); day trade "na mesma instituição
