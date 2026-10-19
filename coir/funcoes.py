@@ -721,7 +721,7 @@ def isencao_imposto_renda(taxas_df,grouped,note_data):
 # Agrupa as operações por tipo de operação (Normal ou Daytrade)
 # =================================================================================================
 def agrupar_operacoes(grouped,cols):
-    groups = grouped.groupby(grouped.Operacao)
+    groups = grouped.groupby('Operacao')
     try:
         normal_df = groups.get_group("Normal")
     except KeyError:
@@ -906,7 +906,7 @@ def preco_medio_correcao(grouped):
 # de compra/venda a maior no DayTrade
 # =================================================================================================
 def agrupar_operacoes_correcao(grouped,cols):
-    groups = grouped.groupby(grouped.Operacao)
+    groups = grouped.groupby('Operacao')
     try:
         normal_df = groups.get_group("Normal")
     except KeyError:
