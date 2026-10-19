@@ -51,7 +51,11 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
     df = pd.concat(data,axis=0,ignore_index=True)
     
     if 'Obs. (*) Quantidade' in df.columns:
-        df[['Obs. (*)', 'Quantidade']] = df['Obs. (*) Quantidade'].str.split(" ", expand=True)
+        # A coluna traz "<obs> <quantidade>"; linhas sem marca de observação (*) trazem
+        # somente a quantidade (a última parte é sempre a quantidade).
+        partes = df['Obs. (*) Quantidade'].str.split(" ")
+        df['Obs. (*)'] = partes.str[0].where(partes.str.len() > 1)
+        df['Quantidade'] = partes.str[-1]
         df = df.drop(columns=['Obs. (*) Quantidade'])
 
     if 'C/V Tipo mercado' in df.columns:
