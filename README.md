@@ -36,13 +36,13 @@ Para ter acesso a todas as funcionalidades do sistema será necessário o Micros
 * Se o Windows alertar sobre o `python.exe` (SmartScreen ou antivírus), é um aviso comum para programas baixados da internet; ele faz parte do pacote.
 
 ### Instalação manual (avançado)
-Para rodar a partir do código-fonte, instale o Python 3.9 ou 3.10 e o Java 8 ou superior (o Java é usado pela biblioteca tabula-py para ler os PDFs). Na pasta do projeto:
+Para rodar a partir do código-fonte, instale o Python 3.12 ou superior (testado com o 3.15) e o Java 8 ou superior (o Java é usado pela biblioteca tabula-py para ler os PDFs). Na pasta do projeto:
 
 `$ python -m pip install -r requirements.txt`
 
 `$ python COIR.py`
 
-As versões das bibliotecas em `requirements.txt` estão fixadas: pandas 2.3.3 e numpy 2.0.2 são as últimas que ainda suportam o Python 3.9, e o tabula-py 2.3.0 não funciona com setuptools 81 ou superior. O código também roda com o pandas 3.
+As versões das bibliotecas em `requirements.txt` estão fixadas nas que foram testadas (pandas 3, numpy 2.5, tabula-py 2.10, xlwings 0.37, openpyxl 3.1). O numpy 2.5 exige o Python 3.12 ou superior.
 
 **Contribuições são muito bem-vindas!**
 
