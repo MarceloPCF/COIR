@@ -84,7 +84,7 @@ def _conteudo(
                 classe = "coir-negativo" if vez in atrasadas else "coir-carimbo"
                 ui.label(_r(vez.total)).classes(f"coir-numero text-3xl {classe}")
                 vence = f"{vez.vencimento:%d/%m/%Y}" if vez.vencimento else ""
-                juros = " (sem os juros)" if vez.multa and vez.multa.valor else ""
+                juros = " (com multa e juros até hoje)" if vez.multa and vez.multa.valor else ""
                 ui.label(
                     f"Competência {vez.mes:02d}/{vez.ano} · vence {vence} · "
                     f"{vez.situacao.value}{juros}"

@@ -569,6 +569,39 @@ def eventos_importar(
         )
 
 
+b3_app = typer.Typer(help="Planilhas da Área do Investidor da B3.", no_args_is_help=True)
+app.add_typer(b3_app, name="b3")
+PASTA_B3 = "_relatorios-b3"
+
+
+@b3_app.command("importar")
+def b3_importar(
+    pasta: Path | None = typer.Argument(None, help="Pasta dos xlsx (padrão: _relatorios-b3)."),
+    titular: int | None = typer.Option(None, help="Id do titular (coir titular listar)."),
+    banco: Path | None = OpcaoBanco,
+) -> None:
+    """Grava movimentação, negociação e posição (consolidado) da B3; reimportar não duplica."""
+    from coir.db import repositorio as repo
+    from coir.db.sessao import conectar, migrar
+    from coir.servicos.b3 import importar_planilhas
+
+    caminho, agora = _banco(banco), _agora()
+    origem = pasta or dados_dir(exigir=True) / PASTA_B3
+    arquivos = sorted(p for p in origem.glob("*.xlsx") if not p.name.startswith("~$"))
+    migrar(caminho, agora)
+    if titular is None:
+        with conectar(caminho) as fabrica, fabrica() as s:
+            ids = [t.id for t in repo.titulares(s)]
+        if len(ids) != 1:
+            raise typer.BadParameter(f"escolha o titular com --titular ({ids or 'nenhum'})")
+        titular = ids[0]
+    rel = importar_planilhas(caminho, arquivos, titular, agora)
+    for a in rel.arquivos:
+        tipo = a.tipo.value if a.tipo else "ignorado"
+        print(f"  {a.arquivo}: {tipo}, {a.novas} nova(s) de {a.linhas} ({a.detalhe})")
+    print(f"Linhas novas: {rel.novas}")
+
+
 # ------------------------------------------------------------------------------ apuração (F4)
 def _mes(texto: str) -> tuple[int, int]:
     import re

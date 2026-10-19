@@ -26,10 +26,11 @@ INTERNOS_PERMITIDOS = {
         "coir.gabarito", "coir.domain", "coir.erros", "coir.parsing", "coir.recursos",
     ),
     "db": ("coir.db", "coir.domain", "coir.erros"),
+    "importers": ("coir.importers", "coir.domain", "coir.erros"),
     "reports": ("coir.reports", "coir.domain", "coir.erros"),
     "servicos": (
         "coir.servicos", "coir.db", "coir.domain", "coir.engine", "coir.erros", "coir.parsing",
-        "coir.reports", "coir.config", "coir.referencias",
+        "coir.reports", "coir.config", "coir.referencias", "coir.importers",
     ),
     # interface: só apresenta; dados e cálculos vêm dos serviços (nunca motor ou banco direto)
     "ui": ("coir.ui", "coir.servicos", "coir.reports", "coir.domain", "coir.config", "coir.erros"),
@@ -37,6 +38,7 @@ INTERNOS_PERMITIDOS = {
 EXTERNOS_LIBERADOS = {
     "gabarito": ("pyxlsb", "openpyxl"),
     "db": ("sqlalchemy", "alembic", "sqlite3"),
+    "importers": ("openpyxl",),
     "reports": ("xlsxwriter", "reportlab"),
     "servicos": ("sqlalchemy",),
     "ui": ("nicegui", "webview"),

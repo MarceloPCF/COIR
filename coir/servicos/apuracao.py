@@ -38,14 +38,13 @@ from coir.engine.calendario import liquidacao_termo, vencimento_opcao
 from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import carteira, movimentar
 from coir.erros import ReferenciaError
+from coir.parsing import futuros
 
 RE_PRAZO = re.compile(r"^(?P<mes>\d{2})/(?P<ano>\d{2})$")
 RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é put de novembro
-# mercado do contrato (data/contratos_futuros.csv) -> linha da apuração; mercado sem linha aqui
+# linha da apuração de cada contrato: coluna grupo de data/contratos_futuros.csv; grupo sem linha
 # (ex.: juros) falha alto em vez de cair em "outros" calado
-GRUPOS = {"INDICE": Grupo.INDICE, "DOLAR": Grupo.DOLAR, "BOI": Grupo.COMMODITY,
-          "CAFE": Grupo.COMMODITY, "MILHO": Grupo.COMMODITY, "SOJA": Grupo.COMMODITY}  # fmt: skip
-TIPOS_SEM_NEGOCIO = ("AJUPOS", "PERMAN")
+GRUPOS_FUTUROS = {Grupo.INDICE, Grupo.DOLAR, Grupo.COMMODITY}
 
 
 class _Tickers:
@@ -123,40 +122,28 @@ def _nota_bovespa(
 
 
 def _ajustes(nota: NotaExtraida, refs: Referencias) -> tuple[AjusteFuturo, ...]:
+    conversao = futuros.conversao_do_volume(nota, refs)  # volume em R$ (câmbio implícito)
     saida: list[AjusteFuturo] = []
     for i, n in enumerate(nota.negocios_bmf):
-        contrato = next(
-            (
-                c
-                for c in refs.contratos
-                if c.raiz == n.mercadoria[:3] and c.vigente(nota.data_pregao)
-            ),
-            None,
-        )
-        sem_negocio = any(t in n.tipo.upper() for t in TIPOS_SEM_NEGOCIO)
-        if n.day_trade:
-            tipo = TipoAjuste.DAY_TRADE
-        elif "AJUPOS" in n.tipo.upper():
-            tipo = TipoAjuste.AJUPOS
-        elif sem_negocio:
-            tipo = TipoAjuste.OUTRO
-        else:
-            tipo = TipoAjuste.NORMAL
+        tipo = futuros.tipo(n)
+        contrato = futuros.contrato(n, refs, nota.data_pregao)
         if contrato is None:
-            if sem_negocio and n.valor == 0:
+            if tipo is TipoAjuste.OUTRO and n.valor == 0:
                 continue  # taxa de permanência zerada de mercadoria sem cadastro
             raise ReferenciaError(f"contrato futuro {n.mercadoria} sem cadastro")
-        if contrato.mercado not in GRUPOS:
-            raise ReferenciaError(f"contrato futuro {n.mercadoria}: mercado {contrato.mercado} "
+        grupo = next((g for g in GRUPOS_FUTUROS if g.value == contrato.grupo), None)
+        if grupo is None:
+            raise ReferenciaError(f"contrato futuro {n.mercadoria}: grupo {contrato.grupo} "
                                   "sem linha na apuração (ex.: juros)")  # fmt: skip
+        sem_negocio = tipo in (TipoAjuste.AJUPOS, TipoAjuste.OUTRO)
+        volume = abs(n.preco * n.quantidade * contrato.multiplicador)
         saida.append(
             AjusteFuturo(
-                ordem=i, mercadoria=n.mercadoria,
-                grupo=GRUPOS[contrato.mercado], tipo=tipo,
+                ordem=i, mercadoria=n.mercadoria, grupo=grupo, tipo=tipo,
                 valor=_assinado(n), cv=n.cv, quantidade=abs(n.quantidade),
                 vencimento=n.vencimento,
-                volume=Decimal(0) if sem_negocio
-                else abs(n.preco * n.quantidade * contrato.multiplicador),
+                volume=Decimal(0) if sem_negocio else volume * conversao.get(n.mercadoria, 1),
+                entrega_fisica=contrato.liquidacao == "FISICA",
             )
         )  # fmt: skip
     return tuple(saida)

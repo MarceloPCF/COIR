@@ -83,8 +83,8 @@ async def test_importar_pdfs_escolhidos_copia_para_a_pasta_e_mostra_cada_arquivo
     arquivos = notas()[:2]
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/importar")
-        await user.should_see("Importar notas")
-        [envio] = user.find(ui.upload).elements
+        await user.should_see("Notas de corretagem (PDF)")
+        [envio] = user.find(marker="enviar-pdfs").elements
         assert isinstance(envio, ui.upload)
         await envio.handle_uploads(
             [SmallFileUpload(f"{a.stem}.pdf", "application/pdf", a.read_bytes()) for a in arquivos]
@@ -251,14 +251,14 @@ async def test_darf_marcar_como_paga(tmp_path: Path) -> None:
         assert fevereiro["c5"] == "em atraso"
         user.find(marker="grade-darf").trigger("rowClicked", {"data": fevereiro})
         await user.should_see("DARF de fevereiro/2026")
-        await user.should_see("92,19")  # 91,59 + multa de 0,60 até hoje
+        await user.should_see("93,10")  # 91,59 + multa de 0,60 + juros de 0,91 até hoje
         user.find(marker="data-pagamento").clear().type("2026-04-01")
-        user.find(marker="valor-pagamento").clear().type("92,19")
+        user.find(marker="valor-pagamento").clear().type("93,10")
         user.find(marker="salvar-pagamento").click()
         await user.should_see("Pagamento registrado", retries=ESPERA)
-        await user.should_see("Pago em 01/04/2026: 92,19", retries=ESPERA)
+        await user.should_see("Pago em 01/04/2026: 93,10", retries=ESPERA)
     pago = darf.pagamentos(estado.banco, 1)[(2026, 2)]
-    assert (pago.data, pago.valor) == (date(2026, 4, 1), Decimal("92.19"))
+    assert (pago.data, pago.valor) == (date(2026, 4, 1), Decimal("93.10"))
 
 
 @pytest.mark.asyncio

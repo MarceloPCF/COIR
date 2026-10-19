@@ -127,3 +127,6 @@ class ReferenciasFiscais(Modelo):
     tipos: TiposAtivo
     calendario: Calendario
     pme: dict[str, IsencaoPME] = {}
+    # Selic acumulada no mês (% a.m.), por (ano, mês): juros de mora da DARF (Lei 9.430/1996
+    # art. 61 §3º e art. 5º §3º). data/selic_mensal.csv, só meses completos (BCB, SGS 4390).
+    selic: dict[tuple[int, int], Decimal] = {}

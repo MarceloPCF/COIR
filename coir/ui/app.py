@@ -42,7 +42,7 @@ class Tela:
 GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
     ("", (Tela("/", "Painel", "space_dashboard", painel.montar),)),
     ("Notas", (
-        Tela("/importar", "Importar notas", "upload_file", importar.montar),
+        Tela("/importar", "Importar", "upload_file", importar.montar),
         Tela("/notas", "Notas", "receipt_long", notas.montar),
         Tela("/operacoes", "Operações", "list_alt", operacoes.montar),
     )),

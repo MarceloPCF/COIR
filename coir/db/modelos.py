@@ -209,3 +209,91 @@ class DarfPagamento(Base):
     comprovante: Mapped[str | None] = mapped_column(Text)  # caminho relativo à pasta de dados
     observacao: Mapped[str] = mapped_column(Text)
     registrado_em: Mapped[datetime]
+
+
+class ArquivoB3(Base):
+    """Planilha da Área do Investidor importada (movimentação, negociação ou consolidado)."""
+
+    __tablename__ = "arquivo_b3"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sha256: Mapped[str] = mapped_column(String(64), unique=True)
+    nome: Mapped[str] = mapped_column(Text)
+    tipo: Mapped[str] = mapped_column(String(20))
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"))
+    importado_em: Mapped[datetime]
+    linhas: Mapped[int]
+
+
+class MovimentacaoB3(Base):
+    """Linha da movimentação da B3 (fato). ``chave``: hash dos campos + ocorrência no arquivo, para
+    exportações que se sobrepõem não duplicarem (e linhas iguais legítimas não sumirem)."""
+
+    __tablename__ = "movimentacao_b3"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chave: Mapped[str] = mapped_column(String(64), unique=True)
+    arquivo_id: Mapped[int] = mapped_column(ForeignKey("arquivo_b3.id"))
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"), index=True)
+    data: Mapped[date]
+    entrada: Mapped[bool]
+    movimentacao: Mapped[str] = mapped_column(Text)
+    produto: Mapped[str] = mapped_column(Text)
+    codigo: Mapped[str] = mapped_column(String(20))
+    instituicao: Mapped[str] = mapped_column(Text)
+    quantidade: Mapped[Decimal]
+    preco: Mapped[Decimal | None]
+    valor: Mapped[Decimal | None]
+
+
+class NegociacaoB3(Base):
+    """Negócio da planilha de negociação da B3 (fato; conferência com as notas)."""
+
+    __tablename__ = "negociacao_b3"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chave: Mapped[str] = mapped_column(String(64), unique=True)
+    arquivo_id: Mapped[int] = mapped_column(ForeignKey("arquivo_b3.id"))
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"), index=True)
+    data: Mapped[date]
+    cv: Mapped[str] = mapped_column(String(1))
+    mercado: Mapped[str] = mapped_column(Text)
+    vencimento: Mapped[date | None]
+    instituicao: Mapped[str] = mapped_column(Text)
+    codigo: Mapped[str] = mapped_column(String(20))
+    quantidade: Mapped[Decimal]
+    preco: Mapped[Decimal]
+    valor: Mapped[Decimal]
+
+
+class PosicaoB3(Base):
+    """Posição da B3 numa data (relatório consolidado). Reimportar a mesma data substitui."""
+
+    __tablename__ = "posicao_b3"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    arquivo_id: Mapped[int] = mapped_column(ForeignKey("arquivo_b3.id"))
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"), index=True)
+    data: Mapped[date]
+    instituicao: Mapped[str] = mapped_column(Text)
+    conta: Mapped[str] = mapped_column(String(40))
+    codigo: Mapped[str] = mapped_column(String(20))
+    isin: Mapped[str] = mapped_column(String(12))
+    quantidade: Mapped[Decimal]
+    origem: Mapped[str] = mapped_column(String(12))
+
+
+class OutroCusto(Base):
+    """Custo dedutível lançado pelo usuário num mês (ex.: taxas de aluguel de ações - BTC), que
+    reduz o resultado da categoria (comum ou day trade) no mês."""
+
+    __tablename__ = "outro_custo"
+    __table_args__ = (UniqueConstraint("titular_id", "ano", "mes", "categoria"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"))
+    ano: Mapped[int]
+    mes: Mapped[int]
+    categoria: Mapped[str] = mapped_column(String(10))  # COMUM ou DAY_TRADE
+    valor: Mapped[Decimal]
+    descricao: Mapped[str] = mapped_column(Text)

@@ -11,19 +11,17 @@ from collections.abc import Iterable
 
 from rapidfuzz import process
 
+from coir.domain.fiscal import TipoAjuste
 from coir.domain.nota import NegocioBMF, NegocioBovespa, NotaExtraida, OperacaoExtraida, Segmento
 from coir.domain.referencias import Referencias
 from coir.erros import ReferenciaError
+from coir.parsing import futuros
 from coir.parsing.numeros import compactar
 
 RE_TICKER = re.compile(r"^[A-Z0-9]{4}\d{1,2}F?$")
 RE_OPCAO = re.compile(
     r"^(?P<serie>[A-Z0-9]{4}[A-X]\d{1,4}(?:W\d)?)(?P<e>E)?(?P<classe>ON|PN[A-C]?|UNT)?$"
 )  # W1..W5: opção semanal
-TIPOS_BMF_IGNORADOS = (
-    "AJUPOS",
-    "PERMAN",
-)  # ajuste de posição e taxa de permanência não são negócios
 
 
 def classes_das_series(notas: Iterable[NotaExtraida], refs: Referencias) -> dict[str, str]:
@@ -42,12 +40,14 @@ def operacoes(
     nota: NotaExtraida, refs: Referencias, series: dict[str, str]
 ) -> list[OperacaoExtraida]:
     if nota.segmento is Segmento.BMF:
+        futuros.conversao_do_volume(nota, refs)  # confere o câmbio implícito de cada linha
         return [_bmf(nota, n, refs) for n in nota.negocios_bmf if _negocio_bmf(n)]
     return [_bovespa(nota, n, refs, series) for n in nota.negocios_bovespa]
 
 
 def _negocio_bmf(n: NegocioBMF) -> bool:
-    return n.quantidade != 0 and not any(t in n.tipo.upper() for t in TIPOS_BMF_IGNORADOS)
+    """Ajuste de posição e taxa de permanência não são negócios."""
+    return n.quantidade != 0 and futuros.tipo(n) in (TipoAjuste.NORMAL, TipoAjuste.DAY_TRADE)
 
 
 def _comum(nota: NotaExtraida) -> dict[str, object]:
@@ -56,10 +56,7 @@ def _comum(nota: NotaExtraida) -> dict[str, object]:
 
 
 def _bmf(nota: NotaExtraida, n: NegocioBMF, refs: Referencias) -> OperacaoExtraida:
-    raiz = n.mercadoria[:3]
-    contrato = next(
-        (c for c in refs.contratos if c.raiz == raiz and c.vigente(nota.data_pregao)), None
-    )
+    contrato = futuros.contrato(n, refs, nota.data_pregao)
     if contrato is None:
         raise ReferenciaError(
             f"contrato futuro {n.mercadoria} sem cadastro em contratos_futuros.csv"

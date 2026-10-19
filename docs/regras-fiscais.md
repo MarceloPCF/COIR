@@ -19,7 +19,7 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A |
 | R11 | Futuros: resultado no encerramento ou liquidação da posição = soma dos ajustes desde a abertura − custos; encerramento parcial pelo preço médio; day trade no dia | Ajustes da posição aberta acumulados por contrato e realizados no encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A |
 | R12 | DARF código 6015; vencimento último dia útil (bancário) do mês seguinte; valor < R$ 10 acumula, inclusive para o ano seguinte | `data/feriados.csv` (o último dia útil do ano não é útil: Res. CMN 4.880/2020 art. 3º) + acúmulo | RIR/2018 art. 915; Lei 9.430/1996 art. 68 caput e §1º | A |
-| R13 | Atraso: multa 0,33%/dia limitada a 20% + juros Selic (acumulada a partir do mês seguinte ao vencimento + 1% no mês do pagamento) | Tabela Selic mensal editável | Lei 9.430/1996 art. 61 | A |
+| R13 | Atraso: multa 0,33%/dia limitada a 20% + juros Selic (do mês seguinte ao vencimento até o mês anterior ao pagamento + 1% no mês do pagamento) | `data/selic_mensal.csv` (BCB SGS 4390) | Lei 9.430/1996 art. 61 | A |
 | R14 | Dividendos > R$ 50 mil/mês da mesma PJ: IRRF 10% sobre o total; IRPFM para renda anual > R$ 600 mil | Registrar IRRF do provento; relatório informativo (IRPFM fora do escopo v3.0) | Lei 15.270/2025 | A |
 | R15 | JCP: IRRF exclusivo 15% até 31/12/2025; 17,5% para JCP pago ou creditado desde 01/01/2026 | Provento com IRRF; alíquota com vigência | LC 224/2025 | A |
 | R16 | Rendimentos de FII isentos se o fundo cumpre requisitos | Usuário marca conforme informe do fundo | Lei 11.033/2004 art. 3º (alt. Lei 14.754/2023) | M |
@@ -228,7 +228,29 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   imputação automática.
 - A denúncia espontânea (CTN art. 138; STJ REsp 1.149.022/SP; Súmula 360) fica como nota na tela:
   o COIR calcula como o Sicalc.
-- Juros Selic: F7.
+- Juros (art. 61 §3º c/c art. 5º §3º; F7a, 19/10/2026): soma simples da Selic mensal (BCB SGS 4390,
+  a mesma do Sicalc, em `data/selic_mensal.csv`) dos meses entre o do vencimento e o do pagamento, sem
+  contar nenhum dos dois, mais 1% no mês do pagamento; pago no mesmo mês do vencimento, zero. Base: o
+  principal. Centavos truncados (Sicalc, 17/10/2026: 12,3457 → 12,34). Data não útil vale no próximo
+  dia útil, o que pode mudar o mês. DARF acumulada: juros desde o vencimento do período que fechou o
+  mínimo (art. 68 §1º). Mês posterior ao último da tabela: estimativa avisada; buraco na tabela: erro.
+  A tabela confere com as tabelas de acréscimos da RFB (`tests/fiscal_cases/test_juros_mora.py`).
+
+## Futuros de commodities e conferência das notas BM&F (F7a, 19/10/2026)
+`coir/parsing/futuros.py`; casos em `tests/fiscal_cases/test_futuros_commodities.py`.
+- O resultado vem dos ajustes em R$ impressos na nota (IN RFB 1.585/2015 art. 61). O multiplicador só
+  entra no volume do rateio de custos e na conferência abaixo. Café (ICF) e soja CME (SJC) são cotados
+  em US$; o ajuste da nota já vem em R$.
+- Conferência do câmbio implícito (decisão do usuário: erro, a nota não entra): com o preço de ajuste
+  do dia (linha AJUPOS) ou com os negócios que se fecham no dia, valor = (PA − preço) × quantidade ×
+  multiplicador × câmbio; contrato em R$ tem câmbio 1 (confere o multiplicador nota a nota), em US$ o
+  mesmo câmbio em todas as linhas. As 624 notas BM&F reais passam.
+- Rateio de custos numa nota que mistura contratos em R$ e em US$: o volume em US$ é convertido pelo
+  câmbio implícito da própria nota; sem ele, a nota não entra. Nota de uma moeda só: sem conversão.
+- Fora do escopo, com falha alta: tipo de negócio além de NORMAL, DAY TRADE, AJUPOS e taxa de
+  permanência (entrega física, exercício); opção sobre futuro; contrato sem cadastro. Café com posição
+  aberta no vencimento (liquidação física): o resultado é o dos ajustes e o COIR avisa.
+- A linha da apuração de cada contrato (índice, dólar, "outros") está em `data/contratos_futuros.csv`.
 
 ## Pendências do motor (revisão final da F4, 16/10/2026)
 Decididos na revisão: o IRRF de day trade impresso como "projeção" nas notas da XP é o 1% retido

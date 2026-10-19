@@ -286,16 +286,19 @@ def importar_lista(
             return importar_arquivos(sessao, arquivos, refs, agora, titular, extrator, progresso)
 
 
-def copiar_para_pasta(arquivos: Sequence[tuple[str, bytes]], pasta: Path) -> list[Path]:
-    """Guarda os PDFs escolhidos na tela na pasta das notas (o PDF fica ao lado dos dados, para
-    a conferência). Arquivo igual já na pasta não é copiado de novo; nome repetido com conteúdo
-    diferente ganha sufixo (-2, -3...), sem sobrescrever."""
+def copiar_para_pasta(
+    arquivos: Sequence[tuple[str, bytes]], pasta: Path, extensao: str = ".pdf"
+) -> list[Path]:
+    """Guarda os arquivos escolhidos na tela numa pasta de dados (PDFs das notas, para a
+    conferência; planilhas da B3). Arquivo igual já na pasta não é copiado de novo; nome repetido
+    com conteúdo diferente ganha sufixo (-2, -3...), sem sobrescrever."""
     pasta.mkdir(parents=True, exist_ok=True)
     destinos: list[Path] = []
     for nome, dados in arquivos:
         base = Path(Path(nome).name)  # nunca sai da pasta (nome vindo do navegador)
-        if base.suffix.lower() != ".pdf" or base.stem in ("", ".", ".."):
-            raise ImportacaoError(f"não é PDF: {nome}")
+        if base.suffix.lower() != extensao or base.stem in ("", ".", ".."):
+            tipo = "PDF" if extensao == ".pdf" else f"arquivo {extensao}"
+            raise ImportacaoError(f"não é {tipo}: {nome}")
         sha = hashlib.sha256(dados).hexdigest()
         destino, n = pasta / base.name, 1
         while destino.exists() and _sha256(destino) != sha:

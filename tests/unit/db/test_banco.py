@@ -125,7 +125,7 @@ def test_decimal_texto_recusa_float() -> None:
 # ---------------------------------------------------------------------------------- migração
 def test_migracao_cria_esquema_igual_aos_modelos(banco: Path) -> None:
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == revisao_final() == "0003"
+    assert revisao_atual(engine) == revisao_final() == "0004"
     with engine.connect() as c:
         ctx = MigrationContext.configure(c, opts={"compare_type": True})
         assert compare_metadata(ctx, Base.metadata) == []
@@ -148,7 +148,7 @@ def test_banco_da_revisao_anterior_migra_com_backup(tmp_path: Path) -> None:
     engine.dispose()
     migrar(banco, AGORA)
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == "0003"
+    assert revisao_atual(engine) == "0004"
     engine.dispose()
     with abrir(banco)() as s:
         assert [t.nome for t in repo.titulares(s)] == ["Titular de Teste"]
@@ -771,8 +771,8 @@ def test_futuro_de_mercado_sem_linha_na_apuracao_falha_alto() -> None:
     texto = (FIXTURES / "xp_2024_01_bmf_novo.txt").read_text(encoding="utf-8")
     nota = extrair_textos("x.txt", texto.split("\f")).notas[0]
     raiz = nota.negocios_bmf[0].mercadoria[:3]
-    contratos = tuple(c.model_copy(update={"mercado": "JUROS"}) if c.raiz == raiz else c
+    contratos = tuple(c.model_copy(update={"grupo": "juros"}) if c.raiz == raiz else c
                       for c in REFS.contratos)  # fmt: skip
-    with pytest.raises(ReferenciaError, match="mercado JUROS sem linha"):
+    with pytest.raises(ReferenciaError, match="grupo juros sem linha"):
         _ajustes(nota, REFS.model_copy(update={"contratos": contratos}))
     assert _ajustes(nota, REFS)  # com o cadastro real, funciona

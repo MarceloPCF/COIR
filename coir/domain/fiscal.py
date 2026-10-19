@@ -92,10 +92,11 @@ class AjusteFuturo(Modelo):
     grupo: Grupo  # INDICE, DOLAR ou COMMODITY
     tipo: TipoAjuste
     valor: Decimal  # crédito positivo, débito negativo
-    volume: Decimal  # base do rateio de custos (preço x quantidade x multiplicador; AJUPOS = 0)
+    volume: Decimal  # base do rateio de custos, em R$ (preço x qtd x multiplicador; AJUPOS = 0)
     cv: CV | None = None  # negócio normal: compra ou venda
     quantidade: Decimal = ZERO  # contratos do negócio
     vencimento: date | None = None  # vencimento do contrato (encerra a posição que sobrar)
+    entrega_fisica: bool = False  # contrato liquidado por entrega (ex.: café): fora do escopo
 
     @property
     def day_trade(self) -> bool:
@@ -303,6 +304,17 @@ class MultaMora(Modelo):
     dias: int  # dias de atraso contados
     percentual: Decimal  # já limitado ao teto
     valor: Decimal
+
+
+class JurosMora(Modelo):
+    """Juros de mora de uma DARF paga (ou a pagar) depois do vencimento (regra 12: guarda os meses
+    e as taxas usados)."""
+
+    pagamento: date  # data considerada (dia não útil vai para o próximo dia útil)
+    percentual: Decimal  # Selic dos meses entre o vencimento e o pagamento + 1% do mês do pagamento
+    valor: Decimal
+    taxas: tuple[tuple[str, Decimal], ...] = ()  # ("MM/AAAA", % a.m.) somados
+    meses_sem_taxa: tuple[str, ...] = ()  # depois do último mês da tabela: valor estimado
 
 
 class Apuracao(Modelo):

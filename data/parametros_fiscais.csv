@@ -13,3 +13,5 @@ multa_mora_dia,0.0033,1997-01-01,,"Lei 9.430/1996 art. 61 caput (0,33% por dia d
 multa_mora_teto,0.20,1997-01-01,,Lei 9.430/1996 art. 61 §2º (limite de 20%)
 multa_mora_inicio_contagem,rfb,1997-01-01,,RFB/Sicalc (Como calcular multa de mora): do primeiro dia útil após o vencimento; alternativa lei (art. 61 §1º); decisão do usuário (17/10/2026)
 multa_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido pelo usuário em 17/10/2026: R$ 1234.57 x 0.0231 = 28.518567 -> 28.51)
+juros_mora_mes_pagamento,0.01,1997-01-01,,Lei 9.430/1996 art. 61 §3º c/c art. 5º §3º (1% no mês do pagamento; Selic acumulada nos meses entre o vencimento e o pagamento)
+juros_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido pelo usuário em 17/10/2026: R$ 1234.57 x 0.01 = 12.3457 -> 12.34)
