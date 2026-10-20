@@ -21,17 +21,21 @@ from coir.db import repositorio as repo
 from coir.db.modelos import EventoCorporativo, NotaCorretagem
 from coir.db.sessao import NOME_BANCO, conectar, migrar
 from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
+from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.proventos import Provento
 from coir.domain.referencias import Referencias
 from coir.domain.relatorio import DadosRelatorio
 from coir.erros import CoirError, ConfiguracaoError, ExportacaoError
+from coir.gabarito.externo import ticker_atual
 from coir.parsing.extrair import extrair_pdf
+from coir.reports.irpf import fichas
 from coir.servicos import (
     atualizacao,
     carteira,
     conciliacao,
     darf,
+    declaracao,
     derivativos,
     eventos,
     notas,
@@ -289,6 +293,30 @@ class Estado:
             return darf.darfs(meses, darf.pagamentos(self.banco, titular), hoje, self.fiscais)
 
         return self._guardado(("darfs-todos", titular, hoje), calcular)
+
+    # ------------------------------------------------------------- declaração anual (tela 14)
+    def fichas_irpf(self) -> tuple[FichasIrpf | None, MapeamentoIrpf | None]:
+        """As fichas do IRPF do titular e ano escolhidos (None se o exercício não tem
+        mapeamento em data/irpf)."""
+        d = self.dados_relatorio()
+        return fichas(d), d.irpf
+
+    def lancados(self) -> set[str]:
+        if not self.existe or self.titular is None or self.ano is None:
+            return set()
+        return declaracao.lancados(self.banco, self.titular, self.ano)
+
+    def marcar_lancado(self, chave: str, lancado: bool) -> None:
+        if self.titular is None or self.ano is None:
+            raise ExportacaoError("escolha o titular e o ano")
+        declaracao.marcar(self.banco, self.titular, self.ano, chave, lancado, self.agora())
+
+    def conferir_dirpf(self) -> declaracao.Conferencia | None:
+        """Comparação com a DIRPF entregue do ano (PDF em <dados>/_dirpf), se houver."""
+        f, mapa = self.fichas_irpf()
+        if f is None or mapa is None:
+            return None
+        return declaracao.conferir(self.dados, f, mapa, ticker_atual(self.refs))
 
     def proventos(self) -> tuple[list[Provento], list[str]]:
         """Proventos do titular escolhido (todos os anos) e os avisos."""

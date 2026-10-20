@@ -125,7 +125,7 @@ def test_decimal_texto_recusa_float() -> None:
 # ---------------------------------------------------------------------------------- migração
 def test_migracao_cria_esquema_igual_aos_modelos(banco: Path) -> None:
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == revisao_final() == "0006"
+    assert revisao_atual(engine) == revisao_final() == "0007"
     with engine.connect() as c:
         ctx = MigrationContext.configure(c, opts={"compare_type": True})
         assert compare_metadata(ctx, Base.metadata) == []
@@ -148,7 +148,7 @@ def test_banco_da_revisao_anterior_migra_com_backup(tmp_path: Path) -> None:
     engine.dispose()
     migrar(banco, AGORA)
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == "0006"
+    assert revisao_atual(engine) == "0007"
     engine.dispose()
     with abrir(banco)() as s:
         assert [t.nome for t in repo.titulares(s)] == ["Titular de Teste"]
@@ -851,7 +851,8 @@ def test_tabelas_com_erro_nao_impedem_abrir_o_app(
 
 
 def test_migracao_0006_credito_jcp_vai_e_volta(tmp_path: Path) -> None:
-    """F8: a tabela da data do crédito do JCP informada pelo usuário (0006) sobe e desce."""
+    """F8: as tabelas do crédito do JCP (0006) e dos itens lançados na declaração (0007) sobem e
+    descem."""
     from alembic import command
     from sqlalchemy import inspect
 
@@ -860,10 +861,11 @@ def test_migracao_0006_credito_jcp_vai_e_volta(tmp_path: Path) -> None:
     banco = tmp_path / "coir.db"
     migrar(banco, AGORA)
     engine = criar_engine(banco)
-    for alvo, tem in (("0005", False), ("0006", True)):
+    for alvo, credito, lancado in (("0005", False, False), ("0007", True, True)):
         with engine.begin() as c:
             config = _config_alembic()
             config.attributes["connection"] = c
             (command.downgrade if alvo == "0005" else command.upgrade)(config, alvo)
-        assert ("credito_jcp" in inspect(engine).get_table_names()) is tem
+        tabelas = inspect(engine).get_table_names()
+        assert ("credito_jcp" in tabelas, "irpf_lancado" in tabelas) == (credito, lancado)
     engine.dispose()
