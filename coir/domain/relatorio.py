@@ -32,6 +32,7 @@ class DadosRelatorio(BaseModel):
     visao: Visao
     carteira: tuple[PosicaoAtivo, ...]
     carteira_fiscal: tuple[PosicaoAtivo, ...]  # sempre por titular (Bens e Direitos)
+    carteira_fiscal_anterior: tuple[PosicaoAtivo, ...] = ()  # em 31/12 do ano anterior
     contas: dict[int, str]  # id da conta -> número impresso (carteira por conta)
     notas: tuple[NotaDoLivro, ...]  # do titular, no ano
     proventos: tuple[Provento, ...] = ()  # do titular (todos os anos: o relatório filtra)

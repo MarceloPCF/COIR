@@ -60,6 +60,7 @@ def dados_banco(
     lista_proventos, avisos_proventos = proventos_banco(banco, fiscais, tid)
     params = fiscais.parametros
     fiscal = carteira(notas, eventos, params, ate, Visao.TITULAR)
+    anterior = carteira(notas, eventos, params, date(ano - 1, 12, 31), Visao.TITULAR)
     na_data = fiscal if (visao, dia) == (Visao.TITULAR, ate) else carteira(notas, eventos, params,
                                                                            dia, visao)  # fmt: skip
     return DadosRelatorio(
@@ -67,7 +68,8 @@ def dados_banco(
         codigo_darf=params.texto("darf_codigo", date(ano, 1, 1)),
         apuracao=apurar(notas, eventos, params, fiscais.calendario, ate, custos), ate=ate,
         data_carteira=dia,
-        visao=visao, carteira=tuple(na_data), carteira_fiscal=tuple(fiscal), contas=contas,
+        visao=visao, carteira=tuple(na_data), carteira_fiscal=tuple(fiscal),
+        carteira_fiscal_anterior=tuple(anterior), contas=contas,
         notas=livro, proventos=tuple(lista_proventos), avisos_proventos=tuple(avisos_proventos),
     )  # fmt: skip
 
