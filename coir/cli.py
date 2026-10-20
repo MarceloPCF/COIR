@@ -14,6 +14,8 @@ from coir.erros import CoirError
 if TYPE_CHECKING:
     from datetime import datetime
 
+    from coir.domain.parametros import ReferenciasFiscais
+    from coir.domain.referencias import Referencias
     from coir.gabarito.modelo import Gabarito
     from coir.gabarito.pseudonimos import MapaPseudonimos
 
@@ -181,7 +183,6 @@ def gabarito_externo(
     from datetime import datetime
     from decimal import Decimal
 
-    from coir import referencias
     from coir.domain.fiscal import Visao
     from coir.gabarito.comparar import Tolerancias
     from coir.gabarito.exportar import exigir_fora_do_repositorio
@@ -210,9 +211,9 @@ def gabarito_externo(
             marco = datetime.strptime(desde, "%Y-%m").date()
         except ValueError as erro:
             raise typer.BadParameter(f"--desde deve ser AAAA-MM (lido {desde!r})") from erro
-    refs, tol = referencias.carregar(), Tolerancias.carregar()
+    refs, tol = _refs(), Tolerancias.carregar()
     vendas = ler_planilha_externa(arquivo)
-    movs = movimentos_banco(_banco(banco), refs, referencias.carregar_fiscais(),
+    movs = movimentos_banco(_banco(banco), refs, _fiscais(),
                             max(v.data for v in vendas), vista)  # fmt: skip
     linhas, meses = comparar_externo(vendas, movs, ticker_atual(refs), tol.operacao, tol.mes,
                                     marco)  # fmt: skip
@@ -264,7 +265,6 @@ def validar_gabarito(
     relatorio: Path | None = typer.Option(None, help="Grava todas as divergências neste arquivo."),
 ) -> None:
     """Compara um candidato com o gabarito usando as tolerâncias de data/tolerancias.toml."""
-    from coir import referencias
     from coir.gabarito.comparar import (
         Tolerancias,
         carregar_explicacoes,
@@ -277,7 +277,7 @@ def validar_gabarito(
     pasta = _destino(gabarito)
     conhecidas = carregar_explicacoes(explicacoes or pasta / "divergencias-conhecidas.csv")
     rel = comparar(
-        com_tickers_da_data(carregar(pasta), referencias.carregar()),
+        com_tickers_da_data(carregar(pasta), _refs()),
         carregar(candidato),
         Tolerancias.carregar(),
         [n.strip() for n in niveis.split(",") if n.strip()],
@@ -330,7 +330,6 @@ def notas_extrair(
 
     Sai com código 1 se alguma nota for rejeitada sem estar no CSV de divergências conhecidas.
     """
-    from coir import referencias
     from coir.erros import ExtracaoError
     from coir.gabarito import candidato as cand
     from coir.gabarito.comparar import carregar_explicacoes
@@ -354,7 +353,7 @@ def notas_extrair(
     else:
         res = extrair_pasta(pasta_pdf)
         normalizadas = []
-    refs = referencias.carregar()
+    refs = _refs()
     series = classes_das_series(res.notas, refs)
     for nota in res.notas:
         try:
@@ -491,13 +490,12 @@ def importar(
 
     Sai com código 1 se alguma nota for rejeitada sem estar no CSV de divergências conhecidas.
     """
-    from coir import referencias
     from coir.gabarito.comparar import carregar_explicacoes
     from coir.servicos.importacao import importar_pasta
 
     dados = dados_dir(exigir=True)
     rel = importar_pasta(
-        _banco(banco), pasta or dados / "_notas-corretagens", referencias.carregar(), _agora(),
+        _banco(banco), pasta or dados / "_notas-corretagens", _refs(), _agora(),
         titular,
     )  # fmt: skip
     print(
@@ -621,13 +619,12 @@ def apurar(
     """Apuração mensal (comum, day trade, FII), IRRF e DARF, com a memória de cálculo do mês."""
     from datetime import date
 
-    from coir import referencias
     from coir.servicos.apuracao import apurar_banco
     from coir.servicos.relatorio_apuracao import resumo_ano, resumo_mes
 
     agora = _agora().date()
-    fiscais = referencias.carregar_fiscais()
-    ap = apurar_banco(_banco(banco), referencias.carregar(), fiscais, agora)
+    fiscais = _fiscais()
+    ap = apurar_banco(_banco(banco), _refs(), fiscais, agora)
     if ano is not None and mes is not None:
         raise typer.BadParameter("use AAAA-MM ou --ano, não os dois")
     if ano is not None:
@@ -652,7 +649,6 @@ def carteira(
     """Posições abertas e PM no fim do dia, na visão pedida."""
     from datetime import date
 
-    from coir import referencias
     from coir.domain.fiscal import Visao
     from coir.servicos.apuracao import carteira_banco
     from coir.servicos.relatorio_apuracao import carteira_texto
@@ -662,9 +658,7 @@ def carteira(
         vista = Visao(visao)
     except ValueError as erro:
         raise typer.BadParameter(str(erro)) from erro
-    posicoes, contas = carteira_banco(
-        _banco(banco), referencias.carregar(), referencias.carregar_fiscais(), alvo, vista
-    )
+    posicoes, contas = carteira_banco(_banco(banco), _refs(), _fiscais(), alvo, vista)
     print(carteira_texto(posicoes, contas, alvo, vista))
 
 
@@ -689,7 +683,6 @@ def exportar(
     from datetime import date
     from decimal import Decimal
 
-    from coir import referencias
     from coir.domain.fiscal import Visao
     from coir.servicos.relatorios import dados_banco, validar
     from coir.servicos.relatorios import exportar as gravar
@@ -703,7 +696,7 @@ def exportar(
     formatos = tuple(f.strip().lower() for f in formato.split(",") if f.strip())
     chaves = tuple(c.strip() for c in relatorio.split(",")) if relatorio else None
     validar(pasta, formatos, chaves)
-    dados = dados_banco(_banco(banco), referencias.carregar(), referencias.carregar_fiscais(), ano,
+    dados = dados_banco(_banco(banco), _refs(), _fiscais(), ano,
                         _agora(), titular, dia, vista)  # fmt: skip
     arquivos = gravar(dados, pasta, formatos, chaves)
     meses = [m for m in dados.apuracao.meses if m.titular == dados.titular and m.ano == ano]
@@ -728,6 +721,19 @@ def abrir_ui(
 
     iniciar(Estado(banco or dados_dir() / NOME_BANCO), navegador=navegador, porta=porta,
             abrir=abrir)  # fmt: skip
+
+
+def _refs() -> "Referencias":
+    """Tabelas de referência: o pacote baixado em <dados>/referencias, se mais novo."""
+    from coir import referencias
+
+    return referencias.carregar(referencias.pasta_efetiva(dados_dir()))
+
+
+def _fiscais() -> "ReferenciasFiscais":
+    from coir import referencias
+
+    return referencias.carregar_fiscais(referencias.pasta_efetiva(dados_dir()))
 
 
 def main() -> None:

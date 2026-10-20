@@ -28,8 +28,9 @@ def test_tipos_de_ativo() -> None:
         TipoAtivo.ACAO, TipoAtivo.ACAO, TipoAtivo.BDR)  # fmt: skip
     assert (t.tipo("TAEE11"), t.tipo("BOVA11"), t.tipo("B5P211")) == (
         TipoAtivo.UNIT, TipoAtivo.ETF, TipoAtivo.ETF_RF)  # fmt: skip
+    assert t.tipo("XPML11") is TipoAtivo.FII  # pela tabela gerada do cadastro da B3 (F7b)
     with pytest.raises(ReferenciaError, match=r"tipos_ativo.csv"):
-        t.tipo("XPML11")
+        t.tipo("XYZW11")  # sem cadastro: sem palpite
 
 
 def test_serie_de_opcao_segue_a_troca_do_ativo_objeto() -> None:

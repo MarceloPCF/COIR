@@ -1,0 +1,74 @@
+[
+ {
+  "stockCapital": "1.168.794.260,67",
+  "quotedPerSharSince": "10/04/2019",
+  "commonSharesForm": "Escritural",
+  "preferredSharesForm": "Escritural",
+  "hasCommom": "BRADESCO",
+  "hasPreferred": "BRADESCO",
+  "roundLot": "100",
+  "tradingName": "VAMOS       ",
+  "numberCommonShares": "1.221.826.865",
+  "numberPreferredShares": "0",
+  "totalNumberShares": "1.221.826.865",
+  "code": "VAMO",
+  "codeCVM": "24716",
+  "segment": "NM",
+  "cashDividends": [
+   {
+    "assetIssued": "BRVAMOACNOR7",
+    "paymentDate": "02/04/2026",
+    "rate": "0,14070156800",
+    "relatedTo": "Anual/2025",
+    "approvedOn": "15/12/2025",
+    "isinCode": "BRVAMOACNOR7",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "18/12/2025",
+    "remarks": ""
+   }
+  ],
+  "stockDividends": [
+   {
+    "assetIssued": "BRVAMOACNOR7",
+    "factor": "100,00000000000",
+    "approvedOn": "22/11/2024",
+    "isinCode": "BRVAMOACNOR7",
+    "label": "CIS RED CAP",
+    "lastDatePrior": "13/12/2024",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRAMOBACNOR9",
+    "factor": "28,29055500000",
+    "approvedOn": "22/11/2024",
+    "isinCode": "BRVAMOACNOR7",
+    "label": "CIS RED CAP",
+    "lastDatePrior": "13/12/2024",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRVAMOACNOR7",
+    "factor": "300,00000000000",
+    "approvedOn": "13/08/2021",
+    "isinCode": "BRVAMOACNOR7",
+    "label": "DESDOBRAMENTO",
+    "lastDatePrior": "13/08/2021",
+    "remarks": ""
+   }
+  ],
+  "subscriptions": [
+   {
+    "assetIssued": "BRVAMOACNOR7",
+    "percentage": "14,61976396000",
+    "priceUnit": "3,85000000000",
+    "tradingPeriod": "11/03/2026 a 27/04/2026",
+    "subscriptionDate": "30/04/2026",
+    "approvedOn": "05/03/2026",
+    "isinCode": "BRVAMOACNOR7",
+    "label": "SUBSCRICAO",
+    "lastDatePrior": "10/03/2026",
+    "remarks": ""
+   }
+  ]
+ }
+]

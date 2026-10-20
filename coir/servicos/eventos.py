@@ -13,14 +13,16 @@ líquido. Reimportar o mesmo CSV não duplica (chave = hash da linha).
 import csv
 import hashlib
 import re
+from collections import defaultdict
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_FLOOR, Decimal, InvalidOperation
 from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from coir import referencias
 from coir.db import repositorio as repo
 from coir.db.modelos import (
     Conta,
@@ -28,11 +30,21 @@ from coir.db.modelos import (
     EventoCorporativo,
     MovimentacaoB3,
     PropostaIgnorada,
+    SerieOpcao,
+    TickerHistorico,
 )
 from coir.db.sessao import conectar
-from coir.domain.fiscal import TIPOS_COM_DESTINO, NaturezaEvento, TipoEvento, Visao
+from coir.domain.fiscal import (
+    TIPOS_COM_DESTINO,
+    Movimento,
+    NaturezaEvento,
+    TipoAtivo,
+    TipoEvento,
+    Visao,
+)
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias
+from coir.engine.calendario import proximo_pregao
 from coir.engine.movimentos import movimentar
 from coir.erros import ImportacaoError, MotorError, ReferenciaError
 from coir.servicos.apuracao import Tickers, entradas
@@ -470,9 +482,14 @@ RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z]{4})(?P<classe>9|10)$")  # recibo de sub
 JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data ex)
 
 
-def propostas(banco: Path, titular: int, refs: Referencias) -> list[Proposta]:
-    """Eventos sugeridos pela movimentação da B3, mais recentes primeiro. A data proposta é a da
-    B3 (crédito): a tela pede a data ex antes de gravar."""
+def propostas(
+    banco: Path, titular: int, refs: Referencias, fiscais: ReferenciasFiscais | None = None,
+    pasta: Path | None = None,
+) -> list[Proposta]:  # fmt: skip
+    """Eventos sugeridos, mais recentes primeiro: os do pacote público de referências que atingem
+    a posição (com ``fiscais`` e ``pasta``; já com a data ex) e os da movimentação da B3 (data do
+    crédito: a tela pede a data ex antes de gravar). O mesmo evento nas duas fontes aparece uma vez
+    (a do pacote)."""
     with conectar(banco) as fabrica, fabrica() as s:
         ignoradas = set(s.scalars(select(PropostaIgnorada.chave)
                                   .where(PropostaIgnorada.titular_id == titular)))  # fmt: skip
@@ -515,7 +532,203 @@ def propostas(banco: Path, titular: int, refs: Referencias) -> list[Proposta]:
             nota = "; ".join(x for x in (NOTAS_PROPOSTA.get(tipo, ""), NOTA_DATA_EX) if x)
             saida.append(Proposta(m.chave, m.data, m.movimentacao, codigo, m.quantidade,
                                   m.valor, corretora, situacao, dados, nota))  # fmt: skip
-        return saida
+        if fiscais is None or pasta is None:
+            return saida
+        do_pacote = _do_pacote(s, titular, refs, fiscais, pasta, contas, ignoradas, lancados)
+    perto = timedelta(days=JANELA)
+
+    def mesma(p: Proposta, m: Proposta) -> bool:
+        return (
+            p.dados.tipo is m.dados.tipo and p.codigo == m.codigo and abs(p.data - m.data) <= perto
+        )
+
+    # ignorou a proposta da movimentação: a do pacote para o mesmo evento também fica ignorada
+    do_pacote = [replace(p, situacao="ignorada") if p.situacao == "pendente" and any(
+        mesma(p, m) and m.situacao == "ignorada" for m in saida) else p
+        for p in do_pacote]  # fmt: skip
+    repetidas = [m for m in saida if any(
+        p.dados.tipo is m.dados.tipo and p.codigo == m.codigo and abs(p.data - m.data) <= perto
+        for p in do_pacote)]  # fmt: skip
+    return sorted([*do_pacote, *(m for m in saida if m not in repetidas)],
+                  key=lambda p: p.data, reverse=True)  # fmt: skip
+
+
+# eventos do pacote público (eventos_b3.csv: rótulos como a B3 escreve) -> tipo do evento
+TIPOS_PACOTE = {
+    "DESDOBRAMENTO": TipoEvento.DESDOBRAMENTO,
+    "GRUPAMENTO": TipoEvento.GRUPAMENTO,
+    "BONIFICACAO": TipoEvento.BONIFICACAO,
+    "SUBSCRICAO": TipoEvento.SUBSCRICAO,
+}
+AJUSTA_SERIE = {t: t for t in (TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO,
+                                TipoEvento.BONIFICACAO)}  # fmt: skip
+GRUPAMENTO_EXTREMO = Decimal("0.01")  # 100 viram 1 ou mais forte
+AVISO_GRUPAMENTO_EXTREMO = (
+    "confira o aviso aos acionistas: grupamento tão forte costuma vir seguido de desdobramento "
+    "no mesmo dia (ex.: Itaú em 2011), sem mudar a quantidade; a B3 publica só o grupamento"
+)
+NOTA_PACOTE = "evento do pacote público da B3: data ex = pregão seguinte à data com {data_com}"
+
+
+def _ativos_do_ticker(s: Session, ticker: str) -> set[int]:
+    return set(s.scalars(select(TickerHistorico.ativo_id).where(TickerHistorico.ticker == ticker)))
+
+
+def _posicoes(movs: list[Movimento]) -> dict[tuple[int, int], list[tuple[date, Decimal]]]:
+    """(conta, ativo) -> [(data, quantidade depois)], na visão por conta, em ordem."""
+    saida: dict[tuple[int, int], list[tuple[date, Decimal]]] = defaultdict(list)
+    for m in movs:
+        if m.conta is not None and m.ativo is not None:
+            saida[(m.conta, m.ativo)].append((m.data, m.quantidade_apos))
+    return saida
+
+
+def _na_data(historico: list[tuple[date, Decimal]], dia: date) -> Decimal:
+    q = Decimal(0)
+    for quando, depois in historico:
+        if quando > dia:
+            break
+        q = depois
+    return q
+
+
+def _do_pacote(
+    s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais, pasta: Path,
+    contas: list[Conta], ignoradas: set[str], lancados: list[tuple[int, int | None, date]],
+) -> list[Proposta]:  # fmt: skip
+    """Para cada evento do pacote de ativo que o titular tinha na data com (por conta), o evento
+    com a quantidade pelo fator e, nas séries de opção abertas do ativo, o ajuste de quantidade."""
+    eventos = referencias.eventos_b3(pasta)
+    if not eventos:
+        return []
+    por_isin = referencias.tickers_por_isin(pasta)
+    notas, evs = entradas(s, refs, fiscais)
+    movs = movimentar([n for n in notas if n.titular == titular],
+                      [e for e in evs if e.titular == titular], fiscais.parametros, date.max,
+                      Visao.CONTA)  # fmt: skip
+    historico = _posicoes(movs)
+    inicio = min((m.data for m in movs), default=date.max)
+    tickers_serie = {m.ativo: m.ticker for m in movs if m.tipo is TipoAtivo.OPCAO and m.ativo}
+    objeto_da_serie = {
+        s_.serie: s_.serie[:4] + refs.classes[s_.classe]
+        for s_ in s.scalars(select(SerieOpcao))
+        if s_.classe in refs.classes
+    }
+    nome_conta = {c.id: c.corretora.nome for c in contas}
+    saida: list[Proposta] = []
+    for ev in eventos:
+        tipo = TIPOS_PACOTE.get(ev["tipo"])
+        cisao = ev["tipo"].startswith("CIS") and ev["isin_emitido"] != ev["isin"]
+        ticker = por_isin.get(ev["isin"])
+        if ticker is None or (tipo is None and not cisao):
+            continue
+        data_com = date.fromisoformat(ev["data_com"])  # linhas já validadas (eventos_b3)
+        cal = fiscais.calendario
+        if not cal.primeiro_ano <= data_com.year <= cal.ultimo_ano or data_com < inicio:
+            continue  # antes do primeiro negócio (ou fora do calendário): não atinge a carteira
+        try:
+            data_ex = proximo_pregao(data_com, cal)
+        except ReferenciaError:
+            continue  # data ex depois do fim do calendário de feriados
+        # a B3 escreve o grupamento como razão (0,1 = 10 viram 1) e os demais em % (200 = +200%)
+        fator = Decimal(ev["fator"]) / (1 if tipo is TipoEvento.GRUPAMENTO else 100)
+        ativos = _ativos_do_ticker(s, ticker)
+        nomes = {ticker} | {t for a in ativos for t in s.scalars(
+            select(TickerHistorico.ticker).where(TickerHistorico.ativo_id == a))}  # fmt: skip
+        for (conta, ativo), hist in historico.items():
+            q = _na_data(hist, data_com)
+            if not q or conta not in nome_conta:
+                continue
+            serie = tickers_serie.get(ativo)
+            if ativo in ativos and serie is None:
+                dados, nota = _evento_acao(ev, tipo, cisao, ticker, conta, q, fator, data_ex,
+                                           por_isin)  # fmt: skip
+            elif (serie is not None
+                  and (objeto_da_serie.get(serie) or refs.opcoes_raiz.get(serie[:4])) in nomes
+                  and tipo is not None and tipo in AJUSTA_SERIE):  # fmt: skip
+                dados, nota = _ajuste_serie(AJUSTA_SERIE[tipo], serie, conta, q, fator, data_ex)
+            else:
+                continue
+            if dados is None:
+                continue
+            chave = hashlib.sha256(f"b3pub|{ev['isin']}|{ev['tipo']}|{ev['data_com']}|"
+                                   f"{ev['isin_emitido']}|{ev['fator']}|{conta}|{dados.ticker}"
+                                   .encode()).hexdigest()  # fmt: skip
+            if chave in ignoradas:
+                situacao = "ignorada"
+            elif _ja_lancado(s, refs, dados.ticker, dados.data, lancados):
+                situacao = "lançado"
+            else:
+                situacao = "pendente"
+            saida.append(Proposta(
+                chave, dados.data, f"{ev['tipo'].capitalize()} (eventos da B3)", dados.ticker, q,
+                None, nome_conta[conta], situacao, dados,
+                "; ".join(x for x in (NOTA_PACOTE.format(data_com=f"{data_com:%d/%m/%Y}"), nota)
+                          if x)))  # fmt: skip
+    return saida
+
+
+def _fator(ev: dict[str, str], tipo: TipoEvento | None) -> str:
+    """Como a B3 escreve: grupamento em razão (0,1 = 10 viram 1); os demais em %."""
+    return f"razão {ev['fator']}" if tipo is TipoEvento.GRUPAMENTO else f"{ev['fator']}%"
+
+
+def _fracao(total: Decimal) -> tuple[Decimal, str]:
+    inteiro = total.to_integral_value(ROUND_FLOOR)
+    nota = (f"fração de {total - inteiro} vai a leilão: lance o leilão de fração quando for "
+            "creditado") if total != inteiro else ""  # fmt: skip
+    return inteiro, nota
+
+
+def _evento_acao(
+    ev: dict[str, str], tipo: TipoEvento | None, cisao: bool, ticker: str, conta: int,
+    q: Decimal, fator: Decimal, data_ex: date, por_isin: dict[str, str],
+) -> tuple[DadosEvento | None, str]:  # fmt: skip
+    if q < 0:
+        return None, ""  # venda a descoberto na data com: sem proposta (o motor falha alto)
+    base = DadosEvento(
+        tipo=tipo or TipoEvento.DESDOBRAMENTO, data=data_ex, conta=conta, ticker=ticker,
+        cv="C", origem="b3",
+        observacao=f"pacote público da B3: {ev['tipo']} {_fator(ev, tipo)} (data com "
+                   f"{ev['data_com']})",
+    )  # fmt: skip
+    if cisao:
+        destino = por_isin.get(ev["isin_emitido"])
+        if destino is None:
+            return None, ""
+        recebida, _ = _fracao(q * fator)
+        nota = f"informe o percentual do custo que vai para {destino} (aviso aos acionistas)"
+        return replace(base, tipo=TipoEvento.CISAO, cv=None, quantidade=q, ticker_destino=destino,
+                       quantidade_destino=recebida), nota  # fmt: skip
+    if tipo is TipoEvento.GRUPAMENTO:
+        inteiro, nota = _fracao(q * fator)
+        if fator <= GRUPAMENTO_EXTREMO:
+            nota = "; ".join(x for x in (AVISO_GRUPAMENTO_EXTREMO, nota) if x)
+        return replace(base, cv="V", quantidade=q - inteiro), nota
+    inteiro, nota = _fracao(q * fator)
+    if tipo is TipoEvento.SUBSCRICAO:
+        preco = Decimal(ev["preco"] or 0)
+        dia = date.fromisoformat(ev["data_subscricao"]) if ev["data_subscricao"] else data_ex
+        return replace(base, data=dia, quantidade=inteiro,
+                       valor=(inteiro * preco).quantize(Decimal("0.01"))), (
+            f"subscrição é opcional (preço {preco}, período {ev['periodo']}): lance só o que "
+            "você exerceu")  # fmt: skip
+    if tipo is TipoEvento.BONIFICACAO:
+        nota = "; ".join(x for x in ("informe o custo atribuído (aviso aos acionistas)", nota) if x)
+    return replace(base, quantidade=inteiro), nota
+
+
+def _ajuste_serie(
+    tipo: TipoEvento, serie: str, conta: int, q: Decimal, fator: Decimal, data_ex: date
+) -> tuple[DadosEvento, str]:  # fmt: skip
+    novo = abs(q) * (fator if tipo is TipoEvento.GRUPAMENTO else 1 + fator)
+    delta = novo.to_integral_value(ROUND_FLOOR) - abs(q)
+    cv = ("C" if delta > 0 else "V") if q > 0 else ("V" if delta > 0 else "C")
+    return DadosEvento(tipo=tipo, data=data_ex, conta=conta, ticker=serie, cv=cv,
+                       quantidade=abs(delta), origem="b3",
+                       observacao="ajuste da série pelo evento do ativo-objeto"), (
+        "série de opção aberta: a B3 ajusta a quantidade e o preço de exercício (e às vezes o "
+        "código; se mudou, use Incorporação / ajuste de série)")  # fmt: skip
 
 
 def _ja_lancado(
@@ -528,6 +741,9 @@ def _ja_lancado(
     if any(t.ticker == ticker and abs(t.ate - dia) <= perto for t in refs.trocas):
         return True
     ativo = repo.ativo_existente(s, ticker, dia)
+    if ativo is None:  # código atual de ativo que se chamava outra coisa na data
+        candidatos = _ativos_do_ticker(s, ticker)
+        ativo = next(iter(candidatos)) if len(candidatos) == 1 else None
     return ativo is not None and any(
         ativo in (origem, destino) and abs(quando - dia) <= perto
         for origem, destino, quando in lancados

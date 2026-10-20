@@ -173,6 +173,9 @@ async def test_eventos_lanca_a_proposta_da_b3_e_recusa_o_que_nao_fecha(tmp_path:
     importar_planilhas(banco, [movimentos], 1, AGORA)
     estado = _estado(banco)
     estado.titular, estado.ano = 1, 2023
+    from tests.unit.test_servicos_eventos import _pacote_eventos
+
+    estado.pasta_refs = _pacote_eventos(tmp_path, [])  # sem os eventos reais do pacote da B3
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/eventos")
         await user.should_see("Propostas da B3 (1)", retries=ESPERA)
@@ -219,3 +222,30 @@ async def test_carteira_exporta_a_posicao_da_data(demo: Path) -> None:
     nomes = sorted(p.name for p in pasta.iterdir())
     prefixo = "coir-carteira-2023-12-31-por-titular-titular1"
     assert nomes and all(n.startswith(prefixo) for n in nomes)
+
+
+@pytest.mark.asyncio
+async def test_configuracoes_atualiza_as_tabelas_e_o_painel_avisa(
+    tmp_path: Path, configuracao_temporaria: Path
+) -> None:
+    """F7b: com a opção "verificar ao abrir", o Painel avisa do pacote novo; em Configurações,
+    verificar mostra o resumo e aplicar passa o pacote (conferido) a ser o em uso."""
+    from coir.ui import preferencias
+    from tests.unit.test_atualizacao_referencias import _github, _pacote
+
+    estado = _estado(tmp_path / "dados" / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    estado.baixar = _github(_pacote(tmp_path))
+    preferencias.escolher_verificar_tabelas(True)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/")
+        await user.should_see("Há tabelas de referência novas (01/01/2099).", retries=ESPERA)
+        await user.open("/configuracoes")
+        await user.should_see("o da instalação")
+        user.find(marker="verificar-tabelas").click()
+        await user.should_see("Novo: 01/01/2099", retries=ESPERA)
+        user.find(marker="aplicar-tabelas").click()
+        await user.should_see("Tabelas atualizadas", retries=ESPERA)
+        await user.should_see("Em uso: pacote de 01/01/2099 (baixado)")
+    assert estado.refs.ativos  # relidas do pacote baixado

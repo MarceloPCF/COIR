@@ -47,3 +47,8 @@ class MotorError(CoirError):
 
 class ExportacaoError(CoirError):
     """Relatório inconsistente (linha com colunas a mais ou a menos) ou destino inválido."""
+
+
+class AtualizacaoError(CoirError):
+    """Pacote de tabelas de referência que não pode ser baixado ou usado (sem rede, hash que não
+    confere, formato de outra versão): nada é alterado."""

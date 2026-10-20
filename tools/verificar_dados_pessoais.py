@@ -172,7 +172,12 @@ def verificar(
 
 def _git(*args: str) -> str:
     return subprocess.run(
-        ["git", *args], check=True, capture_output=True, text=True, encoding="utf-8"
+        ["git", *args],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",  # arquivo em latin-1 (ex.: cadastro de instrumentos da B3)
     ).stdout
 
 

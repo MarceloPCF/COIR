@@ -1,0 +1,260 @@
+[
+ {
+  "stockCapital": "83.689.000.000,00",
+  "quotedPerSharSince": "01/09/1995",
+  "commonSharesForm": "Escritural",
+  "preferredSharesForm": "Escritural",
+  "hasCommom": "ITAU CORRETORA ACOES",
+  "hasPreferred": "ITAU CORRETORA ACOES",
+  "roundLot": "100",
+  "tradingName": "ITAUSA      ",
+  "numberCommonShares": "3.853.634.012",
+  "numberPreferredShares": "7.360.052.833",
+  "totalNumberShares": "11.213.686.845",
+  "code": "ITSA",
+  "codeCVM": "7617",
+  "segment": "N1",
+  "cashDividends": [
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "paymentDate": "01/10/2026",
+    "rate": "0,02424250000",
+    "relatedTo": "3º Trimestre/2026",
+    "approvedOn": "09/02/2026",
+    "isinCode": "BRITSAACNOR0",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "31/08/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "paymentDate": "01/10/2026",
+    "rate": "0,02424250000",
+    "relatedTo": "3º Trimestre/2026",
+    "approvedOn": "09/02/2026",
+    "isinCode": "BRITSAACNPR7",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "31/08/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "paymentDate": "28/08/2026",
+    "rate": "0,13800000000",
+    "relatedTo": "Anual/2026",
+    "approvedOn": "15/06/2026",
+    "isinCode": "BRITSAACNOR0",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "18/06/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "paymentDate": "28/08/2026",
+    "rate": "0,13800000000",
+    "relatedTo": "Anual/2026",
+    "approvedOn": "15/06/2026",
+    "isinCode": "BRITSAACNPR7",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "18/06/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "paymentDate": "01/07/2026",
+    "rate": "0,02424250000",
+    "relatedTo": "2º Trimestre/2026",
+    "approvedOn": "09/02/2026",
+    "isinCode": "BRITSAACNOR0",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "29/05/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "paymentDate": "01/07/2026",
+    "rate": "0,02424250000",
+    "relatedTo": "2º Trimestre/2026",
+    "approvedOn": "09/02/2026",
+    "isinCode": "BRITSAACNPR7",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "29/05/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "paymentDate": "28/08/2026",
+    "rate": "0,11600000000",
+    "relatedTo": "Anual/2026",
+    "approvedOn": "16/03/2026",
+    "isinCode": "BRITSAACNOR0",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "19/03/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "paymentDate": "28/08/2026",
+    "rate": "0,11600000000",
+    "relatedTo": "Anual/2026",
+    "approvedOn": "16/03/2026",
+    "isinCode": "BRITSAACNPR7",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "19/03/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "paymentDate": "01/04/2026",
+    "rate": "0,02424250000",
+    "relatedTo": "1º Trimestre/2026",
+    "approvedOn": "09/02/2026",
+    "isinCode": "BRITSAACNOR0",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "27/02/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "paymentDate": "01/04/2026",
+    "rate": "0,02424250000",
+    "relatedTo": "1º Trimestre/2026",
+    "approvedOn": "09/02/2026",
+    "isinCode": "BRITSAACNPR7",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "27/02/2026",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "paymentDate": "19/12/2025",
+    "rate": "0,77536400000",
+    "relatedTo": "Anual/2025",
+    "approvedOn": "01/12/2025",
+    "isinCode": "BRITSAACNOR0",
+    "label": "DIVIDENDO",
+    "lastDatePrior": "09/12/2025",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "paymentDate": "06/03/2026",
+    "rate": "0,01820000000",
+    "relatedTo": "Anual/2025",
+    "approvedOn": "01/12/2025",
+    "isinCode": "BRITSAACNOR0",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "09/12/2025",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "paymentDate": "19/12/2025",
+    "rate": "0,77536400000",
+    "relatedTo": "Anual/2025",
+    "approvedOn": "01/12/2025",
+    "isinCode": "BRITSAACNPR7",
+    "label": "DIVIDENDO",
+    "lastDatePrior": "09/12/2025",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "paymentDate": "06/03/2026",
+    "rate": "0,01820000000",
+    "relatedTo": "Anual/2025",
+    "approvedOn": "01/12/2025",
+    "isinCode": "BRITSAACNPR7",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "09/12/2025",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "paymentDate": "02/01/2026",
+    "rate": "0,02352950000",
+    "relatedTo": "4º Trimestre/2025",
+    "approvedOn": "10/02/2025",
+    "isinCode": "BRITSAACNOR0",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "28/11/2025",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "paymentDate": "02/01/2026",
+    "rate": "0,02352950000",
+    "relatedTo": "4º Trimestre/2025",
+    "approvedOn": "10/02/2025",
+    "isinCode": "BRITSAACNPR7",
+    "label": "JRS CAP PROPRIO",
+    "lastDatePrior": "28/11/2025",
+    "remarks": ""
+   }
+  ],
+  "stockDividends": [
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "factor": "2,00000000000",
+    "approvedOn": "15/12/2025",
+    "isinCode": "BRITSAACNOR0",
+    "label": "BONIFICACAO",
+    "lastDatePrior": "18/12/2025",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "factor": "2,00000000000",
+    "approvedOn": "15/12/2025",
+    "isinCode": "BRITSAACNPR7",
+    "label": "BONIFICACAO",
+    "lastDatePrior": "18/12/2025",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "",
+    "factor": "100,00000000000",
+    "approvedOn": "06/07/2012",
+    "isinCode": "BRITSAR14OR8",
+    "label": "RESG TOTAL RV",
+    "lastDatePrior": "06/07/2012",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "",
+    "factor": "100,00000000000",
+    "approvedOn": "06/07/2012",
+    "isinCode": "BRITSAR14PR5",
+    "label": "RESG TOTAL RV",
+    "lastDatePrior": "06/07/2012",
+    "remarks": ""
+   }
+  ],
+  "subscriptions": [
+   {
+    "assetIssued": "BRITSAACNOR0",
+    "percentage": "1,37666780000",
+    "priceUnit": "6,70000000000",
+    "tradingPeriod": "10/03/2025 a 08/04/2025",
+    "subscriptionDate": "11/04/2025",
+    "approvedOn": "10/02/2025",
+    "isinCode": "BRITSAACNOR0",
+    "label": "SUBSCRICAO",
+    "lastDatePrior": "17/02/2025",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRITSAACNPR7",
+    "percentage": "1,37666780000",
+    "priceUnit": "6,70000000000",
+    "tradingPeriod": "31/12/9999 a 08/04/2025",
+    "subscriptionDate": "11/04/2025",
+    "approvedOn": "10/02/2025",
+    "isinCode": "BRITSAACNPR7",
+    "label": "SUBSCRICAO",
+    "lastDatePrior": "17/02/2025",
+    "remarks": ""
+   }
+  ]
+ }
+]

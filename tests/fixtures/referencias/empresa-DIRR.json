@@ -1,0 +1,43 @@
+[
+ {
+  "stockCapital": "1.181.857.399,80",
+  "quotedPerSharSince": "19/11/2009",
+  "commonSharesForm": "Escritural",
+  "preferredSharesForm": "",
+  "hasCommom": "ITAU CORRETORA ACOES",
+  "hasPreferred": "",
+  "roundLot": "100",
+  "tradingName": "DIRECIONAL  ",
+  "numberCommonShares": "520.500.000",
+  "numberPreferredShares": "0",
+  "totalNumberShares": "520.500.000",
+  "code": "DIRR",
+  "codeCVM": "21350",
+  "segment": "NM",
+  "cashDividends": [
+   {
+    "assetIssued": "BRDIRRACNOR0",
+    "paymentDate": "23/12/2025",
+    "rate": "1,55000000000",
+    "relatedTo": "Complementar/2025",
+    "approvedOn": "10/12/2025",
+    "isinCode": "BRDIRRACNOR0",
+    "label": "DIVIDENDO",
+    "lastDatePrior": "16/12/2025",
+    "remarks": ""
+   }
+  ],
+  "stockDividends": [
+   {
+    "assetIssued": "BRDIRRACNOR0",
+    "factor": "200,00000000000",
+    "approvedOn": "08/08/2025",
+    "isinCode": "BRDIRRACNOR0",
+    "label": "DESDOBRAMENTO",
+    "lastDatePrior": "08/08/2025",
+    "remarks": ""
+   }
+  ],
+  "subscriptions": []
+ }
+]
