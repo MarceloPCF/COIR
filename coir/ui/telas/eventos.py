@@ -146,7 +146,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     async def recarregar() -> None:
         try:
             lancados = await run.io_bound(eventos.listar, estado.banco, titular)
-            propostas = await run.io_bound(eventos.propostas, estado.banco, titular, estado.refs)
+            propostas = await run.io_bound(estado.propostas)
         except CoirError as erro:
             lista.clear()
             with lista:

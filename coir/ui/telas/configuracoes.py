@@ -7,7 +7,7 @@ from nicegui import run, ui
 
 from coir.config import ARQUIVO_REGISTRO, ler_registro
 from coir.erros import CoirError
-from coir.servicos import manutencao
+from coir.servicos import atualizacao, manutencao
 from coir.servicos.estado import Estado
 from coir.ui import preferencias
 
@@ -43,6 +43,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             value=preferencias.tema(),
             on_change=lambda e: preferencias.escolher_tema(e.value),
         ).props("inline").mark("tema")
+
+    _tabelas(estado, ao_mudar)
 
     with _secao(
         "Backups",
@@ -109,6 +111,94 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
         ui.button("Atualizar", icon="refresh", on_click=ler).props("flat dense")
         ler()
+
+
+def _data(d: object) -> str:
+    return f"{d:%d/%m/%Y}" if d is not None else "sem data"
+
+
+def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
+    with _secao(
+        "Tabelas de referência",
+        "Ativos, nomes de pregão, eventos corporativos da B3 e Selic, do pacote público do COIR "
+        "(atualizado toda semana). Só baixa dados públicos do GitHub: nada da sua carteira sai do "
+        "computador. Sem rede, vale o pacote que já está em uso.",
+    ):
+        em_uso = ui.label("").classes("coir-numero").mark("tabelas-em-uso")
+        with ui.row().classes("items-center gap-3"):
+            botao = ui.button("Verificar e atualizar", icon="sync").mark("verificar-tabelas")
+            voltar = (
+                ui.button("Voltar à anterior", icon="undo").props("flat").mark("voltar-tabelas")
+            )
+        ui.checkbox(
+            "Verificar ao abrir o app (só consulta a versão do pacote)",
+            value=preferencias.verificar_tabelas(),
+            on_change=lambda e: preferencias.escolher_verificar_tabelas(bool(e.value)),
+        ).mark("verificar-ao-abrir")
+        novo = ui.column().classes("w-full gap-1").mark("pacote-novo")
+
+    def mostrar() -> None:
+        s = atualizacao.situacao(estado.dados)
+        origem = "baixado" if s.baixado else "o da instalação"
+        em_uso.set_text(f"Em uso: pacote de {_data(s.em_uso)} ({origem}) · instalação: "
+                        f"{_data(s.instalacao)}")  # fmt: skip
+        voltar.set_visibility(s.anterior is not None)
+
+    async def verificar() -> None:
+        botao.set_enabled(False)
+        novo.clear()
+        try:
+            remoto = await run.io_bound(atualizacao.verificar, estado.baixar)
+            estado.remoto, estado.verificado = remoto, True
+            if remoto is None or not atualizacao.mais_novo(estado.dados, remoto):
+                with novo:
+                    ui.label("As tabelas em uso já são as mais novas.").classes("coir-subtitulo")
+                return
+            mudancas = await run.io_bound(atualizacao.preparar, estado.dados, remoto,
+                                          estado.baixar)  # fmt: skip
+        except CoirError as erro:
+            ui.notify(str(erro), type="negative", multi_line=True)
+            return
+        finally:
+            botao.set_enabled(True)
+        if mudancas is None:  # run.io_bound devolve None se a página fechou
+            return
+        selic = f" · Selic de {', '.join(mudancas.selic_nova)}" if mudancas.selic_nova else ""
+        with novo, ui.row().classes("items-center gap-3"):
+            texto = (f"Novo: {_data(remoto.data)} · {mudancas.ativos_novos} ativo(s) novo(s) · "
+                     f"{mudancas.eventos_novos} evento(s){selic}")  # fmt: skip
+            ui.label(texto).classes("coir-numero")
+            ui.button("Aplicar", icon="download_done", on_click=aplicar).props("unelevated").mark(
+                "aplicar-tabelas")  # fmt: skip
+
+    async def aplicar() -> None:
+        try:
+            await run.io_bound(atualizacao.aplicar, estado.dados)
+            estado.recarregar_referencias()
+            await run.io_bound(estado.preparar, estado.agora())  # renormaliza as notas, se preciso
+        except CoirError as erro:
+            ui.notify(str(erro), type="negative", multi_line=True)
+            return
+        novo.clear()
+        mostrar()
+        ao_mudar()
+        ui.notify("Tabelas atualizadas. Carteira e apuração refeitas.", type="positive")
+
+    async def desfazer() -> None:
+        try:
+            await run.io_bound(atualizacao.voltar, estado.dados)
+            estado.recarregar_referencias()
+            await run.io_bound(estado.preparar, estado.agora())
+        except CoirError as erro:
+            ui.notify(str(erro), type="negative")
+            return
+        mostrar()
+        ao_mudar()
+        ui.notify("Voltou ao pacote anterior.", type="positive")
+
+    botao.on_click(verificar)
+    voltar.on_click(desfazer)
+    mostrar()
 
 
 def _confirmar(

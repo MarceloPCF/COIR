@@ -27,7 +27,16 @@ from coir.domain.referencias import Referencias
 from coir.domain.relatorio import DadosRelatorio
 from coir.erros import CoirError, ConfiguracaoError, ExportacaoError
 from coir.parsing.extrair import extrair_pdf
-from coir.servicos import carteira, conciliacao, darf, derivativos, notas, operacoes
+from coir.servicos import (
+    atualizacao,
+    carteira,
+    conciliacao,
+    darf,
+    derivativos,
+    eventos,
+    notas,
+    operacoes,
+)
 from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
 from coir.servicos.importacao import Extrator, aplicar_tabelas
 from coir.servicos.proventos import proventos_banco
@@ -51,13 +60,19 @@ class Estado:
         fiscais: ReferenciasFiscais | None = None,
     ) -> None:  # fmt: skip
         self.banco = banco or dados_dir() / NOME_BANCO
-        self.refs = refs or referencias.carregar()
-        self.fiscais = fiscais or referencias.carregar_fiscais()
+        self._fixas = refs is not None or fiscais is not None  # testes passam as tabelas
+        pasta = referencias.pasta_efetiva(self.banco.parent)  # pacote baixado, se mais novo
+        self.pasta_refs = pasta  # tabelas em uso (eventos e instrumentos da B3 também)
+        self.refs = refs or referencias.carregar(pasta)
+        self.fiscais = fiscais or referencias.carregar_fiscais(pasta)
         self.titular: int | None = None
         self.aviso_tabelas: str | None = None  # erro ao aplicar data/ ao abrir (preparar)
         self.ano: int | None = None
         self.agora: Callable[[], datetime] = datetime.now  # relógio (fixo nos testes)
         self.extrator: Extrator = extrair_pdf  # leitura dos PDFs (textos nos testes)
+        self.baixar: atualizacao.Baixar = atualizacao.baixar  # GitHub (falso nos testes)
+        self.remoto: atualizacao.PacoteRemoto | None = None  # última verificação do pacote
+        self.verificado = False
         self._cache: dict[tuple[object, ...], object] = {}
         self._trava = Lock()
         self._travas: dict[tuple[object, ...], Lock] = {}
@@ -95,7 +110,17 @@ class Estado:
             salvar(pasta)
             self.banco = banco
             self.titular = self.ano = None
+            self.recarregar_referencias()
         self.preparar(agora)
+
+    def recarregar_referencias(self) -> None:
+        """Depois de atualizar as tabelas (ou trocar a pasta de dados): relê o pacote em uso."""
+        if not self._fixas:
+            pasta = referencias.pasta_efetiva(self.dados)
+            self.pasta_refs = pasta
+            self.refs = referencias.carregar(pasta)
+            self.fiscais = referencias.carregar_fiscais(pasta)
+        self.invalidar()
 
     def preparar(self, agora: datetime) -> None:
         """Cria ou migra o banco (com backup antes de migrar um banco existente) e aplica as
@@ -270,6 +295,17 @@ class Estado:
         titular = self.titular
         return self._guardado(
             ("proventos", titular), lambda: proventos_banco(self.banco, self.fiscais, titular)
+        )
+
+    def propostas(self) -> list[eventos.Proposta]:
+        """Eventos sugeridos pela movimentação da B3 e pelo pacote público (tela 7); recalcula
+        quando o banco muda (lançar ou ignorar grava no banco)."""
+        if not self.existe or self.titular is None:
+            return []
+        titular, pasta = self.titular, self.pasta_refs
+        return self._guardado(
+            ("propostas", titular, pasta),
+            lambda: eventos.propostas(self.banco, titular, self.refs, self.fiscais, pasta),
         )
 
     def conciliacoes(self) -> list[conciliacao.Conciliacao]:

@@ -36,6 +36,21 @@ def escolher_tema(nome: str) -> None:
         ui.notify(f"O tema vale só nesta janela: {erro}", type="warning")
 
 
+def verificar_tabelas() -> bool:
+    """Opção "verificar ao abrir o app" das tabelas de referência (desligada por padrão)."""
+    try:
+        return ler_preferencia("verificar_tabelas") == "sim"
+    except ConfiguracaoError:
+        return False
+
+
+def escolher_verificar_tabelas(sim: bool) -> None:
+    try:
+        salvar_preferencia("verificar_tabelas", "sim" if sim else "nao")
+    except ConfiguracaoError as erro:
+        ui.notify(f"A opção vale só nesta janela: {erro}", type="warning")
+
+
 def alternar_tema() -> None:
     """Botão do topo: claro <-> escuro (sai do "sistema")."""
     escuro = _ESCUROS.get(ui.context.client)

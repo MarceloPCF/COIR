@@ -1,0 +1,100 @@
+{
+ "page": {
+  "pageNumber": 1,
+  "pageSize": 120,
+  "totalRecords": 6,
+  "totalPages": 1
+ },
+ "results": [
+  {
+   "codeCVM": "27707",
+   "issuingCompany": "AMOB",
+   "companyName": "AUTOMOB PARTICIPAÇÕES S.A.",
+   "tradingName": "AUTOMOB",
+   "cnpj": "35654688000108",
+   "marketIndicator": "18",
+   "typeBDR": "",
+   "dateListing": "27/11/2024",
+   "status": "A",
+   "segment": "Automóveis e Motocicletas",
+   "segmentEng": "Automobiles and Motorcycles",
+   "type": "1",
+   "market": "NM"
+  },
+  {
+   "codeCVM": "21350",
+   "issuingCompany": "DIRR",
+   "companyName": "DIRECIONAL ENGENHARIA S.A.",
+   "tradingName": "DIRECIONAL",
+   "cnpj": "16614075000100",
+   "marketIndicator": "18",
+   "typeBDR": "",
+   "dateListing": "11/11/2009",
+   "status": "A",
+   "segment": "Incorporações",
+   "segmentEng": "Real Estate",
+   "type": "1",
+   "market": "NM"
+  },
+  {
+   "codeCVM": "7617",
+   "issuingCompany": "ITSA",
+   "companyName": "ITAUSA S.A.",
+   "tradingName": "ITAUSA",
+   "cnpj": "61532644000115",
+   "marketIndicator": "16",
+   "typeBDR": "",
+   "dateListing": "30/06/1966",
+   "status": "A",
+   "segment": "Holdings Diversificadas",
+   "segmentEng": "Holdings - Diversified",
+   "type": "1",
+   "market": "N1"
+  },
+  {
+   "codeCVM": "22470",
+   "issuingCompany": "MGLU",
+   "companyName": "MAGAZINE LUIZA S.A.",
+   "tradingName": "MAGAZ LUIZA",
+   "cnpj": "47960950000121",
+   "marketIndicator": "18",
+   "typeBDR": "",
+   "dateListing": "28/04/2011",
+   "status": "A",
+   "segment": "Eletrodomésticos",
+   "segmentEng": "Electronics and Household Appliance",
+   "type": "1",
+   "market": "NM"
+  },
+  {
+   "codeCVM": "20257",
+   "issuingCompany": "TAEE",
+   "companyName": "TRANSMISSORA ALIANÇA DE ENERGIA ELÉTRICA S.A.",
+   "tradingName": "TAESA",
+   "cnpj": "7859971000130",
+   "marketIndicator": "17",
+   "typeBDR": "",
+   "dateListing": "10/10/2006",
+   "status": "A",
+   "segment": "Energia Elétrica",
+   "segmentEng": "Electric Utilities",
+   "type": "1",
+   "market": "N2"
+  },
+  {
+   "codeCVM": "24716",
+   "issuingCompany": "VAMO",
+   "companyName": "VAMOS LOCAÇÃO DE CAMINHÕES. MÁQUINAS E EQUIP. S.A.",
+   "tradingName": "VAMOS",
+   "cnpj": "23373000000132",
+   "marketIndicator": "18",
+   "typeBDR": "",
+   "dateListing": "26/01/2021",
+   "status": "A",
+   "segment": "Aluguel de carros",
+   "segmentEng": "Car rental",
+   "type": "1",
+   "market": "NM"
+  }
+ ]
+}

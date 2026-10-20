@@ -1,0 +1,61 @@
+name: Referências públicas (publicar o pacote)
+
+# Merge na v3 que muda data/: monta o zip de data/ com o manifesto (SHA-256 de cada arquivo) e cria o
+# release referencias-AAAA.MM.DD (a data vem de data/pacote.json). O app baixa esse zip em
+# Configurações > Tabelas de referência. Release já existente não é sobrescrito: quem já baixou o
+# pacote daquela data continua com o mesmo conteúdo.
+
+on:
+  push:
+    branches: [v3]
+    paths: ["data/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicar-referencias
+  cancel-in-progress: false
+
+env:
+  PYTHONUTF8: "1"
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+        with:
+          version: "0.12.23"
+
+      - name: Varredura de dados pessoais
+        shell: bash
+        run: |
+          git ls-files -z > "$RUNNER_TEMP/arquivos.lst"
+          xargs -0 -a "$RUNNER_TEMP/arquivos.lst" uv run --no-project --python 3.13 python tools/verificar_dados_pessoais.py --minimo 1
+
+      - name: Montar o pacote
+        run: uv run --no-project --python 3.13 python -m tools.referencias pacote --saida dist
+
+      - name: Criar o release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          zip=$(ls dist/referencias-*.zip)
+          tag=$(basename "$zip" .zip)
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release download "$tag" --pattern manifesto.json --dir "$RUNNER_TEMP/publicado"
+            if ! cmp -s dist/manifesto.json "$RUNNER_TEMP/publicado/manifesto.json"; then
+              echo "::warning::data/ mudou depois do release $tag sem coleta nova: rode o workflow de coleta (Run workflow) para publicar um pacote com data nova."
+            fi
+            exit 0
+          fi
+          gh release create "$tag" "$zip" dist/manifesto.json \
+            --target "$GITHUB_SHA" --latest=false \
+            --title "Tabelas de referência de ${tag#referencias-}" \
+            --notes "Pacote público das tabelas de referência do COIR (instrumentos e eventos corporativos da B3, Selic do BCB). O app baixa este pacote em Configurações > Tabelas de referência e confere o SHA-256 de cada arquivo pelo manifesto. Só dados públicos."

@@ -1,0 +1,78 @@
+name: Referências públicas (coleta semanal)
+
+# Coleta as fontes públicas (Cadastro de Instrumentos e eventos das companhias da B3, Selic do
+# BCB), regrava as tabelas geradas de data/ e, se algo mudou, abre um PR contra a v3 com o resumo.
+# O mantenedor revisa; o merge publica o pacote (publicar-referencias.yml).
+# Pré-requisito: Settings > Actions > General > "Allow GitHub Actions to create and approve pull
+# requests".
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"  # segunda, 06:00 de Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: referencias
+  cancel-in-progress: false
+
+env:
+  PYTHONUTF8: "1"
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: v3
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+        with:
+          version: "0.12.23"
+
+      # o coletor só usa a biblioteca padrão: não instala o COIR
+      - name: Coletar e gerar
+        run: uv run --no-project --python 3.13 python -m tools.referencias atualizar --resumo "$RUNNER_TEMP/resumo.md"
+
+      # PR aberto pelo GITHUB_TOKEN não dispara o CI: os testes rodam aqui, antes do PR
+      - name: Instalar dependências
+        run: uv sync --locked
+
+      - name: Testes com as tabelas novas
+        run: |
+          uv run ruff check .
+          uv run pyright
+          uv run pytest -q -m "not golden"
+
+      - name: Varredura de dados pessoais
+        shell: bash
+        run: |
+          git add -N data  # arquivos novos de data/ entram na varredura
+          git ls-files -z > "$RUNNER_TEMP/arquivos.lst"
+          xargs -0 -a "$RUNNER_TEMP/arquivos.lst" uv run --no-project --python 3.13 python tools/verificar_dados_pessoais.py --minimo 1
+
+      - name: Abrir PR
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data; then
+            echo "Nenhuma mudança nas tabelas."
+            exit 0
+          fi
+          dia=$(date -u +%Y-%m-%d)
+          ramo="referencias/$dia"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$ramo"
+          git add data
+          git commit -m "chore(referencias): coleta de $dia"
+          git push -u origin "$ramo"
+          gh pr create --base v3 --head "$ramo" \
+            --title "Referências públicas: coleta de $dia" \
+            --body-file "$RUNNER_TEMP/resumo.md"

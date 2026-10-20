@@ -47,6 +47,11 @@ def _pregao(dia: date, passo: timedelta, cal: Calendario) -> date:
     return dia
 
 
+def proximo_pregao(dia: date, cal: Calendario) -> date:
+    """Primeiro pregão depois de ``dia`` (data ex de um evento cuja data com é ``dia``)."""
+    return _pregao(dia + timedelta(days=1), timedelta(days=1), cal)
+
+
 def vencimento_opcao(ano: int, mes: int, cal: Calendario, semana: int | None = None) -> date:
     """Data de vencimento da série do mês (semanal: `semana` = n-ésima ocorrência do dia)."""
     chave = f"{ano:04d}-{mes:02d}" if semana is None else f"{ano:04d}-{mes:02d}-W{semana}"

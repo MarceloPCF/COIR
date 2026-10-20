@@ -10,9 +10,9 @@ from coir.domain.fiscal import Apuracao, Categoria, MesApurado
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import TipoColuna, formatar
-from coir.servicos import darf, notas, painel
+from coir.servicos import atualizacao, darf, notas, painel
 from coir.servicos.estado import Estado
-from coir.ui import tema
+from coir.ui import preferencias, tema
 
 ZERO = Decimal(0)
 SERIES = (
@@ -40,7 +40,27 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     nome = next((t.nome for t in estado.titulares() if t.id == estado.titular), "")
     ui.label(f"Painel de {estado.ano}").classes("coir-titulo-pagina")
     ui.label(nome).classes("coir-subtitulo")
+    aviso = ui.row().classes("w-full items-center gap-3").mark("aviso-tabelas-novas")
     corpo = ui.column().classes("w-full gap-4")
+
+    async def tabelas_novas() -> None:
+        """Opção "verificar ao abrir": uma consulta por execução do app; erro de rede é calado
+        aqui (o botão de Configurações mostra o motivo)."""
+        if not preferencias.verificar_tabelas():
+            return
+        if not estado.verificado:
+            try:
+                estado.remoto = await run.io_bound(atualizacao.verificar, estado.baixar)
+            except CoirError:
+                return
+            finally:
+                estado.verificado = True
+        if atualizacao.mais_novo(estado.dados, estado.remoto) and estado.remoto is not None:
+            with aviso:
+                texto = f"Há tabelas de referência novas ({estado.remoto.data:%d/%m/%Y})."
+                ui.label(texto).classes("coir-carimbo text-sm")
+                ui.button("Ver em Configurações", on_click=lambda: ui.navigate.to(
+                    "/configuracoes")).props("flat dense")  # fmt: skip
 
     async def carregar() -> None:
         with corpo:
@@ -62,6 +82,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             _conteudo(estado, apuracao, darfs, todas, incompletos)
 
     ui.timer(0.01, carregar, once=True)
+    ui.timer(0.05, tabelas_novas, once=True)
 
 
 def _conteudo(

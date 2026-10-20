@@ -215,3 +215,95 @@ def test_mesmo_evento_na_tela_e_no_csv_nao_duplica(demo: Path) -> None:
     with conectar(demo) as fabrica, fabrica() as s:
         rel = eventos.importar_eventos(s, [], substituir=True)
     assert rel.removidos == 0 and len(eventos.listar(demo, 1)) == 1
+
+
+def _pacote_eventos(tmp: Path, linhas: list[str]) -> Path:
+    """data/ com eventos e instrumentos de teste (ISINs fictícios) no lugar dos da B3."""
+    import shutil
+
+    from coir.recursos import pasta_data
+
+    pasta = tmp / "pacote"
+    shutil.copytree(pasta_data(), pasta)
+    (pasta / "instrumentos_b3.csv").write_text(
+        "ticker,isin,categoria,especificacao,emissor,nome,visto_desde,visto_ate\n"
+        "GGBR4,BRGGBRTESTE1,SHARES,PN N1,GGBR,GERDAU,2026-10-20,2026-10-20\n"
+        "GOAU4,BRGOAUTESTE1,SHARES,PN N1,GOAU,METALURGICA GERDAU,2026-10-20,2026-10-20\n"
+        "IRBR3,BRIRBRTESTE1,SHARES,ON NM,IRBR,IRB,2026-10-20,2026-10-20\n",
+        encoding="utf-8",
+    )  # fmt: skip
+    (pasta / "eventos_b3.csv").write_text(
+        "emissor,isin,tipo,fator,data_com,aprovado_em,isin_emitido,preco,periodo,data_subscricao\n"
+        + "".join(f"{x}\n" for x in linhas), encoding="utf-8")  # fmt: skip
+    return pasta
+
+
+def test_propostas_do_pacote_com_data_ex_e_quantidade_pela_posicao(demo: Path) -> None:
+    """GGBR4: 300 na conta Ágora. Data com 28/02/2023 (terça) -> data ex 01/03/2023."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,GRUPAMENTO,0.33,2023-08-31,2023-08-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,CIS RED CAP,28.29,2023-10-31,2023-10-01,BRGOAUTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2008-01-31,2008-01-01,BRGGBRTESTE1,,,",  # sem posição
+    ])  # fmt: skip
+    lista = eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+    do_pacote = {p.dados.tipo: p for p in lista if "eventos da B3" in p.movimentacao
+                 and p.codigo == "GGBR4"}  # fmt: skip
+    desdobro = do_pacote[TipoEvento.DESDOBRAMENTO]
+    assert (desdobro.data, desdobro.dados.cv, desdobro.dados.quantidade, desdobro.dados.conta) == (
+        date(2023, 3, 1),
+        "C",
+        300,
+        AGORA_CONTA,
+    )
+    assert do_pacote[TipoEvento.BONIFICACAO].dados.quantidade == 15
+    assert "custo atribuído" in do_pacote[TipoEvento.BONIFICACAO].nota
+    grupamento = do_pacote[TipoEvento.GRUPAMENTO]  # 300 x 0,33 = 99: saem 201
+    assert (grupamento.dados.cv, grupamento.dados.quantidade) == ("V", 201)
+    cisao = do_pacote[TipoEvento.CISAO]  # 300 x 28,29% = 84,87: 84 GOAU4, sem percentual
+    assert (cisao.dados.ticker_destino, cisao.dados.quantidade_destino) == ("GOAU4", 84)
+    assert cisao.dados.percentual_custo is None and "percentual" in cisao.nota
+    assert len([p for p in lista if p.codigo == "GGBR4"]) == 4  # o de 2008 não atinge a posição
+    eventos.salvar(demo, 1, desdobro.dados, REFS, FISCAIS)
+    [lancado] = [
+        p
+        for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+        if p.dados.tipo is TipoEvento.DESDOBRAMENTO and p.codigo == "GGBR4"
+    ]
+    assert lancado.situacao == "lançado"
+
+
+def test_evento_do_objeto_propoe_ajuste_das_series_abertas(demo: Path) -> None:
+    """Demonstração: IRBRE35 (600, vence em maio) aberta em fev/2023 na BTG; desdobramento 1:2 de
+    IRBR3 -> a série recebe mais 600 (a B3 ajusta a quantidade)."""
+    pasta = _pacote_eventos(demo.parent, [
+        "IRBR,BRIRBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRIRBRTESTE1,,,",
+    ])  # fmt: skip
+    series = {p.codigo: p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+              if "eventos da B3" in p.movimentacao}  # fmt: skip
+    assert "IRBRE35" in series
+    ajuste = series["IRBRE35"]
+    assert (ajuste.dados.tipo, ajuste.dados.cv, ajuste.dados.quantidade) == (
+        TipoEvento.DESDOBRAMENTO,
+        "C",
+        600,
+    )
+    assert "código" in ajuste.nota
+
+
+def test_ignorar_a_proposta_da_movimentacao_ignora_a_do_pacote(demo: Path) -> None:
+    """Revisão F7b: o mesmo desdobramento vem da movimentação (crédito em 03/03/2023) e do pacote
+    (data ex 01/03/2023); ignorado numa fonte, não volta pela outra."""
+    arquivo = planilha(demo.parent / "movimentacao-2023.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "03/03/2023", "Desdobro", "GGBR4 - GERDAU S.A.", AGORA_B3, 300, "-", "-"],
+    ]})  # fmt: skip
+    importar_planilhas(demo, [arquivo], 1, AGORA)
+    pasta = _pacote_eventos(
+        demo.parent, ["GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,"]
+    )
+    [da_movimentacao] = eventos.propostas(demo, 1, REFS)
+    eventos.ignorar(demo, 1, da_movimentacao.chave, AGORA)
+    [unica] = eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+    assert ("eventos da B3" in unica.movimentacao, unica.situacao) == (True, "ignorada")

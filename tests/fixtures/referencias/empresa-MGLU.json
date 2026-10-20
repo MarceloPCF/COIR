@@ -1,0 +1,74 @@
+[
+ {
+  "stockCapital": "14.202.162.483,70",
+  "quotedPerSharSince": "02/05/2011",
+  "commonSharesForm": "Escritural",
+  "preferredSharesForm": "",
+  "hasCommom": "BTG PACTUAL SERVIÇOS FINANCEIROS SA DTVM",
+  "hasPreferred": "",
+  "roundLot": "100",
+  "tradingName": "MAGAZ LUIZA ",
+  "numberCommonShares": "775.945.010",
+  "numberPreferredShares": "0",
+  "totalNumberShares": "775.945.010",
+  "code": "MGLU",
+  "codeCVM": "22470",
+  "segment": "NM",
+  "cashDividends": [
+   {
+    "assetIssued": "BRMGLUACNOR2",
+    "paymentDate": "08/05/2026",
+    "rate": "0,08130019210",
+    "relatedTo": "Anual/2025",
+    "approvedOn": "23/04/2026",
+    "isinCode": "BRMGLUACNOR2",
+    "label": "DIVIDENDO",
+    "lastDatePrior": "24/04/2026",
+    "remarks": ""
+   }
+  ],
+  "stockDividends": [
+   {
+    "assetIssued": "BRMGLUACNOR2",
+    "factor": "5,00000000000",
+    "approvedOn": "22/12/2025",
+    "isinCode": "BRMGLUACNOR2",
+    "label": "BONIFICACAO",
+    "lastDatePrior": "29/12/2025",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRMGLUACNOR2",
+    "factor": "0,10000000000",
+    "approvedOn": "24/04/2024",
+    "isinCode": "BRMGLUACNOR2",
+    "label": "GRUPAMENTO",
+    "lastDatePrior": "24/05/2024",
+    "remarks": ""
+   },
+   {
+    "assetIssued": "BRMGLUACNOR2",
+    "factor": "300,00000000000",
+    "approvedOn": "07/10/2020",
+    "isinCode": "BRMGLUACNOR2",
+    "label": "DESDOBRAMENTO",
+    "lastDatePrior": "13/10/2020",
+    "remarks": ""
+   }
+  ],
+  "subscriptions": [
+   {
+    "assetIssued": "BRMGLUACNOR2",
+    "percentage": "9,57901775290",
+    "priceUnit": "1,95000000000",
+    "tradingPeriod": "01/02/2024 a 27/02/2024",
+    "subscriptionDate": "01/03/2024",
+    "approvedOn": "26/01/2024",
+    "isinCode": "BRMGLUACNOR2",
+    "label": "SUBSCRICAO",
+    "lastDatePrior": "31/01/2024",
+    "remarks": ""
+   }
+  ]
+ }
+]
