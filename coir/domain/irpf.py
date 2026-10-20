@@ -66,6 +66,7 @@ class LinhaRendimento(Modelo):
     codigo: str
     descricao: str
     por_fonte: bool = True
+    parcial: bool = False  # o código também recebe rendimentos que o COIR não conhece (99, 06)
     nota: str = ""
 
 

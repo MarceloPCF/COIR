@@ -119,10 +119,12 @@ isentos:
       codigo: "99"
       descricao: "Outros (rendimentos de FII e Fiagro)"
       por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
     - chave: reembolso_btc
       codigo: "99"
       descricao: "Outros (reembolso de proventos de ações emprestadas)"
       por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
       nota: "CNPJ da empresa, como na DIRPF 2026 entregue"
 
 exclusivos:
@@ -138,10 +140,12 @@ exclusivos:
       codigo: "06"
       descricao: "Rendimentos de aplicações financeiras (ETF de renda fixa)"
       por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
     - chave: atualizacao_proventos
       codigo: "06"
       descricao: "Rendimentos de aplicações financeiras (atualização de proventos pela Selic)"
       por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
       nota: "06 ou 12 conforme o informe da empresa"
 
 imposto_pago:

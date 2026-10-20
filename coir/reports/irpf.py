@@ -13,7 +13,7 @@ janeiro recalculado pelo COIR, com aviso.
 
 from collections import defaultdict
 from collections.abc import Iterable
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from coir.domain.cpf import formatar_cnpj
 from coir.domain.fiscal import (
@@ -73,6 +73,11 @@ TIPO_BEM: dict[TipoAtivo, TipoBem] = {
 QUANTIDADE_DE = {"UNIT": "units", "BDR": "BDRs", "ETF": "cotas", "ETF_RF": "cotas",
                  "FII": "cotas", "FIAGRO": "cotas"}  # fmt: skip
 ART_58 = "(IN RFB 1.585/2015 art. 58)"
+
+
+def _centavos(valor: Decimal) -> Decimal:
+    """Situação do bem em reais e centavos (o programa só aceita 2 casas)."""
+    return valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 def _q(valor: Decimal) -> str:
@@ -152,8 +157,8 @@ def _bens(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]) -> list[Be
         bens.append(BemIrpf(
             tipo=tipo, grupo=item.grupo, codigo=item.codigo, ticker=p.ticker, cnpj=cnpj,
             discriminacao=_discriminacao(tipo, p, info, custodia, quando),
-            anterior=anterior[ativo].custo if ativo in anterior else ZERO,
-            atual=atual[ativo].custo if ativo in atual else ZERO,
+            anterior=_centavos(anterior[ativo].custo) if ativo in anterior else ZERO,
+            atual=_centavos(atual[ativo].custo) if ativo in atual else ZERO,
         ))  # fmt: skip
     bens += _jcp_a_receber(d, mapa)
     return bens
