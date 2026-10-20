@@ -1,7 +1,8 @@
 """Tela 10 — Proventos do ano: cartões pelas linhas do IRPF, gráfico mensal e a tabela dos
 lançamentos (da movimentação da B3), com os avisos (Lei 15.270, BDR, a classificar)."""
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+from datetime import datetime
 from decimal import Decimal
 
 from nicegui import run, ui
@@ -11,6 +12,7 @@ from coir.erros import CoirError
 from coir.reports.fiscais import MESES, NOME_PROVENTO
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos.estado import Estado
+from coir.servicos.proventos import informar_credito
 from coir.ui import tabela, tema
 
 T = TipoColuna
@@ -77,8 +79,68 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 _conteudo(do_ano)
             for aviso in (a for a in avisos if str(estado.ano) in a[:10]):
                 ui.label(aviso).classes("coir-carimbo text-sm")
+            jcp = [p for p in todos if p.tipo is TipoProvento.JCP and estado.ano in (
+                p.ano_declaracao, p.data.year)]  # fmt: skip
+            if jcp:
+                _creditos(estado, jcp, recarregar)
+
+    async def recarregar() -> None:
+        corpo.clear()
+        ao_mudar()
+        await carregar()
 
     ui.timer(0.01, carregar, once=True)
+
+
+def _creditos(estado: Estado, jcp: list[Provento],
+              recarregar: Callable[[], Awaitable[None]]) -> None:  # fmt: skip
+    """Data do crédito de cada JCP: a da B3 (data de aprovação) ou a informada pelo usuário, que
+    decide o ano da declaração (P&R IRPF 2026 pergunta 320)."""
+
+    async def salvar(p: Provento, campo: ui.input, apagar: bool) -> None:
+        try:
+            texto = (campo.value or "").strip()
+            dia = None if apagar else datetime.strptime(texto, "%d/%m/%Y").date()
+        except ValueError:
+            ui.notify("Data inválida: use dd/mm/aaaa.", type="warning")
+            return
+        try:
+            await run.io_bound(informar_credito, estado.banco, p.chave, dia, estado.agora())
+        except CoirError as erro:
+            ui.notify(f"Não gravado: {erro}", type="negative")
+            return
+        ui.notify("Data do crédito gravada." if dia else "Data informada apagada.",
+                  type="positive")  # fmt: skip
+        await recarregar()
+
+    def clique(p: Provento, campo: ui.input, apagar: bool = False
+               ) -> Callable[[], Awaitable[None]]:  # fmt: skip
+        return lambda: salvar(p, campo, apagar)
+
+    with ui.column().classes("coir-folha w-full gap-2").mark("creditos-jcp"):
+        ui.label("Data do crédito do JCP").classes("coir-titulo text-base")
+        ui.label(
+            "O JCP é declarado no ano do crédito. A data vem do pacote público da B3 (aprovação) "
+            "quando ele cobre o pagamento; sem ela, o COIR só percebe o crédito no ano anterior "
+            "pela mudança de alíquota. Corrija pelo informe de rendimentos da empresa."
+        ).classes("coir-subtitulo text-xs")
+        for p in sorted(jcp, key=lambda p: (p.data, p.codigo)):
+            with ui.row().classes("items-center gap-3 w-full"):
+                ui.label(f"{p.data:%d/%m/%Y} {p.codigo}").classes("coir-numero w-[180px]")
+                ui.label(_r(p.liquido)).classes("coir-numero w-[110px] text-right")
+                origem = ("informada" if "(informada)" in p.observacao else
+                          "B3" if "(B3)" in p.observacao else "sem data")  # fmt: skip
+                ui.label(f"declarado em {p.ano_declaracao} · {origem}").classes(
+                    "coir-subtitulo text-xs w-[200px]")  # fmt: skip
+                campo = ui.input("Creditado em", placeholder="dd/mm/aaaa",
+                                 value=f"{p.credito:%d/%m/%Y}" if p.credito else "",
+                                 ).props("outlined dense").classes("w-[150px]").mark(
+                    f"credito-{p.chave[:12]}")  # fmt: skip
+                ui.button("Salvar", on_click=clique(p, campo)).props("flat dense").mark(
+                    f"salvar-credito-{p.chave[:12]}")  # fmt: skip
+                if origem == "informada":
+                    ui.button("Limpar", on_click=clique(p, campo, apagar=True)).props(
+                        "flat dense")  # fmt: skip
 
 
 def _conteudo(do_ano: list[Provento]) -> None:

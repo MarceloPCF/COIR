@@ -232,9 +232,14 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
 - Posição vendida em 31/12 (opção lançada, venda a descoberto): não é bem; vai para Dívidas e ônus
   reais, código 16, pelo valor recebido (prêmio ou venda), até o encerramento. Sem norma
   específica; decisão do usuário de 20/10/2026 para fechar a variação patrimonial.
-- JCP: a data do crédito virá dos proventos em dinheiro do pacote público da B3 (data de
-  aprovação), com correção manual; hoje o ano do crédito só é percebido pela mudança de alíquota
-  (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º).
+- JCP: declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º), com
+  a alíquota da data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art. 8º). A data
+  do crédito vem da correção do usuário na tela de Proventos (informe da empresa, tabela
+  `credito_jcp`) ou da data de aprovação no pacote público da B3 (`proventos_b3.csv`: mesma
+  empresa, data de pagamento e valor por ação dentro de 1%). Sem nenhuma das duas, o ano anterior
+  só é percebido pela mudança de alíquota. A B3 só lista os pagos desde mai/2025: os créditos de
+  2024 pagos no começo de 2025 precisam da correção do usuário. Crédito depois do pagamento falha
+  alto (decisão do usuário de 20/10/2026).
 
 ## DARF paga em atraso: multa de mora (F6, 17/10/2026)
 `coir/engine/darf.py`; casos conferidos à mão em `tests/fiscal_cases/test_multa_mora.py`.

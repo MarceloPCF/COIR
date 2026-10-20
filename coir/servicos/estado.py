@@ -296,7 +296,8 @@ class Estado:
             return [], []
         titular = self.titular
         return self._guardado(
-            ("proventos", titular), lambda: proventos_banco(self.banco, self.fiscais, titular)
+            ("proventos", titular),
+            lambda: proventos_banco(self.banco, self.fiscais, titular, self.pasta_refs),
         )
 
     def propostas(self) -> list[eventos.Proposta]:

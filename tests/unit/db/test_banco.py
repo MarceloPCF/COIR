@@ -125,7 +125,7 @@ def test_decimal_texto_recusa_float() -> None:
 # ---------------------------------------------------------------------------------- migração
 def test_migracao_cria_esquema_igual_aos_modelos(banco: Path) -> None:
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == revisao_final() == "0005"
+    assert revisao_atual(engine) == revisao_final() == "0006"
     with engine.connect() as c:
         ctx = MigrationContext.configure(c, opts={"compare_type": True})
         assert compare_metadata(ctx, Base.metadata) == []
@@ -148,7 +148,7 @@ def test_banco_da_revisao_anterior_migra_com_backup(tmp_path: Path) -> None:
     engine.dispose()
     migrar(banco, AGORA)
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == "0005"
+    assert revisao_atual(engine) == "0006"
     engine.dispose()
     with abrir(banco)() as s:
         assert [t.nome for t in repo.titulares(s)] == ["Titular de Teste"]
@@ -848,3 +848,22 @@ def test_tabelas_com_erro_nao_impedem_abrir_o_app(
     importacao.aplicar_tabelas(banco, REFS, AGORA)
     importacao.aplicar_tabelas(banco, REFS, AGORA)
     assert chamadas == [1]
+
+
+def test_migracao_0006_credito_jcp_vai_e_volta(tmp_path: Path) -> None:
+    """F8: a tabela da data do crédito do JCP informada pelo usuário (0006) sobe e desce."""
+    from alembic import command
+    from sqlalchemy import inspect
+
+    from coir.db.sessao import _config_alembic  # pyright: ignore[reportPrivateUsage]
+
+    banco = tmp_path / "coir.db"
+    migrar(banco, AGORA)
+    engine = criar_engine(banco)
+    for alvo, tem in (("0005", False), ("0006", True)):
+        with engine.begin() as c:
+            config = _config_alembic()
+            config.attributes["connection"] = c
+            (command.downgrade if alvo == "0005" else command.upgrade)(config, alvo)
+        assert ("credito_jcp" in inspect(engine).get_table_names()) is tem
+    engine.dispose()

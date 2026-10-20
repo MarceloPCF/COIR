@@ -249,3 +249,32 @@ async def test_configuracoes_atualiza_as_tabelas_e_o_painel_avisa(
         await user.should_see("Tabelas atualizadas", retries=ESPERA)
         await user.should_see("Em uso: pacote de 01/01/2099 (baixado)")
     assert estado.refs.ativos  # relidas do pacote baixado
+
+
+@pytest.mark.asyncio
+async def test_proventos_data_do_credito_do_jcp_muda_o_ano(tmp_path: Path) -> None:
+    """F8: JCP pago em 10/03/2026 a 17,5% (sem data: declarado em 2026); o usuário informa o
+    crédito em 15/12/2025 pelo informe e o JCP passa para 2025."""
+    from sqlalchemy import select
+
+    from coir.db.modelos import MovimentacaoB3
+    from coir.db.sessao import conectar
+
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    mov = planilha(tmp_path / "movimentacao-2026-10-16.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "10/03/2026", "Juros Sobre Capital Próprio", "ITSA4 - ITAUSA",
+         "XP INVESTIMENTOS CCTVM S/A", 1000, "0,5", "412,50"],
+    ]})  # fmt: skip
+    importar_planilhas(estado.banco, [mov], 1, AGORA)
+    with conectar(estado.banco) as fabrica, fabrica() as s:
+        chave = s.scalars(select(MovimentacaoB3.chave)).one()
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/proventos")
+        await user.should_see("Data do crédito do JCP", retries=ESPERA)
+        await user.should_see("declarado em 2026 · sem data")
+        user.find(marker=f"credito-{chave[:12]}").type("15/12/2025")
+        user.find(marker=f"salvar-credito-{chave[:12]}").click()
+        await user.should_see("declarado em 2025 · informada", retries=ESPERA)

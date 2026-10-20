@@ -123,6 +123,8 @@ def _criar(
         ano_declaracao=ano,
         origem=f"mov:{item.id}",
         observacao=observacao,
+        credito=item.credito if tipo is TipoProvento.JCP else None,
+        chave=item.chave,
     )
 
 
@@ -180,6 +182,8 @@ def _provento(
 def _jcp(item: LinhaB3, params: ParametrosFiscais) -> Provento:
     x = item.linha
     valor = x.valor or ZERO
+    if item.credito is not None:
+        return _jcp_com_credito(item, item.credito, params)
     no_pagamento = params.decimal("aliquota_irrf_jcp", x.data)
     no_ano_anterior = _vigente(params, "aliquota_irrf_jcp", date(x.data.year - 1, 12, 31))
     aliquota, ano, obs = no_pagamento, x.data.year, ""
@@ -193,6 +197,28 @@ def _jcp(item: LinhaB3, params: ParametrosFiscais) -> Provento:
             )
     bruto = (valor / (1 - aliquota)).quantize(CENTAVO, rounding=ROUND_HALF_UP)
     return _criar(item, TipoProvento.JCP, bruto, aliquota, ano, obs)
+
+
+def _jcp_com_credito(item: LinhaB3, credito: date, params: ParametrosFiscais) -> Provento:
+    """JCP com a data do crédito conhecida (informe da empresa ou data de aprovação no pacote da
+    B3): declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º; a
+    receber em 31/12 se pago depois), com a alíquota da data do crédito ou do pagamento, o que vier
+    primeiro (LC 224/2025 art. 8º). Crédito depois do pagamento falha alto."""
+    x = item.linha
+    if credito > x.data:
+        raise MotorError(f"{x.data}: JCP de {x.codigo} (mov:{item.id}) creditado em {credito}, "
+                         "depois do pagamento")  # fmt: skip
+    aliquota = params.decimal("aliquota_irrf_jcp", credito)
+    obs = f"creditado em {credito:%d/%m/%Y} ({item.credito_origem or 'informada'})"
+    if credito.year < x.data.year:
+        obs += f": declarado em {credito.year}, com o crédito a receber em 31/12/{credito.year}"
+    if x.preco and x.quantidade:
+        retida = 1 - (x.valor or ZERO) / (x.quantidade * x.preco)
+        if abs(retida - aliquota) > Decimal("0.005"):
+            obs += (f"; retenção implícita de {retida * 100:.1f}% difere da alíquota de "
+                    f"{aliquota * 100:.1f}% (confira o informe)")  # fmt: skip
+    bruto = ((x.valor or ZERO) / (1 - aliquota)).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+    return _criar(item, TipoProvento.JCP, bruto, aliquota, credito.year, obs)
 
 
 def _lei_15270(saida: list[Provento], params: ParametrosFiscais) -> list[str]:

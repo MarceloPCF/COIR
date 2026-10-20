@@ -30,6 +30,10 @@ class LinhaB3(Modelo):
     id: int
     titular: int
     linha: LinhaMovimentacao
+    chave: str = ""  # da linha em movimentacao_b3 (correções do usuário apontam para ela)
+    # JCP: data do crédito (informada pelo usuário ou a data de aprovação do pacote da B3)
+    credito: date | None = None
+    credito_origem: str = ""  # "informada" ou "B3"
 
 
 class Provento(Modelo):
@@ -47,6 +51,8 @@ class Provento(Modelo):
     ano_declaracao: int  # JCP creditado no ano anterior ao pagamento: o ano do crédito
     origem: str  # "mov:<id>"
     observacao: str = ""
+    credito: date | None = None  # JCP: data do crédito, quando conhecida
+    chave: str = ""  # da linha em movimentacao_b3 (tela de Proventos: corrigir o crédito)
 
     @property
     def a_receber_em_31_12(self) -> bool:

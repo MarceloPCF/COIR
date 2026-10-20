@@ -211,6 +211,19 @@ class PropostaIgnorada(Base):
     ignorada_em: Mapped[datetime]
 
 
+class CreditoJcp(Base):
+    """Data do crédito de um JCP informada pelo usuário (informe da empresa), por cima da data de
+    aprovação do pacote público da B3. ``chave``: a da linha em ``movimentacao_b3``."""
+
+    __tablename__ = "credito_jcp"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"))
+    chave: Mapped[str] = mapped_column(String(64), unique=True)
+    data_credito: Mapped[date]
+    registrado_em: Mapped[datetime]
+
+
 class DarfPagamento(Base):
     """Pagamento de uma DARF (fato lançado pelo usuário): competência, data e valor pagos e o
     comprovante guardado em ``<dados>/comprovantes/`` (nome sem CPF)."""

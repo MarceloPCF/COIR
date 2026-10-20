@@ -21,6 +21,7 @@ parâmetros fiscais com vigência). Nunca colocar aqui dados pessoais: esses fic
 | `opcoes_raiz_b3.csv` | **gerado**: raiz de opção → ativo-objeto, só raiz com um objeto (por baixo de `opcoes_raiz.csv`) | `raiz`, `ticker` |
 | `eventos_b3.csv` | **gerado**: desdobramentos, grupamentos (fator = razão), bonificações e subscrições (fator em %), cisões com o ISIN emitido; data com; nunca apaga | `emissor`, `isin`, `tipo`, `fator`, `data_com`, `aprovado_em`, `isin_emitido`, `preco`, `periodo`, `data_subscricao` |
 | `emissores_b3.csv` | **gerado**: CNPJ e razão social de cada emissor (companhias e fundos FII, Fiagro e ETF da B3), para o Bens e Direitos do IRPF; histórico por emissor e CNPJ (o CNPJ de um fundo pode mudar; vale o visto por último); nunca apaga | `emissor`, `cnpj`, `razao_social`, `tipo`, `visto_desde`, `visto_ate` |
+| `proventos_b3.csv` | **gerado**: proventos em dinheiro de cada companhia (dividendo, JCP, rendimento) com data de aprovação, data com, pagamento e valor bruto por ação; a data de aprovação é o crédito do JCP (ano da declaração). A B3 só lista os pagos nos últimos meses (desde mai/2025 na primeira coleta); nunca apaga | `emissor`, `isin`, `tipo`, `valor`, `aprovado_em`, `data_com`, `pagamento`, `referente` |
 | `emissores.csv` | CNPJ curado à mão (emissor que falta no pacote público ou CNPJ a corrigir); vale por cima do gerado; CNPJ com dígito errado falha alto | `emissor`, `cnpj`, `razao_social`, `observacao` |
 
 `irpf/<exercício>.yaml`: onde cada valor do COIR vai no programa IRPF daquele exercício (linhas da

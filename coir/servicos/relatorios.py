@@ -85,7 +85,7 @@ def dados_banco(
         do_titular = select(Conta).where(Conta.titular_id == escolhido.id)
         contas = {c.id: c.numero for c in sessao.scalars(do_titular)}
         nome, cpf, tid = escolhido.nome, escolhido.cpf, escolhido.id
-    lista_proventos, avisos_proventos = proventos_banco(banco, fiscais, tid)
+    lista_proventos, avisos_proventos = proventos_banco(banco, fiscais, tid, pasta_refs)
     params = fiscais.parametros
     fiscal = carteira(notas, eventos, params, ate, Visao.TITULAR)
     fim_anterior = date(ano - 1, 12, 31)

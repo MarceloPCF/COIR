@@ -97,6 +97,8 @@ COLUNAS_INSTRUMENTOS_B3 = ("ticker", "isin", "categoria", "especificacao", "emis
                            "visto_desde", "visto_ate")  # fmt: skip
 COLUNAS_EMISSORES_B3 = ("emissor", "cnpj", "razao_social", "tipo", "visto_desde", "visto_ate")
 COLUNAS_EMISSORES = ("emissor", "cnpj", "razao_social", "observacao")
+COLUNAS_PROVENTOS_B3 = ("emissor", "isin", "tipo", "valor", "aprovado_em", "data_com", "pagamento",
+                        "referente")  # fmt: skip
 
 
 def evento_b3_valido(r: dict[str, str]) -> bool:
@@ -123,7 +125,8 @@ def validar_tabelas_b3(pasta: Path) -> None:
     """Pacote novo: as tabelas que só as propostas da tela 7 leem também têm de estar íntegras."""
     for nome, colunas in (("eventos_b3.csv", COLUNAS_EVENTOS_B3),
                           ("instrumentos_b3.csv", COLUNAS_INSTRUMENTOS_B3),
-                          ("emissores_b3.csv", COLUNAS_EMISSORES_B3)):  # fmt: skip
+                          ("emissores_b3.csv", COLUNAS_EMISSORES_B3),
+                          ("proventos_b3.csv", COLUNAS_PROVENTOS_B3)):  # fmt: skip
         caminho = pasta / nome
         if not caminho.is_file():
             continue
@@ -137,6 +140,9 @@ def validar_tabelas_b3(pasta: Path) -> None:
         elif nome == "emissores_b3.csv":
             if any(not r["emissor"] or not cnpj_valido(r["cnpj"]) for r in linhas):
                 raise ConfiguracaoError(f"{nome}: linha sem emissor ou com CNPJ inválido")
+        elif nome == "proventos_b3.csv":
+            if len(proventos_b3(pasta)) != len(linhas):
+                raise ConfiguracaoError(f"{nome}: linha com data ou valor inválido")
         elif any(not r["ticker"] or not r["isin"] for r in linhas):
             raise ConfiguracaoError(f"{nome}: linha sem ticker ou ISIN")
 
@@ -170,6 +176,24 @@ def emissores(pasta: Path) -> dict[str, tuple[str, str, str]]:
         tipo = saida.get(r["emissor"], ("", "", "", ""))[2]
         saida[r["emissor"]] = (r["cnpj"], r["razao_social"], tipo, "")
     return {e: (c, n, t) for e, (c, n, t, _) in saida.items()}
+
+
+def proventos_b3(pasta: Path) -> list[dict[str, str]]:
+    """Proventos em dinheiro do pacote público (``proventos_b3.csv``; vazio se não houver), só as
+    linhas com data de aprovação válida, pagamento válido ou ainda a definir (vazio) e valor
+    numérico."""
+    caminho = pasta / "proventos_b3.csv"
+    saida: list[dict[str, str]] = []
+    for r in _linhas(caminho) if caminho.is_file() else []:
+        try:
+            date.fromisoformat(r["aprovado_em"])
+            if r["pagamento"]:
+                date.fromisoformat(r["pagamento"])
+            Decimal(r["valor"])
+        except (KeyError, ValueError, ArithmeticError):
+            continue
+        saida.append(r)
+    return saida
 
 
 def instrumentos(pasta: Path) -> dict[str, tuple[str, str, str]]:

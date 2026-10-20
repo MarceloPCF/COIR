@@ -223,3 +223,24 @@ def test_selic_e_eventos_fora_do_formato_falham_alto(tmp_path: Path) -> None:
         gerar.gerar(tmp_path, replace(_coleta(), selic=[{"data": "outubro", "valor": "x"}]))
     with pytest.raises(GeracaoError, match="fora do formato"):
         gerar.gerar(tmp_path, replace(_coleta(), eventos={"XXXX": [{"stockDividends": [{}]}]}))
+
+
+def test_proventos_em_dinheiro_com_data_de_aprovacao(tmp_path: Path) -> None:
+    """O crédito do JCP (data de aprovação) vem dos proventos em dinheiro da companhia; o
+    histórico nunca apaga (a B3 só lista os últimos meses)."""
+    arquivos, resumo = gerar.gerar(tmp_path, _coleta())
+    linhas = _linhas(arquivos["proventos_b3.csv"])
+    vamo = [x for x in linhas if x.startswith("VAMO,")]
+    assert vamo == ["VAMO,BRVAMOACNOR7,JRS CAP PROPRIO,0.140701568,2025-12-15,2025-12-18,"
+                    "2026-04-02,Anual/2025"]  # fmt: skip
+    assert len(resumo.proventos_novos) == len(linhas)
+    gerar.gravar(tmp_path, arquivos)
+    seguinte = _coleta(date(2026, 10, 26))
+    sem_vamo = Coleta(
+        **{
+            **seguinte.__dict__,
+            "eventos": {k: v for k, v in seguinte.eventos.items() if k != "VAMO"},
+        }
+    )
+    novos, resumo = gerar.gerar(tmp_path, sem_vamo)
+    assert _linhas(novos["proventos_b3.csv"]) == linhas and not resumo.proventos_novos

@@ -175,3 +175,33 @@ def test_atualizacao_do_provento_pela_selic_e_tributacao_exclusiva() -> None:
     )
     assert atualizacao.aliquota == D("0.225")
     assert not avisos
+
+
+def _jcp(dia: date, preco: str, valor: str, credito: date | None = None) -> LinhaB3:
+    item = mov(dia, "Juros Sobre Capital Próprio", "ITSA4 - ITAUSA", "1000", preco, valor)
+    return item.model_copy(update={"credito": credito, "credito_origem": "B3" if credito else ""})
+
+
+def test_jcp_creditado_no_ano_anterior_com_a_mesma_aliquota() -> None:
+    """Caso C do especialista (F8, 20/10/2026): crédito em 16/12/2024, pago em 10/03/2025, 15% nos
+    dois anos (1.000 x 0,50 bruto, líquido 425,00). Sem a data do crédito o motor o põe em 2025
+    (não há mudança de alíquota para perceber); com ela (pacote da B3 ou informe), declarado em
+    2024 e a receber em 31/12/2024 (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º)."""
+    [sem], _ = _proventos(_jcp(date(2025, 3, 10), "0.5", "425"))
+    assert sem.ano_declaracao == 2025
+    [p], _ = _proventos(_jcp(date(2025, 3, 10), "0.5", "425", date(2024, 12, 16)))
+    assert (p.ano_declaracao, p.aliquota, p.bruto, p.credito, p.a_receber_em_31_12) == (
+        2024, D("0.15"), D("500.00"), date(2024, 12, 16), True)  # fmt: skip
+    assert "creditado em 16/12/2024 (B3)" in p.observacao
+
+
+def test_jcp_creditado_em_2025_e_pago_em_2026_usa_a_aliquota_do_credito() -> None:
+    """LC 224/2025 art. 8º: 17,5% para JCP pago ou creditado desde 01/01/2026, o que vier
+    primeiro. Creditado em 20/12/2025 e pago em 15/04/2026: 15%, declarado em 2025."""
+    [p], _ = _proventos(_jcp(date(2026, 4, 15), "0.5", "425", date(2025, 12, 20)))
+    assert (p.ano_declaracao, p.aliquota) == (2025, D("0.15"))
+
+
+def test_credito_depois_do_pagamento_falha_alto() -> None:
+    with pytest.raises(MotorError, match="depois do pagamento"):
+        _proventos(_jcp(date(2025, 3, 10), "0.5", "425", date(2025, 3, 11)))
