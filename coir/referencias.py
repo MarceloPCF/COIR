@@ -15,8 +15,12 @@ from functools import cache
 from itertools import pairwise
 from pathlib import Path
 
+import yaml
+from pydantic import ValidationError
+
 from coir.domain.cpf import cnpj_valido
 from coir.domain.fiscal import TipoAtivo
+from coir.domain.irpf import MapeamentoIrpf
 from coir.domain.parametros import (
     Calendario,
     IsencaoPME,
@@ -163,6 +167,26 @@ def emissores(pasta: Path) -> dict[str, tuple[str, str]]:
             raise ConfiguracaoError(f"emissores.csv: CNPJ inválido para {r['emissor']}")
         saida[r["emissor"]] = (r["cnpj"], r["razao_social"], "")
     return {e: (c, n) for e, (c, n, _) in saida.items()}
+
+
+@cache
+def carregar_irpf(ano_calendario: int, pasta: Path | None = None) -> MapeamentoIrpf:
+    """Mapeamento das fichas do programa IRPF (``data/irpf/<exercício>.yaml``). Vem sempre com a
+    versão instalada (não com o pacote público): cada exercício novo pede código novo no COIR.
+    Exercício sem arquivo falha alto."""
+    exercicio = ano_calendario + 1
+    caminho = (pasta or pasta_data()) / "irpf" / f"{exercicio}.yaml"
+    if not caminho.is_file():
+        raise ConfiguracaoError(f"sem mapeamento das fichas do IRPF {exercicio} (ano-calendário "
+                                f"{ano_calendario}): falta data/irpf/{exercicio}.yaml")  # fmt: skip
+    try:
+        bruto = yaml.safe_load(caminho.read_text(encoding="utf-8"))
+        mapa = MapeamentoIrpf.model_validate(bruto)
+    except (yaml.YAMLError, ValidationError) as erro:
+        raise ConfiguracaoError(f"data/irpf/{exercicio}.yaml inválido: {erro}") from erro
+    if mapa.exercicio != exercicio:
+        raise ConfiguracaoError(f"data/irpf/{exercicio}.yaml traz o exercício {mapa.exercicio}")
+    return mapa
 
 
 def _data(texto: str) -> date | None:

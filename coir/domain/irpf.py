@@ -1,0 +1,106 @@
+"""Mapeamento das fichas do programa IRPF de um exercício (data/irpf/<exercício>.yaml, regra R17).
+
+Só diz onde cada valor do COIR vai no programa (linha, grupo e código); nenhum valor fiscal.
+"""
+
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, model_validator
+
+from coir.domain.fiscal import Grupo
+
+
+class Modelo(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+
+class LinhaRendaVariavel(Modelo):
+    rotulo: str  # como o programa imprime ("Mercado à Vista - Ações")
+    grupos: tuple[Grupo, ...]
+
+
+class SecaoRendaVariavel(Modelo):
+    fonte: str
+    linhas: tuple[LinhaRendaVariavel, ...]
+
+    @model_validator(mode="after")
+    def _cada_grupo_uma_linha(self) -> "SecaoRendaVariavel":
+        vistos = [g for linha in self.linhas for g in linha.grupos]
+        faltam = set(Grupo) - set(vistos)
+        if len(vistos) != len(set(vistos)) or faltam:
+            raise ValueError(f"cada grupo do COIR em exatamente uma linha (faltam {faltam})")
+        return self
+
+
+TipoBem = Literal["ACAO", "UNIT", "BDR", "OPCAO", "ETF", "ETF_RF", "FII", "FIAGRO",
+                  "JCP_A_RECEBER"]  # fmt: skip
+
+
+class ItemBem(Modelo):
+    tipo: TipoBem
+    grupo: str
+    codigo: str
+    descricao: str
+    cnpj: Literal["emissor", "fundo", "nenhum"]
+    nota: str = ""
+
+
+class SecaoBens(Modelo):
+    fonte: str
+    itens: tuple[ItemBem, ...]
+
+    @model_validator(mode="after")
+    def _um_por_tipo(self) -> "SecaoBens":
+        tipos = [i.tipo for i in self.itens]
+        if len(tipos) != len(set(tipos)):
+            raise ValueError("tipo de bem repetido")
+        return self
+
+    def item(self, tipo: TipoBem) -> ItemBem:
+        return next(i for i in self.itens if i.tipo == tipo)
+
+
+class LinhaRendimento(Modelo):
+    chave: str
+    codigo: str
+    descricao: str
+    por_fonte: bool = True
+    nota: str = ""
+
+
+class SecaoRendimentos(Modelo):
+    fonte: str
+    linhas: tuple[LinhaRendimento, ...]
+
+    @model_validator(mode="after")
+    def _chaves_unicas(self) -> "SecaoRendimentos":
+        chaves = [x.chave for x in self.linhas]
+        if len(chaves) != len(set(chaves)):
+            raise ValueError("chave repetida")
+        return self
+
+    def linha(self, chave: str) -> LinhaRendimento:
+        try:
+            return next(x for x in self.linhas if x.chave == chave)
+        except StopIteration as erro:
+            raise KeyError(f"linha {chave!r} sem mapeamento") from erro
+
+
+class MapeamentoIrpf(Modelo):
+    exercicio: int
+    ano_calendario: int
+    provisorio: bool = False  # programa do exercício ainda não publicado: o relatório avisa
+    renda_variavel: SecaoRendaVariavel
+    bens: SecaoBens
+    isentos: SecaoRendimentos
+    exclusivos: SecaoRendimentos
+    imposto_pago: SecaoRendimentos
+
+    @model_validator(mode="after")
+    def _ano(self) -> "MapeamentoIrpf":
+        if self.ano_calendario != self.exercicio - 1:
+            raise ValueError("ano-calendário deve ser o exercício menos 1")
+        return self
+
+    def linha_do_grupo(self, grupo: Grupo) -> str:
+        return next(x.rotulo for x in self.renda_variavel.linhas if grupo in x.grupos)

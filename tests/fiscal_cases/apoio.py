@@ -59,6 +59,7 @@ class Livro:
         self, cv: str, ticker: str, quantidade: str | int, preco: str | float, *,
         mercado: str = "VISTA", tipo: TipoAtivo | None = None, vencimento: date | None = None,
         opcao: str | None = None, liquidacao: date | None = None, pme_ate: date | None = None,
+        objeto: TipoAtivo | None = None,
     ) -> OperacaoMotor:  # fmt: skip
         q, p = D(str(quantidade)), D(str(preco))
         if tipo is None:
@@ -67,7 +68,7 @@ class Livro:
             id=next(self._ids), ordem=0, ativo=self.ativo(ticker), ticker=ticker, tipo=tipo,
             mercado=mercado, cv=cv, quantidade=q, preco=p, total=q * p,  # type: ignore[arg-type]
             vencimento=vencimento, opcao=None if opcao is None else self.ativo(opcao),
-            liquidacao_termo=liquidacao, pme_ate=pme_ate,
+            liquidacao_termo=liquidacao, pme_ate=pme_ate, objeto_tipo=objeto,
         )  # fmt: skip
 
     def nota(

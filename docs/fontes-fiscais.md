@@ -9,29 +9,29 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | LC 224/2025 | 5 |
 | Lei 6.404 | 3 |
 | Lei 8.668/1993 | 1 |
-| Lei 8.981/1995 | 7 |
-| Lei 9.249/1995 | 5 |
+| Lei 8.981/1995 | 9 |
+| Lei 9.249/1995 | 10 |
 | Lei 9.250 | 3 |
 | Lei 9.430/1996 | 17 |
 | Lei 9.779/1999 | 1 |
 | Lei 9.959/2000 | 5 |
-| Lei 11.033/2004 | 19 |
+| Lei 11.033/2004 | 21 |
 | Lei 11.051/2004 | 5 |
 | Lei 12.350/2010 | 1 |
-| Lei 13.043/2014 | 7 |
+| Lei 13.043/2014 | 9 |
 | Lei 14.754/2023 | 3 |
 | Lei 15.265/2025 | 6 |
 | Lei 15.270/2025 | 8 |
 | MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 48 |
+| IN RFB 1.585/2015 | 57 |
 | Res. CMN 4.880/2020 | 1 |
 | SC Cosit 67/2024 | 1 |
 | SC Cosit 145/2021 | 1 |
 | SC Cosit 224/2014 | 3 |
 | P&R IRPF | 5 |
-| P&R IRPF 2026 | 3 |
+| P&R IRPF 2026 | 14 |
 | Manual MIR 2026 | 3 |
-| Programa IRPF | 5 |
+| Programa IRPF | 7 |
 | CTN | 1 |
 | Súmula STJ 360 | 1 |
 | REsp 1.149.022/SP | 1 |
@@ -59,6 +59,8 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 
 - `coir/engine/apuracao.py` — módulo: …sem prazo (IN RFB 1.585/2015); prejuízo de mês isento compensa se `prejuizo_mes_isento_compensavel` (Lei 8.981/1995 art. 72 §8º). - IRRF (0,005% e 1%): deduz do imposto do mês; o saldo passa aos meses seguintes do…
 - `coir/engine/proventos.py` — módulo: …Seguridade); não é lucro distribuído (Lei 9.249 art. 10): tributação exclusiva na fonte como renda fixa (Lei 8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º), como as fontes retêm (22,5% nos dados reais); bruto =…
+- `data/irpf/2026.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
+- `data/irpf/2027.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/parametros_fiscais.csv` — prejuizo_mes_isento_compensavel: Lei 8.981/1995 art. 72 §8º; Manual MIR 2026; decisão do usuário (14/10/2026)
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): atualização do provento pela Selic; tributação exclusiva como renda fixa (Lei 8.981/1995 art. 65
 - `docs/regras-fiscais.md` — R5: R5 | Prejuízo de mês isento continua compensável | Parâmetro `prejuizo_mes_isento_compensavel = true` | Lei 8.981/1995 art. 72 §8º; Manual MIR 2026; decisão do usuário (14/10/2026) | A
@@ -68,7 +70,12 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 ## Lei 9.249/1995
 
 - `coir/engine/proventos.py` — módulo: …da B3 (decisões do usuário de 19/10/2026). - Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR, ETF ou FII: fora da v3.0, listado com aviso (BDR: Lei 14.754/2023, não é…
+- `data/irpf/2026.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
+- `data/irpf/2026.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
+- `data/irpf/2027.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
+- `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/parametros_fiscais.csv` — aliquota_irrf_jcp: Lei 9.249/1995 art. 9º §2º (15% na data do pagamento ou crédito)
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º).
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09. BDR, ETF e FII com
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_bonificacao_ajusta_a_quantidade_da_serie_sem_custo: R8 (Lei 9.249/1995 art. 10 parágrafo único e IN RFB 1.585/2015 art. 58: o custo atribuído da bonificação vai para as…
 - `tests/fiscal_cases/test_proventos.py` — módulo: Proventos a partir da movimentação da B3 (casos fictícios conferidos à mão, 19/10/2026). Fontes: Lei 9.249/1995 arts. 9º e 10 (JCP exclusivo; dividendos isentos); LC 224/2025 art. 8º e art. 14 III (JCP a 17,5%…
@@ -116,6 +123,8 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `coir/engine/apuracao.py` — módulo: …e limites vêm de data/parametros_fiscais.csv, com a fonte de cada um): - Alíquotas: 15% comum (Lei 11.033/2004 art. 2º II), 20% day trade e 20% FII (IN RFB 1.585/2015, arts. 56 a 65). - Isenção: ganho líquido…
 - `coir/engine/fichas.py` — módulo: …IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §8º; decisão do usuário de 16/10/2026: separar…
 - `coir/engine/proventos.py` — módulo: …(1 - alíquota), centavos arredondados (estimativa: vale o informe). - Rendimento de FII/Fiagro: isento (Lei 11.033/2004 art. 3º III). "Rendimento" em ação pago junto com um dividendo ou JCP do mesmo código e dia: a…
+- `data/irpf/2026.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
+- `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/parametros_fiscais.csv` — aliquota_comum: Lei 11.033/2004 art. 2º II; RIR/2018 art. 839
 - `data/parametros_fiscais.csv` — aliquota_day_trade: Lei 11.033/2004 art. 2º I
 - `data/parametros_fiscais.csv` — limite_isencao_acoes: Lei 11.033/2004 art. 3º I (valor bruto das alienações de ações à vista no mês)
@@ -147,6 +156,8 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 
 ## Lei 13.043/2014
 
+- `data/irpf/2026.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
+- `data/irpf/2027.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/isencao_pme.csv` — AGRO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (AGRO3); oferta subsequente precificada em 04/02/2021
 - `data/isencao_pme.csv` — PRIO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (HRT Participações, HRTP3); RI PRIO: isentas as compradas entre 10/07/2014 e 29/01/2021 (oferta subsequente de jan/2021)
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
@@ -198,10 +209,17 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `coir/engine/movimentos.py` — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…
 - `coir/engine/movimentos.py` — _incorporacao: …fusão, conversão ou ajuste de série: a quantidade de A sai sem resultado e B entra com o mesmo custo (IN RFB 1.585/2015 art. 58 §6º; ajuste de série da B3: sem efeito fiscal, o custo é o dos prêmios, art. 60 §2º). A…
 - `coir/engine/movimentos.py` — _leilao_fracao: Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro leilao_fracao_isentavel (decisão do usuário…
+- `coir/engine/movimentos.py` — _venda_na_liquidacao_do_termo: IN RFB 1.585/2015 art. 62 I: o ganho do comprador a termo é a diferença entre a venda à vista do ativo na data da…
 - `coir/engine/movimentos.py` — módulo: …pelo preço do próprio negócio); compras; exercícios; vendas; vencimento (pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora desde a MP 497/2010; antes, qualquer corretora);…
 - `coir/engine/posicao.py` — módulo: Posição de um ativo pelo custo médio ponderado (IN RFB 1.585/2015 art. 58: custo médio de aquisição; custos da compra integram o custo, os da venda reduzem a…
 - `coir/engine/proventos.py` — módulo: …em ação sem esse par: fora, listado com aviso. - Reembolso de BTC (doador): isento até 2025 (IN RFB 1.585/2015 art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com…
 - `coir/engine/rateio.py` — módulo: Rateio dos custos da nota pelo valor das operações (IN RFB 1.585/2015 art. 58 §2º: custos de corretagem e taxas integram o custo de aquisição e reduzem o valor de…
+- `data/irpf/2026.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
+- `data/irpf/2026.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
+- `data/irpf/2026.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
+- `data/irpf/2027.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
+- `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
+- `data/irpf/2027.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
 - `data/isencao_pme.csv` — AGRO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (AGRO3); oferta subsequente precificada em 04/02/2021
 - `data/isencao_pme.csv` — PRIO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (HRT Participações, HRTP3); RI PRIO: isentas as compradas entre 10/07/2014 e 29/01/2021 (oferta subsequente de jan/2021)
 - `data/parametros_fiscais.csv` — leilao_fracao_isentavel: sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (decisão do usuário 19/10/2026)
@@ -209,6 +227,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `data/parametros_fiscais.csv` — reembolso_btc_norma_omissa: IN RFB 1.585/2015 art. 74 §1º I a (reembolso de dividendos de BTC expressamente isento)
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Nenhuma norma fixa o critério de rateio nem o arredondamento da parcela (a IN RFB 1.585/2015 só
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): é isento (IN RFB 1.585/2015 art. 59 §2º IV); a venda entra na soma do limite do mês dela.
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Termo (IN RFB 1.585/2015 art. 62 I e §1º): a venda à vista na data da liquidação vai para
 - `docs/regras-fiscais.md` — Futuros de commodities e conferência das notas BM&F (F7a, 19/10/2026): O resultado vem dos ajustes em R$ impressos na nota (IN RFB 1.585/2015 art. 61). O multiplicador só
 - `docs/regras-fiscais.md` — R1: R1 | Operações comuns (ações, units, ETF, BDR, opções, futuros, termo): 15% sobre ganho líquido mensal | Categoria COMUM, base única com subtotais por mercado | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R10: R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A
@@ -235,6 +254,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_termo_liquidado_depois_da_venda_das_acoes_realiza_o_resultado: R18 + venda a descoberto (leitura A1, decisão do usuário de 15/10/2026; IN RFB 1.585/2015 art. 58: custo médio): sem posição, compra a termo de 1.000 a 31,00 (custos 40) em 03/01 e venda…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …de fração (números conferidos à mão no parecer do especialista fiscal de 19/10/2026). Fontes: - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o custo das ações…
 - `tests/fiscal_cases/test_futuros_commodities.py` — módulo: …e na conferência do câmbio implícito. Casos fechados à mão pelo especialista (19/10/2026). Fontes: IN RFB 1.585/2015 art. 61 (resultado = soma dos ajustes no encerramento), art. 65 (15% e 20% day trade, inclusive…
+- `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …"Mercado a termo - ações/ouro"); P&R IRPF 2026 pergunta 707 (cotas de fundo de índice não são ações); IN RFB 1.585/2015 art. 62 I e §1º (ganho do comprador a termo pela venda à vista na data da liquidação; vendido…
 - `tests/fiscal_cases/test_irrf_fichas.py` — módulo: …Casos do especialista fiscal, conferidos à mão. Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º; fichas "Renda variável - operações comuns/day trade" e "Operações -…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_day_trade_usado_no_imposto_de_fii_gera_aviso: IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês (saldo único da DARF), mas a ficha FII…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_irrf_de_day_trade_nao_abate_fii_antes_do_0005: IN RFB 1.585/2015 art. 65 §8º I e ficha FII sem linha de day trade: dezembro/2026 com imposto só de FII (V 100…
@@ -269,8 +289,19 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 ## P&R IRPF 2026
 
 - `coir/engine/futuros.py` — módulo: …ocasião da liquidação do contrato, cessão ou encerramento da posição". IN RFB 1.585/2015 art. 61 e P&R IRPF 2026 pergunta 728: resultado de cada contrato = soma algébrica dos ajustes diários entre a abertura e o…
+- `data/irpf/2026.yaml` — bens: Programa IRPF 2026, ficha Bens e Direitos; Manual do MIR (bens financeiros); P&R IRPF 2026 perguntas 459 e 720 (um item por ação, total das corretoras); leiaute DIRPF 2023 reg. 27
+- `data/irpf/2026.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
+- `data/irpf/2026.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
+- `data/irpf/2027.yaml` — bens: Programa IRPF 2026, ficha Bens e Direitos; Manual do MIR (bens financeiros); P&R IRPF 2026 perguntas 459 e 720 (um item por ação, total das corretoras); leiaute DIRPF 2023 reg. 27
+- `data/irpf/2027.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
+- `data/irpf/2027.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
+- `data/parametros_fiscais.csv` — opcoes_linha_acoes_tipos_objeto: programa IRPF, ficha Renda variável: "Mercado de opções - ações" para opção sobre ação; ETF, índice e outros em "Mercado de opções - outros" (P&R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, como no Bens e Direitos da DIRPF 2026 do usuário (03.01)
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º).
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): `opcoes_linha_acoes_tipos_objeto`; P&R IRPF 2026 pergunta 707 separa cotas de fundo de índice de
 - `docs/regras-fiscais.md` — R11: …encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A
 - `docs/regras-fiscais.md` — R6: …| Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT:…
+- `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …variável - operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero. Fontes: programa IRPF, ficha de renda variável (linhas "Mercado de…
 
 ## Manual MIR 2026
 
@@ -282,8 +313,10 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 
 - `coir/engine/apuracao.py` — módulo: …a declaração anual (IN RFB 1.585/2015; decisão do usuário). A DARF usa um saldo único; as fichas do programa IRPF recebem o IRRF que cada uma consumiu (`fichas.py`). - DARF 6015: abaixo de R$ 10 acumula, inclusive para…
 - `coir/engine/fichas.py` — módulo: IRRF por ficha do programa IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei…
+- `data/parametros_fiscais.csv` — opcoes_linha_acoes_tipos_objeto: programa IRPF, ficha Renda variável: "Mercado de opções - ações" para opção sobre ação; ETF, índice e outros em "Mercado de opções - outros" (P&R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, como no Bens e Direitos da DIRPF 2026 do usuário (03.01)
 - `docs/regras-fiscais.md` — R17: R17 | Fichas/códigos da DIRPF mudam por ano | Mapeamento por ano em `data/irpf/<ano>.yaml` | programa IRPF do ano | revisar anualmente
 - `docs/regras-fiscais.md` — Relatórios (F5, 16/10/2026): conferir no programa IRPF do ano: a ficha FII sem linha de IR fonte de day trade; ordem de
+- `tests/fiscal_cases/test_irpf_linhas.py` — módulo: Linha da ficha "Renda variável - operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero. Fontes:…
 - `tests/fiscal_cases/test_irrf_fichas.py` — módulo: IRRF por ficha do programa IRPF com a DARF no saldo único (decisão do usuário de 16/10/2026: separar o IRRF de FII só na declaração).…
 
 ## CTN

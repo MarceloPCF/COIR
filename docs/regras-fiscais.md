@@ -206,6 +206,30 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - proventos (F7);
   - os relatórios que as plataformas vendem à parte.
 
+## Declaração anual (F8, 20/10/2026)
+Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
+`tests/fiscal_cases/test_irpf_linhas.py`. Critério de saída: reproduzir a DIRPF 2026 (ano-calendário
+2025) entregue, lida do PDF do programa (`coir/gabarito/dirpf.py`, fora do repositório).
+- Linhas da ficha "Renda variável - operações comuns/day trade": opção cujo ativo-objeto é ação ou
+  unit em "opções - ações"; ETF, índice e outros em "opções - outros" (parâmetro
+  `opcoes_linha_acoes_tipos_objeto`; P&R IRPF 2026 pergunta 707 separa cotas de fundo de índice de
+  ações; unit como ação, como no Bens e Direitos 03.01 da DIRPF entregue). Objeto não identificado
+  pela raiz fica em ações. Futuro de juros (DI1) tem linha própria (`grupo = juros` em
+  `data/contratos_futuros.csv`; o contrato ainda não está cadastrado).
+- Termo (IN RFB 1.585/2015 art. 62 I e §1º): a venda à vista na data da liquidação vai para
+  "Mercado a termo - ações/ouro" e nunca é isenta (art. 59 §2º IV); vendida depois, é operação à
+  vista pelo preço a termo e pode ser isenta (decisão do usuário de 20/10/2026, que mantém a de
+  16/10 para a venda posterior). Venda no dia acima da quantidade liquidada falha alto. A venda feita
+  antes da liquidação e coberta por ela continua na linha à vista (nenhuma fonte decide).
+- Prejuízo herdado em janeiro: o recalculado pelo COIR, com aviso da diferença para o declarado
+  (decisão do usuário; retificação dentro de 5 anos, se for o caso).
+- Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026
+  pergunta 720); a discriminação lista a quantidade em cada corretora. CNPJ do emissor pelo pacote
+  público da B3 (`data/emissores_b3.csv`).
+- JCP: a data do crédito virá dos proventos em dinheiro do pacote público da B3 (data de
+  aprovação), com correção manual; hoje o ano do crédito só é percebido pela mudança de alíquota
+  (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º).
+
 ## DARF paga em atraso: multa de mora (F6, 17/10/2026)
 `coir/engine/darf.py`; casos conferidos à mão em `tests/fiscal_cases/test_multa_mora.py`.
 - 0,33% por dia de atraso sobre o principal, com teto de 20% (Lei 9.430/1996 art. 61 caput e

@@ -23,6 +23,12 @@ parâmetros fiscais com vigência). Nunca colocar aqui dados pessoais: esses fic
 | `emissores_b3.csv` | **gerado**: CNPJ e razão social de cada emissor (companhias e fundos FII, Fiagro e ETF da B3), para o Bens e Direitos do IRPF; histórico por emissor e CNPJ (o CNPJ de um fundo pode mudar; vale o visto por último); nunca apaga | `emissor`, `cnpj`, `razao_social`, `tipo`, `visto_desde`, `visto_ate` |
 | `emissores.csv` | CNPJ curado à mão (emissor que falta no pacote público ou CNPJ a corrigir); vale por cima do gerado; CNPJ com dígito errado falha alto | `emissor`, `cnpj`, `razao_social`, `observacao` |
 
+`irpf/<exercício>.yaml`: onde cada valor do COIR vai no programa IRPF daquele exercício (linhas da
+ficha de renda variável por grupo, grupo e código de Bens e Direitos por tipo de bem, códigos de
+rendimentos isentos, exclusivos e de imposto pago), com a fonte de cada seção. Exercício cujo
+programa ainda não saiu fica com `provisorio: true` (o relatório avisa). Acompanha a versão do
+COIR, não o pacote público: exercício novo pede revisão das fichas no código.
+
 Os arquivos **gerados** saem do pipeline público `uv run python -m tools.referencias atualizar`
 (GitHub Actions toda segunda, `.github/workflows/referencias.yml`): só fontes públicas, sem login
 (Cadastro de Instrumentos, empresas e fundos listados da B3, série 4390 do BCB). A coleta abre um PR com o
