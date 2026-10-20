@@ -133,8 +133,8 @@ def test_emissores_no_app_curado_por_cima(tmp_path: Path) -> None:
         "emissor,cnpj,razao_social,observacao\nTAEE,10406511000161,CURADO,teste\n", encoding="utf-8"
     )
     e = referencias.emissores(pasta)
-    assert e["HGLG"] == ("63375304000153", "NOVO")  # o visto por último
-    assert e["TAEE"] == ("10406511000161", "CURADO")  # a curada vale
+    assert e["HGLG"] == ("63375304000153", "NOVO", "FII")  # o visto por último
+    assert e["TAEE"] == ("10406511000161", "CURADO", "COMPANHIA")  # a curada vale
     referencias.validar_tabelas_b3(pasta)
     (pasta / "emissores.csv").write_text(
         "emissor,cnpj,razao_social,observacao\nTAEE,11111111111111,X,\n", encoding="utf-8"

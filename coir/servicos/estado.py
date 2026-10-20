@@ -260,7 +260,9 @@ class Estado:
         agora, titular, ano = self.agora(), self.titular, self.ano
         return self._guardado(
             ("relatorios", titular, ano, agora.date()),
-            lambda: dados_banco(self.banco, self.refs, self.fiscais, ano, agora, titular),
+            lambda: dados_banco(
+                self.banco, self.refs, self.fiscais, ano, agora, titular, pasta_refs=self.pasta_refs
+            ),
         )
 
     def darfs(self) -> list[darf.LinhaDarf]:

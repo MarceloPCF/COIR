@@ -26,6 +26,7 @@ from coir.domain.fiscal import (
 from coir.domain.nota import CategoriaCusto
 from coir.domain.proventos import Provento, TipoProvento
 from coir.domain.relatorio import DadosRelatorio
+from coir.reports.irpf import declaracao
 from coir.reports.modelo import (
     Cabecalho,
     Coluna,
@@ -997,6 +998,7 @@ TODOS: dict[str, Callable[[DadosRelatorio], Relatorio]] = {
     "bens-e-direitos": bens_e_direitos,
     "livro-de-notas": livro_notas,
     "proventos": proventos,
+    "declaracao-irpf": declaracao,
 }
 
 
@@ -1006,6 +1008,7 @@ ABAS = {
     "evolucao": "Evolução", "prejuizos": "Prejuízos", "conferencia-pm": "Conferência do PM",
     "carteira": "Carteira", "bens-e-direitos": "Bens e Direitos",
     "livro-de-notas": "Livro de notas", "proventos": "Proventos",
+    "declaracao-irpf": "Declaração IRPF",
 }  # fmt: skip
 
 

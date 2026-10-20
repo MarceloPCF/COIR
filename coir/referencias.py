@@ -152,21 +152,35 @@ def tickers_por_isin(pasta: Path) -> dict[str, str]:
     return {isin: t for isin, (_, t) in saida.items()}
 
 
-def emissores(pasta: Path) -> dict[str, tuple[str, str]]:
-    """Emissor (4 letras) -> (CNPJ, razão social), para o Bens e Direitos. O pacote público
-    (``emissores_b3.csv``, o CNPJ visto por último) fica por baixo da tabela curada
-    ``emissores.csv``, que sempre vale. CNPJ com dígito errado na tabela curada falha alto."""
-    saida: dict[str, tuple[str, str, str]] = {}
+def emissores(pasta: Path) -> dict[str, tuple[str, str, str]]:
+    """Emissor (4 letras) -> (CNPJ, razão social, tipo da B3: COMPANHIA, FII, FIAGRO, ETF...),
+    para o Bens e Direitos. O pacote público (``emissores_b3.csv``, o CNPJ visto por último) fica
+    por baixo da tabela curada ``emissores.csv``, que sempre vale (o tipo continua o do pacote).
+    CNPJ com dígito errado na tabela curada falha alto."""
+    saida: dict[str, tuple[str, str, str, str]] = {}
     gerado = pasta / "emissores_b3.csv"
     for r in _linhas(gerado) if gerado.is_file() else []:
-        if cnpj_valido(r["cnpj"]) and r["visto_ate"] >= saida.get(r["emissor"], ("", "", ""))[2]:
-            saida[r["emissor"]] = (r["cnpj"], r["razao_social"], r["visto_ate"])
+        visto = saida.get(r["emissor"], ("", "", "", ""))[3]
+        if cnpj_valido(r["cnpj"]) and r["visto_ate"] >= visto:
+            saida[r["emissor"]] = (r["cnpj"], r["razao_social"], r["tipo"], r["visto_ate"])
     curado = pasta / "emissores.csv"
     for r in _linhas(curado) if curado.is_file() else []:
         if not cnpj_valido(r["cnpj"]):
             raise ConfiguracaoError(f"emissores.csv: CNPJ inválido para {r['emissor']}")
-        saida[r["emissor"]] = (r["cnpj"], r["razao_social"], "")
-    return {e: (c, n) for e, (c, n, _) in saida.items()}
+        tipo = saida.get(r["emissor"], ("", "", "", ""))[2]
+        saida[r["emissor"]] = (r["cnpj"], r["razao_social"], tipo, "")
+    return {e: (c, n, t) for e, (c, n, t, _) in saida.items()}
+
+
+def instrumentos(pasta: Path) -> dict[str, tuple[str, str, str]]:
+    """Ticker -> (emissor, especificação "ON NM", razão social), do cadastro de instrumentos da
+    B3 (``instrumentos_b3.csv``; vazio se não houver), o visto por último."""
+    caminho = pasta / "instrumentos_b3.csv"
+    saida: dict[str, tuple[str, str, str, str]] = {}
+    for r in _linhas(caminho) if caminho.is_file() else []:
+        if r["visto_ate"] >= saida.get(r["ticker"], ("", "", "", ""))[3]:
+            saida[r["ticker"]] = (r["emissor"], r["especificacao"], r["nome"], r["visto_ate"])
+    return {t: (e, s, n) for t, (e, s, n, _) in saida.items()}
 
 
 @cache

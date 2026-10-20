@@ -696,8 +696,10 @@ def exportar(
     formatos = tuple(f.strip().lower() for f in formato.split(",") if f.strip())
     chaves = tuple(c.strip() for c in relatorio.split(",")) if relatorio else None
     validar(pasta, formatos, chaves)
-    dados = dados_banco(_banco(banco), _refs(), _fiscais(), ano,
-                        _agora(), titular, dia, vista)  # fmt: skip
+    from coir import referencias
+
+    dados = dados_banco(_banco(banco), _refs(), _fiscais(), ano, _agora(), titular, dia, vista,
+                        referencias.pasta_efetiva(dados_dir()))  # fmt: skip
     arquivos = gravar(dados, pasta, formatos, chaves)
     meses = [m for m in dados.apuracao.meses if m.titular == dados.titular and m.ano == ano]
     total = sum((m.darf for m in meses), Decimal(0))

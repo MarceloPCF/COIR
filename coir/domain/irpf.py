@@ -3,6 +3,7 @@
 Só diz onde cada valor do COIR vai no programa (linha, grupo e código); nenhum valor fiscal.
 """
 
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -104,3 +105,56 @@ class MapeamentoIrpf(Modelo):
 
     def linha_do_grupo(self, grupo: Grupo) -> str:
         return next(x.rotulo for x in self.renda_variavel.linhas if grupo in x.grupos)
+
+
+# ------------------------------------------------------------------------- fichas geradas
+class BemIrpf(Modelo):
+    """Um item de Bens e Direitos (um por ativo; P&R IRPF 2026 pergunta 720)."""
+
+    tipo: TipoBem
+    grupo: str
+    codigo: str
+    ticker: str | None  # código de negociação (bens negociados em bolsa)
+    cnpj: str | None
+    discriminacao: str
+    anterior: Decimal  # situação em 31/12 do ano anterior
+    atual: Decimal  # situação em 31/12 do ano-calendário
+
+
+class RendimentoIrpf(Modelo):
+    """Uma linha de rendimento (isento, exclusivo) ou de imposto pago, por fonte pagadora."""
+
+    ficha: Literal["isentos", "exclusivos", "imposto_pago"]
+    chave: str  # linha do mapeamento (dividendos, jcp...)
+    codigo: str
+    cnpj: str | None  # None: linha sem fonte (código 20) ou CNPJ não encontrado
+    fonte: str  # nome da fonte pagadora (ou descrição da linha)
+    valor: Decimal
+
+
+class LinhaFicha(Modelo):
+    rotulo: str  # como o programa imprime
+    comuns: Decimal
+    day_trade: Decimal | None = None  # None: linha de uma coluna só
+
+
+class MesFichaIrpf(Modelo):
+    mes: int
+    linhas: tuple[LinhaFicha, ...]
+
+    def valor(self, rotulo: str) -> LinhaFicha:
+        return next(x for x in self.linhas if x.rotulo == rotulo)
+
+
+class FichasIrpf(Modelo):
+    """O que o COIR preenche na declaração de um titular e ano (relatório, tela 14 e comparação
+    com a DIRPF entregue)."""
+
+    exercicio: int
+    ano: int
+    provisorio: bool
+    bens: tuple[BemIrpf, ...]
+    rendimentos: tuple[RendimentoIrpf, ...]
+    renda_variavel: tuple[MesFichaIrpf, ...]
+    fii: tuple[MesFichaIrpf, ...]
+    avisos: tuple[str, ...] = ()

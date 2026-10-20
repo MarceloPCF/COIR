@@ -10,12 +10,12 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 6.404 | 3 |
 | Lei 8.668/1993 | 1 |
 | Lei 8.981/1995 | 9 |
-| Lei 9.249/1995 | 10 |
+| Lei 9.249/1995 | 11 |
 | Lei 9.250 | 3 |
 | Lei 9.430/1996 | 17 |
 | Lei 9.779/1999 | 1 |
 | Lei 9.959/2000 | 5 |
-| Lei 11.033/2004 | 21 |
+| Lei 11.033/2004 | 23 |
 | Lei 11.051/2004 | 5 |
 | Lei 12.350/2010 | 1 |
 | Lei 13.043/2014 | 9 |
@@ -23,13 +23,13 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 15.265/2025 | 6 |
 | Lei 15.270/2025 | 8 |
 | MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 57 |
+| IN RFB 1.585/2015 | 58 |
 | Res. CMN 4.880/2020 | 1 |
 | SC Cosit 67/2024 | 1 |
 | SC Cosit 145/2021 | 1 |
 | SC Cosit 224/2014 | 3 |
 | P&R IRPF | 5 |
-| P&R IRPF 2026 | 14 |
+| P&R IRPF 2026 | 15 |
 | Manual MIR 2026 | 3 |
 | Programa IRPF | 7 |
 | CTN | 1 |
@@ -78,6 +78,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º).
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09. BDR, ETF e FII com
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_bonificacao_ajusta_a_quantidade_da_serie_sem_custo: R8 (Lei 9.249/1995 art. 10 parágrafo único e IN RFB 1.585/2015 art. 58: o custo atribuído da bonificação vai para as…
+- `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos do capital); data/irpf/2026.yaml.
 - `tests/fiscal_cases/test_proventos.py` — módulo: Proventos a partir da movimentação da B3 (casos fictícios conferidos à mão, 19/10/2026). Fontes: Lei 9.249/1995 arts. 9º e 10 (JCP exclusivo; dividendos isentos); LC 224/2025 art. 8º e art. 14 III (JCP a 17,5%…
 
 ## Lei 9.250
@@ -137,6 +138,8 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `docs/regras-fiscais.md` — Relatórios (F5, 16/10/2026): duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t2_limite_pelo_valor_bruto_das_vendas: R4: o limite de R$ 20 mil é sobre o valor bruto das alienações (Lei 11.033/2004 art. 3º I); custos de venda não reduzem o valor para o limite. 20.000,00 com custos 10 é isento; 20.000,01 é tributável.
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …(decisão do usuário de 19/10/2026: entra no limite de R$ 20 mil do mês do crédito, Lei 11.033/2004 art. 3º I).
+- `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos…
+- `tests/fiscal_cases/test_irpf_declaracao.py` — test_ficha_mes_a_mes_e_imposto_pago_de_dezembro: …1.000,00. Dezembro: V 4.000 PETR4 a 30 (resultado 0) com IRRF 6,00 que sobra: ficha "Imposto pago", Lei 11.033 = 6,00.
 - `tests/fiscal_cases/test_irrf_fichas.py` — módulo: …separar o IRRF de FII só na declaração). Casos do especialista fiscal, conferidos à mão. Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º; fichas "Renda variável…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_base_da_reparticao_usa_o_bruto_e_ignora_venda_por_exercicio: Lei 11.033/2004 art. 2º §2º: venda por exercício fora da base do 0,005%. Agosto/2026, uma nota: V 1.000 AAAA3 a…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …8º e art. 14 III (JCP a 17,5% pago ou creditado desde 01/01/2026, na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e…
@@ -254,6 +257,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_termo_liquidado_depois_da_venda_das_acoes_realiza_o_resultado: R18 + venda a descoberto (leitura A1, decisão do usuário de 15/10/2026; IN RFB 1.585/2015 art. 58: custo médio): sem posição, compra a termo de 1.000 a 31,00 (custos 40) em 03/01 e venda…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …de fração (números conferidos à mão no parecer do especialista fiscal de 19/10/2026). Fontes: - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o custo das ações…
 - `tests/fiscal_cases/test_futuros_commodities.py` — módulo: …e na conferência do câmbio implícito. Casos fechados à mão pelo especialista (19/10/2026). Fontes: IN RFB 1.585/2015 art. 61 (resultado = soma dos ajustes no encerramento), art. 65 (15% e 20% day trade, inclusive…
+- `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das corretoras, custo médio) e 715; IN RFB 1.585/2015 arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração)…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …"Mercado a termo - ações/ouro"); P&R IRPF 2026 pergunta 707 (cotas de fundo de índice não são ações); IN RFB 1.585/2015 art. 62 I e §1º (ganho do comprador a termo pela venda à vista na data da liquidação; vendido…
 - `tests/fiscal_cases/test_irrf_fichas.py` — módulo: …Casos do especialista fiscal, conferidos à mão. Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º; fichas "Renda variável - operações comuns/day trade" e "Operações -…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_day_trade_usado_no_imposto_de_fii_gera_aviso: IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês (saldo único da DARF), mas a ficha FII…
@@ -301,6 +305,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): `opcoes_linha_acoes_tipos_objeto`; P&R IRPF 2026 pergunta 707 separa cotas de fundo de índice de
 - `docs/regras-fiscais.md` — R11: …encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A
 - `docs/regras-fiscais.md` — R6: …| Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT:…
+- `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Direitos, rendimentos e fichas mês a mês que o COIR preenche. Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero. Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …variável - operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero. Fontes: programa IRPF, ficha de renda variável (linhas "Mercado de…
 
 ## Manual MIR 2026
