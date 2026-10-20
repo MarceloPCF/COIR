@@ -1,0 +1,20 @@
+[
+ {
+  "acronym": "HGLG",
+  "cnpj": "11728688000147",
+  "typeName": "FII",
+  "fundName": "PÁTRIA LOG - FUNDO DE INVESTIMENTO IMOBILIÁRIO - RESPONSABILIDADE LIMITADA"
+ },
+ {
+  "acronym": "BOVA",
+  "cnpj": "10406511000161",
+  "typeName": "ETF",
+  "fundName": "ISHARES IBOVESPA CLASSE DE ÍNDICE - RESPONSABILIDADE LIMITADA"
+ },
+ {
+  "acronym": "XXXX",
+  "cnpj": "11111111111111",
+  "typeName": "FII",
+  "fundName": "CNPJ INVALIDO (caso de teste)"
+ }
+]

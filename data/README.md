@@ -20,10 +20,12 @@ parâmetros fiscais com vigência). Nunca colocar aqui dados pessoais: esses fic
 | `tipos_ativo_b3.csv` | **gerado**: UNIT, BDR, ETF e FII pela categoria da B3 (por baixo de `tipos_ativo.csv`; fundo só com "imobiliário"/"Fiagro" no nome) | `ticker`, `tipo`, `observacao` |
 | `opcoes_raiz_b3.csv` | **gerado**: raiz de opção → ativo-objeto, só raiz com um objeto (por baixo de `opcoes_raiz.csv`) | `raiz`, `ticker` |
 | `eventos_b3.csv` | **gerado**: desdobramentos, grupamentos (fator = razão), bonificações e subscrições (fator em %), cisões com o ISIN emitido; data com; nunca apaga | `emissor`, `isin`, `tipo`, `fator`, `data_com`, `aprovado_em`, `isin_emitido`, `preco`, `periodo`, `data_subscricao` |
+| `emissores_b3.csv` | **gerado**: CNPJ e razão social de cada emissor (companhias e fundos FII, Fiagro e ETF da B3), para o Bens e Direitos do IRPF; histórico por emissor e CNPJ (o CNPJ de um fundo pode mudar; vale o visto por último); nunca apaga | `emissor`, `cnpj`, `razao_social`, `tipo`, `visto_desde`, `visto_ate` |
+| `emissores.csv` | CNPJ curado à mão (emissor que falta no pacote público ou CNPJ a corrigir); vale por cima do gerado; CNPJ com dígito errado falha alto | `emissor`, `cnpj`, `razao_social`, `observacao` |
 
 Os arquivos **gerados** saem do pipeline público `uv run python -m tools.referencias atualizar`
 (GitHub Actions toda segunda, `.github/workflows/referencias.yml`): só fontes públicas, sem login
-(Cadastro de Instrumentos e empresas listadas da B3, série 4390 do BCB). A coleta abre um PR com o
+(Cadastro de Instrumentos, empresas e fundos listados da B3, série 4390 do BCB). A coleta abre um PR com o
 resumo (ativos novos, trocas de ticker candidatas pelo ISIN, eventos novos, Selic); o merge publica o
 release `referencias-AAAA.MM.DD`, que o app oferece em Configurações. Não edite os gerados à mão:
 corrija na tabela curada correspondente, que vale por cima.

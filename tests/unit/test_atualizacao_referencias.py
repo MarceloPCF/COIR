@@ -18,17 +18,17 @@ from tools.referencias.gerar import COLUNAS_EVENTOS
 URL_ZIP = "https://github.com/MarceloPCF/COIR/releases/download/referencias-2099.01.01/p.zip"
 
 
-def _pacote(tmp: Path, data: str = "2099-01-01", formato: int = 1) -> bytes:
+def _pacote(tmp: Path, data: str = "2099-01-01", formato: int = referencias.FORMATO) -> bytes:
     pasta = tmp / "pacote-data"
     shutil.copytree(pasta_data(), pasta)
-    (pasta / "pacote.json").write_text(json.dumps({"formato": 1, "data": data}))
+    (pasta / "pacote.json").write_text(json.dumps({"formato": referencias.FORMATO, "data": data}))
     if not (pasta / "eventos_b3.csv").is_file():
         cabecalho = ",".join(COLUNAS_EVENTOS) + "\n"
         (pasta / "eventos_b3.csv").write_text(cabecalho, encoding="utf-8")
     with (pasta / "eventos_b3.csv").open("a", encoding="utf-8") as f:
         f.write("ZZZZ,BRZZZZACNOR0,DESDOBRAMENTO,100,2098-12-01,2098-11-01,BRZZZZACNOR0,,,\n")
     zip_ = pacote.montar(pasta, tmp / "dist")
-    if formato != 1:  # manifesto de outra versão do esquema
+    if formato != referencias.FORMATO:  # manifesto de outra versão do esquema
         with zipfile.ZipFile(zip_) as z:
             conteudo = {n: z.read(n) for n in z.namelist()}
         m = json.loads(conteudo["manifesto.json"])
@@ -104,10 +104,11 @@ def test_hash_errado_nao_altera_nada(tmp_path: Path) -> None:
 def test_formato_de_outra_versao_e_recusado(tmp_path: Path) -> None:
     dados = tmp_path / "dados"
     dados.mkdir()
-    obter = _github(_pacote(tmp_path, formato=2))
+    outro = referencias.FORMATO + 1
+    obter = _github(_pacote(tmp_path, formato=outro))
     remoto = atualizacao.verificar(obter)
     assert remoto is not None
-    with pytest.raises(AtualizacaoError, match="formato 2"):
+    with pytest.raises(AtualizacaoError, match=f"formato {outro}"):
         atualizacao.preparar(dados, remoto, obter)
 
 

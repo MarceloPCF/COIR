@@ -22,6 +22,8 @@ log = logging.getLogger(__name__)
 AGENTE = "COIR/3.0 (tabelas de referencia publicas; github.com/MarceloPCF/COIR)"
 B3_ARQUIVOS = "https://arquivos.b3.com.br/api/download"
 B3_EMPRESAS = "https://sistemaswebb3-listados.b3.com.br/listedCompaniesProxy/CompanyCall"
+B3_FUNDOS = "https://sistemaswebb3-listados.b3.com.br/fundsListedProxy/Search"
+TIPOS_FUNDO = ("FII", "FIAGRO", "ETF", "ETF-RF", "ETF-FII")  # os que viram ativo no COIR
 BCB_SELIC = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json"
 Baixar = Callable[[str], bytes]
 
@@ -123,6 +125,57 @@ def eventos(
     return saida, falhas
 
 
+def _consultar(url: str, origem: str, obter: Baixar, pausa: float, tentativas: int) -> Any:
+    """JSON da B3 com novas tentativas (resposta vazia acontece); None se não veio."""
+    for n in range(tentativas):
+        try:
+            return _json(obter(url), origem)
+        except GeracaoError:
+            time.sleep(pausa * 10 * (n + 1))
+    return None
+
+
+def fundos(
+    obter: Baixar = baixar, pausa: float = 0.2, tentativas: int = 2, por_pagina: int = 120
+) -> tuple[list[Mapping[str, object]], list[str]]:
+    """Fundos listados (FII, Fiagro e ETF) com o CNPJ: a lista de cada tipo não traz o CNPJ, que
+    vem do detalhe de cada fundo (uma consulta por fundo, como a página de fundos da B3)."""
+    saida: list[Mapping[str, object]] = []
+    falhas: list[str] = []
+    seguidas = 0
+    for tipo in TIPOS_FUNDO:
+        pagina, total, lista = 1, 1, []
+        while pagina <= total:
+            consulta = {"language": "pt-br", "typeFund": tipo, "pageNumber": pagina,
+                        "pageSize": por_pagina}  # fmt: skip
+            resposta = _json(obter(f"{B3_FUNDOS}/GetListFunds/{_b64(consulta)}"), f"fundos {tipo}")
+            try:
+                total = int(resposta["page"]["totalPages"])
+                lista += list(resposta["results"])
+            except (KeyError, TypeError, ValueError) as erro:
+                raise GeracaoError(f"fundos {tipo}: resposta fora do formato ({erro!r})") from erro
+            pagina += 1
+        for f in lista:
+            sigla = str(f.get("acronym") or "")
+            consulta = {"language": "pt-br", "idFNET": str(f.get("id")), "idCEM": sigla,
+                        "typeFund": tipo}  # fmt: skip
+            detalhe = _consultar(f"{B3_FUNDOS}/GetDetailFund/{_b64(consulta)}", f"fundo {sigla}",
+                                 obter, pausa, tentativas)  # fmt: skip
+            if not isinstance(detalhe, dict) or not detalhe:
+                falhas.append(f"fundo {sigla}")
+                seguidas += 1
+                if seguidas >= MAX_FALHAS_SEGUIDAS:
+                    raise GeracaoError(f"B3 sem resposta para {MAX_FALHAS_SEGUIDAS} fundos "
+                                       "seguidos: coleta abortada")  # fmt: skip
+                continue
+            seguidas = 0
+            d = cast(Mapping[str, object], detalhe)
+            saida.append({"acronym": sigla, "cnpj": d.get("cnpj"), "typeName": tipo,
+                          "fundName": f.get("fundName")})  # fmt: skip
+            time.sleep(pausa)
+    return saida, falhas
+
+
 def selic(obter: Baixar = baixar) -> list[Mapping[str, str]]:
     resposta = _json(obter(BCB_SELIC), "Selic")
     if not isinstance(resposta, list):
@@ -137,5 +190,7 @@ def coletar(dia: date, obter: Baixar = baixar, pausa: float = 0.2) -> Coleta:
     emissores = {i.emissor for i in lista if i.categoria in ("SHARES", "UNIT")}
     log.info("cadastro de %s: %d instrumentos, %d emissores", quando, len(lista), len(emissores))
     por_emissor, falhas = eventos(emissores, obter, pausa)
+    lista_fundos, falhas_fundos = fundos(obter, pausa)
     return Coleta(data=dia, instrumentos=bruto, empresas=empresas(obter), eventos=por_emissor,
-                  selic=selic(obter), sem_resposta=tuple(falhas))  # fmt: skip
+                  selic=selic(obter), sem_resposta=tuple(falhas + falhas_fundos),
+                  fundos=lista_fundos)  # fmt: skip

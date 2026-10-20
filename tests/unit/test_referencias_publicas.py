@@ -23,6 +23,7 @@ def _coleta(dia: date = DIA, instrumentos: bytes | None = None) -> Coleta:
         empresas=json.loads((FIXTURES / "empresas.json").read_text(encoding="utf-8"))["results"],
         eventos=eventos,
         selic=json.loads((FIXTURES / "selic.json").read_text(encoding="utf-8")),
+        fundos=json.loads((FIXTURES / "fundos.json").read_text(encoding="utf-8")),
     )
 
 
@@ -87,6 +88,61 @@ def test_reprocessar_e_deterministico_e_nao_apaga_historico(tmp_path: Path) -> N
     assert gerar.gravar(tmp_path, arquivos) == []  # nada mudou: nada é regravado
 
 
+def test_cnpj_de_companhias_e_fundos(tmp_path: Path) -> None:
+    """CNPJ com zeros à esquerda restaurados (a B3 os tira: TAEE 7859971000130), fundos pelo
+    detalhe e CNPJ com dígito errado fora, nos conflitos."""
+    arquivos, resumo = gerar.gerar(tmp_path, _coleta())
+    linhas = _linhas(arquivos["emissores_b3.csv"])
+    assert (
+        "TAEE,07859971000130,TRANSMISSORA ALIANÇA DE ENERGIA ELÉTRICA S.A.,COMPANHIA,"
+        "2026-10-19,2026-10-19"
+    ) in linhas
+    assert any(x.startswith("HGLG,11728688000147,PÁTRIA LOG") and ",FII," in x for x in linhas)
+    assert any(x.startswith("BOVA,10406511000161,") and ",ETF," in x for x in linhas)
+    assert not any(x.startswith("XXXX") for x in linhas)
+    assert resumo.conflitos == ["CNPJ inválido para XXXX: 11111111111111"]
+    assert len(resumo.emissores_novos) == 8 and not resumo.cnpj_mudou
+
+
+def test_cnpj_novo_de_emissor_conhecido_fica_no_historico(tmp_path: Path) -> None:
+    arquivos, _ = gerar.gerar(tmp_path, _coleta())
+    gerar.gravar(tmp_path, arquivos)
+    coleta = _coleta(date(2026, 10, 26))
+    fundos = [dict(f, cnpj="63375304000153") if f["acronym"] == "HGLG" else f
+              for f in coleta.fundos]  # fmt: skip
+    novos, resumo = gerar.gerar(tmp_path, Coleta(**{**coleta.__dict__, "fundos": fundos}))
+    hglg = [x for x in _linhas(novos["emissores_b3.csv"]) if x.startswith("HGLG")]
+    assert [x.split(",")[1] for x in hglg] == ["11728688000147", "63375304000153"]
+    assert hglg[0].endswith("2026-10-19,2026-10-19") and hglg[1].endswith("2026-10-26,2026-10-26")
+    assert resumo.cnpj_mudou and resumo.cnpj_mudou[0].startswith("HGLG: 63375304000153")
+
+
+def test_emissores_no_app_curado_por_cima(tmp_path: Path) -> None:
+    from coir import referencias
+    from coir.erros import ConfiguracaoError
+
+    pasta = _copia_data(tmp_path / "data")
+    (pasta / "emissores_b3.csv").write_text(
+        "emissor,cnpj,razao_social,tipo,visto_desde,visto_ate\n"
+        "HGLG,11728688000147,ANTIGO,FII,2026-01-01,2026-05-01\n"
+        "HGLG,63375304000153,NOVO,FII,2026-05-08,2026-10-19\n"
+        "TAEE,07859971000130,TAESA,COMPANHIA,2026-10-19,2026-10-19\n",
+        encoding="utf-8",
+    )
+    (pasta / "emissores.csv").write_text(
+        "emissor,cnpj,razao_social,observacao\nTAEE,10406511000161,CURADO,teste\n", encoding="utf-8"
+    )
+    e = referencias.emissores(pasta)
+    assert e["HGLG"] == ("63375304000153", "NOVO")  # o visto por último
+    assert e["TAEE"] == ("10406511000161", "CURADO")  # a curada vale
+    referencias.validar_tabelas_b3(pasta)
+    (pasta / "emissores.csv").write_text(
+        "emissor,cnpj,razao_social,observacao\nTAEE,11111111111111,X,\n", encoding="utf-8"
+    )
+    with pytest.raises(ConfiguracaoError, match="CNPJ inválido"):
+        referencias.emissores(pasta)
+
+
 def test_resposta_fora_do_formato_falha_alto(tmp_path: Path) -> None:
     with pytest.raises(GeracaoError, match="cabeçalho"):
         gerar.gerar(tmp_path, _coleta(instrumentos=b"TckrSymb;ISIN\nPETR4;BR\n"))
@@ -120,7 +176,12 @@ def test_tabela_gerada_entra_por_baixo_da_manual(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     ("formato", "data", "baixada"),
-    [(1, "2099-01-01", True), (2, "2099-01-01", False), (1, "2000-01-01", False)],
+    [
+        (2, "2099-01-01", True),
+        (1, "2099-01-01", False),
+        (3, "2099-01-01", False),
+        (2, "2000-01-01", False),
+    ],
 )
 def test_pacote_baixado_so_vale_se_mais_novo_e_do_mesmo_formato(
     tmp_path: Path, formato: int, data: str, baixada: bool

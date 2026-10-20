@@ -15,6 +15,7 @@ from functools import cache
 from itertools import pairwise
 from pathlib import Path
 
+from coir.domain.cpf import cnpj_valido
 from coir.domain.fiscal import TipoAtivo
 from coir.domain.parametros import (
     Calendario,
@@ -56,7 +57,7 @@ def _mapa_gerado(
     return _mapa(caminho, chave, valor, compacta=compacta) if caminho.is_file() else {}
 
 
-FORMATO = 1  # esquema de data/ que esta versão lê (igual ao de tools/referencias/gerar.py)
+FORMATO = 2  # esquema de data/ que esta versão lê (igual ao de tools/referencias/gerar.py)
 PACOTE = "pacote.json"
 PASTA_BAIXADA = Path("referencias") / "atual"
 
@@ -90,6 +91,8 @@ COLUNAS_EVENTOS_B3 = ("emissor", "isin", "tipo", "fator", "data_com", "aprovado_
                       "isin_emitido", "preco", "periodo", "data_subscricao")  # fmt: skip
 COLUNAS_INSTRUMENTOS_B3 = ("ticker", "isin", "categoria", "especificacao", "emissor", "nome",
                            "visto_desde", "visto_ate")  # fmt: skip
+COLUNAS_EMISSORES_B3 = ("emissor", "cnpj", "razao_social", "tipo", "visto_desde", "visto_ate")
+COLUNAS_EMISSORES = ("emissor", "cnpj", "razao_social", "observacao")
 
 
 def evento_b3_valido(r: dict[str, str]) -> bool:
@@ -115,7 +118,8 @@ def eventos_b3(pasta: Path) -> list[dict[str, str]]:
 def validar_tabelas_b3(pasta: Path) -> None:
     """Pacote novo: as tabelas que só as propostas da tela 7 leem também têm de estar íntegras."""
     for nome, colunas in (("eventos_b3.csv", COLUNAS_EVENTOS_B3),
-                          ("instrumentos_b3.csv", COLUNAS_INSTRUMENTOS_B3)):  # fmt: skip
+                          ("instrumentos_b3.csv", COLUNAS_INSTRUMENTOS_B3),
+                          ("emissores_b3.csv", COLUNAS_EMISSORES_B3)):  # fmt: skip
         caminho = pasta / nome
         if not caminho.is_file():
             continue
@@ -126,6 +130,9 @@ def validar_tabelas_b3(pasta: Path) -> None:
             ruins = [r for r in linhas if not evento_b3_valido(r)]
             if ruins:
                 raise ConfiguracaoError(f"{nome}: {len(ruins)} linha(s) inválida(s)")
+        elif nome == "emissores_b3.csv":
+            if any(not r["emissor"] or not cnpj_valido(r["cnpj"]) for r in linhas):
+                raise ConfiguracaoError(f"{nome}: linha sem emissor ou com CNPJ inválido")
         elif any(not r["ticker"] or not r["isin"] for r in linhas):
             raise ConfiguracaoError(f"{nome}: linha sem ticker ou ISIN")
 
@@ -139,6 +146,23 @@ def tickers_por_isin(pasta: Path) -> dict[str, str]:
             r["isin"], ("", ""))[0]:  # fmt: skip
             saida[r["isin"]] = (r["visto_ate"], r["ticker"])
     return {isin: t for isin, (_, t) in saida.items()}
+
+
+def emissores(pasta: Path) -> dict[str, tuple[str, str]]:
+    """Emissor (4 letras) -> (CNPJ, razão social), para o Bens e Direitos. O pacote público
+    (``emissores_b3.csv``, o CNPJ visto por último) fica por baixo da tabela curada
+    ``emissores.csv``, que sempre vale. CNPJ com dígito errado na tabela curada falha alto."""
+    saida: dict[str, tuple[str, str, str]] = {}
+    gerado = pasta / "emissores_b3.csv"
+    for r in _linhas(gerado) if gerado.is_file() else []:
+        if cnpj_valido(r["cnpj"]) and r["visto_ate"] >= saida.get(r["emissor"], ("", "", ""))[2]:
+            saida[r["emissor"]] = (r["cnpj"], r["razao_social"], r["visto_ate"])
+    curado = pasta / "emissores.csv"
+    for r in _linhas(curado) if curado.is_file() else []:
+        if not cnpj_valido(r["cnpj"]):
+            raise ConfiguracaoError(f"emissores.csv: CNPJ inválido para {r['emissor']}")
+        saida[r["emissor"]] = (r["cnpj"], r["razao_social"], "")
+    return {e: (c, n) for e, (c, n, _) in saida.items()}
 
 
 def _data(texto: str) -> date | None:
