@@ -226,6 +226,12 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
 - Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026
   pergunta 720); a discriminação lista a quantidade em cada corretora. CNPJ do emissor pelo pacote
   público da B3 (`data/emissores_b3.csv`).
+- Bens e Direitos pelo custo de aquisição (IN RFB 1.585/2015 art. 58), também no ano da compra; a
+  DIRPF 2026 entregue trouxe valor de mercado nos itens novos de 2025: divergência explicada, o COIR
+  segue a norma (decisão do usuário de 20/10/2026).
+- Posição vendida em 31/12 (opção lançada, venda a descoberto): não é bem; vai para Dívidas e ônus
+  reais, código 16, pelo valor recebido (prêmio ou venda), até o encerramento. Sem norma
+  específica; decisão do usuário de 20/10/2026 para fechar a variação patrimonial.
 - JCP: a data do crédito virá dos proventos em dinheiro do pacote público da B3 (data de
   aprovação), com correção manual; hoje o ano do crédito só é percebido pela mudança de alíquota
   (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º).

@@ -23,7 +23,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 15.265/2025 | 6 |
 | Lei 15.270/2025 | 8 |
 | MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 58 |
+| IN RFB 1.585/2015 | 59 |
 | Res. CMN 4.880/2020 | 1 |
 | SC Cosit 67/2024 | 1 |
 | SC Cosit 145/2021 | 1 |
@@ -230,6 +230,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `data/parametros_fiscais.csv` — reembolso_btc_norma_omissa: IN RFB 1.585/2015 art. 74 §1º I a (reembolso de dividendos de BTC expressamente isento)
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Nenhuma norma fixa o critério de rateio nem o arredondamento da parcela (a IN RFB 1.585/2015 só
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): é isento (IN RFB 1.585/2015 art. 59 §2º IV); a venda entra na soma do limite do mês dela.
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Bens e Direitos pelo custo de aquisição (IN RFB 1.585/2015 art. 58), também no ano da compra; a
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Termo (IN RFB 1.585/2015 art. 62 I e §1º): a venda à vista na data da liquidação vai para
 - `docs/regras-fiscais.md` — Futuros de commodities e conferência das notas BM&F (F7a, 19/10/2026): O resultado vem dos ajustes em R$ impressos na nota (IN RFB 1.585/2015 art. 61). O multiplicador só
 - `docs/regras-fiscais.md` — R1: R1 | Operações comuns (ações, units, ETF, BDR, opções, futuros, termo): 15% sobre ganho líquido mensal | Categoria COMUM, base única com subtotais por mercado | IN RFB 1.585/2015 | A

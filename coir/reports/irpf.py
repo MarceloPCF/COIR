@@ -28,6 +28,7 @@ from coir.domain.fiscal import (
 )
 from coir.domain.irpf import (
     BemIrpf,
+    DividaIrpf,
     FichasIrpf,
     LinhaFicha,
     MapeamentoIrpf,
@@ -162,6 +163,40 @@ def _bens(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]) -> list[Be
         ))  # fmt: skip
     bens += _jcp_a_receber(d, mapa)
     return bens
+
+
+def _dividas(d: DadosRelatorio, mapa: MapeamentoIrpf) -> list[DividaIrpf]:
+    """Posições vendidas em 31/12 (opção lançada, venda a descoberto) pelo valor recebido, em
+    Dívidas e ônus reais (decisão do usuário de 20/10/2026; sem norma específica)."""
+    if mapa.dividas is None:
+        return []
+    item = next(i for i in mapa.dividas.itens if i.tipo == "POSICAO_VENDIDA")
+
+    def vendidas(posicoes: Iterable[PosicaoAtivo]) -> dict[int, PosicaoAtivo]:
+        return {p.ativo: p for p in posicoes if p.titular == d.titular and p.quantidade < 0}
+
+    atual, anterior = vendidas(d.carteira_fiscal), vendidas(d.carteira_fiscal_anterior)
+    saida: list[DividaIrpf] = []
+    for ativo in sorted(atual.keys() | anterior.keys(),
+                        key=lambda a: (atual.get(a) or anterior[a]).ticker):  # fmt: skip
+        p = atual.get(ativo) or anterior[ativo]
+        posicoes = d.custodia if ativo in atual else d.custodia_anterior
+        corretoras = sorted({x.corretora or "?" for x in posicoes
+                             if x.ativo == ativo and x.quantidade < 0})  # fmt: skip
+        if p.tipo is TipoAtivo.OPCAO:
+            especie = "venda" if "M" <= p.ticker[4:5] <= "X" else "compra"
+            venc = f", vencimento {p.vencimento:%d/%m/%Y}" if p.vencimento else ""
+            texto = (f"Opção de {especie} {p.ticker} lançada ({_q(-p.quantidade)}){venc}: prêmio "
+                     f"recebido, posição em aberto")  # fmt: skip
+        else:
+            texto = f"Venda a descoberto de {_q(-p.quantidade)} {p.ticker}: valor recebido"
+        saida.append(DividaIrpf(
+            codigo=item.codigo, ticker=p.ticker,
+            discriminacao=f"{texto}, corretora {', '.join(corretoras)}.",
+            anterior=_centavos(-anterior[ativo].custo) if ativo in anterior else ZERO,
+            atual=_centavos(-atual[ativo].custo) if ativo in atual else ZERO,
+        ))  # fmt: skip
+    return saida
 
 
 def _jcp_a_receber(d: DadosRelatorio, mapa: MapeamentoIrpf) -> list[BemIrpf]:
@@ -340,6 +375,7 @@ def fichas(d: DadosRelatorio) -> FichasIrpf | None:
                   "programa, informe o valor efetivamente pago no DARF 6015")  # fmt: skip
     return FichasIrpf(
         exercicio=mapa.exercicio, ano=d.ano, provisorio=mapa.provisorio, bens=tuple(bens),
+        dividas=tuple(_dividas(d, mapa)),
         rendimentos=tuple(rendimentos),
         renda_variavel=tuple(_mes_comuns(m, mapa) for m in meses),
         fii=tuple(_mes_fii(m) for m in meses) if _fii_ativa(meses) else (),
@@ -394,7 +430,17 @@ def declaracao(d: DadosRelatorio) -> Relatorio:
              sum((b.atual for b in f.bens), ZERO))  # fmt: skip
     secoes = [Secao("Bens e Direitos", colunas, tuple(linhas), total if linhas else None,
                     nota="Um item por ativo, custo médio do titular somando as corretoras "
-                    "(P&R IRPF 2026 pergunta 720). Posições vendidas não entram.")]  # fmt: skip
+                    "(P&R IRPF 2026 pergunta 720). Posição vendida vai para Dívidas.")]  # fmt: skip
+    colunas = (Coluna("Código"), Coluna("Código de negociação"), Coluna("Discriminação"),
+               Coluna(f"Situação em 31/12/{d.ano - 1}", T.DINHEIRO),
+               Coluna(f"Situação em 31/12/{d.ano}", T.DINHEIRO))  # fmt: skip
+    linhas = [(x.codigo, x.ticker, x.discriminacao, x.anterior, x.atual) for x in f.dividas]
+    total = ("Total", None, None, sum((x.anterior for x in f.dividas), ZERO),
+             sum((x.atual for x in f.dividas), ZERO))  # fmt: skip
+    secoes.append(Secao("Dívidas e ônus reais", colunas, tuple(linhas), total if linhas else None,
+                        nota="Posição vendida em aberto (opção lançada, venda a descoberto) pelo "
+                        "valor recebido; sem norma específica (decisão do usuário de "
+                        "20/10/2026)."))  # fmt: skip
     colunas = (Coluna("Código"), Coluna("CNPJ da fonte pagadora"),
                Coluna("Fonte pagadora / descrição"), Coluna("Valor", T.DINHEIRO))  # fmt: skip
     for ficha, titulo in (("isentos", "Rendimentos isentos e não tributáveis"),

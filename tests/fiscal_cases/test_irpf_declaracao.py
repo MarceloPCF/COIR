@@ -143,13 +143,14 @@ def test_ficha_mes_a_mes_e_imposto_pago_de_dezembro() -> None:
     [pago] = [r for r in f.rendimentos if r.ficha == "imposto_pago"]
     assert (pago.codigo, pago.valor) == ("03", D("6.00"))
     rel = declaracao(d)
-    assert [s.titulo for s in rel.secoes][:4] == [
+    assert [s.titulo for s in rel.secoes][:5] == [
         "Bens e Direitos",
+        "Dívidas e ônus reais",
         "Rendimentos isentos e não tributáveis",
         "Rendimentos sujeitos à tributação exclusiva/definitiva",
         "Imposto pago/retido",
     ]
-    assert rel.secoes[4].titulo == "Renda variável - operações comuns/day trade - Janeiro"
+    assert rel.secoes[5].titulo == "Renda variável - operações comuns/day trade - Janeiro"
 
 
 def test_ano_sem_mapeamento_avisa() -> None:
@@ -158,12 +159,23 @@ def test_ano_sem_mapeamento_avisa() -> None:
     assert "falta data/irpf/2026.yaml" in declaracao(d).notas[0]
 
 
-def test_opcao_lancada_e_posicao_vendida_nao_entram() -> None:
-    """P&R 720 / MIR: só bens; a opção lançada (posição vendida) fica fora de Bens e Direitos."""
+def test_opcao_lancada_vai_para_dividas_pelo_premio() -> None:
+    """Caso E (parte lançada): V 1.000 VALEA600 a 0,30 em 05/12/2025, vence em 16/01/2026. Não é
+    bem (P&R 720 / MIR); por decisão do usuário (20/10/2026, sem norma) vai para Dívidas e ônus
+    reais, código 16, pelo prêmio recebido: 0,00 em 31/12/2024 e 300,00 em 31/12/2025; em 2026 a
+    posição virou pó e a dívida vai a 0,00."""
     livro = Livro()
     venc = date(2026, 1, 16)
     livro.nota(date(2025, 12, 5), livro.op("V", "VALEA600", 1000, "0.30", mercado="CALL",
                                            vencimento=venc, objeto=TipoAtivo.ACAO))  # fmt: skip
     f = fichas(_dados(livro, 2025))
     assert f is not None and f.bens == ()
+    [x] = f.dividas
+    assert (x.codigo, x.ticker, x.anterior, x.atual) == ("16", "VALEA600", D("0"), D("300.00"))
+    assert x.discriminacao == (
+        "Opção de compra VALEA600 lançada (1.000), vencimento 16/01/2026: "
+        "prêmio recebido, posição em aberto, corretora XP."
+    )
+    g = fichas(_dados(livro, 2026))
+    assert g is not None and [(y.anterior, y.atual) for y in g.dividas] == [(D("300.00"), D("0"))]
     assert REFS.tipos.tipo("VALE3") is TipoAtivo.ACAO

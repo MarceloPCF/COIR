@@ -94,6 +94,17 @@ bens:
       cnpj: emissor
       nota: "como na DIRPF 2026 entregue"
 
+dividas:
+  fonte: >-
+    Programa IRPF, ficha Dívidas e ônus reais; sem norma específica para posição vendida em
+    31/12 (opção lançada, venda a descoberto): decisão do usuário de 20/10/2026, para fechar a
+    variação patrimonial
+  itens:
+    - tipo: POSICAO_VENDIDA
+      codigo: "16"
+      descricao: "Outras dívidas e ônus reais"
+      nota: "prêmio ou valor da venda recebido, ainda não encerrado em 31/12"
+
 isentos:
   fonte: >-
     Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do

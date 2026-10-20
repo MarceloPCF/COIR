@@ -61,6 +61,18 @@ class SecaoBens(Modelo):
         return next(i for i in self.itens if i.tipo == tipo)
 
 
+class ItemDivida(Modelo):
+    tipo: Literal["POSICAO_VENDIDA"]
+    codigo: str
+    descricao: str
+    nota: str = ""
+
+
+class SecaoDividas(Modelo):
+    fonte: str
+    itens: tuple[ItemDivida, ...]
+
+
 class LinhaRendimento(Modelo):
     chave: str
     codigo: str
@@ -94,6 +106,7 @@ class MapeamentoIrpf(Modelo):
     provisorio: bool = False  # programa do exercício ainda não publicado: o relatório avisa
     renda_variavel: SecaoRendaVariavel
     bens: SecaoBens
+    dividas: SecaoDividas | None = None  # sem a seção, posição vendida não é declarada
     isentos: SecaoRendimentos
     exclusivos: SecaoRendimentos
     imposto_pago: SecaoRendimentos
@@ -120,6 +133,16 @@ class BemIrpf(Modelo):
     discriminacao: str
     anterior: Decimal  # situação em 31/12 do ano anterior
     atual: Decimal  # situação em 31/12 do ano-calendário
+
+
+class DividaIrpf(Modelo):
+    """Posição vendida em aberto (opção lançada, venda a descoberto), pelo valor recebido."""
+
+    codigo: str
+    ticker: str
+    discriminacao: str
+    anterior: Decimal  # situação em 31/12 do ano anterior
+    atual: Decimal
 
 
 class RendimentoIrpf(Modelo):
@@ -155,6 +178,7 @@ class FichasIrpf(Modelo):
     ano: int
     provisorio: bool
     bens: tuple[BemIrpf, ...]
+    dividas: tuple[DividaIrpf, ...] = ()
     rendimentos: tuple[RendimentoIrpf, ...]
     renda_variavel: tuple[MesFichaIrpf, ...]
     fii: tuple[MesFichaIrpf, ...]
