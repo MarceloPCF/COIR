@@ -9,7 +9,7 @@ from datetime import datetime
 
 from nicegui import native, ui
 
-from coir.config import configurar_registro
+from coir.config import VERSAO, configurar_registro
 from coir.servicos.estado import Estado
 from coir.ui.app import montar
 
@@ -44,6 +44,7 @@ def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None
     if estado.existe:  # banco de versão anterior: migra (com backup) antes de abrir as telas
         estado.preparar(datetime.now())
     configurar_registro(estado.dados)
+    log.info("COIR %s aberto (pasta de dados: %s)", VERSAO, estado.dados)
     nativo = not navegador and tem_webview2()
     if not navegador and not nativo:
         log.warning("WebView2 não encontrado: o COIR abre no navegador padrão")

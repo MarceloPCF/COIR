@@ -199,6 +199,9 @@ def _detalhe(d: notas.DetalheNota) -> None:
     tabela.grade(COLUNAS_OPS, ops, altura="h-[300px]")
 
 
+LARGURA_AMPLIADA = 2200  # pixels da página ampliada (nítida no zoom)
+
+
 def _pdf(d: notas.DetalheNota) -> None:
     if d.pdf is None:
         ui.label(
@@ -212,12 +215,46 @@ def _pdf(d: notas.DetalheNota) -> None:
         ui.label(f"{d.resumo.arquivo}").classes("coir-subtitulo text-sm break-all")
         botoes = ui.row().classes("gap-1")
     imagem = ui.image().classes("coir-folha w-full p-0 cursor-zoom-in").mark("pagina-pdf")
-    with ui.dialog().props("maximized") as ampliar, ui.card().classes("w-full items-center"):
-        grande = ui.image().classes("max-w-[1400px] w-full")
-        ui.button("Fechar", on_click=ampliar.close).props("flat")
-    imagem.on("click", ampliar.open)
+    atual = [paginas[0]]
+    zoom = [100]  # % da largura da janela
+    # imagem simples (sem o carregamento preguiçoso e a transição do q-img, que dentro do diálogo
+    # deixavam a página em branco), renderizada em resolução maior só ao ampliar
+    with ui.dialog().props("maximized") as ampliar, ui.card().classes("w-full h-full p-0 gap-0"):
+        with ui.row().classes("w-full items-center gap-1 px-3 py-1 coir-item-lista"):
+            titulo = ui.label("").classes("coir-subtitulo text-sm")
+            ui.space()
+            ui.button(icon="zoom_out", on_click=lambda: _zoom(-25)).props("flat round dense")
+            ui.button(icon="zoom_in", on_click=lambda: _zoom(25)).props("flat round dense")
+            ui.button("Fechar", on_click=lambda: ampliar.close()).props("flat")
+        with ui.element("div").classes("w-full grow overflow-auto"):
+            carregando = ui.spinner(size="lg").classes("block mx-auto my-10")
+            grande = ui.interactive_image().style("width: 100%").classes("block mx-auto")
+            grande.mark("pagina-ampliada")
+
+    def _zoom(passo: int) -> None:
+        zoom[0] = min(300, max(50, zoom[0] + passo))
+        grande.style(f"width: {zoom[0]}%")
+
+    async def abrir() -> None:
+        titulo.set_text(f"{d.resumo.arquivo} · pág. {atual[0]}")
+        grande.set_visibility(False)
+        carregando.set_visibility(True)
+        ampliar.open()
+        try:
+            png = await run.io_bound(notas.pagina_png, pdf, atual[0], LARGURA_AMPLIADA)
+        except CoirError as erro:
+            ui.notify(str(erro), type="negative")
+            return
+        finally:
+            carregando.set_visibility(False)
+        if png is not None:
+            grande.set_visibility(True)
+            grande.set_source("data:image/png;base64," + base64.b64encode(png).decode())
+
+    imagem.on("click", abrir)
 
     async def mostrar(pagina: int) -> None:
+        atual[0] = pagina
         try:
             png = await run.io_bound(notas.pagina_png, pdf, pagina)
         except CoirError as erro:
@@ -225,9 +262,7 @@ def _pdf(d: notas.DetalheNota) -> None:
             return
         if png is None:
             return
-        fonte = "data:image/png;base64," + base64.b64encode(png).decode()
-        imagem.set_source(fonte)
-        grande.set_source(fonte)
+        imagem.set_source("data:image/png;base64," + base64.b64encode(png).decode())
 
     def botao(pagina: int) -> None:
         ui.button(f"pág. {pagina}", on_click=lambda: mostrar(pagina)).props("flat dense size=sm")

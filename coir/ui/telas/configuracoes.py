@@ -1,15 +1,21 @@
 """Tela 18 — Configurações, em seções: pasta de dados, aparência, backups (fazer agora e
 restaurar, com cópia do banco atual antes) e o registro de atividades (sem CPF nem nome)."""
 
+import os
+import sys
 from collections.abc import Callable
+from pathlib import Path
 
 from nicegui import run, ui
 
-from coir.config import ARQUIVO_REGISTRO, ler_registro
+from coir.config import ARQUIVO_REGISTRO
 from coir.erros import CoirError
+from coir.reports.modelo import Coluna
 from coir.servicos import atualizacao, manutencao
 from coir.servicos.estado import Estado
-from coir.ui import preferencias
+from coir.ui import preferencias, tabela
+
+COLUNAS_REGISTRO = (Coluna("Data e hora"), Coluna("Tipo"), Coluna("Área"), Coluna("O que houve"))
 
 
 def _tamanho(n: int) -> str:
@@ -97,20 +103,61 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     mostrar_backups()
 
+    _registro(estado)
+
+
+def _registro(estado: Estado) -> None:
     with _secao(
         "Registro de atividades",
-        f"As últimas linhas de {ARQUIVO_REGISTRO.as_posix()} na pasta de dados: importações, "
-        "backups, migrações e erros. O registro mascara CPF e não grava os dados das consultas.",
+        "O que o COIR fez e os problemas que encontrou (importações, backups, migrações, "
+        "atualizações e erros), o mais recente primeiro. Clique numa linha com detalhe técnico "
+        "para vê-lo. O registro mascara CPF e não grava os dados das consultas.",
     ):
-        registro = ui.log(max_lines=300).classes("w-full h-[320px] text-xs").mark("registro")
+        with ui.row().classes("items-center gap-4"):
+            problemas = ui.switch("Só avisos e erros", value=False).mark("registro-problemas")
+            ui.button("Atualizar", icon="refresh", on_click=lambda: ler()).props("flat dense")
+            ui.button("Abrir a pasta", icon="folder_open",
+                      on_click=lambda: _abrir_pasta(estado.dados / ARQUIVO_REGISTRO.parent),
+                      ).props("flat dense")  # fmt: skip
+        entradas: list[manutencao.EntradaRegistro] = []
+        grade = tabela.grade(COLUNAS_REGISTRO, [], larguras=(150, 100, 190, None),
+                             altura="h-[360px]", ao_clicar=lambda i: detalhe(i))  # fmt: skip
+        grade.mark("registro")
+        grade.options["columnDefs"][-1]["flex"] = 1  # a mensagem ocupa o resto da largura
+        grade.options["overlayNoRowsTemplate"] = "Nada registrado ainda."
 
         def ler() -> None:
-            registro.clear()
-            for linha in ler_registro(estado.dados) or ["(ainda sem registro)"]:
-                registro.push(linha)
+            entradas[:] = [e for e in manutencao.registro(estado.dados)
+                           if e.problema or not problemas.value]  # fmt: skip
+            tabela.atualizar(grade, COLUNAS_REGISTRO, [
+                (f"{e.quando:%d/%m/%Y %H:%M:%S}", e.tipo, e.area,
+                 e.mensagem + (" (ver detalhe)" if e.detalhe else ""))
+                for e in entradas
+            ], chaves=list(range(len(entradas))))  # fmt: skip
 
-        ui.button("Atualizar", icon="refresh", on_click=ler).props("flat dense")
+        def detalhe(indice: object) -> None:
+            if not isinstance(indice, int) or not entradas[indice].detalhe:
+                return
+            e = entradas[indice]
+            with ui.dialog() as janela, ui.card().classes("w-[900px] max-w-full"):
+                ui.label(f"{e.tipo} · {e.area} · {e.quando:%d/%m/%Y %H:%M:%S}").classes(
+                    "coir-titulo text-base")  # fmt: skip
+                ui.label(e.mensagem)
+                ui.label("Detalhe técnico (para enviar junto com o pedido de ajuda):").classes(
+                    "coir-subtitulo text-xs")  # fmt: skip
+                ui.code(e.detalhe, language="text").classes("w-full max-h-[50vh] overflow-auto")
+                ui.button("Fechar", on_click=janela.close).props("flat")
+            janela.open()
+
+        problemas.on_value_change(lambda _: ler())
         ler()
+
+
+def _abrir_pasta(pasta: Path) -> None:
+    if sys.platform == "win32" and pasta.is_dir():
+        os.startfile(pasta)
+    else:
+        ui.notify(str(pasta))
 
 
 def _data(d: object) -> str:

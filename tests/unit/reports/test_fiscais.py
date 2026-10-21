@@ -7,10 +7,11 @@ from pathlib import Path
 
 from coir import referencias
 from coir.domain.fiscal import Categoria, Grupo, Visao
+from coir.domain.proventos import TipoProvento
 from coir.domain.relatorio import DadosRelatorio, NotaDoLivro
 from coir.parsing.extrair import extrair_textos
 from coir.parsing.normalizar import classes_das_series, operacoes
-from coir.reports.fiscais import TODOS, relatorios
+from coir.reports.fiscais import NOME_PROVENTO, TODOS, relatorios
 from coir.reports.modelo import Relatorio, Secao
 from tests.apoio import cpf_de_teste
 from tests.fiscal_cases.apoio import Livro, categoria, mes
@@ -178,3 +179,8 @@ def test_ordem_do_irpf_separa_a_ficha_de_fii() -> None:
     assert jfii[_coluna(fii, "Imposto a pagar")] == D("199.46")
     darf = next(m.darf for m in d.apuracao.meses if m.mes == 6)
     assert darf == D("1698.00") == D("1498.54") + D("199.46")
+
+
+def test_todo_tipo_de_provento_tem_nome_no_relatorio() -> None:
+    """Um tipo novo sem nome derrubava o relatório e a tela de Proventos (KeyError ATUALIZACAO)."""
+    assert set(NOME_PROVENTO) == set(TipoProvento)

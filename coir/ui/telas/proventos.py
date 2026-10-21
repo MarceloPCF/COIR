@@ -40,6 +40,7 @@ SERIES = (
     (TipoProvento.JCP, tema.CLARO.carimbo),
     (TipoProvento.RENDIMENTO_FII, tema.CLARO.positivo),
     (TipoProvento.REEMBOLSO_BTC, tema.CLARO.tinta_suave),
+    (TipoProvento.ATUALIZACAO, tema.CLARO.negativo),
 )
 
 

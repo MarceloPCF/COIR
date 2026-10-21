@@ -106,9 +106,19 @@ def _nota(estado: Estado, avisar: Avisar) -> Callable[[str], None]:
     return construir
 
 
+def _erro_inesperado(erro: Exception) -> None:
+    """Erro não previsto numa tela: avisa na própria janela (o detalhe vai para o registro de
+    atividades) em vez de deixar a tela calada ou girando."""
+    ui.notify(
+        f"Erro inesperado: {erro!r}. O detalhe está em Configurações > Registro de atividades.",
+        type="negative", multi_line=True, timeout=0, close_button="Fechar",
+    )  # fmt: skip
+
+
 def montar(estado: Estado) -> None:
     """Página raiz (uma por janela)."""
     tema.aplicar()
+    ui.on_exception(_erro_inesperado)
     preferencias.aplicar_tema()  # sistema, claro ou escuro (Configurações)
     estado.escolher_padrao(estado.agora().date())
     paginas: ui.sub_pages | None = None

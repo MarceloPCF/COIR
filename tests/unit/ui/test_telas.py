@@ -1,5 +1,6 @@
 """F6: fluxos das telas 1, 3, 4 e 5 sem navegador (assistente, importar, notas, operações)."""
 
+import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
@@ -129,6 +130,27 @@ async def test_notas_abre_a_nota_com_a_conciliacao(demo: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_notas_amplia_a_pagina_do_pdf(tmp_path: Path) -> None:
+    """A página ampliada aparecia em branco (q-img preguiçoso dentro do diálogo): agora é uma
+    imagem simples, renderizada maior ao abrir."""
+    estado = _estado(criar(tmp_path / "demo", pdfs=True))
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/notas")
+        lista = user.find(marker="lista-notas").elements.pop()
+        assert isinstance(lista, ui.aggrid)
+        user.find(marker="lista-notas").trigger("rowClicked", {"data": lista.options["rowData"][0]})
+        await user.should_see(marker="pagina-pdf", retries=ESPERA)
+        user.find(marker="pagina-pdf").trigger("click")
+        ampliada = user.find(marker="pagina-ampliada").elements.pop()
+        assert isinstance(ampliada, ui.interactive_image)
+        for _ in range(ESPERA):
+            if ampliada.source:
+                break
+            await asyncio.sleep(0.1)
+        assert str(ampliada.source).startswith("data:image/png;base64,")
+
+
+@pytest.mark.asyncio
 async def test_notas_filtra_pelo_numero(demo: Path) -> None:
     estado = _estado(demo)
     async with user_simulation(lambda: montar(estado)) as user:
@@ -225,6 +247,25 @@ async def test_relatorios_mostra_e_exporta(demo: Path, tmp_path: Path) -> None:
         user.find(marker="exportar").click()
         await user.should_see("arquivo(s) gravado(s)", retries=ESPERA)
     assert [p.name for p in destino.iterdir()] == ["coir-2026-titular1.xlsx"]
+
+
+@pytest.mark.asyncio
+async def test_relatorio_com_muitas_secoes_mostra_uma_por_vez(
+    demo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A conferência do PM tem uma seção por ativo: dezenas de grades de uma vez derrubavam a
+    conexão da página; acima do limite, uma grade por vez, escolhida na lista."""
+    from coir.ui.telas import relatorios as tela
+
+    monkeypatch.setattr(tela, "MAX_SECOES", 1)
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/relatorios")
+        await user.should_see("Resumo fiscal do ano", retries=ESPERA)
+        user.find(marker="relatorio-conferencia-pm").click()
+        await user.should_see(marker="secao-relatorio", retries=ESPERA)
+        escolha = user.find(marker="secao-relatorio").elements.pop()
+        assert isinstance(escolha, ui.select) and len(escolha.options) > 1
 
 
 @pytest.mark.asyncio

@@ -11,10 +11,12 @@ from nicegui import run, ui
 from coir.domain.relatorio import DadosRelatorio
 from coir.erros import CoirError
 from coir.reports.fiscais import ABAS, TODOS, relatorios
-from coir.reports.modelo import Relatorio
+from coir.reports.modelo import Relatorio, Secao
 from coir.servicos.estado import Estado
 from coir.servicos.relatorios import FORMATOS, exportar
 from coir.ui import tabela
+
+MAX_SECOES = 8  # acima disso, uma seção por vez
 
 
 def _abrir_pasta(pasta: Path) -> None:
@@ -85,10 +87,15 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         with corpo:
             espera = ui.spinner(size="lg")
         d = await preparar()
+        if espera.is_deleted:  # outro relatório foi escolhido enquanto este carregava
+            return
         if d is None:
             corpo.clear()
             return
-        [rel] = relatorios(d, [chave])
+        gerados = await run.io_bound(relatorios, d, [chave])
+        if gerados is None or espera.is_deleted:
+            return
+        [rel] = gerados
         espera.delete()
         with corpo:
             _relatorio(rel)
@@ -121,10 +128,31 @@ def _relatorio(rel: Relatorio) -> None:
     with ui.row().classes("items-baseline gap-3"):
         ui.label(rel.titulo).classes("coir-titulo text-xl")
         ui.label(f"{c.titular} · {c.periodo}").classes("coir-subtitulo")
-    if not any(s.linhas for s in rel.secoes):
+    secoes = [s for s in rel.secoes if s.linhas]
+    if not secoes:
         ui.label("Nada neste relatório para o ano.").classes("coir-vazio w-full")
-    for s in rel.secoes:
-        if s.linhas:
+    elif len(secoes) > MAX_SECOES:
+        _uma_por_vez(rel, secoes)
+    else:
+        for s in secoes:
             tabela.secao(s, altura="h-[480px]")
     for nota in rel.notas:
         ui.label(nota).classes("coir-subtitulo text-xs")
+
+
+def _uma_por_vez(rel: Relatorio, secoes: list[Secao]) -> None:
+    """Relatório com muitas seções (a conferência do PM tem uma por ativo): uma grade por vez,
+    escolhida na lista. Dezenas de grades de uma vez travam a página ("conexão perdida")."""
+    rotulo = "Ativo" if rel.chave == "conferencia-pm" else "Seção"
+    nomes = {i: s.titulo or f"{rotulo} {i + 1}" for i, s in enumerate(secoes)}
+    escolha = ui.select(nomes, value=0, label=f"{rotulo} ({len(secoes)})", with_input=True)
+    escolha.props("outlined dense options-dense").classes("min-w-[260px]").mark("secao-relatorio")
+    area = ui.column().classes("w-full gap-2")
+
+    def ver(i: int) -> None:
+        area.clear()
+        with area:
+            tabela.secao(secoes[i], altura="h-[520px]")
+
+    escolha.on_value_change(lambda e: ver(e.value) if e.value is not None else None)
+    ver(0)

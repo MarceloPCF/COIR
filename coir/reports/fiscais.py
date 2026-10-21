@@ -906,6 +906,7 @@ def livro_notas(d: DadosRelatorio) -> Relatorio:
 NOME_PROVENTO = {
     TipoProvento.DIVIDENDO: "Dividendo", TipoProvento.JCP: "JCP",
     TipoProvento.RENDIMENTO_FII: "Rendimento de FII", TipoProvento.REEMBOLSO_BTC: "Reembolso BTC",
+    TipoProvento.ATUALIZACAO: "Atualização (Selic)",
     TipoProvento.RESTITUICAO_CAPITAL: "Restituição de capital",
     TipoProvento.FORA_DO_ESCOPO: "Fora da v3.0",
 }  # fmt: skip
