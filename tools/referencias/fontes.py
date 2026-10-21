@@ -148,7 +148,10 @@ def fundos(
         while pagina <= total:
             consulta = {"language": "pt-br", "typeFund": tipo, "pageNumber": pagina,
                         "pageSize": por_pagina}  # fmt: skip
-            resposta = _json(obter(f"{B3_FUNDOS}/GetListFunds/{_b64(consulta)}"), f"fundos {tipo}")
+            resposta = _consultar(f"{B3_FUNDOS}/GetListFunds/{_b64(consulta)}", f"fundos {tipo}",
+                                  obter, pausa, tentativas)  # fmt: skip
+            if resposta is None:
+                raise GeracaoError(f"fundos {tipo}: a B3 não respondeu a lista (página {pagina})")
             try:
                 total = int(resposta["page"]["totalPages"])
                 lista += list(resposta["results"])

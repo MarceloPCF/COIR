@@ -301,7 +301,7 @@ def gabarito_dirpf(
                               ticker_atual(_refs())),
                       carregar_explicacoes(conhecidas))  # fmt: skip
     print(f"DIRPF {declarada.exercicio} (ano-calendário {ano}) x COIR, titular {d.titular}")
-    for secao in ("renda_variavel", "bens", "rendimentos", "imposto_pago"):
+    for secao in ("renda_variavel", "fii", "bens", "rendimentos", "imposto_pago"):
         contagem = Counter(x.classe for x in linhas if x.secao == secao)
         print(f"  {secao}: " + ", ".join(f"{c} {n}" for c, n in contagem.most_common()))
     abertas = [x for x in linhas if x.classe not in ("confere", "explicada")]

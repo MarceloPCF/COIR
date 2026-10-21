@@ -117,7 +117,7 @@ def test_proventos_por_cnpj_e_jcp_a_receber() -> None:
     assert (jcp_bem.grupo, jcp_bem.codigo, jcp_bem.cnpj, jcp_bem.anterior, jcp_bem.atual) == (
         "99", "07", ITSA.cnpj, D("0"), D("425"))  # fmt: skip
     g = fichas(_dados(Livro(), 2026, proventos))
-    assert g is not None and g.provisorio
+    assert g is not None and g.provisorio == referencias.carregar_irpf(2026).provisorio
     assert [(b.anterior, b.atual) for b in g.bens] == [(D("425"), D("0"))]
     assert not [r for r in g.rendimentos if r.codigo == "10"]  # declarado no ano do crédito
 

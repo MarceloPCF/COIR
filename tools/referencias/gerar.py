@@ -158,7 +158,8 @@ def nomes_de_pregao(empresas: Iterable[Mapping[str, object]]) -> dict[str, str]:
 
 
 def cnpj_valido(cnpj: str) -> bool:
-    """14 dígitos com os dois dígitos verificadores certos (módulo 11)."""
+    """14 dígitos com os dois dígitos verificadores certos (módulo 11). Cópia de
+    coir.domain.cpf.cnpj_valido: o pipeline roda sem instalar o COIR (só a biblioteca padrão)."""
     if len(cnpj) != 14 or not cnpj.isdigit() or len(set(cnpj)) == 1:
         return False
     for n in (12, 13):

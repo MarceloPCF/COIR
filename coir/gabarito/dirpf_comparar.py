@@ -19,8 +19,8 @@ from dataclasses import dataclass, replace
 from decimal import Decimal
 from pathlib import Path
 
-from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
-from coir.gabarito.dirpf import MESES, Dirpf
+from coir.domain.irpf import FichasIrpf, MapeamentoIrpf, MesFichaIrpf
+from coir.gabarito.dirpf import MESES, Dirpf, MesFicha
 
 ZERO = Decimal(0)
 Chave = tuple[str, str, str]  # seção, item, coluna
@@ -60,19 +60,27 @@ def _linha(secao: str, item: str, coluna: str, coir: Decimal | str | None,
     return LinhaComparacao(secao, item, coluna, coir, dirpf, classe)
 
 
-def _renda_variavel(f: FichasIrpf, d: Dirpf, tol: Decimal) -> list[LinhaComparacao]:
+def _fichas_mes(secao: str, gerados: Iterable[MesFichaIrpf], declarados_: Iterable[MesFicha],
+                tol: Decimal) -> list[LinhaComparacao]:  # fmt: skip
+    """Linha a linha pelo rótulo do programa (renda variável e FII); mês declarado que o COIR
+    não gerou também aparece (só na DIRPF)."""
     saida: list[LinhaComparacao] = []
-    declarados = {m.mes: m for m in d.renda_variavel}
-    for m in f.renda_variavel:
+    declarados = {m.mes: m for m in declarados_}
+    meses = {m.mes for m in gerados}
+    for m in gerados:
         dm = declarados.get(m.mes)
         for x in m.linhas:
             valores = dm.valores.get(x.rotulo) if dm is not None else None
             item = f"{MESES[m.mes - 1]} {x.rotulo}"
-            saida.append(_linha("renda_variavel", item, "comuns", x.comuns,
+            saida.append(_linha(secao, item, "comuns", x.comuns,
                                 valores[0] if valores else None, tol))  # fmt: skip
             if x.day_trade is not None:
-                saida.append(_linha("renda_variavel", item, "day_trade", x.day_trade,
+                saida.append(_linha(secao, item, "day_trade", x.day_trade,
                                     valores[1] if valores else None, tol))  # fmt: skip
+    for mes, dm in sorted(declarados.items()):
+        if mes not in meses:
+            saida += [_linha(secao, f"{MESES[mes - 1]} {r}", "comuns", None, v[0], tol)
+                      for r, v in dm.valores.items()]  # fmt: skip
     return saida
 
 
@@ -153,7 +161,8 @@ def comparar(f: FichasIrpf, d: Dirpf, mapa: MapeamentoIrpf, tol_mes: Decimal,
     pago = sum((r.valor for r in f.rendimentos if r.ficha == "imposto_pago"), ZERO)
     item = mapa.bens.item("JCP_A_RECEBER")
     return [
-        *_renda_variavel(f, d, tol_mes),
+        *_fichas_mes("renda_variavel", f.renda_variavel, d.renda_variavel, tol_mes),
+        *_fichas_mes("fii", f.fii, d.fii, tol_mes),
         *_bens(f, d, tol_valor, codigo_atual, (item.grupo, item.codigo)),
         *_rendimentos(f, d, mapa, tol_valor),
         _linha("imposto_pago", "03 Lei 11.033/2004", "valor", pago, d.ir_fonte_lei_11033,

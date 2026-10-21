@@ -21,7 +21,7 @@ from openpyxl import load_workbook
 from pydantic import BaseModel, ConfigDict
 
 from coir.domain.fiscal import Movimento
-from coir.domain.referencias import Referencias
+from coir.domain.referencias import codigo_atual
 from coir.erros import GabaritoError
 from coir.gabarito.normalizar import corretora as normalizar_corretora
 from coir.gabarito.normalizar import exigir_decimal
@@ -133,19 +133,7 @@ def _venda(linha: Sequence[object], col: dict[int, int], secao: str) -> VendaExt
 
 
 # ------------------------------------------------------------------------------------ comparação
-def ticker_atual(refs: Referencias) -> Callable[[str], str]:
-    """O código mais recente do ativo pela tabela de trocas (a planilha usa ora o antigo, ora
-    o novo; a série de opção segue a raiz)."""
-
-    def atual(ticker: str) -> str:
-        for _ in range(len(refs.trocas) + 1):
-            novo = refs.ticker_na_data(ticker, date.min)
-            if novo == ticker:
-                break
-            ticker = novo
-        return ticker
-
-    return atual
+ticker_atual = codigo_atual  # nome antigo (a função mora no domínio)
 
 
 @dataclass(frozen=True)

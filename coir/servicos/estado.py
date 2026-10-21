@@ -24,10 +24,9 @@ from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
 from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.proventos import Provento
-from coir.domain.referencias import Referencias
+from coir.domain.referencias import Referencias, codigo_atual
 from coir.domain.relatorio import DadosRelatorio
 from coir.erros import CoirError, ConfiguracaoError, ExportacaoError
-from coir.gabarito.externo import ticker_atual
 from coir.parsing.extrair import extrair_pdf
 from coir.reports.irpf import fichas
 from coir.servicos import (
@@ -317,7 +316,7 @@ class Estado:
         if f is None or mapa is None:
             return None
         cpf = self.dados_relatorio().cpf
-        return declaracao.conferir(self.dados, f, mapa, ticker_atual(self.refs), cpf)
+        return declaracao.conferir(self.dados, f, mapa, codigo_atual(self.refs), cpf)
 
     def propor_creditos_dirpf(self) -> tuple[list[declaracao.PropostaCredito], list[str]]:
         """JCP cujo crédito, pelas DIRPF entregues em <dados>/_dirpf (99.07), foi no ano anterior

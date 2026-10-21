@@ -73,7 +73,12 @@ def _banco(tmp_path: Path) -> Estado:
     return estado
 
 
-def test_correcao_do_usuario_muda_o_ano_do_jcp(tmp_path: Path) -> None:
+def test_correcao_do_usuario_muda_o_ano_do_jcp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from coir import referencias
+
+    monkeypatch.setattr(referencias, "proventos_b3", lambda _pasta: [])  # sem o pacote real
     estado = _banco(tmp_path)
     with conectar(estado.banco) as fabrica, fabrica() as s:
         chaves = {m.movimentacao: m.chave for m in s.scalars(select(MovimentacaoB3))}

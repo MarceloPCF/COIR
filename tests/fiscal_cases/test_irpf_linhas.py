@@ -53,9 +53,14 @@ def test_opcao_sobre_unit_e_sem_objeto_ficam_em_acoes() -> None:
     livro.nota(date(2025, 3, 6), livro.op("V", "TAEEC360", 100, "2.00", mercado="CALL",
                                           vencimento=VENC, objeto=TipoAtivo.UNIT),
                livro.op("V", "XXXXC100", 100, "3.00", mercado="CALL", vencimento=VENC))  # fmt: skip
-    comum = categoria(livro.apurar(date(2025, 3, 31)), 2025, 3, Categoria.COMUM)
+    ap = livro.apurar(date(2025, 3, 31))
+    comum = categoria(ap, 2025, 3, Categoria.COMUM)
     assert (comum.por_grupo[Grupo.OPCOES], comum.por_grupo[Grupo.OPCOES_OUTROS]) == (
         D("300.00"), D("0"))  # fmt: skip
+    # objeto não identificado não fica calado (revisão da F8)
+    assert [a for a in ap.avisos if "ativo-objeto não identificado" in a] == [
+        'opção XXXXC100: ativo-objeto não identificado pela raiz (data/opcoes_raiz*.csv); no '
+        'IRPF, linha "opções - ações"']  # fmt: skip
 
 
 def _termo(livro: Livro) -> None:
@@ -95,5 +100,33 @@ def test_venda_no_dia_acima_do_liquidado_falha_alto() -> None:
     livro.nota(date(2025, 10, 1), livro.op("C", "AAAA3", 500, "9.00"))
     _termo(livro)
     livro.nota(date(2025, 12, 10), livro.op("V", "AAAA3", 1200, "11.00"))
-    with pytest.raises(MotorError, match="acima das 1000 liquidadas"):
+    with pytest.raises(MotorError, match="só 1000 vêm do termo"):
         livro.apurar(date(2025, 12, 31))
+
+
+def test_segunda_venda_no_dia_depois_do_termo_vendido_falha_alto() -> None:
+    """Revisão da F8: 500 antigas + termo de 1.000; vende 1.000 e depois 500 no mesmo dia. A
+    segunda venda é da posição antiga, mas a regra para separar os lotes ainda não foi decidida:
+    falha alto com a explicação (pendência)."""
+    livro = Livro()
+    livro.nota(date(2025, 10, 1), livro.op("C", "AAAA3", 500, "9.00"))
+    _termo(livro)
+    livro.nota(date(2025, 12, 10), livro.op("V", "AAAA3", 1000, "11.00"),
+               livro.op("V", "AAAA3", 500, "11.00"))  # fmt: skip
+    with pytest.raises(MotorError, match="já foram vendidas nesta data"):
+        livro.apurar(date(2025, 12, 31))
+
+
+def test_venda_do_termo_entra_na_soma_do_limite_de_isencao() -> None:
+    """Decisão de 15/10/2026 (F4), mantida na F8: o ganho da venda no dia da liquidação do termo
+    nunca é isento (IN 1.585 art. 59 §2º IV), mas o valor da venda entra na soma das alienações
+    do mês (leitura conservadora; nenhuma fonte decide). Dezembro: venda do termo de 11.000,00 e
+    venda de 1.000 BBBB3 a 10,00 = 10.000,00 (PM 9,00: ganho 1.000,00); vendas de 21.000,00 >
+    20.000,00: o ganho de BBBB3 também é tributável. Imposto 15% x (1.000 + 1.000) = 300,00."""
+    livro = Livro()
+    livro.nota(date(2025, 10, 1), livro.op("C", "BBBB3", 1000, "9.00"))
+    _termo(livro)
+    livro.nota(date(2025, 12, 10), livro.op("V", "AAAA3", 1000, "11.00"),
+               livro.op("V", "BBBB3", 1000, "10.00"))  # fmt: skip
+    comum = categoria(livro.apurar(date(2025, 12, 31)), 2025, 12, Categoria.COMUM)
+    assert (comum.vendas_acoes, comum.isento, comum.imposto) == (D("21000"), 0, D("300.00"))

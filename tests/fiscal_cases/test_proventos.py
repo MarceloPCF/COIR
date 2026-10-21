@@ -225,18 +225,16 @@ def test_reembolso_de_jcp_identificado_pelo_valor_por_acao() -> None:
 
 
 def test_reembolso_de_dividendo_pela_movimentacao_e_lei_15270() -> None:
-    """Reembolso de dividendo identificado pelo dividendo do mesmo dia na própria movimentação
-    (500 ações a 60,00 = 30.000,00; reembolso de 25.000,00 = 416,67 ações: não; a 50,00 por ação,
-    500 ações = 25.000,00: sim). Em 2026 o aviso da Lei 15.270 soma os dois (55.000,00 no mês,
-    acima de R$ 50 mil; decisão do usuário de 21/10/2026)."""
-    _, avisos = _proventos(
+    """Reembolso de dividendo identificado pelo dividendo do mesmo dia na própria movimentação:
+    dividendo de 50,00 por ação; reembolso de 25.000,00 = 500 ações emprestadas inteiras (como JCP
+    a 15% seriam 588,24 ações: não). Com outro dividendo de 5.000,00 no mês, em 2026 o aviso da
+    Lei 15.270 soma os três (55.000,00 no mês, acima de R$ 50 mil; decisão do usuário de
+    21/10/2026)."""
+    lista, avisos = _proventos(
         mov(date(2026, 4, 10), "Dividendo", "ITSA4 - ITAUSA", "500", "50", "25000"),
         mov(date(2026, 4, 10), "Reembolso", "ITSA4 - ITAUSA", "0", None, "25000", i=2),
         mov(date(2026, 4, 20), "Dividendo", "ITSA4 - ITAUSA", "100", "50", "5000", i=3),
     )  # fmt: skip
-    [reembolso] = [p for p in _proventos(
-        mov(date(2026, 4, 10), "Dividendo", "ITSA4 - ITAUSA", "500", "50", "25000"),
-        mov(date(2026, 4, 10), "Reembolso", "ITSA4 - ITAUSA", "0", None, "25000", i=2))[0]
-        if p.tipo is TipoProvento.REEMBOLSO_BTC]  # fmt: skip
+    [reembolso] = [p for p in lista if p.tipo is TipoProvento.REEMBOLSO_BTC]
     assert reembolso.reembolso_de == "DIVIDENDO"
     assert any("ITSA somam 55000" in a and "acima do limite" in a for a in avisos)

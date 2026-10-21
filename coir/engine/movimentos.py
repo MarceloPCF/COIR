@@ -155,6 +155,7 @@ class Livro:
         custos: Decimal = ZERO, baixa: Baixa | None = None, venda_acao: Decimal = ZERO,
         isentavel: bool = False, mes_limite: date | None = None, isento_pme: bool = False,
         toca_posicao: bool = True, base_irrf: Decimal = ZERO, grupo: Grupo | None = None,
+        evento: TipoEvento | None = None,
     ) -> None:  # fmt: skip
         titular, _, ativo, _ = chave
         pos = self.posicoes[chave]
@@ -175,7 +176,7 @@ class Livro:
                 quantidade=quantidade, valor=valor, custos=custos, custo_baixa=b.custo_baixa,
                 resultado=b.resultado, venda_acao_a_vista=venda_acao, isentavel=isentavel,
                 mes_limite=mes_limite, isento_pme=isento_pme, base_irrf=base_irrf,
-                quantidade_apos=pos.quantidade, custo_apos=pos.custo,
+                quantidade_apos=pos.quantidade, custo_apos=pos.custo, evento=evento,
             )
         )  # fmt: skip
 
@@ -248,6 +249,11 @@ def _executar(
             livro.tipos[op.ativo] = op.tipo
             if op.tipo is TipoAtivo.OPCAO:
                 livro.grupos[op.ativo] = _grupo_opcao(op, parametros, nota.data)
+                aviso = (f"opção {op.ticker}: ativo-objeto não identificado pela raiz "
+                         "(data/opcoes_raiz*.csv); no IRPF, linha \"opções - ações\"")  # fmt: skip
+                if (op.objeto_tipo is None and livro.visao is Visao.TITULAR
+                        and aviso not in livro.avisos):  # fmt: skip
+                    livro.avisos.append(aviso)
             item = _Op(nota, op, custo)
             if op.mercado == "TERMO":
                 if op.cv == "V" or op.liquidacao_termo is None:
@@ -519,8 +525,14 @@ def _venda_na_liquidacao_do_termo(
         return None, p.regra
     resta = livro.termo_hoje[chave]
     if p.quantidade > resta:
-        raise MotorError(f"{dia}: venda de {p.quantidade} {o.op.ticker} na data da liquidação do "
-                         f"termo, acima das {resta} liquidadas (não implementado)")  # fmt: skip
+        situacao = ("as ações do termo já foram vendidas nesta data" if not resta
+                    else f"só {resta} vêm do termo")  # fmt: skip
+        raise MotorError(
+            f"{dia}: venda de {p.quantidade} {o.op.ticker} na data da liquidação do termo e "
+            f"{situacao}: a venda junta o lote do termo (art. 62 I: linha do termo, sem "
+            "isenção) com ações que já estavam na carteira, e a regra para separar os dois "
+            "ainda não foi decidida (pendência da F8)"
+        )
     livro.termo_hoje[chave] = resta - p.quantidade
     return Grupo.TERMO, p.regra + "; venda na data da liquidação do termo (IN 1.585 art. 62 I)"
 
@@ -776,4 +788,4 @@ def _evento(livro: Livro, e: Evento) -> None:
     pos.ajustar(quantidade, custo)
     livro.registrar(chave, e.data, f"evento:{e.id}", f"evento {e.tipo.value.lower()}: ajusta "
                     "quantidade e custo, sem resultado", de=de, categoria=Categoria.COMUM, cv=e.cv,
-                    quantidade=quantidade, valor=custo)  # fmt: skip
+                    quantidade=quantidade, valor=custo, evento=e.tipo)  # fmt: skip

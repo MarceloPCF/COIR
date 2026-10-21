@@ -25,6 +25,7 @@ from coir.domain.fiscal import (
     PosicaoAtivo,
     ResultadoCategoria,
     TipoAtivo,
+    TipoEvento,
 )
 from coir.domain.irpf import (
     BemIrpf,
@@ -39,6 +40,7 @@ from coir.domain.irpf import (
 from coir.domain.proventos import TipoProvento
 from coir.domain.referencias import especie_opcao
 from coir.domain.relatorio import DadosRelatorio, InfoAtivo
+from coir.erros import ExportacaoError
 from coir.reports.modelo import Cabecalho, Coluna, Relatorio, Secao, TipoColuna, Valor, formatar
 
 T = TipoColuna
@@ -96,7 +98,11 @@ def _meses(d: DadosRelatorio) -> list[MesApurado]:
 
 
 def _cat(m: MesApurado, categoria: Categoria) -> ResultadoCategoria:
-    return next(c for c in m.categorias if c.categoria is categoria)
+    try:
+        return next(c for c in m.categorias if c.categoria is categoria)
+    except StopIteration as erro:
+        mes = f"{m.mes:02d}/{m.ano}"
+        raise ExportacaoError(f"{mes}: apuração sem a categoria {categoria}") from erro
 
 
 # --------------------------------------------------------------------------- bens e direitos
@@ -270,7 +276,7 @@ def _rendimentos(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]
     bonificacoes = [(m.ticker, m.valor) for m in d.apuracao.movimentos
                     if m.titular == d.titular and m.data.year == d.ano and m.valor > 0
                     and m.tipo is not TipoAtivo.OPCAO
-                    and m.regra.startswith("evento bonificacao")]  # fmt: skip
+                    and m.evento is TipoEvento.BONIFICACAO]  # fmt: skip
     linha("isentos", "bonificacao", bonificacoes)
     isento = sum((_cat(m, Categoria.COMUM).isento for m in _meses(d)), ZERO)
     if isento:

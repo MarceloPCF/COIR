@@ -58,7 +58,10 @@ class SecaoBens(Modelo):
         return self
 
     def item(self, tipo: TipoBem) -> ItemBem:
-        return next(i for i in self.itens if i.tipo == tipo)
+        try:
+            return next(i for i in self.itens if i.tipo == tipo)
+        except StopIteration as erro:
+            raise KeyError(f"bem {tipo!r} sem mapeamento no exercício") from erro
 
 
 class ItemDivida(Modelo):
