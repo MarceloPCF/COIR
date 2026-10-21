@@ -94,10 +94,28 @@ def proventos_banco(
     avisos: list[str] = []
     pasta = pasta_refs or referencias.pasta_efetiva(None)
     emissor_de = {t: e for t, (e, _, _) in referencias.instrumentos(pasta).items()}
-    linhas = creditos_b3(linhas_banco(banco, titular), referencias.proventos_b3(pasta),
-                         emissor_de)  # fmt: skip
-    lista = proventos(linhas, fiscais.tipos, fiscais.parametros, avisos)
+    publicos = referencias.proventos_b3(pasta)
+    linhas = creditos_b3(linhas_banco(banco, titular), publicos, emissor_de)
+    lista = proventos(linhas, fiscais.tipos, fiscais.parametros, avisos, por_pagamento(publicos))
     return lista, avisos
+
+
+TIPO_B3 = {JCP_B3: "JCP", "DIVIDENDO": "DIVIDENDO"}
+
+
+def por_pagamento(
+    publicos: Iterable[Mapping[str, str]],
+) -> dict[tuple[str, date], list[tuple[str, Decimal]]]:
+    """Proventos do pacote da B3 por (emissor, pagamento): a origem dos reembolsos de BTC."""
+    saida: dict[tuple[str, date], list[tuple[str, Decimal]]] = {}
+    for r in publicos:
+        tipo = TIPO_B3.get(r["tipo"])
+        if tipo and r["pagamento"]:
+            chave = (r["emissor"], date.fromisoformat(r["pagamento"]))
+            item = (tipo, Decimal(r["valor"]))
+            if item not in saida.setdefault(chave, []):
+                saida[chave].append(item)
+    return saida
 
 
 def informar_credito(banco: Path, chave: str, data_credito: date | None, agora: datetime) -> None:

@@ -53,6 +53,7 @@ class Provento(Modelo):
     observacao: str = ""
     credito: date | None = None  # JCP: data do crédito, quando conhecida
     chave: str = ""  # da linha em movimentacao_b3 (tela de Proventos: corrigir o crédito)
+    reembolso_de: str = ""  # reembolso de BTC: "DIVIDENDO", "JCP" ou "" (não identificado)
 
     @property
     def a_receber_em_31_12(self) -> bool:

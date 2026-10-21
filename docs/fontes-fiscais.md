@@ -18,10 +18,10 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 11.033/2004 | 23 |
 | Lei 11.051/2004 | 5 |
 | Lei 12.350/2010 | 1 |
-| Lei 13.043/2014 | 9 |
+| Lei 13.043/2014 | 12 |
 | Lei 14.754/2023 | 3 |
-| Lei 15.265/2025 | 6 |
-| Lei 15.270/2025 | 8 |
+| Lei 15.265/2025 | 10 |
+| Lei 15.270/2025 | 10 |
 | MP 497/2010 | 5 |
 | IN RFB 1.585/2015 | 59 |
 | Res. CMN 4.880/2020 | 1 |
@@ -164,6 +164,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 
 ## Lei 13.043/2014
 
+- `coir/engine/proventos.py` — _origem_reembolso: …é a quantidade emprestada vezes o valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica;…
 - `data/irpf/2026.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2027.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/isencao_pme.csv` — AGRO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (AGRO3); oferta subsequente precificada em 04/02/2021
@@ -171,8 +172,10 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): **ETF de renda fixa:** fora da apuração e do DARF; ganho listado para a DIRPF (Lei 13.043/2014).
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Isenção de PME (Lei 13.043/2014 art. 16; IN arts. 59 III e 66 a 69-A), `data/isencao_pme.csv`:
+- `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Reembolso de BTC ao doador: isento até 2025 (Lei 13.043/2014 art. 7º, reproduzido na IN 1.585
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_etf_de_renda_fixa_fica_fora_da_apuracao: Lei 13.043/2014 arts. 2º a 4º: ETF de renda fixa tem tributação exclusiva na fonte; o ganho vai para a lista da DIRPF, não para o DARF nem para a isenção.
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_pme_ganho_isento_e_fora_do_limite: Lei 13.043/2014 art. 16; IN 1.585 arts. 66 e 67 §3º: ganho na venda de ações de PME é isento e o valor não entra…
+- `tests/fiscal_cases/test_proventos.py` — test_reembolso_de_jcp_identificado_pelo_valor_por_acao: …o reembolso é a quantidade emprestada vezes o valor por ação do provento do dia, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II). JCP de 0,520530743 por ação pago em 14/03/2025 (pacote da B3), 1.000 ações…
 
 ## Lei 14.754/2023
 
@@ -182,12 +185,16 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 
 ## Lei 15.265/2025
 
+- `coir/engine/proventos.py` — _origem_reembolso: …o valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica; nenhuma ou mais de uma: ("", 0), com…
 - `coir/engine/proventos.py` — módulo: …com aviso. - Reembolso de BTC (doador): isento até 2025 (IN RFB 1.585/2015 art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com aviso (parâmetro). - Restituição de…
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: isento por equivalência (decisão do usuário 19/10/2026; rever se a RFB se manifestar)
 - `data/parametros_fiscais.csv` — reembolso_btc_norma_omissa: Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: a tela de proventos avisa (isento por equivalência)
-- `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Reembolso de BTC ao doador: isento até 2025 (IN 1.585 art. 74); desde 2026 a Lei 15.265/2025 é
+- `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): 2025 e, desde 2026, sem incidência expressa (Lei 15.265 art. 21 I). Declarado no ano do
+- `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com
+- `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): reteria (art. 7º §1º II; Lei 15.265 art. 20), mas o desconto não é IRRF do doador; é isento até
 - `tests/fiscal_cases/test_proventos.py` — módulo: …ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de capital reduz o custo);…
 - `tests/fiscal_cases/test_proventos.py` — test_p4_reembolso_de_btc_isento_com_aviso_desde_2026: Doador de 1.000 ações: reembolso de dividendo de 1.200,00. Em 2025 isento (IN 1.585 art. 74); em 2026 isento por equivalência (Lei 15.265/2025 omissa), com aviso; o PM não muda.
+- `tests/fiscal_cases/test_proventos.py` — test_reembolso_de_jcp_identificado_pelo_valor_por_acao: …(não é dividendo de 2,141847479: 206,57 ações). Isento, no ano do recebimento, sem 99.07; desde 2026, Lei 15.265/2025 art. 21 I.
 
 ## Lei 15.270/2025
 
@@ -195,10 +202,12 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `data/parametros_fiscais.csv` — aliquota_irrf_dividendos_acima_limite: Lei 15.270/2025 (Lei 9.250 art. 6º-A caput e §§1º e 2º)
 - `data/parametros_fiscais.csv` — dividendos_limite_mensal_mesma_pj: Lei 15.270/2025 (Lei 9.250 art. 6º-A): acima de R$ 50 mil no mês da mesma PJ há retenção de 10% sobre o total
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Lei 15.270/2025 (desde 2026): só aviso, somando os dividendos líquidos da mesma empresa (raiz do
+- `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): com o fator 1 - alíquota no JCP; sem origem única, aviso. Desde 2026 o aviso da Lei 15.270
 - `docs/regras-fiscais.md` — R14: R14 | Dividendos > R$ 50 mil/mês da mesma PJ: IRRF 10% sobre o total; IRPFM para renda anual > R$ 600 mil | Registrar IRRF do provento; relatório informativo (IRPFM fora do escopo v3.0) | Lei 15.270/2025 | A
 - `docs/regras-fiscais.md` — Regras fiscais — renda variável pessoa física (base para coir/engine): anteriores. Novidade vigente desde 01/01/2026: Lei 15.270/2025 (dividendos e IRPF mínimo).
 - `tests/fiscal_cases/test_proventos.py` — módulo: …arts. 20 e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de capital reduz o custo); Lei 15.270/2025 (Lei 9.250 art. 6º-A: IRRF de 10% sobre o total dos dividendos da mesma PJ no mês acima de R$ 50…
 - `tests/fiscal_cases/test_proventos.py` — test_atualizacao_do_provento_pela_selic_e_tributacao_exclusiva: …8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º) -> líquido 4,40, IRRF 1,28. Não é dividendo: fora da Lei 15.270.
+- `tests/fiscal_cases/test_proventos.py` — test_reembolso_de_dividendo_pela_movimentacao_e_lei_15270: …de 25.000,00 = 416,67 ações: não; a 50,00 por ação, 500 ações = 25.000,00: sim). Em 2026 o aviso da Lei 15.270 soma os dois (55.000,00 no mês, acima de R$ 50 mil; decisão do usuário de 21/10/2026).
 
 ## MP 497/2010
 

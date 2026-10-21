@@ -301,8 +301,17 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
   atualização do provento pela Selic; tributação exclusiva como renda fixa (Lei 8.981/1995 art. 65
   §4º c; Lei 11.033 art. 1º), como as fontes retêm (22,5% nos dados reais); código 06 ou 12 conforme
   o informe. Alternativa (acessório segue o principal, SC Cosit 67/2024) não adotada.
-- Reembolso de BTC ao doador: isento até 2025 (IN 1.585 art. 74); desde 2026 a Lei 15.265/2025 é
-  omissa para dividendos: isento por equivalência, com aviso (parâmetro; decisão do usuário).
+- Reembolso de BTC ao doador: isento até 2025 (Lei 13.043/2014 art. 7º, reproduzido na IN 1.585
+  art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com
+  aviso (parâmetro; decisão do usuário). O reembolso de JCP vem descontado do IR que a companhia
+  reteria (art. 7º §1º II; Lei 15.265 art. 20), mas o desconto não é IRRF do doador; é isento até
+  2025 e, desde 2026, sem incidência expressa (Lei 15.265 art. 21 I). Declarado no ano do
+  recebimento, em isentos "Outros" (99), com o CNPJ da companhia, sem JCP a receber (99.07): o
+  crédito da companhia foi para o tomador (parecer do especialista e decisões do usuário de
+  21/10/2026). A origem (dividendo ou JCP) sai do valor: quantidade emprestada inteira vezes o
+  valor por ação de um provento do mesmo dia e empresa (movimentação do titular e pacote da B3),
+  com o fator 1 - alíquota no JCP; sem origem única, aviso. Desde 2026 o aviso da Lei 15.270
+  soma os reembolsos de dividendos.
 - Restituição de capital: reduz o custo (IN 1.585 art. 58 §8º), proposta como evento; não é
   rendimento. Acima do custo: o motor falha alto.
 - "- Transferido": pares que se anulam (provento acompanhando a transferência de custódia).
