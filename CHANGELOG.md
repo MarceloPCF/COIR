@@ -8,7 +8,7 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
-## [2.2.0] - 2026-10-19
+## [2.2.0] - 2026-10-21
 
 Atualização para o Python 3.15 e para as versões atuais das bibliotecas (pandas 3, numpy 2.5, tabula-py 2.10, xlwings 0.37, openpyxl 3.1). Compatibilidade com o pandas atual ([#11](https://github.com/MarceloPCF/COIR/issues/11)), com base na contribuição de [@tommmdl](https://github.com/tommmdl) ([#34](https://github.com/MarceloPCF/COIR/pull/34)).
 
