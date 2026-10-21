@@ -257,10 +257,12 @@ def _jcp(item: LinhaB3, params: ParametrosFiscais) -> Provento:
 
 
 def _jcp_com_credito(item: LinhaB3, credito: date, params: ParametrosFiscais) -> Provento:
-    """JCP com a data do crédito conhecida (informe da empresa ou data de aprovação no pacote da
-    B3): declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º; a
-    receber em 31/12 se pago depois), com a alíquota da data do crédito ou do pagamento, o que vier
-    primeiro (LC 224/2025 art. 8º). Crédito depois do pagamento falha alto."""
+    """JCP com a data do crédito conhecida (informe da empresa ou, pela B3, a mais tarde entre a
+    aprovação e a data com): declarado no ano do crédito (IN SRF 41/1998 art. 3º; Lei 9.249/1995
+    art. 9º §2º; a receber em 31/12 se pago depois: art. 3º parágrafo único), com a alíquota da
+    data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art. 8º). Retenção implícita
+    com a alíquota do ano anterior: só aviso (a empresa tratou o crédito como do ano anterior;
+    decisão do usuário de 21/10/2026). Crédito depois do pagamento falha alto."""
     x = item.linha
     if credito > x.data:
         raise MotorError(f"{x.data}: JCP de {x.codigo} (mov:{item.id}) creditado em {credito}, "
@@ -273,7 +275,11 @@ def _jcp_com_credito(item: LinhaB3, credito: date, params: ParametrosFiscais) ->
         retida = 1 - (x.valor or ZERO) / (x.quantidade * x.preco)
         if abs(retida - aliquota) > Decimal("0.005"):
             obs += (f"; retenção implícita de {retida * 100:.1f}% difere da alíquota de "
-                    f"{aliquota * 100:.1f}% (confira o informe)")  # fmt: skip
+                    f"{aliquota * 100:.1f}%")  # fmt: skip
+            anterior = _vigente(params, "aliquota_irrf_jcp", date(credito.year - 1, 12, 31))
+            if anterior is not None and abs(retida - anterior) <= Decimal("0.005"):
+                obs += f": a empresa tratou o crédito como de {credito.year - 1}"
+            obs += " (confira o informe)"
     bruto = ((x.valor or ZERO) / (1 - aliquota)).quantize(CENTAVO, rounding=ROUND_HALF_UP)
     return _criar(item, TipoProvento.JCP, bruto, aliquota, credito.year, obs)
 

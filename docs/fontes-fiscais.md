@@ -7,7 +7,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Norma | Usos |
 |---|---|
 | LC 224/2025 | 8 |
-| Lei 6.404 | 3 |
+| Lei 6.404/1976 | 4 |
 | Lei 8.668/1993 | 1 |
 | Lei 8.981/1995 | 10 |
 | Lei 9.249/1995 | 15 |
@@ -24,33 +24,36 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 15.270/2025 | 10 |
 | MP 497/2010 | 5 |
 | IN RFB 1.585/2015 | 61 |
+| IN RFB 1.700/2017 | 2 |
 | Res. CMN 4.880/2020 | 1 |
 | SC Cosit 67/2024 | 1 |
 | SC Cosit 145/2021 | 1 |
 | SC Cosit 224/2014 | 3 |
 | P&R IRPF | 5 |
-| P&R IRPF 2026 | 21 |
+| P&R IRPF 2026 | 18 |
 | Manual MIR 2026 | 3 |
 | Programa IRPF | 7 |
 | CTN | 1 |
 | Súmula STJ 360 | 1 |
 | REsp 1.149.022/SP | 1 |
 | RIR/2018 | 6 |
+| Instrução Normativa SRF 41/1998 | 5 |
 
 ## LC 224/2025
 
-- `coir/engine/proventos.py` — _jcp_com_credito: …receber em 31/12 se pago depois), com a alíquota da data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art. 8º). Crédito depois do pagamento falha alto.
+- `coir/engine/proventos.py` — _jcp_com_credito: …depois: art. 3º parágrafo único), com a alíquota da data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art. 8º). Retenção implícita com a alíquota do ano anterior: só aviso (a empresa tratou o crédito…
 - `coir/engine/proventos.py` — módulo: …retida: 15% até 2025, 17,5% desde 2026, pela data do pagamento ou do crédito, o que vier primeiro (LC 224/2025 art. 8º). Pago num ano com a alíquota do ano anterior = creditado no ano anterior: declarado no ano…
 - `data/parametros_fiscais.csv` — aliquota_irrf_jcp: LC 224/2025 art. 8º e art. 14 III (17,5% pago ou creditado desde 01/01/2026)
-- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): a alíquota da data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art. 8º). A data
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): 9º §2º), com a alíquota da data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art.
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): alíquota retida (15% até 2025; 17,5% desde 2026, LC 224/2025 art. 8º, pela data do pagamento ou do
 - `docs/regras-fiscais.md` — R15: R15 | JCP: IRRF exclusivo 15% até 31/12/2025; 17,5% para JCP pago ou creditado desde 01/01/2026 | Provento com IRRF; alíquota com vigência | LC 224/2025 | A
 - `tests/fiscal_cases/test_proventos.py` — módulo: …conferidos à mão, 19/10/2026). Fontes: Lei 9.249/1995 arts. 9º e 10 (JCP exclusivo; dividendos isentos); LC 224/2025 art. 8º e art. 14 III (JCP a 17,5% pago ou creditado desde 01/01/2026, na data do pagamento ou do…
 - `tests/fiscal_cases/test_proventos.py` — test_jcp_creditado_em_2025_e_pago_em_2026_usa_a_aliquota_do_credito: LC 224/2025 art. 8º: 17,5% para JCP pago ou creditado desde 01/01/2026, o que vier primeiro. Creditado em 20/12/2025 e pago em 15/04/2026: 15%, declarado em 2025.
 
-## Lei 6.404
+## Lei 6.404/1976
 
 - `data/parametros_fiscais.csv` — incorporacao_acoes_tratamento: Lei 6.404 art. 252: custo das ações entregues mantido nas recebidas (TRF1/TRF3/TRF4; decisão do usuário 19/10/2026). A RFB diverge (SC Cosit 224/2014: alienação, ganho de capital no GCAP); a tela de Eventos avisa
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): 75 §10), o que pede a deliberação e a data com (Lei 6.404/1976 art. 205). A data do crédito vem
 - `docs/regras-fiscais.md` — R8: …art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); Lei 6.404 arts. 227-229 e 252 | A
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …(substituição de ações): não é alienação, a data de aquisição é a original. - Incorporação de ações (Lei 6.404 art. 252): custo mantido (TRF1, TRF3, TRF4; decisão do usuário de 19/10/2026); a RFB diverge (SC Cosit…
 
@@ -73,7 +76,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 
 ## Lei 9.249/1995
 
-- `coir/engine/proventos.py` — _jcp_com_credito: …empresa ou data de aprovação no pacote da B3): declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º; a receber em 31/12 se pago depois), com a alíquota da data do crédito ou do…
+- `coir/engine/proventos.py` — _jcp_com_credito: …B3, a mais tarde entre a aprovação e a data com): declarado no ano do crédito (IN SRF 41/1998 art. 3º; Lei 9.249/1995 art. 9º §2º; a receber em 31/12 se pago depois: art. 3º parágrafo único), com a alíquota da data…
 - `coir/engine/proventos.py` — módulo: …da B3 (decisões do usuário de 19/10/2026). - Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR, ETF ou FII: fora da v3.0, listado com aviso (BDR: Lei 14.754/2023, não é…
 - `data/irpf/2025.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2025.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
@@ -82,12 +85,12 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `data/irpf/2027.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/parametros_fiscais.csv` — aliquota_irrf_jcp: Lei 9.249/1995 art. 9º §2º (15% na data do pagamento ou crédito)
-- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): JCP: declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º), com
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): como crédito contra a companhia (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art.
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09. BDR, ETF e FII com
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_bonificacao_ajusta_a_quantidade_da_serie_sem_custo: R8 (Lei 9.249/1995 art. 10 parágrafo único e IN RFB 1.585/2015 art. 58: o custo atribuído da bonificação vai para as…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos do capital); data/irpf/2026.yaml.
 - `tests/fiscal_cases/test_proventos.py` — módulo: Proventos a partir da movimentação da B3 (casos fictícios conferidos à mão, 19/10/2026). Fontes: Lei 9.249/1995 arts. 9º e 10 (JCP exclusivo; dividendos isentos); LC 224/2025 art. 8º e art. 14 III (JCP a 17,5%…
-- `tests/fiscal_cases/test_proventos.py` — test_jcp_creditado_no_ano_anterior_com_a_mesma_aliquota: …ela (pacote da B3 ou informe), declarado em 2024 e a receber em 31/12/2024 (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º).
+- `tests/fiscal_cases/test_proventos.py` — test_jcp_creditado_no_ano_anterior_com_a_mesma_aliquota: …B3 ou informe), declarado em 2024 e a receber em 31/12/2024 (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art. 9º §2º).
 
 ## Lei 9.250
 
@@ -287,6 +290,11 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_irrf_de_day_trade_nao_abate_fii_antes_do_0005: IN RFB 1.585/2015 art. 65 §8º I e ficha FII sem linha de day trade: dezembro/2026 com imposto só de FII (V 100…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de…
 
+## IN RFB 1.700/2017
+
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): 8º). Creditado = registrado como dívida com o acionista individualizado (IN RFB 1.700/2017 art.
+- `tests/fiscal_cases/test_proventos.py` — test_jcp_com_data_com_em_janeiro_e_retencao_do_ano_anterior_so_avisa: …x 0,50 bruto. Crédito na data com (a mais tarde entre aprovação e data com: IN SRF 41/1998 art. 3º; IN RFB 1.700/2017 art. 75 §10). 3a: retenção de 17,5% (líquido 412,50): ano 2026, bruto 500,00, sem aviso. 3b:…
+
 ## Res. CMN 4.880/2020
 
 - `docs/regras-fiscais.md` — R12: …acumula, inclusive para o ano seguinte | `data/feriados.csv` (o último dia útil do ano não é útil: Res. CMN 4.880/2020 art. 3º) + acúmulo | RIR/2018 art. 915; Lei 9.430/1996 art. 68 caput e §1º | A
@@ -316,7 +324,6 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 ## P&R IRPF 2026
 
 - `coir/engine/futuros.py` — módulo: …ocasião da liquidação do contrato, cessão ou encerramento da posição". IN RFB 1.585/2015 art. 61 e P&R IRPF 2026 pergunta 728: resultado de cada contrato = soma algébrica dos ajustes diários entre a abertura e o…
-- `coir/engine/proventos.py` — _jcp_com_credito: …conhecida (informe da empresa ou data de aprovação no pacote da B3): declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º; a receber em 31/12 se pago depois), com a alíquota da data do…
 - `data/irpf/2025.yaml` — bens: Programa IRPF 2026, ficha Bens e Direitos; Manual do MIR (bens financeiros); P&R IRPF 2026 perguntas 459 e 720 (um item por ação, total das corretoras); leiaute DIRPF 2023 reg. 27
 - `data/irpf/2025.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
 - `data/irpf/2025.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
@@ -328,14 +335,12 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `data/irpf/2027.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
 - `data/parametros_fiscais.csv` — opcoes_linha_acoes_tipos_objeto: programa IRPF, ficha Renda variável: "Mercado de opções - ações" para opção sobre ação; ETF, índice e outros em "Mercado de opções - outros" (P&R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, coerente com o Bens e Direitos do programa (código 03.01, ações inclusive units)
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026
-- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): JCP: declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º), com
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): P&R IRPF 2026 pergunta 723, que trata de lote isolado).
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): `opcoes_linha_acoes_tipos_objeto`; P&R IRPF 2026 pergunta 707 separa cotas de fundo de índice de
 - `docs/regras-fiscais.md` — R11: …encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A
 - `docs/regras-fiscais.md` — R6: …| Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT:…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Direitos, rendimentos e fichas mês a mês que o COIR preenche. Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero. Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …- operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (pareceres de 20 e 21/10/2026), conferidos à mão. Fontes: programa IRPF, ficha de renda variável (linhas "Mercado de opções -…
-- `tests/fiscal_cases/test_proventos.py` — test_jcp_creditado_no_ano_anterior_com_a_mesma_aliquota: Caso C do especialista (F8, 20/10/2026): crédito em 16/12/2024, pago em 10/03/2025, 15% nos dois anos (1.000 x 0,50 bruto, líquido 425,00). Sem…
 
 ## Manual MIR 2026
 
@@ -373,3 +378,11 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `docs/regras-fiscais.md` — R12: …| `data/feriados.csv` (o último dia útil do ano não é útil: Res. CMN 4.880/2020 art. 3º) + acúmulo | RIR/2018 art. 915; Lei 9.430/1996 art. 68 caput e §1º | A
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_eventos_ajustam_quantidade_e_custo_sem_resultado: R8: bonificação soma quantidade com custo atribuído; desdobramento e grupamento só a quantidade; redução de capital reduz o custo (RIR/2018; Perguntas e Respostas IRPF).
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t4_darf_abaixo_de_10_acumula_e_vira_o_ano: R12: DARF abaixo de R$ 10 acumula, inclusive para o ano seguinte (Lei 9.430/1996 art. 68 §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915). Dez/23 7,00 + Jan/24 4,00 = 11,00, vencimento 29/02/2024.
+
+## Instrução Normativa SRF 41/1998
+
+- `coir/engine/proventos.py` — _jcp_com_credito: …da empresa ou, pela B3, a mais tarde entre a aprovação e a data com): declarado no ano do crédito (IN SRF 41/1998 art. 3º; Lei 9.249/1995 art. 9º §2º; a receber em 31/12 se pago depois: art. 3º parágrafo único), com…
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): como crédito contra a companhia (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art.
+- `tests/fiscal_cases/test_irpf_declaracao.py` — test_jcp_pago_mais_de_um_ano_depois_do_credito_fica_a_receber_nos_dois_31_12: …com 26/12/2023 pago em 09/01/2025. Creditado e não pago: a receber em 31/12/2023 e em 31/12/2024 (IN SRF 41/1998 art. 3º parágrafo único); em 2025, de 425,00 para 0,00, sem rendimento novo.
+- `tests/fiscal_cases/test_proventos.py` — test_jcp_com_data_com_em_janeiro_e_retencao_do_ano_anterior_so_avisa: …pago em 30/01/2026, 1.000 x 0,50 bruto. Crédito na data com (a mais tarde entre aprovação e data com: IN SRF 41/1998 art. 3º; IN RFB 1.700/2017 art. 75 §10). 3a: retenção de 17,5% (líquido 412,50): ano 2026, bruto…
+- `tests/fiscal_cases/test_proventos.py` — test_jcp_creditado_no_ano_anterior_com_a_mesma_aliquota: …para perceber); com ela (pacote da B3 ou informe), declarado em 2024 e a receber em 31/12/2024 (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art. 9º §2º).

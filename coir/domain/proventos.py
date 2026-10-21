@@ -33,7 +33,7 @@ class LinhaB3(Modelo):
     chave: str = ""  # da linha em movimentacao_b3 (correções do usuário apontam para ela)
     # JCP: data do crédito (informada pelo usuário ou a data de aprovação do pacote da B3)
     credito: date | None = None
-    credito_origem: str = ""  # "informada" ou "B3"
+    credito_origem: str = ""  # "informada", "B3" ou "B3, histórico"
 
 
 class Provento(Modelo):
@@ -52,11 +52,11 @@ class Provento(Modelo):
     origem: str  # "mov:<id>"
     observacao: str = ""
     credito: date | None = None  # JCP: data do crédito, quando conhecida
-    credito_origem: str = ""  # "informada" (usuário ou DIRPF), "B3" ou "" (sem data)
+    credito_origem: str = ""  # "informada" (usuário ou DIRPF), "B3", "B3, histórico" ou ""
     chave: str = ""  # da linha em movimentacao_b3 (tela de Proventos: corrigir o crédito)
     reembolso_de: str = ""  # reembolso de BTC: "DIVIDENDO", "JCP" ou "" (não identificado)
 
     @property
     def a_receber_em_31_12(self) -> bool:
-        """JCP declarado no ano do crédito e pago no ano seguinte (Bens e Direitos 99.07)."""
+        """JCP declarado no ano do crédito e pago num ano seguinte (Bens e Direitos 99.07)."""
         return self.ano_declaracao < self.data.year

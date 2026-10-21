@@ -94,8 +94,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
 def _creditos(estado: Estado, jcp: list[Provento],
               recarregar: Callable[[], Awaitable[None]]) -> None:  # fmt: skip
-    """Data do crédito de cada JCP: a da B3 (data de aprovação) ou a informada pelo usuário, que
-    decide o ano da declaração (P&R IRPF 2026 pergunta 320)."""
+    """Data do crédito de cada JCP: a da B3 (a mais tarde entre a aprovação e a data com) ou a
+    informada pelo usuário, que decide o ano da declaração (IN SRF 41/1998 art. 3º)."""
 
     async def salvar(p: Provento, campo: ui.input, apagar: bool) -> None:
         try:

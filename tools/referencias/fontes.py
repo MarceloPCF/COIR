@@ -16,7 +16,7 @@ from collections.abc import Callable, Iterable, Mapping
 from datetime import date, timedelta
 from typing import Any, cast
 
-from tools.referencias.gerar import Coleta, GeracaoError, ler_instrumentos
+from tools.referencias.gerar import Coleta, GeracaoError, ler_instrumentos, nomes_de_pregao
 
 log = logging.getLogger(__name__)
 AGENTE = "COIR/3.0 (tabelas de referencia publicas; github.com/MarceloPCF/COIR)"
@@ -179,6 +179,45 @@ def fundos(
     return saida, falhas
 
 
+def historico(
+    nomes: Mapping[str, str], obter: Baixar = baixar, pausa: float = 0.2, tentativas: int = 2,
+    por_pagina: int = 120,
+) -> tuple[dict[str, list[Mapping[str, object]]], list[str]]:  # fmt: skip
+    """Aba "Proventos em dinheiro" de cada companhia (emissor -> nome de pregão), todas as
+    páginas: o histórico que GetListedSupplementCompany não traz (lá, só os últimos meses). A
+    consulta é pelo nome de pregão; 120 é o maior tamanho de página que a B3 aceita."""
+    saida: dict[str, list[Mapping[str, object]]] = {}
+    falhas: list[str] = []
+    seguidas = 0
+    for emissor, nome in sorted(nomes.items()):
+        pagina, total, linhas = 1, 1, []
+        while pagina <= total:
+            consulta = {"language": "pt-br", "pageNumber": pagina, "pageSize": por_pagina,
+                        "tradingName": nome}  # fmt: skip
+            resposta = _consultar(f"{B3_EMPRESAS}/GetListedCashDividends/{_b64(consulta)}",
+                                  f"proventos de {emissor}", obter, pausa, tentativas)  # fmt: skip
+            try:
+                total = int(resposta["page"]["totalPages"] or 0)
+                linhas += list(resposta["results"] or [])
+            except (KeyError, TypeError, ValueError):
+                resposta = None
+            if resposta is None:
+                break
+            pagina += 1
+            time.sleep(pausa)
+        else:
+            seguidas = 0
+            if linhas:
+                saida[emissor] = linhas
+            continue
+        falhas.append(f"proventos de {emissor}")
+        seguidas += 1
+        if seguidas >= MAX_FALHAS_SEGUIDAS:
+            raise GeracaoError(f"B3 sem resposta para {MAX_FALHAS_SEGUIDAS} companhias "
+                               "seguidas: coleta abortada")  # fmt: skip
+    return saida, falhas
+
+
 def selic(obter: Baixar = baixar) -> list[Mapping[str, str]]:
     resposta = _json(obter(BCB_SELIC), "Selic")
     if not isinstance(resposta, list):
@@ -187,13 +226,17 @@ def selic(obter: Baixar = baixar) -> list[Mapping[str, str]]:
 
 
 def coletar(dia: date, obter: Baixar = baixar, pausa: float = 0.2) -> Coleta:
-    """Uma coleta completa. Eventos só das companhias com ação ou unit no cadastro."""
+    """Uma coleta completa. Eventos e histórico de proventos só das companhias com ação ou unit no
+    cadastro."""
     quando, bruto = instrumentos(dia, obter)
     lista, _ = ler_instrumentos(bruto)
     emissores = {i.emissor for i in lista if i.categoria in ("SHARES", "UNIT")}
     log.info("cadastro de %s: %d instrumentos, %d emissores", quando, len(lista), len(emissores))
+    companhias = empresas(obter)
     por_emissor, falhas = eventos(emissores, obter, pausa)
+    nomes = {e: n for e, n in nomes_de_pregao(companhias).items() if e in emissores}
+    por_historico, falhas_historico = historico(nomes, obter, pausa)
     lista_fundos, falhas_fundos = fundos(obter, pausa)
-    return Coleta(data=dia, instrumentos=bruto, empresas=empresas(obter), eventos=por_emissor,
-                  selic=selic(obter), sem_resposta=tuple(falhas + falhas_fundos),
-                  fundos=lista_fundos)  # fmt: skip
+    return Coleta(data=dia, instrumentos=bruto, empresas=companhias, eventos=por_emissor,
+                  selic=selic(obter), sem_resposta=tuple(falhas + falhas_historico + falhas_fundos),
+                  fundos=lista_fundos, historico=por_historico)  # fmt: skip

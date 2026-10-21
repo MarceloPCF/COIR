@@ -36,6 +36,7 @@ PADROES: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("Lei", re.compile(r"\bLei\s+(\d{1,2}\.\d{3}|\d{1,4})(?:/(\d{4}))?")),
     ("Medida Provisória", re.compile(r"\bMP\s+(\d{1,4}(?:-\d+)?)/(\d{4})")),
     ("Instrução Normativa RFB", re.compile(r"\bIN\s+RFB\s+(\d{1,2}\.?\d{3})/(\d{4})")),
+    ("Instrução Normativa SRF", re.compile(r"\bIN\s+SRF\s+(\d{1,4})/(\d{4})")),
     ("Solução de Consulta Cosit", re.compile(r"\bSC\s+Cosit\s+(\d{1,4})/(\d{4})")),
     ("Resolução CMN", re.compile(r"\bRes(?:olução|\.)\s+CMN\s+(\d\.?\d{3})/(\d{4})")),
     ("RIR", re.compile(r"\bRIR/(\d{4})()")),

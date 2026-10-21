@@ -208,25 +208,25 @@ def _dividas(d: DadosRelatorio, mapa: MapeamentoIrpf) -> list[DividaIrpf]:
 
 
 def _jcp_a_receber(d: DadosRelatorio, mapa: MapeamentoIrpf) -> list[BemIrpf]:
-    """JCP creditado num ano e pago no seguinte (decisão do usuário de 19/10/2026): a receber em
-    31/12 do ano do crédito."""
+    """JCP creditado e ainda não pago em 31/12 (decisão do usuário de 19/10/2026; IN SRF 41/1998
+    art. 3º parágrafo único): a receber em cada 31/12 desde o ano do crédito até o ano anterior ao
+    do pagamento (há companhia que paga mais de um ano depois)."""
     item = mapa.bens.item("JCP_A_RECEBER")
     por: dict[str, list[Decimal]] = defaultdict(lambda: [ZERO, ZERO])
     nomes: dict[str, tuple[str, str | None]] = {}
     for p in d.proventos:
         if p.tipo is not TipoProvento.JCP or not p.a_receber_em_31_12:
             continue
-        if p.ano_declaracao == d.ano - 1 and p.data.year == d.ano:
-            coluna = 0
-        elif p.ano_declaracao == d.ano:
-            coluna = 1
-        else:
+        colunas = [c for c, ano in enumerate((d.ano - 1, d.ano))
+                   if p.ano_declaracao <= ano < p.data.year]  # fmt: skip
+        if not colunas:
             continue
         info = d.info_ativos.get(p.codigo)
         chave = info.cnpj if info is not None and info.cnpj else p.empresa
         nomes[chave] = (info.razao_social if info is not None else p.empresa,
                         info.cnpj if info is not None else None)  # fmt: skip
-        por[chave][coluna] += p.liquido
+        for coluna in colunas:
+            por[chave][coluna] += p.liquido
     texto = "Juros sobre capital próprio creditados por {} e a receber, valor líquido."
     return [
         BemIrpf(tipo="JCP_A_RECEBER", grupo=item.grupo, codigo=item.codigo, ticker=None,

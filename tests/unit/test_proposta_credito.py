@@ -62,3 +62,8 @@ def test_credito_ja_informado_ou_no_ano_certo_fica_de_fora() -> None:
         update={"ano_declaracao": 2024}
     )
     assert propor_creditos([ja_certo], CNPJ, [("d.pdf", _dirpf(_a_receber(A, "300", "0")))]) == []
+    # creditado em 2023 e pago em 2025 (B3): já estava a receber em 31/12/2024, sem proposta
+    antes = _jcp(date(2025, 1, 9), "AAAA4", "300", "a1").model_copy(
+        update={"ano_declaracao": 2023, "credito": date(2023, 12, 26), "credito_origem": "B3"}
+    )
+    assert propor_creditos([antes], CNPJ, [("d.pdf", _dirpf(_a_receber(A, "300", "0")))]) == []

@@ -24,6 +24,7 @@ def _coleta(dia: date = DIA, instrumentos: bytes | None = None) -> Coleta:
         eventos=eventos,
         selic=json.loads((FIXTURES / "selic.json").read_text(encoding="utf-8")),
         fundos=json.loads((FIXTURES / "fundos.json").read_text(encoding="utf-8")),
+        historico={"ITSA": json.loads((FIXTURES / "historico-ITSA.json").read_text("utf-8"))},
     )
 
 
@@ -244,3 +245,34 @@ def test_proventos_em_dinheiro_com_data_de_aprovacao(tmp_path: Path) -> None:
     )
     novos, resumo = gerar.gerar(tmp_path, sem_vamo)
     assert _linhas(novos["proventos_b3.csv"]) == linhas and not resumo.proventos_novos
+
+
+def test_historico_de_jcp_com_classe_aprovacao_e_data_com(tmp_path: Path) -> None:
+    """Aba "Proventos em dinheiro" da Itaúsa (amostra real): só JCP, com classe; dividendos e
+    linhas anteriores a HISTORICO_DESDE (1996) ficam de fora; nunca apaga."""
+    arquivos, resumo = gerar.gerar(tmp_path, _coleta())
+    linhas = _linhas(arquivos["proventos_historico_b3.csv"])
+    assert len(linhas) == 12 and len(resumo.historico_novos) == 12
+    assert linhas[:3] == ["ITSA,PN,JRS CAP PROPRIO,0.0591,2025-06-16,2025-06-20",
+                          "ITSA,PN,JRS CAP PROPRIO,0.1859,2025-08-11,2025-08-18",
+                          "ITSA,PN,JRS CAP PROPRIO,0.0235295,2025-02-10,2025-08-29"]  # fmt: skip
+    assert "ITSA,ON,JRS CAP PROPRIO,0.0242425,2026-02-09,2026-08-31" in linhas
+    gerar.gravar(tmp_path, arquivos)
+    seguinte = _coleta(date(2026, 10, 26))
+    sem_itsa = Coleta(**{**seguinte.__dict__, "historico": {}})
+    novos, resumo = gerar.gerar(tmp_path, sem_itsa)
+    assert _linhas(novos["proventos_historico_b3.csv"]) == linhas and not resumo.historico_novos
+
+
+def test_historico_sem_aprovacao_ou_por_lote_fica_de_fora() -> None:
+    base = {"typeStock": "ON", "corporateAction": "JRS CAP PROPRIO", "valueCash": "0,10",
+            "lastDatePriorEx": "02/01/2020", "dateApproval": "20/12/2019",
+            "quotedPerShares": "1"}  # fmt: skip
+    linhas = gerar.ler_historico("XXXX", [base, {**base, "dateApproval": None},
+                                          {**base, "quotedPerShares": "1000"},
+                                          {**base, "lastDatePriorEx": "30/12/2015"}])  # fmt: skip
+    assert linhas == [{"emissor": "XXXX", "classe": "ON", "tipo": "JRS CAP PROPRIO",
+                       "valor": "0.1", "aprovado_em": "2019-12-20",
+                       "data_com": "2020-01-02"}]  # fmt: skip
+    with pytest.raises(GeracaoError, match="ilegível"):
+        gerar.ler_historico("XXXX", [{**base, "valueCash": "x"}])

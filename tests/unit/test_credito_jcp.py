@@ -41,6 +41,8 @@ def _linha(codigo: str, dia: date, preco: str, i: int = 1) -> LinhaB3:
 
 
 def test_credito_pela_b3_casando_empresa_pagamento_e_valor() -> None:
+    """O crédito é a mais tarde entre a aprovação e a data com (IN SRF 41/1998 art. 3º; IN RFB
+    1.700/2017 art. 75 §10; decisão do usuário de 21/10/2026)."""
     itsa = _linha("ITSA4", date(2025, 3, 10), "0.02424250")
     on, pn = _linha("BBDC3", date(2026, 4, 30), "0.3238587", 2), _linha("BBDC4",
                                                                        date(2026, 4, 30),
@@ -49,14 +51,19 @@ def test_credito_pela_b3_casando_empresa_pagamento_e_valor() -> None:
     informado = _linha("ITSA4", date(2025, 3, 10), "0.0242425", 5).model_copy(
         update={"credito": date(2024, 12, 1), "credito_origem": "informada"}
     )
-    saida = creditos_b3([itsa, on, pn, outro_dia, informado], PUBLICOS, {"BBDC3": "BBDC"})
+    avisos: list[str] = []
+    saida = creditos_b3([itsa, on, pn, outro_dia, informado], PUBLICOS, {"BBDC3": "BBDC"},
+                        avisos)  # fmt: skip
     assert [(x.credito, x.credito_origem) for x in saida] == [
-        (date(2024, 12, 16), "B3"),
-        (date(2025, 9, 30), "B3"),  # ON: o valor mais próximo
-        (date(2025, 11, 30), "B3"),  # PN (emissor pela raiz do ticker)
+        (date(2024, 12, 19), "B3"),  # data com depois da aprovação: crédito na data com
+        (date(2025, 10, 13), "B3"),  # ON: o valor mais próximo
+        (date(2025, 12, 13), "B3"),  # PN (emissor pela raiz do ticker)
         (None, ""),  # pagamento em outra data: sem crédito
         (date(2024, 12, 1), "informada"),  # a correção do usuário vale
     ]
+    # informada antes da data com da B3: vale, com aviso (decisão do usuário de 21/10/2026)
+    assert avisos == ["JCP de ITSA4 pago em 10/03/2025: crédito informado em 01/12/2024, antes "
+                      "da data com 19/12/2024 da B3 (confira o informe)"]  # fmt: skip
 
 
 def _banco(tmp_path: Path) -> Estado:
@@ -120,3 +127,74 @@ def test_aprovacao_depois_do_pagamento_no_pacote_e_ignorada_com_aviso() -> None:
     [x] = creditos_b3([_linha("ITSA4", date(2025, 3, 10), "0.02424250")], ruim, {}, avisos)
     assert x.credito is None
     assert avisos and "ignorado" in avisos[0]
+
+
+HISTORICO = [
+    {"emissor": "ITSA", "classe": "PN", "tipo": "JRS CAP PROPRIO", "valor": "0.0235295",
+     "aprovado_em": "2025-02-10", "data_com": "2025-08-29"},
+    {"emissor": "ITSA", "classe": "PN", "tipo": "JRS CAP PROPRIO", "valor": "0.0235295",
+     "aprovado_em": "2025-02-10", "data_com": "2025-11-28"},
+    {"emissor": "ITSA", "classe": "PN", "tipo": "JRS CAP PROPRIO", "valor": "0.0182",
+     "aprovado_em": "2025-12-01", "data_com": "2025-12-09"},
+    {"emissor": "XXXX", "classe": "ON", "tipo": "JRS CAP PROPRIO", "valor": "0.5",
+     "aprovado_em": "2023-03-01", "data_com": "2023-03-10"},
+    {"emissor": "XXXX", "classe": "ON", "tipo": "JRS CAP PROPRIO", "valor": "0.5",
+     "aprovado_em": "2023-03-02", "data_com": "2023-03-10"},
+    {"emissor": "XXXX", "classe": "ON", "tipo": "JRS CAP PROPRIO", "valor": "0.5",
+     "aprovado_em": "2023-08-11", "data_com": "2023-08-10"},
+    {"emissor": "XXXX", "classe": "ON", "tipo": "JRS CAP PROPRIO", "valor": "0.5",
+     "aprovado_em": "2023-08-14", "data_com": "2023-08-10"},
+]  # fmt: skip
+
+
+def test_credito_pelo_historico_sem_data_de_pagamento() -> None:
+    """Histórico da aba "Proventos em dinheiro" da B3 (sem pagamento; amostra da Itaúsa): mesma
+    empresa e classe, valor dentro de 1% e a data com mais recente antes do pagamento."""
+    classes = {"ITSA4": "PN", "ITSA3": "ON", "XXXX3": "ON"}
+    linhas = [
+        _linha("ITSA4", date(2025, 10, 1), "0.0235295"),  # data com 29/08 (não a de 28/11)
+        _linha("ITSA4", date(2026, 3, 2), "0.01820000", 2),  # creditado em 2025, pago em 2026
+        _linha("ITSA3", date(2026, 3, 2), "0.0182", 3),  # ON: o histórico só tem PN
+        _linha("ITSA4", date(2025, 8, 29), "0.0235295", 4),  # pago na data com: não é dele
+        _linha("XXXX3", date(2023, 4, 1), "0.5", 5),  # aprovações antes da mesma data com
+        _linha("XXXX3", date(2023, 9, 1), "0.5", 6),  # aprovações depois da data com: empate
+    ]
+    saida = creditos_b3(linhas, [], {}, None, HISTORICO, classes)
+    assert [(x.credito, x.credito_origem) for x in saida] == [
+        (date(2025, 8, 29), "B3, histórico"),  # aprovado em 10/02: crédito na data com
+        (date(2025, 12, 9), "B3, histórico"),
+        (None, ""),
+        (None, ""),
+        (date(2023, 3, 10), "B3, histórico"),
+        (None, ""),
+    ]
+
+
+def test_pacote_com_pagamento_vale_antes_do_historico() -> None:
+    [x] = creditos_b3([_linha("ITSA4", date(2025, 3, 10), "0.0242425")], PUBLICOS, {}, None,
+                      [dict(HISTORICO[0], valor="0.0242425", data_com="2025-01-02")],
+                      {"ITSA4": "PN"})  # fmt: skip
+    assert (x.credito, x.credito_origem) == (date(2024, 12, 19), "B3")
+
+
+BRADESCO = [
+    {"emissor": "BBDC", "isin": "BRBBDCACNOR1", "tipo": "JRS CAP PROPRIO", "valor": "0.017249826",
+     "aprovado_em": "2024-12-05", "data_com": "2025-12-01", "pagamento": "2026-01-02"},
+    {"emissor": "BBDC", "isin": "BRBBDCACNOR1", "tipo": "JRS CAP PROPRIO", "valor": "0.017249826",
+     "aprovado_em": "2025-12-18", "data_com": "2026-03-02", "pagamento": "2026-04-01"},
+    {"emissor": "BBDC", "isin": "BRBBDCACNOR1", "tipo": "JRS CAP PROPRIO", "valor": "0.351190748",
+     "aprovado_em": "2025-12-18", "data_com": "2025-12-29", "pagamento": "2026-07-31"},
+]  # fmt: skip
+
+
+def test_jcp_mensal_aprovado_no_ano_anterior_credita_na_data_com() -> None:
+    """Parecer do especialista de 21/10/2026 (dados públicos do Bradesco): o programa mensal
+    aprovado em dezembro não é crédito do ano da aprovação. Caso 1b: aprovado em 05/12/2024, data
+    com 01/12/2025, pago em 02/01/2026: crédito em 2025 (99.07 em 31/12/2025). Caso 1: aprovado em
+    18/12/2025, data com 02/03/2026, pago em 01/04/2026: crédito em 2026, sem 99.07. Caso 2:
+    complementar com data com 29/12/2025 e pago em 31/07/2026: crédito em 2025."""
+    linhas = [_linha("BBDC3", date(2026, 1, 2), "0.017249826"),
+              _linha("BBDC3", date(2026, 4, 1), "0.017249826", 2),
+              _linha("BBDC3", date(2026, 7, 31), "0.351190748", 3)]  # fmt: skip
+    saida = creditos_b3(linhas, BRADESCO, {})
+    assert [x.credito for x in saida] == [date(2025, 12, 1), date(2026, 3, 2), date(2025, 12, 29)]

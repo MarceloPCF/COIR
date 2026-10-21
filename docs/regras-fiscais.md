@@ -241,14 +241,21 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
 - Posição vendida em 31/12 (opção lançada, venda a descoberto): não é bem; vai para Dívidas e ônus
   reais, código 16, pelo valor recebido (prêmio ou venda), até o encerramento. Sem norma
   específica; decisão do usuário de 20/10/2026 para fechar a variação patrimonial.
-- JCP: declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º), com
-  a alíquota da data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art. 8º). A data
-  do crédito vem da correção do usuário na tela de Proventos (informe da empresa, tabela
-  `credito_jcp`) ou da data de aprovação no pacote público da B3 (`proventos_b3.csv`: mesma
-  empresa, data de pagamento e valor por ação dentro de 1%). Sem nenhuma das duas, o ano anterior
-  só é percebido pela mudança de alíquota. A B3 só lista os pagos desde mai/2025: os créditos de
-  2024 pagos no começo de 2025 precisam da correção do usuário. Crédito depois do pagamento falha
-  alto (decisão do usuário de 20/10/2026).
+- JCP: declarado no ano do crédito, e o creditado e não pago até 31/12 vai para Bens e Direitos
+  como crédito contra a companhia (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art.
+  9º §2º), com a alíquota da data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art.
+  8º). Creditado = registrado como dívida com o acionista individualizado (IN RFB 1.700/2017 art.
+  75 §10), o que pede a deliberação e a data com (Lei 6.404/1976 art. 205). A data do crédito vem
+  da correção do usuário na tela de Proventos (informe da empresa, tabela `credito_jcp`) ou, pela
+  B3, da mais tarde entre a aprovação e a data com (decisão do usuário de 21/10/2026: o programa
+  mensal aprovado em dezembro para o ano seguinte não é crédito do ano da aprovação). Fontes da
+  B3: `proventos_b3.csv` (mesma empresa, data de pagamento e valor por ação dentro de 1%) e, nos
+  anos que ele não alcança, `proventos_historico_b3.csv`, desde 2016 e sem data de pagamento
+  (mesma empresa e classe, valor dentro de 1% e a data com mais recente antes do pagamento).
+  Sem nenhuma, o ano anterior só é percebido pela mudança de alíquota. Retenção implícita com a
+  alíquota do ano anterior: só aviso. Data informada antes da data com da B3: vale, com aviso
+  (o informe prevalece). Crédito depois do pagamento falha alto (decisões do usuário de 20 e
+  21/10/2026).
 
 ## DARF paga em atraso: multa de mora (F6, 17/10/2026)
 `coir/engine/darf.py`; casos conferidos à mão em `tests/fiscal_cases/test_multa_mora.py`.

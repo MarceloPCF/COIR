@@ -187,7 +187,8 @@ def test_jcp_creditado_no_ano_anterior_com_a_mesma_aliquota() -> None:
     """Caso C do especialista (F8, 20/10/2026): crédito em 16/12/2024, pago em 10/03/2025, 15% nos
     dois anos (1.000 x 0,50 bruto, líquido 425,00). Sem a data do crédito o motor o põe em 2025
     (não há mudança de alíquota para perceber); com ela (pacote da B3 ou informe), declarado em
-    2024 e a receber em 31/12/2024 (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º)."""
+    2024 e a receber em 31/12/2024 (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995
+    art. 9º §2º)."""
     [sem], _ = _proventos(_jcp(date(2025, 3, 10), "0.5", "425"))
     assert sem.ano_declaracao == 2025
     [p], _ = _proventos(_jcp(date(2025, 3, 10), "0.5", "425", date(2024, 12, 16)))
@@ -238,3 +239,20 @@ def test_reembolso_de_dividendo_pela_movimentacao_e_lei_15270() -> None:
     [reembolso] = [p for p in lista if p.tipo is TipoProvento.REEMBOLSO_BTC]
     assert reembolso.reembolso_de == "DIVIDENDO"
     assert any("ITSA somam 55000" in a and "acima do limite" in a for a in avisos)
+
+
+def test_jcp_com_data_com_em_janeiro_e_retencao_do_ano_anterior_so_avisa() -> None:
+    """Caso 3 do parecer de 21/10/2026: aprovado em 15/12/2025, data com 05/01/2026, pago em
+    30/01/2026, 1.000 x 0,50 bruto. Crédito na data com (a mais tarde entre aprovação e data com:
+    IN SRF 41/1998 art. 3º; IN RFB 1.700/2017 art. 75 §10). 3a: retenção de 17,5% (líquido 412,50):
+    ano 2026, bruto 500,00, sem aviso. 3b: retenção de 15% (líquido 425,00): continua em 2026 pela
+    regra, bruto estimado 425 / 0,825 = 515,15, com aviso de que a empresa tratou o crédito como
+    de 2025 (decisão do usuário de 21/10/2026: só avisar)."""
+    credito = date(2026, 1, 5)
+    [a], _ = _proventos(_jcp(date(2026, 1, 30), "0.5", "412.5", credito))
+    assert (a.ano_declaracao, a.aliquota, a.bruto, a.a_receber_em_31_12) == (
+        2026, D("0.175"), D("500.00"), False)  # fmt: skip
+    assert "retenção implícita" not in a.observacao
+    [b], _ = _proventos(_jcp(date(2026, 1, 30), "0.5", "425", credito))
+    assert (b.ano_declaracao, b.bruto) == (2026, D("515.15"))
+    assert "a empresa tratou o crédito como de 2025 (confira o informe)" in b.observacao

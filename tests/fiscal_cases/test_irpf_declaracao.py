@@ -184,3 +184,16 @@ def test_opcao_lancada_vai_para_dividas_pelo_premio() -> None:
     g = fichas(_dados(livro, 2026))
     assert g is not None and [(y.anterior, y.atual) for y in g.dividas] == [(D("300.00"), D("0"))]
     assert REFS.tipos.tipo("VALE3") is TipoAtivo.ACAO
+
+
+def test_jcp_pago_mais_de_um_ano_depois_do_credito_fica_a_receber_nos_dois_31_12() -> None:
+    """Achado da comparação com a DIRPF 2026 (21/10/2026; dados públicos da Eucatex): JCP com data
+    com 26/12/2023 pago em 09/01/2025. Creditado e não pago: a receber em 31/12/2023 e em
+    31/12/2024 (IN SRF 41/1998 art. 3º parágrafo único); em 2025, de 425,00 para 0,00, sem
+    rendimento novo."""
+    jcp = (_provento(date(2025, 1, 9), "ITSA4", TipoProvento.JCP, "425", ano=2023),)
+    for ano, esperado in ((2024, (D("425"), D("425"))), (2025, (D("425"), D("0")))):
+        f = fichas(_dados(Livro(), ano, jcp))
+        assert f is not None
+        assert [(b.anterior, b.atual) for b in f.bens] == [esperado]
+        assert not [r for r in f.rendimentos if r.codigo == "10"]

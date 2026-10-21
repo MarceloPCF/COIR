@@ -116,7 +116,8 @@ def propor_creditos(
 ) -> list[PropostaCredito]:  # fmt: skip
     """Para cada JCP a receber em 31/12 declarado, os JCP pagos no ano seguinte pela mesma empresa
     cuja soma fecha o valor (uma combinação só; mais de uma ou nenhuma: sem proposta). JCP com a
-    data do crédito informada pelo usuário fica de fora."""
+    data do crédito informada pelo usuário fica de fora; o já creditado até aquele 31/12 (pago
+    mais de um ano depois do crédito) não precisa de proposta."""
     por_empresa: dict[tuple[str, int], list[Provento]] = defaultdict(list)
     for p in proventos:
         cnpj = cnpj_de.get(p.codigo)
@@ -132,7 +133,7 @@ def propor_creditos(
         saida += [PropostaCredito(chave=p.chave, codigo=p.codigo, pagamento=p.data,
                                   liquido=p.liquido, cnpj=cnpj, credito=date(ano, 12, 31),
                                   origem=origem)
-                  for p in fecham[0] if p.ano_declaracao != ano]  # fmt: skip
+                  for p in fecham[0] if p.ano_declaracao > ano]  # fmt: skip
     return saida
 
 

@@ -15,6 +15,9 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
 - ``proventos_b3.csv``: proventos em dinheiro (dividendo, JCP, rendimento) com data de aprovação,
   data com, pagamento e valor por ação (o crédito do JCP; a B3 só lista os últimos meses, nunca
   apaga);
+- ``proventos_historico_b3.csv``: JCP da aba "Proventos em dinheiro" de cada companhia desde
+  ``HISTORICO_DESDE``, com classe, data de aprovação e data com (sem pagamento nem ISIN: a B3 não
+  publica); cobre os anos que ``proventos_b3.csv`` não alcança; nunca apaga;
 - ``emissores_b3.csv``: CNPJ e razão social de cada emissor (companhias e fundos FII, Fiagro e ETF),
   para o Bens e Direitos do IRPF (histórico: o CNPJ de um fundo pode mudar; nunca apaga linha);
 - ``pacote.json``: formato e data do pacote.
@@ -60,6 +63,9 @@ COLUNAS_INSTRUMENTOS = ("ticker", "isin", "categoria", "especificacao", "emissor
 COLUNAS_EMISSORES = ("emissor", "cnpj", "razao_social", "tipo", "visto_desde", "visto_ate")
 COLUNAS_PROVENTOS = ("emissor", "isin", "tipo", "valor", "aprovado_em", "data_com", "pagamento",
                      "referente")  # fmt: skip
+COLUNAS_HISTORICO = ("emissor", "classe", "tipo", "valor", "aprovado_em", "data_com")
+JCP = "JRS CAP PROPRIO"
+HISTORICO_DESDE = "2016-01-01"  # data com mais antiga guardada (dez anos antes da F8)
 COLUNAS_EVENTOS = ("emissor", "isin", "tipo", "fator", "data_com", "aprovado_em", "isin_emitido",
                    "preco", "periodo", "data_subscricao")  # fmt: skip
 
@@ -277,6 +283,38 @@ def juntar_proventos(anteriores: list[dict[str, str]], novos: Iterable[dict[str,
     return [todos[k] for k in sorted(todos, key=lambda k: (k[3], k[0], k[1], k[5], k[2]))]
 
 
+def ler_historico(emissor: str, resultados: Sequence[Mapping[str, object]]) -> list[dict[str, str]]:
+    """Aba "Proventos em dinheiro" (GetListedCashDividends) de uma companhia -> JCP com data de
+    aprovação e data com desde ``HISTORICO_DESDE``. Linha sem aprovação ou com valor por lote (a
+    B3 cotava por mil ações nos anos 1990) fica de fora."""
+    saida: list[dict[str, str]] = []
+    for e in resultados:
+        if str(e["corporateAction"]).strip() != JCP or str(e.get("quotedPerShares", "1")) != "1":
+            continue
+        aprovado = _data_br(str(e.get("dateApproval") or ""))
+        data_com = _data_br(str(e["lastDatePriorEx"]))
+        if aprovado and data_com >= HISTORICO_DESDE:
+            saida.append({"emissor": emissor, "classe": str(e["typeStock"]).strip(), "tipo": JCP,
+                          "valor": _numero(_br(str(e["valueCash"]))), "aprovado_em": aprovado,
+                          "data_com": data_com})  # fmt: skip
+    return saida
+
+
+def juntar_historico(anteriores: list[dict[str, str]], novos: Iterable[dict[str, str]],
+                     resumo: Resumo) -> list[dict[str, str]]:  # fmt: skip
+    """União com o que já foi coletado (nunca apaga), ordenada por data com."""
+
+    def chave(r: Mapping[str, str]) -> tuple[str, ...]:
+        return tuple(r[c] for c in COLUNAS_HISTORICO)
+
+    todos = {chave(r): dict(r) for r in anteriores}
+    for r in novos:
+        if chave(r) not in todos:
+            resumo.historico_novos.append(f"{r['data_com']} {r['emissor']} {r['classe']}")
+            todos[chave(r)] = r
+    return [todos[k] for k in sorted(todos, key=lambda k: (k[5], k[0], k[1], k[4], k[3]))]
+
+
 def _lista(bloco: Mapping[str, object], chave: str) -> list[Mapping[str, object]]:
     valor = bloco.get(chave) or []
     if not isinstance(valor, list):
@@ -323,6 +361,7 @@ class Resumo:
     emissores_novos: list[str] = field(default_factory=list[str])
     cnpj_mudou: list[str] = field(default_factory=list[str])
     proventos_novos: list[str] = field(default_factory=list[str])
+    historico_novos: list[str] = field(default_factory=list[str])
     conflitos: list[str] = field(default_factory=list[str])
     sem_resposta: list[str] = field(default_factory=list[str])
 
@@ -342,6 +381,7 @@ class Resumo:
                 "Proventos em dinheiro novos (data de aprovação, emissor, tipo)",
                 self.proventos_novos,
             ),
+            ("JCP novos no histórico (data com, emissor, classe)", self.historico_novos),
             ("Ignorados por conflito (revise)", self.conflitos),
             (
                 "Companhias sem resposta da B3 nesta coleta (eventos delas não atualizados)",
@@ -355,7 +395,7 @@ class Resumo:
     def vazio(self) -> bool:
         return not (self.ativos_novos or self.trocas_candidatas or self.eventos_novos
                     or self.selic_nova or self.emissores_novos or self.cnpj_mudou
-                    or self.proventos_novos)  # fmt: skip
+                    or self.proventos_novos or self.historico_novos)  # fmt: skip
 
 
 def atualizar_instrumentos(
@@ -511,6 +551,9 @@ class Coleta:
     selic: list[Mapping[str, str]]
     sem_resposta: tuple[str, ...] = ()  # emissores que a B3 não respondeu nesta coleta
     fundos: list[Mapping[str, object]] = field(default_factory=list[Mapping[str, object]])
+    historico: dict[str, list[Mapping[str, object]]] = field(
+        default_factory=dict[str, list[Mapping[str, object]]]
+    )  # emissor -> linhas da aba "Proventos em dinheiro" (todas as páginas)
 
     def salvar(self, pasta: Path) -> None:
         """Respostas brutas em ``pasta`` (para reprocessar sem rede e depurar)."""
@@ -518,7 +561,7 @@ class Coleta:
         (pasta / "instrumentos.csv").write_bytes(self.instrumentos)
         for nome, valor in (("empresas", self.empresas), ("eventos", self.eventos),
                             ("selic", self.selic), ("data", self.data.isoformat()),
-                            ("fundos", self.fundos),
+                            ("fundos", self.fundos), ("historico", self.historico),
                             ("sem_resposta", list(self.sem_resposta))):  # fmt: skip
             (pasta / f"{nome}.json").write_text(json.dumps(valor, ensure_ascii=False),
                                                 encoding="utf-8")  # fmt: skip
@@ -529,10 +572,12 @@ class Coleta:
             return json.loads((pasta / f"{nome}.json").read_text(encoding="utf-8"))
 
         fundos = ler("fundos") if (pasta / "fundos.json").is_file() else []  # coleta antiga
+        historico = ler("historico") if (pasta / "historico.json").is_file() else {}
         return cls(data=date.fromisoformat(ler("data")),
                    instrumentos=(pasta / "instrumentos.csv").read_bytes(),
                    empresas=ler("empresas"), eventos=ler("eventos"), selic=ler("selic"),
-                   sem_resposta=tuple(ler("sem_resposta")), fundos=fundos)  # fmt: skip
+                   sem_resposta=tuple(ler("sem_resposta")), fundos=fundos,
+                   historico=historico)  # fmt: skip
 
 
 RESPOSTA_RUIM = (KeyError, IndexError, TypeError, ValueError, AttributeError, InvalidOperation)
@@ -570,6 +615,10 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
             ler_csv(pasta / "proventos_b3.csv"),
             [p for emissor, resp in sorted(coleta.eventos.items())
              for p in ler_proventos(emissor, resp)], resumo)),
+        "proventos_historico_b3.csv": texto_csv(COLUNAS_HISTORICO, juntar_historico(
+            ler_csv(pasta / "proventos_historico_b3.csv"),
+            [p for emissor, resp in sorted(coleta.historico.items())
+             for p in ler_historico(emissor, resp)], resumo)),
         "emissores_b3.csv": texto_csv(COLUNAS_EMISSORES, juntar_emissores(
             ler_csv(pasta / "emissores_b3.csv"), ler_emissores(coleta.empresas, coleta.fundos,
                                                                resumo), coleta.data, resumo)),
