@@ -176,8 +176,7 @@ def _creditos(estado: Estado, jcp: list[Provento],
             with ui.row().classes("items-center gap-3 w-full"):
                 ui.label(f"{p.data:%d/%m/%Y} {p.codigo}").classes("coir-numero w-[180px]")
                 ui.label(_r(p.liquido)).classes("coir-numero w-[110px] text-right")
-                origem = ("informada" if "(informada)" in p.observacao else
-                          "B3" if "(B3)" in p.observacao else "sem data")  # fmt: skip
+                origem = p.credito_origem or "sem data"
                 ui.label(f"declarado em {p.ano_declaracao} · {origem}").classes(
                     "coir-subtitulo text-xs w-[200px]")  # fmt: skip
                 campo = ui.input("Creditado em", placeholder="dd/mm/aaaa",

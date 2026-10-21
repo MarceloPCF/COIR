@@ -11,11 +11,12 @@ from pathlib import Path
 
 from sqlalchemy import select
 
+from coir import referencias
 from coir.db.modelos import IrpfLancado
 from coir.db.sessao import conectar
 from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
 from coir.domain.proventos import Provento, TipoProvento
-from coir.erros import CoirError
+from coir.erros import CoirError, ConfiguracaoError
 from coir.gabarito.comparar import Tolerancias
 from coir.gabarito.dirpf import Dirpf, ler_dirpf
 from coir.gabarito.dirpf_comparar import LinhaComparacao, carregar_explicacoes, comparar, explicar
@@ -77,14 +78,25 @@ class PropostaCredito:
     origem: str  # PDF que deu a proposta
 
 
+def codigo_jcp_a_receber(exercicio: int) -> tuple[str, str] | None:
+    """Grupo e código de "JCP a receber" no Bens e Direitos do exercício (data/irpf)."""
+    try:
+        item = referencias.carregar_irpf(exercicio - 1).bens.item("JCP_A_RECEBER")
+    except ConfiguracaoError:
+        return None
+    return item.grupo, item.codigo
+
+
 def _a_receber(
-    declaracoes: Iterable[tuple[str, Dirpf]],
-) -> dict[tuple[str, int], tuple[Decimal, str]]:
-    """(CNPJ, ano do crédito) -> (valor a receber em 31/12, PDF), das colunas das DIRPF lidas."""
+    declaracoes: Iterable[tuple[str, Dirpf]], codigo: Callable[[int], tuple[str, str] | None],
+) -> dict[tuple[str, int], tuple[Decimal, str]]:  # fmt: skip
+    """(CNPJ, ano do crédito) -> (valor a receber em 31/12, PDF), das colunas das DIRPF lidas
+    (o código do JCP a receber vem do mapeamento do exercício de cada uma)."""
     saida: dict[tuple[str, int], tuple[Decimal, str]] = {}
     for nome, d in declaracoes:
+        jcp = codigo(d.exercicio)
         for b in d.bens:
-            if (b.grupo, b.codigo) != ("99", "07") or not b.cnpj:
+            if jcp is None or (b.grupo, b.codigo) != jcp or not b.cnpj:
                 continue
             for ano, valor in ((d.ano - 1, b.anterior), (d.ano, b.atual)):
                 if valor:
@@ -100,6 +112,7 @@ def _fecha(pagos: Iterable[Provento], valor: Decimal) -> bool:
 def propor_creditos(
     proventos: Iterable[Provento], cnpj_de: Mapping[str, str],
     declaracoes: Iterable[tuple[str, Dirpf]],
+    codigo: Callable[[int], tuple[str, str] | None] = codigo_jcp_a_receber,
 ) -> list[PropostaCredito]:  # fmt: skip
     """Para cada JCP a receber em 31/12 declarado, os JCP pagos no ano seguinte pela mesma empresa
     cuja soma fecha o valor (uma combinação só; mais de uma ou nenhuma: sem proposta). JCP com a
@@ -107,10 +120,10 @@ def propor_creditos(
     por_empresa: dict[tuple[str, int], list[Provento]] = defaultdict(list)
     for p in proventos:
         cnpj = cnpj_de.get(p.codigo)
-        if p.tipo is TipoProvento.JCP and cnpj and "(informada)" not in p.observacao:
+        if p.tipo is TipoProvento.JCP and cnpj and p.credito_origem != "informada":
             por_empresa[(cnpj, p.data.year)].append(p)
     saida: list[PropostaCredito] = []
-    for (cnpj, ano), (valor, origem) in sorted(_a_receber(declaracoes).items()):
+    for (cnpj, ano), (valor, origem) in sorted(_a_receber(declaracoes, codigo).items()):
         pagos = sorted(por_empresa.get((cnpj, ano + 1), []), key=lambda p: (p.data, p.chave))
         fecham = [c for n in range(1, min(len(pagos), MAX_PARCELAS) + 1)
                   for c in combinations(pagos, n) if _fecha(c, valor)]  # fmt: skip
@@ -123,30 +136,41 @@ def propor_creditos(
     return saida
 
 
-def declaracoes_lidas(dados: Path) -> tuple[list[tuple[str, Dirpf]], list[str]]:
-    """As DIRPF de <dados>/_dirpf que o COIR consegue ler (as outras viram aviso)."""
+_LIDAS: dict[tuple[Path, float], Dirpf] = {}  # (PDF, data de modificação) -> declaração lida
+
+
+def declaracoes_lidas(dados: Path, cpf: str | None = None
+                      ) -> tuple[list[tuple[str, Dirpf]], list[str]]:  # fmt: skip
+    """As DIRPF de <dados>/_dirpf que o COIR consegue ler (as outras viram aviso), só as do
+    titular de ``cpf`` quando informado. Cada PDF é lido uma vez por versão do arquivo."""
     lidas: list[tuple[str, Dirpf]] = []
     avisos: list[str] = []
     for pdf in pdfs_dirpf(dados):
+        chave = (pdf, pdf.stat().st_mtime)
         try:
-            lidas.append((pdf.name, ler_dirpf(pdf)))
+            if chave not in _LIDAS:
+                _LIDAS[chave] = ler_dirpf(pdf)
         except CoirError as erro:
             avisos.append(f"{pdf.name}: não lida ({erro})")
+            continue
+        if cpf is None or _LIDAS[chave].cpf == cpf:
+            lidas.append((pdf.name, _LIDAS[chave]))
     return lidas, avisos
 
 
 def conferir(
     dados: Path, fichas: FichasIrpf, mapa: MapeamentoIrpf, codigo_atual: Callable[[str], str],
+    cpf: str | None = None,
 ) -> Conferencia | None:  # fmt: skip
-    """Compara as fichas com a DIRPF entregue do mesmo ano-calendário, se houver o PDF em
-    ``<dados>/_dirpf``; as divergências já analisadas (``gabarito/dirpf-explicadas.csv``) saem
-    como explicadas."""
-    for pdf in pdfs_dirpf(dados):
-        declarada = ler_dirpf(pdf)
+    """Compara as fichas com a DIRPF entregue do titular (``cpf``) e do mesmo ano-calendário,
+    se houver o PDF em ``<dados>/_dirpf``; as divergências já analisadas
+    (``gabarito/dirpf-explicadas.csv``) saem como explicadas. PDF ilegível é ignorado."""
+    lidas, _ = declaracoes_lidas(dados, cpf)
+    for nome, declarada in lidas:
         if declarada.ano == fichas.ano:
             tol = Tolerancias.carregar()
             explicacoes = carregar_explicacoes(dados / "gabarito" / "dirpf-explicadas.csv")
             linhas = explicar(comparar(fichas, declarada, mapa, tol.mes, tol.operacao,
                                        codigo_atual), explicacoes)  # fmt: skip
-            return Conferencia(pdf.name, tuple(linhas))
+            return Conferencia(nome, tuple(linhas))
     return None

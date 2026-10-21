@@ -43,7 +43,7 @@ from coir.servicos import (
 )
 from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
 from coir.servicos.importacao import Extrator, aplicar_tabelas
-from coir.servicos.proventos import informar_credito, proventos_banco
+from coir.servicos.proventos import informar_creditos, proventos_banco
 from coir.servicos.relatorios import dados_banco, info_ativos
 
 log = logging.getLogger(__name__)
@@ -316,7 +316,8 @@ class Estado:
         f, mapa = self.fichas_irpf()
         if f is None or mapa is None:
             return None
-        return declaracao.conferir(self.dados, f, mapa, ticker_atual(self.refs))
+        cpf = self.dados_relatorio().cpf
+        return declaracao.conferir(self.dados, f, mapa, ticker_atual(self.refs), cpf)
 
     def propor_creditos_dirpf(self) -> tuple[list[declaracao.PropostaCredito], list[str]]:
         """JCP cujo crédito, pelas DIRPF entregues em <dados>/_dirpf (99.07), foi no ano anterior
@@ -326,13 +327,11 @@ class Estado:
             return [], []
         info = info_ativos({p.codigo for p in lista}, self.refs, self.fiscais, self.pasta_refs)
         cnpjs = {t: i.cnpj for t, i in info.items() if i.cnpj}
-        lidas, avisos = declaracao.declaracoes_lidas(self.dados)
+        lidas, avisos = declaracao.declaracoes_lidas(self.dados, self.dados_relatorio().cpf)
         return declaracao.propor_creditos(lista, cnpjs, lidas), avisos
 
     def confirmar_creditos(self, propostas: list[declaracao.PropostaCredito]) -> None:
-        agora = self.agora()
-        for p in propostas:
-            informar_credito(self.banco, p.chave, p.credito, agora)
+        informar_creditos(self.banco, [(p.chave, p.credito) for p in propostas], self.agora())
 
     def proventos(self) -> tuple[list[Provento], list[str]]:
         """Proventos do titular escolhido (todos os anos) e os avisos."""

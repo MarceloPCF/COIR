@@ -169,6 +169,7 @@ def _criar(
         origem=f"mov:{item.id}",
         observacao=observacao,
         credito=item.credito if tipo is TipoProvento.JCP else None,
+        credito_origem=item.credito_origem if tipo is TipoProvento.JCP else "",
         chave=item.chave,
         reembolso_de=reembolso_de,
     )

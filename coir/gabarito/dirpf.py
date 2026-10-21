@@ -15,7 +15,7 @@ from collections.abc import Iterator, Sequence
 from decimal import Decimal
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from coir.domain.cpf import so_digitos
 from coir.erros import GabaritoError
@@ -107,6 +107,9 @@ class Dirpf(Modelo):
     rendimentos: tuple[Rendimento, ...]
     sem_fonte: tuple[tuple[str, str], ...]  # linhas cuja leitura por fonte não fechou
     ir_fonte_lei_11033: Decimal  # "Imposto pago/retido" 03
+    # CPF do titular, só em memória (nunca gravado nem impresso): a conferência e a proposta de
+    # crédito usam só as declarações do titular escolhido
+    cpf: str = Field(default="", repr=False)
 
 
 def _valor(texto: str) -> Decimal:
@@ -115,9 +118,11 @@ def _valor(texto: str) -> Decimal:
     return Decimal(texto.replace(".", "").replace(",", "."))
 
 
-def _linhas(textos: Sequence[str]) -> tuple[int, int, list[str]]:
-    """Linhas de todas as páginas, sem o cabeçalho (nome, CPF) nem o rodapé de cada página."""
+def _linhas(textos: Sequence[str]) -> tuple[int, int, str, list[str]]:
+    """Linhas de todas as páginas, sem o cabeçalho (nome, CPF) nem o rodapé de cada página;
+    o CPF do cabeçalho vai à parte."""
     exercicio = ano = 0
+    cpf = ""
     saida: list[str] = []
     for n, texto in enumerate(textos, 1):
         linhas = [x.strip() for x in texto.splitlines() if x.strip()]
@@ -127,8 +132,9 @@ def _linhas(textos: Sequence[str]) -> tuple[int, int, list[str]]:
         if m is None:
             raise GabaritoError(f"DIRPF: página {n} sem exercício e ano-calendário")
         exercicio, ano = int(m[1]), int(m[2])
+        cpf = so_digitos(linhas[CABECALHO - 1])
         saida += [x for x in linhas[CABECALHO:] if not x.startswith("Página ")]
-    return exercicio, ano, saida
+    return exercicio, ano, cpf, saida
 
 
 def _secao(linhas: list[str], inicio: str, fim: str | Sequence[str]) -> list[str]:
@@ -264,7 +270,7 @@ def _rendimentos(
 
 
 def ler_texto(textos: Sequence[str]) -> Dirpf:
-    exercicio, ano, linhas = _linhas(textos)
+    exercicio, ano, cpf, linhas = _linhas(textos)
     totais: dict[tuple[str, str], Decimal] = {}
     por_fonte: list[Rendimento] = []
     sem_fonte: list[tuple[str, str]] = []
@@ -274,7 +280,7 @@ def ler_texto(textos: Sequence[str]) -> Dirpf:
                  totais, por_fonte, sem_fonte)  # fmt: skip
     pago = _secao(linhas, IMPOSTO_PAGO, ("RENDIMENTOS TRIBUTÁVEIS", "PAGAMENTOS EFETUADOS"))
     return Dirpf(
-        exercicio=exercicio, ano=ano,
+        exercicio=exercicio, ano=ano, cpf=cpf,
         renda_variavel=_ficha(_secao(linhas, RV_TITULAR, RV_FIM), "renda variável"),
         fii=_ficha(_secao(linhas, FII_TITULAR, FII_FIM), "FII"),
         bens=_bens(_secao(linhas, BENS, ("DÍVIDAS E ÔNUS REAIS", "DOAÇÕES A PARTIDOS"))),

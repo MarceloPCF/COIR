@@ -11,6 +11,15 @@ from pydantic import BaseModel, ConfigDict
 RE_SERIE_OPCAO = re.compile(r"^[A-Z0-9]{4}[A-X]\d")
 
 
+def opcao_de_compra(serie: str) -> bool:
+    """Letra do mês da série: A a L, opção de compra (call); M a X, de venda (put)."""
+    return serie[4:5] <= "L"
+
+
+def especie_opcao(serie: str) -> str:
+    return "compra" if opcao_de_compra(serie) else "venda"
+
+
 class ContratoFuturo(BaseModel):
     """Contrato futuro da B3 (data/contratos_futuros.csv).
 

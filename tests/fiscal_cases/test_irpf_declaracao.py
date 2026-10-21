@@ -140,6 +140,11 @@ def test_ficha_mes_a_mes_e_imposto_pago_de_dezembro() -> None:
     assert abril.valor("Mercado à Vista - Ações").comuns == D("-1000.00")
     assert abril.valor(PREJUIZO).comuns == D("1000.00")
     assert maio.valor(NEGATIVO_ANTERIOR).comuns == D("1000.00")
+    # o que se digita no programa: mercados, IR fonte do mês, imposto pago e, só em janeiro, o
+    # resultado negativo do ano anterior (o resto o programa calcula)
+    janeiro = f.renda_variavel[0]
+    assert janeiro.valor(NEGATIVO_ANTERIOR).digita and not maio.valor(NEGATIVO_ANTERIOR).digita
+    assert abril.valor("Mercado à Vista - Ações").digita and not abril.valor(PREJUIZO).digita
     [pago] = [r for r in f.rendimentos if r.ficha == "imposto_pago"]
     assert (pago.codigo, pago.valor) == ("03", D("6.00"))
     rel = declaracao(d)

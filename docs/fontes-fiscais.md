@@ -9,27 +9,27 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | LC 224/2025 | 8 |
 | Lei 6.404 | 3 |
 | Lei 8.668/1993 | 1 |
-| Lei 8.981/1995 | 9 |
-| Lei 9.249/1995 | 13 |
+| Lei 8.981/1995 | 10 |
+| Lei 9.249/1995 | 15 |
 | Lei 9.250 | 3 |
 | Lei 9.430/1996 | 17 |
 | Lei 9.779/1999 | 1 |
 | Lei 9.959/2000 | 5 |
-| Lei 11.033/2004 | 23 |
+| Lei 11.033/2004 | 24 |
 | Lei 11.051/2004 | 5 |
 | Lei 12.350/2010 | 1 |
-| Lei 13.043/2014 | 12 |
+| Lei 13.043/2014 | 13 |
 | Lei 14.754/2023 | 3 |
 | Lei 15.265/2025 | 10 |
 | Lei 15.270/2025 | 10 |
 | MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 59 |
+| IN RFB 1.585/2015 | 62 |
 | Res. CMN 4.880/2020 | 1 |
 | SC Cosit 67/2024 | 1 |
 | SC Cosit 145/2021 | 1 |
 | SC Cosit 224/2014 | 3 |
 | P&R IRPF | 5 |
-| P&R IRPF 2026 | 17 |
+| P&R IRPF 2026 | 20 |
 | Manual MIR 2026 | 3 |
 | Programa IRPF | 7 |
 | CTN | 1 |
@@ -62,6 +62,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 
 - `coir/engine/apuracao.py` — módulo: …sem prazo (IN RFB 1.585/2015); prejuízo de mês isento compensa se `prejuizo_mes_isento_compensavel` (Lei 8.981/1995 art. 72 §8º). - IRRF (0,005% e 1%): deduz do imposto do mês; o saldo passa aos meses seguintes do…
 - `coir/engine/proventos.py` — módulo: …Seguridade); não é lucro distribuído (Lei 9.249 art. 10): tributação exclusiva na fonte como renda fixa (Lei 8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º), como as fontes retêm (22,5% nos dados reais); bruto =…
+- `data/irpf/2025.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2026.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2027.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/parametros_fiscais.csv` — prejuizo_mes_isento_compensavel: Lei 8.981/1995 art. 72 §8º; Manual MIR 2026; decisão do usuário (14/10/2026)
@@ -74,6 +75,8 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 
 - `coir/engine/proventos.py` — _jcp_com_credito: …empresa ou data de aprovação no pacote da B3): declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º; a receber em 31/12 se pago depois), com a alíquota da data do crédito ou do…
 - `coir/engine/proventos.py` — módulo: …da B3 (decisões do usuário de 19/10/2026). - Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR, ETF ou FII: fora da v3.0, listado com aviso (BDR: Lei 14.754/2023, não é…
+- `data/irpf/2025.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
+- `data/irpf/2025.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/irpf/2026.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2026.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/irpf/2027.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
@@ -129,6 +132,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `coir/engine/apuracao.py` — módulo: …e limites vêm de data/parametros_fiscais.csv, com a fonte de cada um): - Alíquotas: 15% comum (Lei 11.033/2004 art. 2º II), 20% day trade e 20% FII (IN RFB 1.585/2015, arts. 56 a 65). - Isenção: ganho líquido…
 - `coir/engine/fichas.py` — módulo: …IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §8º; decisão do usuário de 16/10/2026: separar…
 - `coir/engine/proventos.py` — módulo: …(1 - alíquota), centavos arredondados (estimativa: vale o informe). - Rendimento de FII/Fiagro: isento (Lei 11.033/2004 art. 3º III). "Rendimento" em ação pago junto com um dividendo ou JCP do mesmo código e dia: a…
+- `data/irpf/2025.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/irpf/2026.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/parametros_fiscais.csv` — aliquota_comum: Lei 11.033/2004 art. 2º II; RIR/2018 art. 839
@@ -165,6 +169,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 ## Lei 13.043/2014
 
 - `coir/engine/proventos.py` — _origem_reembolso: …é a quantidade emprestada vezes o valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica;…
+- `data/irpf/2025.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2026.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2027.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/isencao_pme.csv` — AGRO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (AGRO3); oferta subsequente precificada em 04/02/2021
@@ -231,6 +236,9 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 - `coir/engine/posicao.py` — módulo: Posição de um ativo pelo custo médio ponderado (IN RFB 1.585/2015 art. 58: custo médio de aquisição; custos da compra integram o custo, os da venda reduzem a…
 - `coir/engine/proventos.py` — módulo: …em ação sem esse par: fora, listado com aviso. - Reembolso de BTC (doador): isento até 2025 (IN RFB 1.585/2015 art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com…
 - `coir/engine/rateio.py` — módulo: Rateio dos custos da nota pelo valor das operações (IN RFB 1.585/2015 art. 58 §2º: custos de corretagem e taxas integram o custo de aquisição e reduzem o valor de…
+- `data/irpf/2025.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
+- `data/irpf/2025.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
+- `data/irpf/2025.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
 - `data/irpf/2026.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
 - `data/irpf/2026.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/irpf/2026.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
@@ -309,6 +317,9 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 
 - `coir/engine/futuros.py` — módulo: …ocasião da liquidação do contrato, cessão ou encerramento da posição". IN RFB 1.585/2015 art. 61 e P&R IRPF 2026 pergunta 728: resultado de cada contrato = soma algébrica dos ajustes diários entre a abertura e o…
 - `coir/engine/proventos.py` — _jcp_com_credito: …conhecida (informe da empresa ou data de aprovação no pacote da B3): declarado no ano do crédito (P&R IRPF 2026 pergunta 320; Lei 9.249/1995 art. 9º §2º; a receber em 31/12 se pago depois), com a alíquota da data do…
+- `data/irpf/2025.yaml` — bens: Programa IRPF 2026, ficha Bens e Direitos; Manual do MIR (bens financeiros); P&R IRPF 2026 perguntas 459 e 720 (um item por ação, total das corretoras); leiaute DIRPF 2023 reg. 27
+- `data/irpf/2025.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
+- `data/irpf/2025.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
 - `data/irpf/2026.yaml` — bens: Programa IRPF 2026, ficha Bens e Direitos; Manual do MIR (bens financeiros); P&R IRPF 2026 perguntas 459 e 720 (um item por ação, total das corretoras); leiaute DIRPF 2023 reg. 27
 - `data/irpf/2026.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
 - `data/irpf/2026.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I

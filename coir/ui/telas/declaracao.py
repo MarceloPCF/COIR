@@ -11,15 +11,7 @@ from nicegui import run, ui
 from coir.domain.cpf import formatar_cnpj
 from coir.domain.irpf import FichasIrpf, LinhaFicha, MapeamentoIrpf, MesFichaIrpf, RendimentoIrpf
 from coir.erros import CoirError
-from coir.reports.irpf import (
-    ALIQUOTA,
-    DT_MES,
-    FII_RETIDO_MES,
-    LEI_MES,
-    MESES,
-    NEGATIVO_ANTERIOR,
-    PAGO,
-)
+from coir.reports.irpf import ALIQUOTA, MESES, aliquota
 from coir.reports.modelo import Coluna, TipoColuna, formatar
 from coir.servicos.declaracao import Conferencia
 from coir.servicos.estado import Estado
@@ -148,7 +140,7 @@ def _ficha(chave: str, f: FichasIrpf, mapa: MapeamentoIrpf,
         if not f.bens:
             ui.label("Nenhum bem de renda variável no ano.").classes("coir-vazio w-full")
         for b in f.bens:
-            item = b.ticker or f"99.07 {b.cnpj}"
+            item = b.ticker or f"{b.grupo}.{b.codigo} {b.cnpj or b.discriminacao[:40]}"
             with ui.column().classes("coir-folha w-full gap-1").mark(f"bem-{item}"):
                 with ui.row().classes("items-center gap-3 w-full"):
                     ui.label(f"{b.grupo}.{b.codigo}").classes("coir-titulo")
@@ -215,7 +207,6 @@ def _meses(meses: tuple[MesFichaIrpf, ...], chave: str, lancado: Callable[[str],
     programa calcula: serve para conferir)."""
     if not meses:
         return
-    digitadas = {DT_MES, LEI_MES, PAGO, FII_RETIDO_MES}
     with ui.tabs().classes("w-full") as abas:
         tabs = {m.mes: ui.tab(MESES[m.mes - 1][:3]) for m in meses}
     with ui.tab_panels(abas, value=tabs[meses[0].mes]).classes("w-full"):
@@ -225,17 +216,13 @@ def _meses(meses: tuple[MesFichaIrpf, ...], chave: str, lancado: Callable[[str],
                     ui.label(MESES[m.mes - 1]).classes("coir-titulo")
                     ui.space()
                     lancado(f"{chave}:{m.mes:02d}")
-                mercados = len(m.linhas) - 15 if duas else 0
-                for i, x in enumerate(m.linhas):
-                    digita = i < mercados or x.rotulo in digitadas or (
-                        m.mes == 1 and x.rotulo == NEGATIVO_ANTERIOR)  # fmt: skip
-                    _linha_mes(x, digita, duas)
+                for x in m.linhas:
+                    _linha_mes(x, x.digita, duas)
 
 
 def _linha_mes(x: LinhaFicha, digita: bool, duas: bool) -> None:
     def texto(v: Decimal) -> str:
-        return formatar(v, T.PERCENTUAL).replace(",00", "") if x.rotulo == ALIQUOTA else (
-            _programa(v))  # fmt: skip
+        return aliquota(v) if x.rotulo == ALIQUOTA else _programa(v)
 
     with ui.row().classes("w-full items-center gap-3 no-wrap"):
         ui.label(x.rotulo).classes("grow text-sm" if digita else "grow text-sm coir-subtitulo")

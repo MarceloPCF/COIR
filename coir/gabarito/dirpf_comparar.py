@@ -76,15 +76,15 @@ def _renda_variavel(f: FichasIrpf, d: Dirpf, tol: Decimal) -> list[LinhaComparac
     return saida
 
 
-def _bens(f: FichasIrpf, d: Dirpf, tol: Decimal, codigo_atual: Callable[[str], str]
-          ) -> list[LinhaComparacao]:  # fmt: skip
+def _bens(f: FichasIrpf, d: Dirpf, tol: Decimal, codigo_atual: Callable[[str], str],
+          jcp: tuple[str, str]) -> list[LinhaComparacao]:  # fmt: skip
     declarados: dict[str, list[Decimal]] = defaultdict(lambda: [ZERO, ZERO])
     codigos: dict[str, set[str]] = defaultdict(set)
     for b in d.bens:
         if b.ticker:
             chave = codigo_atual(b.ticker)  # a DIRPF pode trazer o código antigo (EMBR3 -> EMBJ3)
-        elif (b.grupo, b.codigo) == ("99", "07") and b.cnpj:
-            chave = f"99.07 {b.cnpj}"
+        elif (b.grupo, b.codigo) == jcp and b.cnpj:
+            chave = f"{jcp[0]}.{jcp[1]} {b.cnpj}"
         else:
             continue  # conta bancária, imóvel, renda fixa: fora do COIR
         declarados[chave][0] += b.anterior
@@ -92,7 +92,9 @@ def _bens(f: FichasIrpf, d: Dirpf, tol: Decimal, codigo_atual: Callable[[str], s
         codigos[chave].add(f"{b.grupo}.{b.codigo}")
     gerados: dict[str, tuple[Decimal, Decimal, str]] = {}
     for b in f.bens:
-        chave = codigo_atual(b.ticker) if b.ticker else f"99.07 {b.cnpj}"
+        # JCP a receber por CNPJ; sem CNPJ, pela discriminação (não junta empresas diferentes)
+        chave = (codigo_atual(b.ticker) if b.ticker
+                 else f"{b.grupo}.{b.codigo} {b.cnpj or b.discriminacao}")  # fmt: skip
         anterior, atual, _ = gerados.get(chave, (ZERO, ZERO, ""))
         gerados[chave] = (anterior + b.anterior, atual + b.atual, f"{b.grupo}.{b.codigo}")
     saida: list[LinhaComparacao] = []
@@ -149,8 +151,10 @@ def comparar(f: FichasIrpf, d: Dirpf, mapa: MapeamentoIrpf, tol_mes: Decimal,
     if (f.exercicio, f.ano) != (d.exercicio, d.ano):
         raise ValueError(f"fichas de {f.ano} contra a DIRPF do ano-calendário {d.ano}")
     pago = sum((r.valor for r in f.rendimentos if r.ficha == "imposto_pago"), ZERO)
+    item = mapa.bens.item("JCP_A_RECEBER")
     return [
-        *_renda_variavel(f, d, tol_mes), *_bens(f, d, tol_valor, codigo_atual),
+        *_renda_variavel(f, d, tol_mes),
+        *_bens(f, d, tol_valor, codigo_atual, (item.grupo, item.codigo)),
         *_rendimentos(f, d, mapa, tol_valor),
         _linha("imposto_pago", "03 Lei 11.033/2004", "valor", pago, d.ir_fonte_lei_11033,
                tol_valor),

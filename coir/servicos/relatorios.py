@@ -21,7 +21,7 @@ from coir.domain.referencias import RE_SERIE_OPCAO, Referencias
 from coir.domain.relatorio import DadosRelatorio, InfoAtivo, NotaDoLivro
 from coir.engine.apuracao import apurar
 from coir.engine.movimentos import carteira
-from coir.erros import ConfiguracaoError, ExportacaoError
+from coir.erros import ConfiguracaoError, ExportacaoError, MotorError
 from coir.reports.fiscais import TODOS, relatorios
 from coir.reports.saida_csv import escrever_csv
 from coir.reports.saida_pdf import escrever_pdf
@@ -92,8 +92,16 @@ def dados_banco(
     anterior = carteira(notas, eventos, params, fim_anterior, Visao.TITULAR)
     na_data = fiscal if (visao, dia) == (Visao.TITULAR, ate) else carteira(notas, eventos, params,
                                                                            dia, visao)  # fmt: skip
-    custodia = carteira(notas, eventos, params, ate, Visao.CORRETORA)
-    custodia_anterior = carteira(notas, eventos, params, fim_anterior, Visao.CORRETORA)
+    # custódia por corretora: só a discriminação dos bens; se a visão operacional falhar, os
+    # relatórios seguem e a declaração avisa (o custo dos bens é o fiscal, por titular)
+    avisos_irpf: list[str] = []
+    try:
+        custodia = carteira(notas, eventos, params, ate, Visao.CORRETORA)
+        custodia_anterior = carteira(notas, eventos, params, fim_anterior, Visao.CORRETORA)
+    except MotorError as erro:
+        custodia, custodia_anterior = [], []
+        avisos_irpf.append(f"Custódia por corretora indisponível ({erro}): a discriminação dos "
+                           "bens sai sem a quantidade em cada corretora")  # fmt: skip
     apuracao = apurar(notas, eventos, params, fiscais.calendario, ate, custos)
     try:
         irpf = referencias.carregar_irpf(ano)
@@ -113,7 +121,7 @@ def dados_banco(
         carteira_fiscal_anterior=tuple(anterior), contas=contas,
         notas=livro, proventos=tuple(lista_proventos), avisos_proventos=tuple(avisos_proventos),
         irpf=irpf, info_ativos=info, custodia=tuple(custodia),
-        custodia_anterior=tuple(custodia_anterior),
+        custodia_anterior=tuple(custodia_anterior), avisos_irpf=tuple(avisos_irpf),
     )  # fmt: skip
 
 

@@ -57,3 +57,4 @@ class DadosRelatorio(BaseModel):
     info_ativos: dict[str, InfoAtivo] = {}
     custodia: tuple[PosicaoAtivo, ...] = ()  # por corretora, em 31/12 do ano (ou em `ate`)
     custodia_anterior: tuple[PosicaoAtivo, ...] = ()  # por corretora, em 31/12 do ano anterior
+    avisos_irpf: tuple[str, ...] = ()  # da montagem (ex.: custódia por corretora indisponível)

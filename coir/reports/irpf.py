@@ -37,6 +37,7 @@ from coir.domain.irpf import (
     TipoBem,
 )
 from coir.domain.proventos import TipoProvento
+from coir.domain.referencias import especie_opcao
 from coir.domain.relatorio import DadosRelatorio, InfoAtivo
 from coir.reports.modelo import Cabecalho, Coluna, Relatorio, Secao, TipoColuna, Valor, formatar
 
@@ -117,18 +118,19 @@ def _custodia(posicoes: Iterable[PosicaoAtivo], ativo: int) -> str:
 def _discriminacao(tipo: TipoBem, p: PosicaoAtivo, info: InfoAtivo | None, custodia: str,
                    quando: str) -> str:  # fmt: skip
     if tipo == "OPCAO":
-        especie = "venda" if "M" <= p.ticker[4:5] <= "X" else "compra"
         objeto = f", ativo-objeto {info.objeto}" if info is not None and info.objeto else ""
         venc = f", vencimento {p.vencimento:%d/%m/%Y}" if p.vencimento else ""
         corretora = custodia.split(":")[0] if custodia and ";" not in custodia else custodia
-        return (f"{_q(p.quantidade)} opções de {especie} {p.ticker}{objeto}{venc}, corretora "
-                f"{corretora}{quando}.")  # fmt: skip
+        onde = f", corretora {corretora}" if corretora else ""
+        return (f"{_q(p.quantidade)} opções de {especie_opcao(p.ticker)} {p.ticker}{objeto}"
+                f"{venc}{onde}{quando}.")  # fmt: skip
     classe = (info.especificacao.split() or [""])[0] if info is not None else ""
     especie = QUANTIDADE_DE.get(tipo, f"ações {classe}".strip() if classe in (
         "ON", "PN", "PNA", "PNB", "PNC") else "ações")  # fmt: skip
     nome = info.razao_social if info is not None and info.razao_social else p.ticker
-    return (f"{_q(p.quantidade)} {especie} de {nome}, código {p.ticker}, custodiadas em "
-            f"{custodia}{quando}. Custo médio R$ {formatar(p.pm, T.PRECO)} {ART_58}.")  # fmt: skip
+    onde = f", custodiadas em {custodia}" if custodia else ""
+    return (f"{_q(p.quantidade)} {especie} de {nome}, código {p.ticker}{onde}{quando}. "
+            f"Custo médio R$ {formatar(p.pm, T.PRECO)} {ART_58}.")  # fmt: skip
 
 
 def _bens(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]) -> list[BemIrpf]:
@@ -184,7 +186,7 @@ def _dividas(d: DadosRelatorio, mapa: MapeamentoIrpf) -> list[DividaIrpf]:
         corretoras = sorted({x.corretora or "?" for x in posicoes
                              if x.ativo == ativo and x.quantidade < 0})  # fmt: skip
         if p.tipo is TipoAtivo.OPCAO:
-            especie = "venda" if "M" <= p.ticker[4:5] <= "X" else "compra"
+            especie = especie_opcao(p.ticker)
             venc = f", vencimento {p.vencimento:%d/%m/%Y}" if p.vencimento else ""
             texto = (f"Opção de {especie} {p.ticker} lançada ({_q(-p.quantidade)}){venc}: prêmio "
                      f"recebido, posição em aberto")  # fmt: skip
@@ -334,7 +336,8 @@ def _mes_comuns(m: MesApurado, mapa: MapeamentoIrpf) -> MesFichaIrpf:
         um(LEI_MES, f.irrf_mes), um(LEI_ANTERIORES, f.irrf_anterior),
         um(LEI_COMPENSAR, f.irrf_a_compensar),
     ]  # fmt: skip
-    return MesFichaIrpf(mes=m.mes, linhas=tuple(linhas))
+    mercados = {x.rotulo for x in mapa.renda_variavel.linhas}
+    return MesFichaIrpf(mes=m.mes, linhas=_digitadas(linhas, m.mes, mercados | DIGITADAS))
 
 
 def _mes_fii(m: MesApurado) -> MesFichaIrpf:
@@ -345,8 +348,20 @@ def _mes_fii(m: MesApurado) -> MesFichaIrpf:
         (FII_RETIDO_MES, f.irrf_mes), (FII_RETIDO_ANTERIORES, f.irrf_anterior),
         (FII_RETIDO_COMPENSAR, f.irrf_a_compensar), (A_PAGAR, f.a_pagar), (PAGO, f.pago),
     )  # fmt: skip
-    return MesFichaIrpf(mes=m.mes, linhas=tuple(LinhaFicha(rotulo=r_, comuns=v)
-                                                for r_, v in valores))  # fmt: skip
+    linhas = [LinhaFicha(rotulo=r_, comuns=v) for r_, v in valores]
+    return MesFichaIrpf(mes=m.mes, linhas=_digitadas(linhas, m.mes, DIGITADAS_FII))
+
+
+# linhas que o usuário digita no programa (as outras o programa calcula: servem para conferir);
+# em janeiro também o resultado negativo do ano anterior
+DIGITADAS = frozenset({DT_MES, LEI_MES, PAGO})
+DIGITADAS_FII = frozenset({FII_RETIDO_MES, PAGO})
+
+
+def _digitadas(linhas: list[LinhaFicha], mes: int, rotulos: frozenset[str] | set[str]
+               ) -> tuple[LinhaFicha, ...]:  # fmt: skip
+    return tuple(x.model_copy(update={"digita": x.rotulo in rotulos or (
+        mes == 1 and x.rotulo == NEGATIVO_ANTERIOR)}) for x in linhas)  # fmt: skip
 
 
 def _fii_ativa(meses: list[MesApurado]) -> bool:
@@ -359,7 +374,7 @@ def fichas(d: DadosRelatorio) -> FichasIrpf | None:
     mapa = d.irpf
     if mapa is None:
         return None
-    avisos: list[str] = []
+    avisos: list[str] = list(d.avisos_irpf)
     if mapa.provisorio:
         avisos.append(f"Mapeamento do exercício {mapa.exercicio} provisório: o programa IRPF "
                       f"{mapa.exercicio} ainda não foi publicado; confira os códigos")  # fmt: skip
@@ -384,6 +399,11 @@ def fichas(d: DadosRelatorio) -> FichasIrpf | None:
 
 
 # ------------------------------------------------------------------------------- relatório
+def aliquota(valor: Decimal) -> str:
+    """0,15 -> "15%" (como o programa IRPF mostra a alíquota)."""
+    return formatar(valor, T.PERCENTUAL).replace(",00", "")
+
+
 def _cab(d: DadosRelatorio) -> Cabecalho:
     return Cabecalho(d.nome, d.cpf, f"Exercício {d.ano + 1}, ano-calendário {d.ano}",
                      d.gerado_em)  # fmt: skip
@@ -397,7 +417,7 @@ def _celula(linha: LinhaFicha, coluna: Decimal | None) -> Valor:
     if coluna is None:
         return None
     if linha.rotulo in PERCENTUAIS:
-        return formatar(coluna, T.PERCENTUAL).replace(",00", "")
+        return aliquota(coluna)
     return coluna
 
 

@@ -54,8 +54,9 @@ def test_parcelas_que_fecham_o_valor_viram_proposta() -> None:
 
 
 def test_credito_ja_informado_ou_no_ano_certo_fica_de_fora() -> None:
-    informado = _jcp(date(2025, 1, 10), "AAAA4", "300", "a1", obs="creditado em 20/12/2024 "
-                     "(informada)")  # fmt: skip
+    informado = _jcp(date(2025, 1, 10), "AAAA4", "300", "a1").model_copy(
+        update={"credito": date(2024, 12, 20), "credito_origem": "informada"}
+    )
     assert propor_creditos([informado], CNPJ, [("d.pdf", _dirpf(_a_receber(A, "300", "0")))]) == []
     ja_certo = _jcp(date(2025, 1, 10), "AAAA4", "300", "a1").model_copy(
         update={"ano_declaracao": 2024}

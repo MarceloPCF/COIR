@@ -189,7 +189,8 @@ def proventos_b3(pasta: Path) -> list[dict[str, str]]:
             date.fromisoformat(r["aprovado_em"])
             if r["pagamento"]:
                 date.fromisoformat(r["pagamento"])
-            Decimal(r["valor"])
+            if not Decimal(r["valor"]).is_finite():
+                continue
         except (KeyError, ValueError, ArithmeticError):
             continue
         saida.append(r)

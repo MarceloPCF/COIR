@@ -31,7 +31,10 @@ def linhas_banco(banco: Path, titular: int | None = None) -> list[LinhaB3]:
     if titular is not None:
         consulta = consulta.where(MovimentacaoB3.titular_id == titular)
     with conectar(banco) as fabrica, fabrica() as s:
-        informados = {c.chave: c.data_credito for c in s.scalars(select(CreditoJcp))}
+        creditos = select(CreditoJcp)
+        if titular is not None:
+            creditos = creditos.where(CreditoJcp.titular_id == titular)
+        informados = {c.chave: c.data_credito for c in s.scalars(creditos)}
         return [
             LinhaB3(
                 id=m.id,
@@ -57,17 +60,24 @@ def linhas_banco(banco: Path, titular: int | None = None) -> list[LinhaB3]:
 
 def creditos_b3(
     linhas: Iterable[LinhaB3], publicos: Iterable[Mapping[str, str]],
-    emissor_de: Mapping[str, str],
+    emissor_de: Mapping[str, str], avisos: list[str] | None = None,
 ) -> list[LinhaB3]:  # fmt: skip
     """Completa a data do crédito dos JCP sem correção do usuário com a data de aprovação da B3:
     mesma empresa e data de pagamento; havendo mais de um (ON e PN), o de valor por ação mais
-    próximo do preço da movimentação, dentro de 1%."""
+    próximo do preço da movimentação, dentro de 1%. Aprovação depois do pagamento (dado público
+    retificado) não é crédito: a linha é ignorada e vai para ``avisos``."""
     por_pagamento: dict[tuple[str, date], list[tuple[Decimal, date]]] = {}
     for r in publicos:
         if r["tipo"] == JCP_B3 and r["pagamento"]:
-            chave = (r["emissor"], date.fromisoformat(r["pagamento"]))
-            por_pagamento.setdefault(chave, []).append(
-                (Decimal(r["valor"]), date.fromisoformat(r["aprovado_em"]))
+            pagamento, aprovado = date.fromisoformat(r["pagamento"]), date.fromisoformat(
+                r["aprovado_em"])  # fmt: skip
+            if aprovado > pagamento:
+                if avisos is not None:
+                    avisos.append(f"pacote da B3: JCP de {r['emissor']} pago em {pagamento} com "
+                                  f"aprovação em {aprovado}, ignorado")  # fmt: skip
+                continue
+            por_pagamento.setdefault((r["emissor"], pagamento), []).append(
+                (Decimal(r["valor"]), aprovado)
             )
     saida: list[LinhaB3] = []
     for item in linhas:
@@ -95,7 +105,7 @@ def proventos_banco(
     pasta = pasta_refs or referencias.pasta_efetiva(None)
     emissor_de = {t: e for t, (e, _, _) in referencias.instrumentos(pasta).items()}
     publicos = referencias.proventos_b3(pasta)
-    linhas = creditos_b3(linhas_banco(banco, titular), publicos, emissor_de)
+    linhas = creditos_b3(linhas_banco(banco, titular), publicos, emissor_de, avisos)
     lista = proventos(linhas, fiscais.tipos, fiscais.parametros, avisos, por_pagamento(publicos))
     return lista, avisos
 
@@ -120,20 +130,29 @@ def por_pagamento(
 
 def informar_credito(banco: Path, chave: str, data_credito: date | None, agora: datetime) -> None:
     """Grava (ou apaga, com None) a data do crédito de um JCP informada pelo usuário."""
+    informar_creditos(banco, [(chave, data_credito)], agora)
+
+
+def informar_creditos(
+    banco: Path, datas: Iterable[tuple[str, date | None]], agora: datetime
+) -> None:
+    """Várias datas de crédito numa transação só (as propostas pela DIRPF): erro em uma, nada é
+    gravado."""
     with conectar(banco) as fabrica, fabrica() as s, s.begin():
-        linha = s.scalar(select(MovimentacaoB3).where(MovimentacaoB3.chave == chave))
-        if linha is None:
-            raise ImportacaoError("linha da movimentação não encontrada")
-        if linha.movimentacao != JCP:
-            raise ImportacaoError("só o JCP tem data de crédito")
-        if data_credito is not None and data_credito > linha.data:
-            raise ImportacaoError("o crédito não pode ser depois do pagamento")
-        atual = s.scalar(select(CreditoJcp).where(CreditoJcp.chave == chave))
-        if data_credito is None:
-            if atual is not None:
-                s.delete(atual)
-        elif atual is None:
-            s.add(CreditoJcp(titular_id=linha.titular_id, chave=chave,
-                             data_credito=data_credito, registrado_em=agora))  # fmt: skip
-        else:
-            atual.data_credito, atual.registrado_em = data_credito, agora
+        for chave, data_credito in datas:
+            linha = s.scalar(select(MovimentacaoB3).where(MovimentacaoB3.chave == chave))
+            if linha is None:
+                raise ImportacaoError("linha da movimentação não encontrada")
+            if linha.movimentacao != JCP:
+                raise ImportacaoError("só o JCP tem data de crédito")
+            if data_credito is not None and data_credito > linha.data:
+                raise ImportacaoError("o crédito não pode ser depois do pagamento")
+            atual = s.scalar(select(CreditoJcp).where(CreditoJcp.chave == chave))
+            if data_credito is None:
+                if atual is not None:
+                    s.delete(atual)
+            elif atual is None:
+                s.add(CreditoJcp(titular_id=linha.titular_id, chave=chave,
+                                 data_credito=data_credito, registrado_em=agora))  # fmt: skip
+            else:
+                atual.data_credito, atual.registrado_em = data_credito, agora

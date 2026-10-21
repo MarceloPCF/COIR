@@ -160,6 +160,7 @@ class LinhaFicha(Modelo):
     rotulo: str  # como o programa imprime
     comuns: Decimal
     day_trade: Decimal | None = None  # None: linha de uma coluna só
+    digita: bool = False  # o usuário digita no programa (as outras o programa calcula)
 
 
 class MesFichaIrpf(Modelo):

@@ -105,3 +105,13 @@ def test_correcao_invalida_falha_alto(tmp_path: Path) -> None:
         informar_credito(estado.banco, chaves["Dividendo"], date(2025, 1, 1), AGORA)
     with pytest.raises(ImportacaoError, match="não encontrada"):
         informar_credito(estado.banco, "nada", date(2025, 1, 1), AGORA)
+
+
+def test_aprovacao_depois_do_pagamento_no_pacote_e_ignorada_com_aviso() -> None:
+    """Dado público retificado (aprovação depois do pagamento) não derruba os proventos: a linha é
+    ignorada, com aviso; só a data digitada pelo usuário falha alto (revisão da F8)."""
+    ruim = [dict(PUBLICOS[0], aprovado_em="2025-04-01")]
+    avisos: list[str] = []
+    [x] = creditos_b3([_linha("ITSA4", date(2025, 3, 10), "0.02424250")], ruim, {}, avisos)
+    assert x.credito is None
+    assert avisos and "ignorado" in avisos[0]

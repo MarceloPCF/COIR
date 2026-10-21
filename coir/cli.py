@@ -278,6 +278,9 @@ def gabarito_dirpf(
     if pdf is None:
         lidas, avisos = declaracoes_lidas(dados)
         do_ano = [d for _, d in lidas if d.ano == ano]
+        if len(do_ano) > 1:  # vários titulares: a do titular escolhido
+            cpf = dados_banco(_banco(banco), _refs(), _fiscais(), ano, _agora(), titular).cpf
+            do_ano = [d for d in do_ano if d.cpf == cpf]
         if len(do_ano) != 1:
             raise typer.BadParameter(f"{len(do_ano)} DIRPF do ano-calendário {ano} em _dirpf "
                                      f"({'; '.join(avisos) or 'informe --pdf'})")  # fmt: skip

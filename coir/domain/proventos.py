@@ -52,6 +52,7 @@ class Provento(Modelo):
     origem: str  # "mov:<id>"
     observacao: str = ""
     credito: date | None = None  # JCP: data do crédito, quando conhecida
+    credito_origem: str = ""  # "informada" (usuário ou DIRPF), "B3" ou "" (sem data)
     chave: str = ""  # da linha em movimentacao_b3 (tela de Proventos: corrigir o crédito)
     reembolso_de: str = ""  # reembolso de BTC: "DIVIDENDO", "JCP" ou "" (não identificado)
 
