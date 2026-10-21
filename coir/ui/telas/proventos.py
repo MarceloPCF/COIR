@@ -117,12 +117,60 @@ def _creditos(estado: Estado, jcp: list[Provento],
                ) -> Callable[[], Awaitable[None]]:  # fmt: skip
         return lambda: salvar(p, campo, apagar)
 
+    async def propor() -> None:
+        try:
+            resultado = await run.io_bound(estado.propor_creditos_dirpf)
+        except CoirError as erro:
+            ui.notify(f"Não foi possível ler as declarações: {erro}", type="negative")
+            return
+        if resultado is None:
+            return
+        propostas, avisos = resultado
+        for aviso in avisos:
+            ui.notify(aviso, type="warning", multi_line=True)
+        if not propostas:
+            ui.notify("Nenhum JCP a propor pelas declarações em _dirpf (99.07).", type="info")
+            return
+        with ui.dialog() as janela, ui.card().classes("min-w-[560px]").mark("propostas-credito"):
+            ui.label("Créditos propostos pela DIRPF entregue").classes("coir-titulo text-base")
+            ui.label(
+                "JCP a receber em 31/12 (Bens e Direitos 99.07) cuja soma fecha com os JCP pagos "
+                "no ano seguinte pela mesma empresa: creditados no ano anterior. A data fica "
+                "31/12 do ano do crédito (a declaração só diz o ano)."
+            ).classes("coir-subtitulo text-xs")
+            caixas = [
+                (ui.checkbox(f"{x.pagamento:%d/%m/%Y} {x.codigo} {_r(x.liquido)} -> creditado em "
+                             f"{x.credito.year}", value=True), x)
+                for x in propostas
+            ]  # fmt: skip
+
+            async def confirmar() -> None:
+                escolhidas = [x for caixa, x in caixas if caixa.value]
+                try:
+                    await run.io_bound(estado.confirmar_creditos, escolhidas)
+                except CoirError as erro:
+                    ui.notify(f"Não gravado: {erro}", type="negative")
+                    return
+                janela.close()
+                ui.notify(f"{len(escolhidas)} data(s) de crédito gravada(s).", type="positive")
+                await recarregar()
+
+            with ui.row().classes("justify-end w-full"):
+                ui.button("Cancelar", on_click=janela.close).props("flat")
+                ui.button("Confirmar", on_click=confirmar).mark("confirmar-propostas")
+        janela.open()
+
     with ui.column().classes("coir-folha w-full gap-2").mark("creditos-jcp"):
-        ui.label("Data do crédito do JCP").classes("coir-titulo text-base")
+        with ui.row().classes("w-full items-center"):
+            ui.label("Data do crédito do JCP").classes("coir-titulo text-base")
+            ui.space()
+            ui.button("Propor pela DIRPF", icon="auto_fix_high", on_click=propor).props(
+                "flat dense").mark("propor-dirpf")  # fmt: skip
         ui.label(
             "O JCP é declarado no ano do crédito. A data vem do pacote público da B3 (aprovação) "
             "quando ele cobre o pagamento; sem ela, o COIR só percebe o crédito no ano anterior "
-            "pela mudança de alíquota. Corrija pelo informe de rendimentos da empresa."
+            "pela mudança de alíquota. Corrija pelo informe de rendimentos da empresa, ou use a "
+            "DIRPF entregue (99.07) em _dirpf na pasta de dados."
         ).classes("coir-subtitulo text-xs")
         for p in sorted(jcp, key=lambda p: (p.data, p.codigo)):
             with ui.row().classes("items-center gap-3 w-full"):

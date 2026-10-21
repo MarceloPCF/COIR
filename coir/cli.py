@@ -271,15 +271,19 @@ def gabarito_dirpf(
     from coir.gabarito.exportar import exigir_fora_do_repositorio
     from coir.gabarito.externo import ticker_atual
     from coir.reports.irpf import fichas
+    from coir.servicos.declaracao import declaracoes_lidas
     from coir.servicos.relatorios import dados_banco
 
     dados = dados_dir(exigir=True)
     if pdf is None:
-        candidatos = sorted((dados / "_dirpf").glob("*.pdf"))
-        if len(candidatos) != 1:
-            raise typer.BadParameter(f"informe --pdf ({len(candidatos)} PDF em _dirpf)")
-        pdf = candidatos[0]
-    declarada = ler_dirpf(pdf)
+        lidas, avisos = declaracoes_lidas(dados)
+        do_ano = [d for _, d in lidas if d.ano == ano]
+        if len(do_ano) != 1:
+            raise typer.BadParameter(f"{len(do_ano)} DIRPF do ano-calendário {ano} em _dirpf "
+                                     f"({'; '.join(avisos) or 'informe --pdf'})")  # fmt: skip
+        declarada = do_ano[0]
+    else:
+        declarada = ler_dirpf(pdf)
     if declarada.ano != ano:
         raise typer.BadParameter(f"o PDF é do ano-calendário {declarada.ano}, não de {ano}")
     pasta_refs = referencias.pasta_efetiva(dados)
