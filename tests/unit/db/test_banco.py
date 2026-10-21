@@ -125,7 +125,7 @@ def test_decimal_texto_recusa_float() -> None:
 # ---------------------------------------------------------------------------------- migração
 def test_migracao_cria_esquema_igual_aos_modelos(banco: Path) -> None:
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == revisao_final() == "0005"
+    assert revisao_atual(engine) == revisao_final() == "0007"
     with engine.connect() as c:
         ctx = MigrationContext.configure(c, opts={"compare_type": True})
         assert compare_metadata(ctx, Base.metadata) == []
@@ -148,7 +148,7 @@ def test_banco_da_revisao_anterior_migra_com_backup(tmp_path: Path) -> None:
     engine.dispose()
     migrar(banco, AGORA)
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == "0005"
+    assert revisao_atual(engine) == "0007"
     engine.dispose()
     with abrir(banco)() as s:
         assert [t.nome for t in repo.titulares(s)] == ["Titular de Teste"]
@@ -765,15 +765,16 @@ def test_serie_semanal_so_com_strike_antes_do_w() -> None:
 
 
 def test_futuro_de_mercado_sem_linha_na_apuracao_falha_alto() -> None:
-    """Contrato de um mercado sem linha na apuração (ex.: juros) não cai em "outros" calado."""
+    """Contrato de um mercado sem linha na apuração (ex.: crédito) não cai em "outros" calado;
+    juros tem linha própria desde a F8 (ficha do IRPF, "Mercado futuro - juros")."""
     from coir.servicos.apuracao import _ajustes  # pyright: ignore[reportPrivateUsage]
 
     texto = (FIXTURES / "xp_2024_01_bmf_novo.txt").read_text(encoding="utf-8")
     nota = extrair_textos("x.txt", texto.split("\f")).notas[0]
     raiz = nota.negocios_bmf[0].mercadoria[:3]
-    contratos = tuple(c.model_copy(update={"grupo": "juros"}) if c.raiz == raiz else c
+    contratos = tuple(c.model_copy(update={"grupo": "credito"}) if c.raiz == raiz else c
                       for c in REFS.contratos)  # fmt: skip
-    with pytest.raises(ReferenciaError, match="grupo juros sem linha"):
+    with pytest.raises(ReferenciaError, match="grupo credito sem linha"):
         _ajustes(nota, REFS.model_copy(update={"contratos": contratos}))
     assert _ajustes(nota, REFS)  # com o cadastro real, funciona
 
@@ -847,3 +848,24 @@ def test_tabelas_com_erro_nao_impedem_abrir_o_app(
     importacao.aplicar_tabelas(banco, REFS, AGORA)
     importacao.aplicar_tabelas(banco, REFS, AGORA)
     assert chamadas == [1]
+
+
+def test_migracao_0006_credito_jcp_vai_e_volta(tmp_path: Path) -> None:
+    """F8: as tabelas do crédito do JCP (0006) e dos itens lançados na declaração (0007) sobem e
+    descem."""
+    from alembic import command
+    from sqlalchemy import inspect
+
+    from coir.db.sessao import _config_alembic  # pyright: ignore[reportPrivateUsage]
+
+    banco = tmp_path / "coir.db"
+    migrar(banco, AGORA)
+    engine = criar_engine(banco)
+    for alvo, credito, lancado in (("0005", False, False), ("0007", True, True)):
+        with engine.begin() as c:
+            config = _config_alembic()
+            config.attributes["connection"] = c
+            (command.downgrade if alvo == "0005" else command.upgrade)(config, alvo)
+        tabelas = inspect(engine).get_table_names()
+        assert ("credito_jcp" in tabelas, "irpf_lancado" in tabelas) == (credito, lancado)
+    engine.dispose()

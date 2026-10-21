@@ -26,6 +26,7 @@ from coir.domain.fiscal import (
 from coir.domain.nota import CategoriaCusto
 from coir.domain.proventos import Provento, TipoProvento
 from coir.domain.relatorio import DadosRelatorio
+from coir.reports.irpf import declaracao
 from coir.reports.modelo import (
     Cabecalho,
     Coluna,
@@ -59,13 +60,17 @@ NOME_CATEGORIA = {
 NOME_GRUPO = {
     Grupo.A_VISTA: "À vista",
     Grupo.OPCOES: "Opções",
+    Grupo.OPCOES_OUTROS: "Opções outros",
     Grupo.DOLAR: "Futuro dólar",
     Grupo.INDICE: "Futuro índices",
+    Grupo.JUROS: "Futuro juros",
     Grupo.COMMODITY: "Futuro outros",
+    Grupo.TERMO: "Termo",
 }
 CATEGORIA_CURTA = {Categoria.COMUM: "Comum", Categoria.DAY_TRADE: "Day trade",
                    Categoria.FII: "FII"}  # fmt: skip
-GRUPOS = (Grupo.A_VISTA, Grupo.OPCOES, Grupo.DOLAR, Grupo.INDICE, Grupo.COMMODITY)
+GRUPOS = (Grupo.A_VISTA, Grupo.OPCOES, Grupo.OPCOES_OUTROS, Grupo.DOLAR, Grupo.INDICE,
+          Grupo.JUROS, Grupo.COMMODITY, Grupo.TERMO)  # fmt: skip
 
 
 def _dinheiro(nome: str) -> Coluna:
@@ -162,7 +167,8 @@ def resumo_fiscal(d: DadosRelatorio) -> Relatorio:
                     r.prejuizo_a_compensar,
                 )
             )
-        somar = set(range(1, 7)) | ({7, 8} if comum else set()) | {len(colunas) - 2}
+        n = len(GRUPOS) + 1  # colunas dos grupos + resultado
+        somar = set(range(1, n + 1)) | ({n + 1, n + 2} if comum else set()) | {len(colunas) - 2}
         secoes.append(
             Secao(
                 NOME_CATEGORIA[cat],
@@ -291,8 +297,9 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
         "Resultados por mercado",
         colunas,
         tuple(linhas),
-        _total(linhas, colunas, set(range(1, 11))) if linhas else None,
-        nota="Termo liquidado entra no mercado à vista; ouro não é operado.",
+        _total(linhas, colunas, set(range(1, 2 * len(GRUPOS) + 1))) if linhas else None,
+        nota="Termo: a venda à vista na data da liquidação vai para a linha do termo (IN RFB "
+        "1.585/2015 art. 62 I); vendido depois, à vista. Ouro não é operado.",
     )
 
     def bloco(r: ResultadoCategoria) -> tuple[Valor, ...]:
@@ -991,6 +998,7 @@ TODOS: dict[str, Callable[[DadosRelatorio], Relatorio]] = {
     "bens-e-direitos": bens_e_direitos,
     "livro-de-notas": livro_notas,
     "proventos": proventos,
+    "declaracao-irpf": declaracao,
 }
 
 
@@ -1000,6 +1008,7 @@ ABAS = {
     "evolucao": "Evolução", "prejuizos": "Prejuízos", "conferencia-pm": "Conferência do PM",
     "carteira": "Carteira", "bens-e-direitos": "Bens e Direitos",
     "livro-de-notas": "Livro de notas", "proventos": "Proventos",
+    "declaracao-irpf": "Declaração IRPF",
 }  # fmt: skip
 
 

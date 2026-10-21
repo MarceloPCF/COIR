@@ -206,6 +206,57 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - proventos (F7);
   - os relatórios que as plataformas vendem à parte.
 
+## Declaração anual (F8, 20/10/2026)
+Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
+`tests/fiscal_cases/test_irpf_linhas.py`. Critério de saída: reproduzir a DIRPF 2026 (ano-calendário
+2025) entregue, lida do PDF do programa (`coir/gabarito/dirpf.py`, fora do repositório).
+- Linhas da ficha "Renda variável - operações comuns/day trade": opção cujo ativo-objeto é ação ou
+  unit em "opções - ações"; ETF, índice e outros em "opções - outros" (parâmetro
+  `opcoes_linha_acoes_tipos_objeto`; P&R IRPF 2026 pergunta 707 separa cotas de fundo de índice de
+  ações; unit como ação, como no Bens e Direitos 03.01 da DIRPF entregue). Objeto não identificado
+  pela raiz fica em ações. Futuro de juros (DI1) tem linha própria (`grupo = juros` em
+  `data/contratos_futuros.csv`; o contrato ainda não está cadastrado).
+- Termo (IN RFB 1.585/2015 art. 62 I e §1º): a venda à vista na data da liquidação vai para
+  "Mercado a termo - ações/ouro", com ganho pelo preço a termo + custos da compra, e nunca é isenta
+  (art. 59 §2º IV). Se o lote não for vendido nessa data, o custo de aquisição é o preço a termo +
+  custos (art. 62 §1º) e entra no custo médio (art. 58); a venda posterior é à vista comum e pode
+  ser isenta (decisão do usuário de 20/10/2026, mantida em 21/10 apesar do "ou posteriormente" do
+  P&R IRPF 2026 pergunta 723, que trata de lote isolado).
+- Termo com ações antigas em carteira (decisões do usuário de 21/10/2026, parecer do especialista):
+  no dia da liquidação, as vendas consomem primeiro o lote do termo, pela ordem dos negócios (por
+  analogia com o art. 65 §3º; nenhuma norma decide); o excedente sai da posição anterior pelo PM e
+  pode ser isento; a venda inteira entra na soma do limite de R$ 20 mil (leitura de 15/10). O que
+  sobra do lote entra no custo médio pelo preço a termo. Exemplo: 500 a 9,00 + termo de 1.000 a
+  10,00, venda de 600 a 11,00: ganho 600,00 no termo e 900 ações com custo 8.500,00 (pelo PM
+  misturado seriam 800,00 e 8.700,00). A venda feita antes da liquidação e coberta por ela continua
+  na linha à vista (nenhuma fonte decide).
+- Prejuízo herdado em janeiro: o recalculado pelo COIR, com aviso da diferença para o declarado
+  (decisão do usuário; retificação dentro de 5 anos, se for o caso).
+- Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026
+  pergunta 720); a discriminação lista a quantidade em cada corretora. CNPJ do emissor pelo pacote
+  público da B3 (`data/emissores_b3.csv`).
+- Bens e Direitos pelo custo de aquisição (IN RFB 1.585/2015 art. 58), também no ano da compra; a
+  DIRPF 2026 entregue trouxe valor de mercado nos itens novos de 2025: divergência explicada, o COIR
+  segue a norma (decisão do usuário de 20/10/2026).
+- Posição vendida em 31/12 (opção lançada, venda a descoberto): não é bem; vai para Dívidas e ônus
+  reais, código 16, pelo valor recebido (prêmio ou venda), até o encerramento. Sem norma
+  específica; decisão do usuário de 20/10/2026 para fechar a variação patrimonial.
+- JCP: declarado no ano do crédito, e o creditado e não pago até 31/12 vai para Bens e Direitos
+  como crédito contra a companhia (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art.
+  9º §2º), com a alíquota da data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art.
+  8º). Creditado = registrado como dívida com o acionista individualizado (IN RFB 1.700/2017 art.
+  75 §10), o que pede a deliberação e a data com (Lei 6.404/1976 art. 205). A data do crédito vem
+  da correção do usuário na tela de Proventos (informe da empresa, tabela `credito_jcp`) ou, pela
+  B3, da mais tarde entre a aprovação e a data com (decisão do usuário de 21/10/2026: o programa
+  mensal aprovado em dezembro para o ano seguinte não é crédito do ano da aprovação). Fontes da
+  B3: `proventos_b3.csv` (mesma empresa, data de pagamento e valor por ação dentro de 1%) e, nos
+  anos que ele não alcança, `proventos_historico_b3.csv`, desde 2016 e sem data de pagamento
+  (mesma empresa e classe, valor dentro de 1% e a data com mais recente antes do pagamento).
+  Sem nenhuma, o ano anterior só é percebido pela mudança de alíquota. Retenção implícita com a
+  alíquota do ano anterior: só aviso. Data informada antes da data com da B3: vale, com aviso
+  (o informe prevalece). Crédito depois do pagamento falha alto (decisões do usuário de 20 e
+  21/10/2026).
+
 ## DARF paga em atraso: multa de mora (F6, 17/10/2026)
 `coir/engine/darf.py`; casos conferidos à mão em `tests/fiscal_cases/test_multa_mora.py`.
 - 0,33% por dia de atraso sobre o principal, com teto de 20% (Lei 9.430/1996 art. 61 caput e
@@ -266,8 +317,17 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   atualização do provento pela Selic; tributação exclusiva como renda fixa (Lei 8.981/1995 art. 65
   §4º c; Lei 11.033 art. 1º), como as fontes retêm (22,5% nos dados reais); código 06 ou 12 conforme
   o informe. Alternativa (acessório segue o principal, SC Cosit 67/2024) não adotada.
-- Reembolso de BTC ao doador: isento até 2025 (IN 1.585 art. 74); desde 2026 a Lei 15.265/2025 é
-  omissa para dividendos: isento por equivalência, com aviso (parâmetro; decisão do usuário).
+- Reembolso de BTC ao doador: isento até 2025 (Lei 13.043/2014 art. 7º, reproduzido na IN 1.585
+  art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com
+  aviso (parâmetro; decisão do usuário). O reembolso de JCP vem descontado do IR que a companhia
+  reteria (art. 7º §1º II; Lei 15.265 art. 20), mas o desconto não é IRRF do doador; é isento até
+  2025 e, desde 2026, sem incidência expressa (Lei 15.265 art. 21 I). Declarado no ano do
+  recebimento, em isentos "Outros" (99), com o CNPJ da companhia, sem JCP a receber (99.07): o
+  crédito da companhia foi para o tomador (parecer do especialista e decisões do usuário de
+  21/10/2026). A origem (dividendo ou JCP) sai do valor: quantidade emprestada inteira vezes o
+  valor por ação de um provento do mesmo dia e empresa (movimentação do titular e pacote da B3),
+  com o fator 1 - alíquota no JCP; sem origem única, aviso. Desde 2026 o aviso da Lei 15.270
+  soma os reembolsos de dividendos.
 - Restituição de capital: reduz o custo (IN 1.585 art. 58 §8º), proposta como evento; não é
   rendimento. Acima do custo: o motor falha alto.
 - "- Transferido": pares que se anulam (provento acompanhando a transferência de custódia).

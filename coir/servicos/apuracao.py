@@ -45,8 +45,8 @@ from coir.servicos import outros_custos
 RE_PRAZO = re.compile(r"^(?P<mes>\d{2})/(?P<ano>\d{2})$")
 RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é put de novembro
 # linha da apuração de cada contrato: coluna grupo de data/contratos_futuros.csv; grupo sem linha
-# (ex.: juros) falha alto em vez de cair em "outros" calado
-GRUPOS_FUTUROS = {Grupo.INDICE, Grupo.DOLAR, Grupo.COMMODITY}
+# falha alto em vez de cair em "outros" calado
+GRUPOS_FUTUROS = {Grupo.INDICE, Grupo.DOLAR, Grupo.JUROS, Grupo.COMMODITY}
 
 
 class Tickers:
@@ -92,9 +92,22 @@ def _vencimento(prazo: str, serie: str, refs: ReferenciasFiscais) -> date:
                             int(semanal["semana"]) if semanal else None)  # fmt: skip
 
 
+def _objeto_tipo(serie: str, publicas: Referencias, refs: ReferenciasFiscais) -> TipoAtivo | None:
+    """Tipo do ativo-objeto de uma série, pela raiz de 4 letras (opcoes_raiz*.csv); None se a raiz
+    não está nas tabelas (o motor a mantém na linha "opções - ações")."""
+    objeto = publicas.opcoes_raiz.get(serie[:4])
+    if objeto is None:
+        return None
+    try:
+        return refs.tipos.tipo(objeto)
+    except ReferenciaError:
+        return None
+
+
 def _nota_bovespa(
-    registro: NotaCorretagem, nota: NotaExtraida, refs: ReferenciasFiscais, tickers: Tickers
-) -> tuple[OperacaoMotor, ...]:
+    registro: NotaCorretagem, nota: NotaExtraida, refs: ReferenciasFiscais, tickers: Tickers,
+    publicas: Referencias,
+) -> tuple[OperacaoMotor, ...]:  # fmt: skip
     ops: list[OperacaoMotor] = []
     for o, negocio in zip(registro.operacoes, nota.negocios_bovespa, strict=True):
         opcao = o.mercado in ("CALL", "PUT")
@@ -118,6 +131,7 @@ def _nota_bovespa(
                 quantidade=o.quantidade, preco=o.preco, total=o.total,
                 vencimento=_vencimento(negocio.prazo, o.papel, refs) if opcao else None,
                 opcao=exercida, liquidacao_termo=liquidacao, pme_ate=pme_ate,
+                objeto_tipo=_objeto_tipo(o.papel, publicas, refs) if opcao else None,
             )
         )  # fmt: skip
     return tuple(ops)
@@ -136,7 +150,7 @@ def _ajustes(nota: NotaExtraida, refs: Referencias) -> tuple[AjusteFuturo, ...]:
         grupo = next((g for g in GRUPOS_FUTUROS if g.value == contrato.grupo), None)
         if grupo is None:
             raise ReferenciaError(f"contrato futuro {n.mercadoria}: grupo {contrato.grupo} "
-                                  "sem linha na apuração (ex.: juros)")  # fmt: skip
+                                  "sem linha na apuração")  # fmt: skip
         sem_negocio = tipo in (TipoAjuste.AJUPOS, TipoAjuste.OUTRO)
         volume = abs(n.preco * n.quantidade * contrato.multiplicador)
         saida.append(
@@ -176,7 +190,7 @@ def entradas(
                 id=r.id, titular=r.conta.titular_id, conta=r.conta_id,
                 corretora=r.conta.corretora.nome, numero=r.numero, data=r.data_pregao,
                 custos=r.custos_total, irrf=r.irrf, irrf_day_trade=r.irrf_day_trade,
-                operacoes=_nota_bovespa(r, nota, fiscais, tickers) if bovespa else (),
+                operacoes=_nota_bovespa(r, nota, fiscais, tickers, refs) if bovespa else (),
                 ajustes=() if bovespa else _ajustes(nota, refs),
             )
         )  # fmt: skip

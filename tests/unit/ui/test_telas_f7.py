@@ -1,6 +1,7 @@
 """F7a: telas 8 (opções), 9 (futuros), 10 (proventos), 11 (outros custos), 15 (conciliação) e a
 importação das planilhas da B3, sem navegador e sem dados reais."""
 
+import asyncio
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -249,3 +250,61 @@ async def test_configuracoes_atualiza_as_tabelas_e_o_painel_avisa(
         await user.should_see("Tabelas atualizadas", retries=ESPERA)
         await user.should_see("Em uso: pacote de 01/01/2099 (baixado)")
     assert estado.refs.ativos  # relidas do pacote baixado
+
+
+@pytest.mark.asyncio
+async def test_proventos_data_do_credito_do_jcp_muda_o_ano(tmp_path: Path) -> None:
+    """F8: JCP pago em 10/03/2026 a 17,5% (sem data: declarado em 2026); o usuário informa o
+    crédito em 15/12/2025 pelo informe e o JCP passa para 2025."""
+    from sqlalchemy import select
+
+    from coir.db.modelos import MovimentacaoB3
+    from coir.db.sessao import conectar
+
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    mov = planilha(tmp_path / "movimentacao-2026-10-16.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "10/03/2026", "Juros Sobre Capital Próprio", "ITSA4 - ITAUSA",
+         "XP INVESTIMENTOS CCTVM S/A", 1000, "0,5", "412,50"],
+    ]})  # fmt: skip
+    importar_planilhas(estado.banco, [mov], 1, AGORA)
+    with conectar(estado.banco) as fabrica, fabrica() as s:
+        chave = s.scalars(select(MovimentacaoB3.chave)).one()
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/proventos")
+        await user.should_see("Data do crédito do JCP", retries=ESPERA)
+        await user.should_see("declarado em 2026 · sem data")
+        user.find(marker=f"credito-{chave[:12]}").type("15/12/2025")
+        user.find(marker=f"salvar-credito-{chave[:12]}").click()
+        await user.should_see("declarado em 2025 · informada", retries=ESPERA)
+
+
+@pytest.mark.asyncio
+async def test_declaracao_anual_ficha_a_ficha_e_lancado(demo: Path) -> None:
+    """F8, tela 14: na demonstração, 2025 tem mapeamento (exercício 2026): Bens e Direitos com o
+    item em carteira, renda variável por mês e a marcação "lançado" gravada no banco; 2023 não
+    tem mapeamento e a tela avisa."""
+    estado = _estado(demo)
+    estado.titular, estado.ano = 1, 2025
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/declaracao")
+        await user.should_see("Exercício 2026, ano-calendário 2025", retries=ESPERA)
+        await user.should_see("03.01", retries=ESPERA)
+        user.find(marker="ficha-rv").click()
+        await user.should_see("Mercado à Vista - Ações", retries=ESPERA)
+        user.find(marker="lancado-rv:01").click()
+        for _ in range(ESPERA):  # a gravação roda numa thread
+            if "rv:01" in estado.lancados():
+                break
+            await asyncio.sleep(0.1)
+        assert "rv:01" in estado.lancados()
+        user.find(marker="ficha-conferencia").click()
+        await user.should_see("Nenhuma DIRPF deste ano-calendário", retries=ESPERA)
+    estado.marcar_lancado("rv:01", False)
+    estado.ano = 2023
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/declaracao")
+        await user.should_see("Sem o mapeamento das fichas do programa IRPF 2024",
+                              retries=ESPERA)  # fmt: skip

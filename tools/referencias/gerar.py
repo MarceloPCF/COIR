@@ -12,6 +12,14 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
 - ``opcoes_raiz_b3.csv``: raiz de 4 letras -> ativo-objeto (só raiz com um objeto só);
 - ``eventos_b3.csv``: desdobramentos, grupamentos, bonificações, cisões e subscrições (nunca apaga);
 - ``selic_mensal.csv``: série 4390 do BCB, só meses encerrados;
+- ``proventos_b3.csv``: proventos em dinheiro (dividendo, JCP, rendimento) com data de aprovação,
+  data com, pagamento e valor por ação (o crédito do JCP; a B3 só lista os últimos meses, nunca
+  apaga);
+- ``proventos_historico_b3.csv``: JCP da aba "Proventos em dinheiro" de cada companhia desde
+  ``HISTORICO_DESDE``, com classe, data de aprovação e data com (sem pagamento nem ISIN: a B3 não
+  publica); cobre os anos que ``proventos_b3.csv`` não alcança; nunca apaga;
+- ``emissores_b3.csv``: CNPJ e razão social de cada emissor (companhias e fundos FII, Fiagro e ETF),
+  para o Bens e Direitos do IRPF (histórico: o CNPJ de um fundo pode mudar; nunca apaga linha);
 - ``pacote.json``: formato e data do pacote.
 """
 
@@ -30,7 +38,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
-FORMATO = 1  # esquema dos arquivos de data/; o app só aceita pacote do mesmo formato
+FORMATO = 2  # esquema dos arquivos de data/; o app só aceita pacote do mesmo formato
 CAIXA = "CASH"
 CATEGORIAS = {"SHARES", "UNIT", "BDR", "FUNDS", "ETF EQUITIES", "ETF FOREIGN INDEX"}
 TIPO_POR_CATEGORIA = {"UNIT": "UNIT", "BDR": "BDR", "ETF EQUITIES": "ETF",
@@ -52,6 +60,12 @@ def _padrao(ticker: str, categoria: str = "") -> bool:
 
 COLUNAS_INSTRUMENTOS = ("ticker", "isin", "categoria", "especificacao", "emissor", "nome",
                         "visto_desde", "visto_ate")  # fmt: skip
+COLUNAS_EMISSORES = ("emissor", "cnpj", "razao_social", "tipo", "visto_desde", "visto_ate")
+COLUNAS_PROVENTOS = ("emissor", "isin", "tipo", "valor", "aprovado_em", "data_com", "pagamento",
+                     "referente")  # fmt: skip
+COLUNAS_HISTORICO = ("emissor", "classe", "tipo", "valor", "aprovado_em", "data_com")
+JCP = "JRS CAP PROPRIO"
+HISTORICO_DESDE = "2016-01-01"  # data com mais antiga guardada (dez anos antes da F8)
 COLUNAS_EVENTOS = ("emissor", "isin", "tipo", "fator", "data_com", "aprovado_em", "isin_emitido",
                    "preco", "periodo", "data_subscricao")  # fmt: skip
 
@@ -149,6 +163,50 @@ def nomes_de_pregao(empresas: Iterable[Mapping[str, object]]) -> dict[str, str]:
     return saida
 
 
+def cnpj_valido(cnpj: str) -> bool:
+    """14 dígitos com os dois dígitos verificadores certos (módulo 11). Cópia de
+    coir.domain.cpf.cnpj_valido: o pipeline roda sem instalar o COIR (só a biblioteca padrão)."""
+    if len(cnpj) != 14 or not cnpj.isdigit() or len(set(cnpj)) == 1:
+        return False
+    for n in (12, 13):
+        pesos = list(range(n - 7, 1, -1)) + list(range(9, 1, -1))
+        resto = sum(int(c) * p for c, p in zip(cnpj[:n], pesos, strict=True)) % 11
+        if int(cnpj[n]) != (0 if resto < 2 else 11 - resto):
+            return False
+    return True
+
+
+@dataclass(frozen=True)
+class Emissor:
+    emissor: str  # código de 4 letras (Asst no cadastro de instrumentos; sigla do fundo)
+    cnpj: str
+    razao_social: str
+    tipo: str  # COMPANHIA, FII, FIAGRO, ETF, ETF-RF, ETF-FII
+
+
+def ler_emissores(empresas: Iterable[Mapping[str, object]], fundos: Iterable[Mapping[str, object]],
+                  resumo: Resumo) -> list[Emissor]:  # fmt: skip
+    """Companhias (GetInitialCompanies) e fundos listados (GetDetailFund) -> CNPJ por emissor.
+    Sem CNPJ (BDR: "0") fica de fora; CNPJ com dígito errado vai para os conflitos."""
+    saida: list[Emissor] = []
+    for origem, codigo, nome, tipo in (
+        *((e, "issuingCompany", "companyName", None) for e in empresas),
+        *((f, "acronym", "fundName", "typeName") for f in fundos),
+    ):
+        emissor = str(origem.get(codigo) or "").strip()
+        cnpj = re.sub(r"\D", "", str(origem.get("cnpj") or ""))
+        if not emissor or cnpj.strip("0") == "":
+            continue
+        cnpj = cnpj.zfill(14)  # a B3 tira os zeros à esquerda
+        if not cnpj_valido(cnpj):
+            resumo.conflitos.append(f"CNPJ inválido para {emissor}: {cnpj}")
+            continue
+        razao = " ".join(str(origem.get(nome) or "").split())
+        classe = str(origem.get(tipo) or "") if tipo else "COMPANHIA"
+        saida.append(Emissor(emissor=emissor, cnpj=cnpj, razao_social=razao, tipo=classe))
+    return saida
+
+
 @dataclass(frozen=True)
 class EventoB3:
     emissor: str
@@ -189,6 +247,72 @@ def ler_eventos(emissor: str, resposta: Sequence[Mapping[str, object]]) -> list[
                 data_subscricao=_data_br(str(e.get("subscriptionDate", ""))),
             ))  # fmt: skip
     return saida
+
+
+def ler_proventos(emissor: str, resposta: Sequence[Mapping[str, object]]) -> list[dict[str, str]]:
+    """Proventos em dinheiro (cashDividends) de uma companhia: dividendo, JCP, rendimento, com a
+    data de aprovação (o crédito do JCP), a data com e o pagamento; valor por ação bruto."""
+    saida: list[dict[str, str]] = []
+    for bloco in resposta:
+        for e in _lista(bloco, "cashDividends"):
+            saida.append({
+                "emissor": emissor, "isin": str(e["isinCode"]), "tipo": str(e["label"]).strip(),
+                "valor": _numero(_br(str(e["rate"]))),
+                "aprovado_em": _data_br(str(e.get("approvedOn", ""))),
+                "data_com": _data_br(str(e.get("lastDatePrior", ""))),
+                "pagamento": _data_br(str(e.get("paymentDate", ""))),
+                "referente": " ".join(str(e.get("relatedTo") or "").split()),
+            })  # fmt: skip
+    return saida
+
+
+def juntar_proventos(anteriores: list[dict[str, str]], novos: Iterable[dict[str, str]],
+                     resumo: Resumo) -> list[dict[str, str]]:  # fmt: skip
+    """União com o histórico: a B3 só lista os proventos pagos nos últimos meses."""
+
+    def chave(r: Mapping[str, str]) -> tuple[str, ...]:
+        return tuple(r[c] for c in COLUNAS_PROVENTOS[1:7])
+
+    todos = {chave(r): dict(r) for r in anteriores}
+    for r in novos:
+        if not r["isin"] or not r["aprovado_em"]:
+            continue  # sem data de aprovação não serve para o crédito do JCP
+        if chave(r) not in todos:
+            resumo.proventos_novos.append(f"{r['aprovado_em']} {r['emissor']} {r['tipo']}")
+            todos[chave(r)] = r
+    return [todos[k] for k in sorted(todos, key=lambda k: (k[3], k[0], k[1], k[5], k[2]))]
+
+
+def ler_historico(emissor: str, resultados: Sequence[Mapping[str, object]]) -> list[dict[str, str]]:
+    """Aba "Proventos em dinheiro" (GetListedCashDividends) de uma companhia -> JCP com data de
+    aprovação e data com desde ``HISTORICO_DESDE``. Linha sem aprovação ou com valor por lote (a
+    B3 cotava por mil ações nos anos 1990) fica de fora."""
+    saida: list[dict[str, str]] = []
+    for e in resultados:
+        if str(e["corporateAction"]).strip() != JCP or str(e.get("quotedPerShares", "1")) != "1":
+            continue
+        aprovado = _data_br(str(e.get("dateApproval") or ""))
+        data_com = _data_br(str(e["lastDatePriorEx"]))
+        if aprovado and data_com >= HISTORICO_DESDE:
+            saida.append({"emissor": emissor, "classe": str(e["typeStock"]).strip(), "tipo": JCP,
+                          "valor": _numero(_br(str(e["valueCash"]))), "aprovado_em": aprovado,
+                          "data_com": data_com})  # fmt: skip
+    return saida
+
+
+def juntar_historico(anteriores: list[dict[str, str]], novos: Iterable[dict[str, str]],
+                     resumo: Resumo) -> list[dict[str, str]]:  # fmt: skip
+    """União com o que já foi coletado (nunca apaga), ordenada por data com."""
+
+    def chave(r: Mapping[str, str]) -> tuple[str, ...]:
+        return tuple(r[c] for c in COLUNAS_HISTORICO)
+
+    todos = {chave(r): dict(r) for r in anteriores}
+    for r in novos:
+        if chave(r) not in todos:
+            resumo.historico_novos.append(f"{r['data_com']} {r['emissor']} {r['classe']}")
+            todos[chave(r)] = r
+    return [todos[k] for k in sorted(todos, key=lambda k: (k[5], k[0], k[1], k[4], k[3]))]
 
 
 def _lista(bloco: Mapping[str, object], chave: str) -> list[Mapping[str, object]]:
@@ -234,6 +358,10 @@ class Resumo:
     )  # (antigo, novo, visto até)
     eventos_novos: list[str] = field(default_factory=list[str])
     selic_nova: list[str] = field(default_factory=list[str])
+    emissores_novos: list[str] = field(default_factory=list[str])
+    cnpj_mudou: list[str] = field(default_factory=list[str])
+    proventos_novos: list[str] = field(default_factory=list[str])
+    historico_novos: list[str] = field(default_factory=list[str])
     conflitos: list[str] = field(default_factory=list[str])
     sem_resposta: list[str] = field(default_factory=list[str])
 
@@ -247,6 +375,13 @@ class Resumo:
             ),
             ("Eventos corporativos novos", self.eventos_novos),
             ("Meses de Selic novos ou revistos", self.selic_nova),
+            ("Emissores novos (CNPJ)", self.emissores_novos),
+            ("CNPJ novo para emissor já conhecido (revise o Bens e Direitos)", self.cnpj_mudou),
+            (
+                "Proventos em dinheiro novos (data de aprovação, emissor, tipo)",
+                self.proventos_novos,
+            ),
+            ("JCP novos no histórico (data com, emissor, classe)", self.historico_novos),
             ("Ignorados por conflito (revise)", self.conflitos),
             (
                 "Companhias sem resposta da B3 nesta coleta (eventos delas não atualizados)",
@@ -259,7 +394,8 @@ class Resumo:
     @property
     def vazio(self) -> bool:
         return not (self.ativos_novos or self.trocas_candidatas or self.eventos_novos
-                    or self.selic_nova)  # fmt: skip
+                    or self.selic_nova or self.emissores_novos or self.cnpj_mudou
+                    or self.proventos_novos or self.historico_novos)  # fmt: skip
 
 
 def atualizar_instrumentos(
@@ -366,6 +502,31 @@ def juntar_eventos(anteriores: list[dict[str, str]], novos: Iterable[EventoB3],
     return [todos[k] for k in sorted(todos, key=lambda k: (k[2], k[0], k[1], k[3], k[4]))]
 
 
+def juntar_emissores(anteriores: list[dict[str, str]], atuais: Iterable[Emissor], data: date,
+                     resumo: Resumo) -> list[dict[str, str]]:  # fmt: skip
+    """Histórico por (emissor, CNPJ): atualiza ``visto_ate`` e nunca apaga (o CNPJ de um fundo
+    pode mudar; o Bens e Direitos de anos passados usa o que valia na época)."""
+    hoje = data.isoformat()
+    todos = {(r["emissor"], r["cnpj"]): dict(r) for r in anteriores}
+    conhecidos = {r["emissor"] for r in anteriores}
+    vistos: set[tuple[str, str]] = set()
+    for e in sorted(atuais, key=lambda x: (x.emissor, x.cnpj, x.tipo)):
+        chave = (e.emissor, e.cnpj)
+        if chave in vistos:
+            continue
+        vistos.add(chave)
+        linha = todos.get(chave)
+        if linha is None:
+            if e.emissor in conhecidos:
+                resumo.cnpj_mudou.append(f"{e.emissor}: {e.cnpj} ({e.razao_social})")
+            else:
+                resumo.emissores_novos.append(f"{e.emissor} {e.cnpj} {e.razao_social}")
+            linha = {"emissor": e.emissor, "cnpj": e.cnpj, "visto_desde": hoje}
+            todos[chave] = linha
+        linha.update(razao_social=e.razao_social, tipo=e.tipo, visto_ate=hoje)
+    return [todos[k] for k in sorted(todos)]
+
+
 def juntar_selic(anteriores: list[dict[str, str]], novos: Mapping[str, str],
                  resumo: Resumo) -> list[dict[str, str]]:  # fmt: skip
     """Meses novos (e revisões do BCB) a partir do primeiro mês já na tabela."""
@@ -389,6 +550,10 @@ class Coleta:
     eventos: dict[str, list[Mapping[str, object]]]  # emissor -> resposta
     selic: list[Mapping[str, str]]
     sem_resposta: tuple[str, ...] = ()  # emissores que a B3 não respondeu nesta coleta
+    fundos: list[Mapping[str, object]] = field(default_factory=list[Mapping[str, object]])
+    historico: dict[str, list[Mapping[str, object]]] = field(
+        default_factory=dict[str, list[Mapping[str, object]]]
+    )  # emissor -> linhas da aba "Proventos em dinheiro" (todas as páginas)
 
     def salvar(self, pasta: Path) -> None:
         """Respostas brutas em ``pasta`` (para reprocessar sem rede e depurar)."""
@@ -396,6 +561,7 @@ class Coleta:
         (pasta / "instrumentos.csv").write_bytes(self.instrumentos)
         for nome, valor in (("empresas", self.empresas), ("eventos", self.eventos),
                             ("selic", self.selic), ("data", self.data.isoformat()),
+                            ("fundos", self.fundos), ("historico", self.historico),
                             ("sem_resposta", list(self.sem_resposta))):  # fmt: skip
             (pasta / f"{nome}.json").write_text(json.dumps(valor, ensure_ascii=False),
                                                 encoding="utf-8")  # fmt: skip
@@ -405,10 +571,13 @@ class Coleta:
         def ler(nome: str) -> Any:
             return json.loads((pasta / f"{nome}.json").read_text(encoding="utf-8"))
 
+        fundos = ler("fundos") if (pasta / "fundos.json").is_file() else []  # coleta antiga
+        historico = ler("historico") if (pasta / "historico.json").is_file() else {}
         return cls(data=date.fromisoformat(ler("data")),
                    instrumentos=(pasta / "instrumentos.csv").read_bytes(),
                    empresas=ler("empresas"), eventos=ler("eventos"), selic=ler("selic"),
-                   sem_resposta=tuple(ler("sem_resposta")))  # fmt: skip
+                   sem_resposta=tuple(ler("sem_resposta")), fundos=fundos,
+                   historico=historico)  # fmt: skip
 
 
 RESPOSTA_RUIM = (KeyError, IndexError, TypeError, ValueError, AttributeError, InvalidOperation)
@@ -442,6 +611,17 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
             ler_csv(pasta / "eventos_b3.csv"), eventos, resumo)),
         "selic_mensal.csv": texto_csv(("mes", "taxa"), juntar_selic(
             ler_csv(pasta / "selic_mensal.csv"), ler_selic(coleta.selic, coleta.data), resumo)),
+        "proventos_b3.csv": texto_csv(COLUNAS_PROVENTOS, juntar_proventos(
+            ler_csv(pasta / "proventos_b3.csv"),
+            [p for emissor, resp in sorted(coleta.eventos.items())
+             for p in ler_proventos(emissor, resp)], resumo)),
+        "proventos_historico_b3.csv": texto_csv(COLUNAS_HISTORICO, juntar_historico(
+            ler_csv(pasta / "proventos_historico_b3.csv"),
+            [p for emissor, resp in sorted(coleta.historico.items())
+             for p in ler_historico(emissor, resp)], resumo)),
+        "emissores_b3.csv": texto_csv(COLUNAS_EMISSORES, juntar_emissores(
+            ler_csv(pasta / "emissores_b3.csv"), ler_emissores(coleta.empresas, coleta.fundos,
+                                                               resumo), coleta.data, resumo)),
     }  # fmt: skip
     arquivos["pacote.json"] = json.dumps({"formato": FORMATO, "data": coleta.data.isoformat()},
                                          indent=1) + "\n"  # fmt: skip

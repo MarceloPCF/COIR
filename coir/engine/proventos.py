@@ -27,10 +27,11 @@
 """
 
 from collections import Counter, defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
+from coir.domain.b3 import LinhaMovimentacao
 from coir.domain.fiscal import ZERO, TipoAtivo
 from coir.domain.parametros import ParametrosFiscais, TiposAtivo
 from coir.domain.proventos import LinhaB3, Provento, TipoProvento
@@ -41,6 +42,36 @@ DIVIDENDO, JCP, RENDIMENTO = "Dividendo", "Juros Sobre Capital Próprio", "Rendi
 REEMBOLSO, RESTITUICAO = "Reembolso", "Restituição de Capital"
 TRANSFERIDO = " - Transferido"
 ISENTO_DIVIDENDO = (TipoAtivo.ACAO, TipoAtivo.UNIT)
+
+
+Candidatos = Mapping[tuple[str, date], Sequence[tuple[str, Decimal]]]  # (raiz, pagamento)
+ARREDONDAMENTO_PRECO = Decimal("0.0005")  # a movimentação imprime o preço com 3 casas
+
+
+def _origem_reembolso(x: LinhaMovimentacao, params: ParametrosFiscais,
+                      candidatos: Candidatos) -> tuple[str, int]:  # fmt: skip
+    """Reembolso de BTC: substitui dividendo ou JCP? O valor é a quantidade emprestada vezes o
+    valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º
+    §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica; nenhuma ou
+    mais de uma: ("", 0), com aviso (parecer do especialista e decisão do usuário de 21/10/2026)."""
+    valor = x.valor or ZERO
+    taxas = {t for t in (_vigente(params, "aliquota_irrf_jcp", x.data),
+                         _vigente(params, "aliquota_irrf_jcp", date(x.data.year - 1, 12, 31)))
+             if t is not None}  # fmt: skip
+    achados: dict[str, int] = {}
+    for tipo, por_acao in candidatos.get((x.codigo[:4], x.data), ()):
+        fatores = [Decimal(1)] if tipo == "DIVIDENDO" else [1 - t for t in taxas]
+        for f in fatores:
+            if not por_acao or not f:
+                continue
+            n = int((valor / (por_acao * f)).to_integral_value())
+            margem = Decimal("0.01") + n * ARREDONDAMENTO_PRECO * f
+            if n >= 1 and abs(valor - n * por_acao * f) <= margem:
+                achados[tipo] = n
+    if len(achados) == 1:
+        [(tipo, n)] = achados.items()
+        return tipo, n
+    return "", 0
 
 
 def _vigente(params: ParametrosFiscais, nome: str, dia: date) -> Decimal | None:
@@ -58,7 +89,11 @@ def proventos(
     tipos: TiposAtivo,
     params: ParametrosFiscais,
     avisos: list[str] | None = None,
+    publicos: Candidatos | None = None,
 ) -> list[Provento]:
+    """``publicos``: proventos em dinheiro do pacote da B3 por (raiz do código, pagamento) ->
+    [(DIVIDENDO ou JCP, valor por ação)], para identificar a origem dos reembolsos de BTC; a
+    movimentação do titular entra junto (as linhas de dividendo e JCP do mesmo dia)."""
     avisos = avisos if avisos is not None else []
     saida: list[Provento] = []
     pares: Counter[tuple[int, date, str, str, Decimal]] = Counter()
@@ -68,6 +103,15 @@ def proventos(
         for i in linhas
         if i.linha.movimentacao in (DIVIDENDO, JCP) and i.linha.entrada
     }
+    por_dia: dict[tuple[str, date], list[tuple[str, Decimal]]] = defaultdict(list)
+    for (raiz, dia), lista in (publicos or {}).items():
+        por_dia[(raiz, dia)] += lista
+    for i in linhas:
+        x = i.linha
+        if x.movimentacao in (DIVIDENDO, JCP) and x.entrada and x.preco:
+            origem = ("JCP" if x.movimentacao == JCP else "DIVIDENDO", x.preco)
+            if origem not in por_dia[(x.codigo[:4], x.data)]:
+                por_dia[(x.codigo[:4], x.data)].append(origem)
     for item in linhas:
         x = item.linha
         if x.movimentacao.endswith(TRANSFERIDO):
@@ -89,7 +133,7 @@ def proventos(
                 "(confira no informe da empresa)"
             )
             continue
-        saida.append(_provento(item, tipos, params, pagos))
+        saida.append(_provento(item, tipos, params, pagos, por_dia))
     for (_, dia, codigo, base, valor), saldo in sorted(pares.items()):
         if saldo:
             avisos.append(
@@ -104,8 +148,9 @@ def proventos(
 
 
 def _criar(
-    item: LinhaB3, tipo: TipoProvento, bruto: Decimal, aliquota: Decimal, ano: int, observacao: str
-) -> Provento:
+    item: LinhaB3, tipo: TipoProvento, bruto: Decimal, aliquota: Decimal, ano: int, observacao: str,
+    reembolso_de: str = "",
+) -> Provento:  # fmt: skip
     x = item.linha
     liquido = x.valor or ZERO
     return Provento(
@@ -123,12 +168,17 @@ def _criar(
         ano_declaracao=ano,
         origem=f"mov:{item.id}",
         observacao=observacao,
+        credito=item.credito if tipo is TipoProvento.JCP else None,
+        credito_origem=item.credito_origem if tipo is TipoProvento.JCP else "",
+        chave=item.chave,
+        reembolso_de=reembolso_de,
     )
 
 
 def _provento(
-    item: LinhaB3, tipos: TiposAtivo, params: ParametrosFiscais, pagos: set[tuple[int, str, date]]
-) -> Provento:
+    item: LinhaB3, tipos: TiposAtivo, params: ParametrosFiscais, pagos: set[tuple[int, str, date]],
+    candidatos: Candidatos,
+) -> Provento:  # fmt: skip
     x = item.linha
     if x.movimentacao == JCP:
         return _jcp(item, params)
@@ -163,14 +213,23 @@ def _provento(
         else:
             obs = f"rendimento em {tipo_ativo.value} sem dividendo ou JCP no mesmo dia: fora"
     elif x.movimentacao == REEMBOLSO:
-        tipo = TipoProvento.REEMBOLSO_BTC
-        if params.booleano("reembolso_btc_norma_omissa", x.data):
-            obs = (
-                "reembolso de BTC: a Lei 15.265/2025 é omissa para dividendos; isento por "
-                "equivalência (confira com o contador)"
-            )
-        if not params.booleano("reembolso_btc_dividendos_isento", x.data):
-            obs = "reembolso de BTC tributável pelo parâmetro vigente"
+        de, acoes = _origem_reembolso(x, params, candidatos)
+        if de == "JCP":
+            obs = (f"reembolso de JCP de {acoes} ações emprestadas (BTC): isento para o doador "
+                   "(Lei 13.043/2014 art. 7º; desde 2026, Lei 15.265/2025 art. 21 I), no ano do "
+                   "recebimento e sem JCP a receber (99.07)")  # fmt: skip
+        else:
+            origem = (f"reembolso de dividendos de {acoes} ações emprestadas (BTC)" if de else
+                      "reembolso de BTC sem identificar se de dividendos ou de JCP (isento nos "
+                      "dois casos até 2025; confira o informe)")  # fmt: skip
+            obs = origem
+            if params.booleano("reembolso_btc_norma_omissa", x.data):
+                obs = (f"{origem}: a Lei 15.265/2025 é omissa para dividendos; isento por "
+                       "equivalência (confira com o contador)")  # fmt: skip
+            if not params.booleano("reembolso_btc_dividendos_isento", x.data):
+                obs = f"{origem}: tributável pelo parâmetro vigente"
+        return _criar(item, TipoProvento.REEMBOLSO_BTC, x.valor or ZERO, ZERO, x.data.year, obs,
+                      reembolso_de=de)  # fmt: skip
     else:  # restituição de capital
         tipo = TipoProvento.RESTITUICAO_CAPITAL
         obs = "reduz o custo das ações (evento de redução de capital), não é rendimento"
@@ -180,6 +239,8 @@ def _provento(
 def _jcp(item: LinhaB3, params: ParametrosFiscais) -> Provento:
     x = item.linha
     valor = x.valor or ZERO
+    if item.credito is not None:
+        return _jcp_com_credito(item, item.credito, params)
     no_pagamento = params.decimal("aliquota_irrf_jcp", x.data)
     no_ano_anterior = _vigente(params, "aliquota_irrf_jcp", date(x.data.year - 1, 12, 31))
     aliquota, ano, obs = no_pagamento, x.data.year, ""
@@ -195,10 +256,39 @@ def _jcp(item: LinhaB3, params: ParametrosFiscais) -> Provento:
     return _criar(item, TipoProvento.JCP, bruto, aliquota, ano, obs)
 
 
+def _jcp_com_credito(item: LinhaB3, credito: date, params: ParametrosFiscais) -> Provento:
+    """JCP com a data do crédito conhecida (informe da empresa ou, pela B3, a mais tarde entre a
+    aprovação e a data com): declarado no ano do crédito (IN SRF 41/1998 art. 3º; Lei 9.249/1995
+    art. 9º §2º; a receber em 31/12 se pago depois: art. 3º parágrafo único), com a alíquota da
+    data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art. 8º). Retenção implícita
+    com a alíquota do ano anterior: só aviso (a empresa tratou o crédito como do ano anterior;
+    decisão do usuário de 21/10/2026). Crédito depois do pagamento falha alto."""
+    x = item.linha
+    if credito > x.data:
+        raise MotorError(f"{x.data}: JCP de {x.codigo} (mov:{item.id}) creditado em {credito}, "
+                         "depois do pagamento")  # fmt: skip
+    aliquota = params.decimal("aliquota_irrf_jcp", credito)
+    obs = f"creditado em {credito:%d/%m/%Y} ({item.credito_origem or 'informada'})"
+    if credito.year < x.data.year:
+        obs += f": declarado em {credito.year}, com o crédito a receber em 31/12/{credito.year}"
+    if x.preco and x.quantidade:
+        retida = 1 - (x.valor or ZERO) / (x.quantidade * x.preco)
+        if abs(retida - aliquota) > Decimal("0.005"):
+            obs += (f"; retenção implícita de {retida * 100:.1f}% difere da alíquota de "
+                    f"{aliquota * 100:.1f}%")  # fmt: skip
+            anterior = _vigente(params, "aliquota_irrf_jcp", date(credito.year - 1, 12, 31))
+            if anterior is not None and abs(retida - anterior) <= Decimal("0.005"):
+                obs += f": a empresa tratou o crédito como de {credito.year - 1}"
+            obs += " (confira o informe)"
+    bruto = ((x.valor or ZERO) / (1 - aliquota)).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+    return _criar(item, TipoProvento.JCP, bruto, aliquota, credito.year, obs)
+
+
 def _lei_15270(saida: list[Provento], params: ParametrosFiscais) -> list[str]:
     somas: defaultdict[tuple[int, str, int, int], Decimal] = defaultdict(Decimal)
     for p in saida:
-        if p.tipo is TipoProvento.DIVIDENDO:
+        # reembolso de dividendos de ações emprestadas soma no aviso (decisão de 21/10/2026)
+        if p.tipo is TipoProvento.DIVIDENDO or p.reembolso_de == "DIVIDENDO":
             somas[(p.titular, p.codigo[:4], p.data.year, p.data.month)] += p.liquido
     avisos: list[str] = []
     for (_, raiz, ano, mes), soma in sorted(somas.items()):

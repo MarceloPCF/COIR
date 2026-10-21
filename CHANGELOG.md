@@ -15,6 +15,7 @@ Nova versão escrita do zero, sem dependência do Excel. O código da 2.1.1 fica
 ### Adicionado
 - Licença da v3: AGPL-3.0-or-later (a v2 em `legacy/` continua MIT).
 - Fase F0 (fundação): projeto uv com Python 3.13, estrutura `coir/`, configuração da pasta de dados (`COIR_DADOS`), CLI mínima, verificador de dados pessoais (pre-commit, pre-push e CI) e testes automatizados em Windows e Linux.
+- Fase F8 (declaração anual): fichas do programa IRPF por exercício (`data/irpf/<exercício>.yaml`) com Bens e Direitos (um item por ativo, CNPJ do pacote público da B3, discriminação pronta), Dívidas (posição vendida), rendimentos isentos e exclusivos por fonte pagadora, renda variável mês a mês e imposto pago; tela "Declaração anual" com botão de copiar e marcação do que já foi lançado; leitura e conferência da declaração entregue (PDF do programa); data do crédito do JCP (a mais tarde entre a aprovação e a data com) pela B3, inclusive pelo histórico público de JCP desde 2016 (`data/proventos_historico_b3.csv`), pela declaração entregue ou informada; JCP pago mais de um ano depois do crédito a receber em cada 31/12; origem dos reembolsos de BTC; venda no dia da liquidação do termo pelo preço a termo, com o excedente saindo das ações antigas pelo custo médio; lista gerada das fontes fiscais (`docs/fontes-fiscais.md`).
 
 ## [2.1.1] - 2026-10-09
 

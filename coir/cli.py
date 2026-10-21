@@ -251,6 +251,71 @@ def gabarito_externo(
     print(f"Detalhe em {saida} (motivos já analisados: {conhecidas})")
 
 
+@gabarito_app.command("dirpf")
+def gabarito_dirpf(
+    ano: int = typer.Option(..., help="Ano-calendário da declaração entregue (ex.: 2025)."),
+    pdf: Path | None = typer.Option(
+        None, help="PDF 'Imprimir > Declaração' do programa IRPF (padrão: o único em _dirpf)."
+    ),
+    titular: int | None = typer.Option(None, help="Id do titular (coir titular listar)."),
+    banco: Path | None = OpcaoBanco,
+    destino: Path | None = OpcaoCaminho,
+) -> None:
+    """Compara as fichas do COIR com a declaração entregue (critério de saída da F8)."""
+    from collections import Counter
+
+    from coir import referencias
+    from coir.gabarito.comparar import Tolerancias
+    from coir.gabarito.dirpf import ler_dirpf
+    from coir.gabarito.dirpf_comparar import carregar_explicacoes, comparar, explicar, gravar
+    from coir.gabarito.exportar import exigir_fora_do_repositorio
+    from coir.gabarito.externo import ticker_atual
+    from coir.reports.irpf import fichas
+    from coir.servicos.declaracao import declaracoes_lidas
+    from coir.servicos.relatorios import dados_banco
+
+    dados = dados_dir(exigir=True)
+    if pdf is None:
+        lidas, avisos = declaracoes_lidas(dados)
+        do_ano = [d for _, d in lidas if d.ano == ano]
+        if len(do_ano) > 1:  # vários titulares: a do titular escolhido
+            cpf = dados_banco(_banco(banco), _refs(), _fiscais(), ano, _agora(), titular).cpf
+            do_ano = [d for d in do_ano if d.cpf == cpf]
+        if len(do_ano) != 1:
+            raise typer.BadParameter(f"{len(do_ano)} DIRPF do ano-calendário {ano} em _dirpf "
+                                     f"({'; '.join(avisos) or 'informe --pdf'})")  # fmt: skip
+        declarada = do_ano[0]
+    else:
+        declarada = ler_dirpf(pdf)
+    if declarada.ano != ano:
+        raise typer.BadParameter(f"o PDF é do ano-calendário {declarada.ano}, não de {ano}")
+    pasta_refs = referencias.pasta_efetiva(dados)
+    d = dados_banco(_banco(banco), _refs(), _fiscais(), ano, _agora(), titular,
+                    pasta_refs=pasta_refs)  # fmt: skip
+    geradas = fichas(d)
+    if geradas is None or d.irpf is None:
+        raise typer.BadParameter(f"sem mapeamento das fichas do IRPF {ano + 1} em data/irpf")
+    tol = Tolerancias.carregar()
+    conhecidas = _destino(destino) / "dirpf-explicadas.csv"
+    linhas = explicar(comparar(geradas, declarada, d.irpf, tol.mes, tol.operacao,
+                              ticker_atual(_refs())),
+                      carregar_explicacoes(conhecidas))  # fmt: skip
+    print(f"DIRPF {declarada.exercicio} (ano-calendário {ano}) x COIR, titular {d.titular}")
+    for secao in ("renda_variavel", "fii", "bens", "rendimentos", "imposto_pago"):
+        contagem = Counter(x.classe for x in linhas if x.secao == secao)
+        print(f"  {secao}: " + ", ".join(f"{c} {n}" for c, n in contagem.most_common()))
+    abertas = [x for x in linhas if x.classe not in ("confere", "explicada")]
+    print(f"Divergências sem explicação: {len(abertas)}")
+    if declarada.sem_fonte:
+        print("  Linhas da DIRPF sem leitura por fonte (só o total): "
+              + ", ".join(f"{f} {c}" for f, c in declarada.sem_fonte))  # fmt: skip
+    pasta = _destino(destino)
+    exigir_fora_do_repositorio(pasta)
+    saida = pasta / "dirpf-divergencias.csv"
+    gravar([x for x in linhas if x.classe != "confere"], saida)
+    print(f"Detalhe em {saida} (motivos já analisados: {conhecidas})")
+
+
 @app.command("validar-gabarito")
 def validar_gabarito(
     candidato: Path = typer.Option(..., help="Pasta com CSV no formato do gabarito."),
@@ -696,8 +761,10 @@ def exportar(
     formatos = tuple(f.strip().lower() for f in formato.split(",") if f.strip())
     chaves = tuple(c.strip() for c in relatorio.split(",")) if relatorio else None
     validar(pasta, formatos, chaves)
-    dados = dados_banco(_banco(banco), _refs(), _fiscais(), ano,
-                        _agora(), titular, dia, vista)  # fmt: skip
+    from coir import referencias
+
+    dados = dados_banco(_banco(banco), _refs(), _fiscais(), ano, _agora(), titular, dia, vista,
+                        referencias.pasta_efetiva(dados_dir()))  # fmt: skip
     arquivos = gravar(dados, pasta, formatos, chaves)
     meses = [m for m in dados.apuracao.meses if m.titular == dados.titular and m.ano == ano]
     total = sum((m.darf for m in meses), Decimal(0))

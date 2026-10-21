@@ -23,6 +23,8 @@ def _coleta(dia: date = DIA, instrumentos: bytes | None = None) -> Coleta:
         empresas=json.loads((FIXTURES / "empresas.json").read_text(encoding="utf-8"))["results"],
         eventos=eventos,
         selic=json.loads((FIXTURES / "selic.json").read_text(encoding="utf-8")),
+        fundos=json.loads((FIXTURES / "fundos.json").read_text(encoding="utf-8")),
+        historico={"ITSA": json.loads((FIXTURES / "historico-ITSA.json").read_text("utf-8"))},
     )
 
 
@@ -87,6 +89,61 @@ def test_reprocessar_e_deterministico_e_nao_apaga_historico(tmp_path: Path) -> N
     assert gerar.gravar(tmp_path, arquivos) == []  # nada mudou: nada é regravado
 
 
+def test_cnpj_de_companhias_e_fundos(tmp_path: Path) -> None:
+    """CNPJ com zeros à esquerda restaurados (a B3 os tira: TAEE 7859971000130), fundos pelo
+    detalhe e CNPJ com dígito errado fora, nos conflitos."""
+    arquivos, resumo = gerar.gerar(tmp_path, _coleta())
+    linhas = _linhas(arquivos["emissores_b3.csv"])
+    assert (
+        "TAEE,07859971000130,TRANSMISSORA ALIANÇA DE ENERGIA ELÉTRICA S.A.,COMPANHIA,"
+        "2026-10-19,2026-10-19"
+    ) in linhas
+    assert any(x.startswith("HGLG,11728688000147,PÁTRIA LOG") and ",FII," in x for x in linhas)
+    assert any(x.startswith("BOVA,10406511000161,") and ",ETF," in x for x in linhas)
+    assert not any(x.startswith("XXXX") for x in linhas)
+    assert resumo.conflitos == ["CNPJ inválido para XXXX: 11111111111111"]
+    assert len(resumo.emissores_novos) == 8 and not resumo.cnpj_mudou
+
+
+def test_cnpj_novo_de_emissor_conhecido_fica_no_historico(tmp_path: Path) -> None:
+    arquivos, _ = gerar.gerar(tmp_path, _coleta())
+    gerar.gravar(tmp_path, arquivos)
+    coleta = _coleta(date(2026, 10, 26))
+    fundos = [dict(f, cnpj="63375304000153") if f["acronym"] == "HGLG" else f
+              for f in coleta.fundos]  # fmt: skip
+    novos, resumo = gerar.gerar(tmp_path, Coleta(**{**coleta.__dict__, "fundos": fundos}))
+    hglg = [x for x in _linhas(novos["emissores_b3.csv"]) if x.startswith("HGLG")]
+    assert [x.split(",")[1] for x in hglg] == ["11728688000147", "63375304000153"]
+    assert hglg[0].endswith("2026-10-19,2026-10-19") and hglg[1].endswith("2026-10-26,2026-10-26")
+    assert resumo.cnpj_mudou and resumo.cnpj_mudou[0].startswith("HGLG: 63375304000153")
+
+
+def test_emissores_no_app_curado_por_cima(tmp_path: Path) -> None:
+    from coir import referencias
+    from coir.erros import ConfiguracaoError
+
+    pasta = _copia_data(tmp_path / "data")
+    (pasta / "emissores_b3.csv").write_text(
+        "emissor,cnpj,razao_social,tipo,visto_desde,visto_ate\n"
+        "HGLG,11728688000147,ANTIGO,FII,2026-01-01,2026-05-01\n"
+        "HGLG,63375304000153,NOVO,FII,2026-05-08,2026-10-19\n"
+        "TAEE,07859971000130,TAESA,COMPANHIA,2026-10-19,2026-10-19\n",
+        encoding="utf-8",
+    )
+    (pasta / "emissores.csv").write_text(
+        "emissor,cnpj,razao_social,observacao\nTAEE,10406511000161,CURADO,teste\n", encoding="utf-8"
+    )
+    e = referencias.emissores(pasta)
+    assert e["HGLG"] == ("63375304000153", "NOVO", "FII")  # o visto por último
+    assert e["TAEE"] == ("10406511000161", "CURADO", "COMPANHIA")  # a curada vale
+    referencias.validar_tabelas_b3(pasta)
+    (pasta / "emissores.csv").write_text(
+        "emissor,cnpj,razao_social,observacao\nTAEE,11111111111111,X,\n", encoding="utf-8"
+    )
+    with pytest.raises(ConfiguracaoError, match="CNPJ inválido"):
+        referencias.emissores(pasta)
+
+
 def test_resposta_fora_do_formato_falha_alto(tmp_path: Path) -> None:
     with pytest.raises(GeracaoError, match="cabeçalho"):
         gerar.gerar(tmp_path, _coleta(instrumentos=b"TckrSymb;ISIN\nPETR4;BR\n"))
@@ -120,7 +177,12 @@ def test_tabela_gerada_entra_por_baixo_da_manual(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     ("formato", "data", "baixada"),
-    [(1, "2099-01-01", True), (2, "2099-01-01", False), (1, "2000-01-01", False)],
+    [
+        (2, "2099-01-01", True),
+        (1, "2099-01-01", False),
+        (3, "2099-01-01", False),
+        (2, "2000-01-01", False),
+    ],
 )
 def test_pacote_baixado_so_vale_se_mais_novo_e_do_mesmo_formato(
     tmp_path: Path, formato: int, data: str, baixada: bool
@@ -162,3 +224,55 @@ def test_selic_e_eventos_fora_do_formato_falham_alto(tmp_path: Path) -> None:
         gerar.gerar(tmp_path, replace(_coleta(), selic=[{"data": "outubro", "valor": "x"}]))
     with pytest.raises(GeracaoError, match="fora do formato"):
         gerar.gerar(tmp_path, replace(_coleta(), eventos={"XXXX": [{"stockDividends": [{}]}]}))
+
+
+def test_proventos_em_dinheiro_com_data_de_aprovacao(tmp_path: Path) -> None:
+    """O crédito do JCP (data de aprovação) vem dos proventos em dinheiro da companhia; o
+    histórico nunca apaga (a B3 só lista os últimos meses)."""
+    arquivos, resumo = gerar.gerar(tmp_path, _coleta())
+    linhas = _linhas(arquivos["proventos_b3.csv"])
+    vamo = [x for x in linhas if x.startswith("VAMO,")]
+    assert vamo == ["VAMO,BRVAMOACNOR7,JRS CAP PROPRIO,0.140701568,2025-12-15,2025-12-18,"
+                    "2026-04-02,Anual/2025"]  # fmt: skip
+    assert len(resumo.proventos_novos) == len(linhas)
+    gerar.gravar(tmp_path, arquivos)
+    seguinte = _coleta(date(2026, 10, 26))
+    sem_vamo = Coleta(
+        **{
+            **seguinte.__dict__,
+            "eventos": {k: v for k, v in seguinte.eventos.items() if k != "VAMO"},
+        }
+    )
+    novos, resumo = gerar.gerar(tmp_path, sem_vamo)
+    assert _linhas(novos["proventos_b3.csv"]) == linhas and not resumo.proventos_novos
+
+
+def test_historico_de_jcp_com_classe_aprovacao_e_data_com(tmp_path: Path) -> None:
+    """Aba "Proventos em dinheiro" da Itaúsa (amostra real): só JCP, com classe; dividendos e
+    linhas anteriores a HISTORICO_DESDE (1996) ficam de fora; nunca apaga."""
+    arquivos, resumo = gerar.gerar(tmp_path, _coleta())
+    linhas = _linhas(arquivos["proventos_historico_b3.csv"])
+    assert len(linhas) == 12 and len(resumo.historico_novos) == 12
+    assert linhas[:3] == ["ITSA,PN,JRS CAP PROPRIO,0.0591,2025-06-16,2025-06-20",
+                          "ITSA,PN,JRS CAP PROPRIO,0.1859,2025-08-11,2025-08-18",
+                          "ITSA,PN,JRS CAP PROPRIO,0.0235295,2025-02-10,2025-08-29"]  # fmt: skip
+    assert "ITSA,ON,JRS CAP PROPRIO,0.0242425,2026-02-09,2026-08-31" in linhas
+    gerar.gravar(tmp_path, arquivos)
+    seguinte = _coleta(date(2026, 10, 26))
+    sem_itsa = Coleta(**{**seguinte.__dict__, "historico": {}})
+    novos, resumo = gerar.gerar(tmp_path, sem_itsa)
+    assert _linhas(novos["proventos_historico_b3.csv"]) == linhas and not resumo.historico_novos
+
+
+def test_historico_sem_aprovacao_ou_por_lote_fica_de_fora() -> None:
+    base = {"typeStock": "ON", "corporateAction": "JRS CAP PROPRIO", "valueCash": "0,10",
+            "lastDatePriorEx": "02/01/2020", "dateApproval": "20/12/2019",
+            "quotedPerShares": "1"}  # fmt: skip
+    linhas = gerar.ler_historico("XXXX", [base, {**base, "dateApproval": None},
+                                          {**base, "quotedPerShares": "1000"},
+                                          {**base, "lastDatePriorEx": "30/12/2015"}])  # fmt: skip
+    assert linhas == [{"emissor": "XXXX", "classe": "ON", "tipo": "JRS CAP PROPRIO",
+                       "valor": "0.1", "aprovado_em": "2019-12-20",
+                       "data_com": "2020-01-02"}]  # fmt: skip
+    with pytest.raises(GeracaoError, match="ilegível"):
+        gerar.ler_historico("XXXX", [{**base, "valueCash": "x"}])

@@ -1,0 +1,167 @@
+# Fichas do programa IRPF do exercício 2026 (ano-calendário 2025) usadas pelo COIR (regra R17).
+# Parecer do especialista-fiscal-b3 de 20/10/2026, conferido com a DIRPF 2026 entregue pelo
+# mantenedor. Os códigos de Bens e Direitos só existem dentro do programa: confiança M onde a
+# DIRPF entregue não tinha o caso. Não há cálculo aqui: só onde cada valor do COIR vai.
+exercicio: 2026
+ano_calendario: 2025
+provisorio: false
+
+renda_variavel:
+  fonte: >-
+    Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023
+    reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
+  # linhas na ordem do programa; grupos = Grupo do COIR que soma na linha (comuns e day trade)
+  linhas:
+    - rotulo: "Mercado à Vista - Ações"
+      grupos: [a_vista]
+    - rotulo: "Mercado à Vista - Ouro"
+      grupos: []
+    - rotulo: "Mercado à Vista - Ouro ativo financeiro fora de bolsa"
+      grupos: []
+    - rotulo: "Mercado de Opções - Ações"
+      grupos: [opcoes]
+    - rotulo: "Mercado de Opções - Ouro"
+      grupos: []
+    - rotulo: "Mercado de Opções - Fora de bolsa"
+      grupos: []
+    - rotulo: "Mercado de Opções - Outros"
+      grupos: [opcoes_outros]
+    - rotulo: "Mercado Futuro - Dólar dos EUA"
+      grupos: [dolar]
+    - rotulo: "Mercado Futuro - Índices"
+      grupos: [indice]
+    - rotulo: "Mercado Futuro - Juros"
+      grupos: [juros]
+    - rotulo: "Mercado Futuro - Outros"
+      grupos: [commodity]
+    - rotulo: "Mercado a Termo - Ações/Ouro"
+      grupos: [termo]
+    - rotulo: "Mercado a Termo - Outros"
+      grupos: []
+
+bens:
+  fonte: >-
+    Programa IRPF 2026, ficha Bens e Direitos; Manual do MIR (bens financeiros); P&R IRPF 2026
+    perguntas 459 e 720 (um item por ação, total das corretoras); leiaute DIRPF 2023 reg. 27
+  itens:
+    - tipo: ACAO
+      grupo: "03"
+      codigo: "01"
+      descricao: "Ações (inclusive as listadas em Bolsa)"
+      cnpj: emissor
+    - tipo: UNIT
+      grupo: "03"
+      codigo: "01"
+      descricao: "Ações (inclusive as listadas em Bolsa)"
+      cnpj: emissor
+      nota: "como na DIRPF 2026 entregue"
+    - tipo: BDR
+      grupo: "04"
+      codigo: "04"
+      descricao: "Ativos negociados em bolsa no Brasil, exceto ações e fundos"
+      cnpj: nenhum
+    - tipo: OPCAO
+      grupo: "04"
+      codigo: "04"
+      descricao: "Ativos negociados em bolsa no Brasil, exceto ações e fundos"
+      cnpj: nenhum
+      nota: "como na DIRPF 2026 entregue"
+    - tipo: ETF
+      grupo: "07"
+      codigo: "06"
+      descricao: "Fundos de índice (ETF) - entidade de investimento (Lei 14.754/2023)"
+      cnpj: fundo
+      nota: "confiança M: guias antigos usavam 07.09"
+    - tipo: ETF_RF
+      grupo: "07"
+      codigo: "08"
+      descricao: "Fundos de índice de renda fixa"
+      cnpj: fundo
+    - tipo: FII
+      grupo: "07"
+      codigo: "03"
+      descricao: "Fundos de Investimento Imobiliário (FII)"
+      cnpj: fundo
+    - tipo: FIAGRO
+      grupo: "07"
+      codigo: "02"
+      descricao: "Fiagro"
+      cnpj: fundo
+    - tipo: JCP_A_RECEBER
+      grupo: "99"
+      codigo: "07"
+      descricao: "Juros sobre capital próprio a receber"
+      cnpj: emissor
+      nota: "como na DIRPF 2026 entregue"
+
+dividas:
+  fonte: >-
+    Programa IRPF, ficha Dívidas e ônus reais; sem norma específica para posição vendida em
+    31/12 (opção lançada, venda a descoberto): decisão do usuário de 20/10/2026, para fechar a
+    variação patrimonial
+  itens:
+    - tipo: POSICAO_VENDIDA
+      codigo: "16"
+      descricao: "Outras dívidas e ônus reais"
+      nota: "prêmio ou valor da venda recebido, ainda não encerrado em 31/12"
+
+isentos:
+  fonte: >-
+    Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do
+    capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB
+    1.585/2015 arts. 58 §1º e 74
+  linhas:
+    - chave: dividendos
+      codigo: "09"
+      descricao: "Lucros e dividendos recebidos"
+      por_fonte: true
+    - chave: bonificacao
+      codigo: "18"
+      descricao: "Incorporação de reservas ao capital / Bonificações em ações"
+      por_fonte: true
+    - chave: lucro_acoes_ate_limite
+      codigo: "20"
+      descricao: "Ganhos líquidos em operações no mercado à vista de ações negociadas em bolsas de valores nas alienações realizadas até R$ 20.000,00 em cada mês"
+      por_fonte: false
+    - chave: rendimento_fii
+      codigo: "99"
+      descricao: "Outros (rendimentos de FII e Fiagro)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+    - chave: reembolso_btc
+      codigo: "99"
+      descricao: "Outros (reembolso de proventos de ações emprestadas)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+      nota: "CNPJ da empresa, como na DIRPF 2026 entregue"
+
+exclusivos:
+  fonte: >-
+    Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei
+    9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
+  linhas:
+    - chave: jcp
+      codigo: "10"
+      descricao: "Juros sobre capital próprio"
+      por_fonte: true
+    - chave: etf_rf
+      codigo: "06"
+      descricao: "Rendimentos de aplicações financeiras (ETF de renda fixa)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+    - chave: atualizacao_proventos
+      codigo: "06"
+      descricao: "Rendimentos de aplicações financeiras (atualização de proventos pela Selic)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+      nota: "06 ou 12 conforme o informe da empresa"
+
+imposto_pago:
+  fonte: >-
+    Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015
+    art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II;
+    P&R IRPF 2026 pergunta 715)
+  linhas:
+    - chave: ir_fonte_lei_11033
+      codigo: "03"
+      descricao: "Imposto sobre a renda na fonte (Lei 11.033/2004)"

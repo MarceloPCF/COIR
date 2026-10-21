@@ -117,7 +117,8 @@ def test_p4_reembolso_de_btc_isento_com_aviso_desde_2026() -> None:
         mov(date(2026, 6, 2), "Reembolso", "ITSA4 - ITAUSA", "1000", "1.2", "1200", i=2),
     )  # fmt: skip
     assert a.tipo is b.tipo is TipoProvento.REEMBOLSO_BTC
-    assert a.observacao == "" and "equivalência" in b.observacao
+    assert "sem identificar" in a.observacao and "equivalência" in b.observacao
+    assert a.reembolso_de == b.reembolso_de == ""  # sem provento do dia para comparar
 
 
 def test_p5_restituicao_de_capital_nao_e_rendimento() -> None:
@@ -175,3 +176,83 @@ def test_atualizacao_do_provento_pela_selic_e_tributacao_exclusiva() -> None:
     )
     assert atualizacao.aliquota == D("0.225")
     assert not avisos
+
+
+def _jcp(dia: date, preco: str, valor: str, credito: date | None = None) -> LinhaB3:
+    item = mov(dia, "Juros Sobre Capital Próprio", "ITSA4 - ITAUSA", "1000", preco, valor)
+    return item.model_copy(update={"credito": credito, "credito_origem": "B3" if credito else ""})
+
+
+def test_jcp_creditado_no_ano_anterior_com_a_mesma_aliquota() -> None:
+    """Caso C do especialista (F8, 20/10/2026): crédito em 16/12/2024, pago em 10/03/2025, 15% nos
+    dois anos (1.000 x 0,50 bruto, líquido 425,00). Sem a data do crédito o motor o põe em 2025
+    (não há mudança de alíquota para perceber); com ela (pacote da B3 ou informe), declarado em
+    2024 e a receber em 31/12/2024 (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995
+    art. 9º §2º)."""
+    [sem], _ = _proventos(_jcp(date(2025, 3, 10), "0.5", "425"))
+    assert sem.ano_declaracao == 2025
+    [p], _ = _proventos(_jcp(date(2025, 3, 10), "0.5", "425", date(2024, 12, 16)))
+    assert (p.ano_declaracao, p.aliquota, p.bruto, p.credito, p.a_receber_em_31_12) == (
+        2024, D("0.15"), D("500.00"), date(2024, 12, 16), True)  # fmt: skip
+    assert "creditado em 16/12/2024 (B3)" in p.observacao
+
+
+def test_jcp_creditado_em_2025_e_pago_em_2026_usa_a_aliquota_do_credito() -> None:
+    """LC 224/2025 art. 8º: 17,5% para JCP pago ou creditado desde 01/01/2026, o que vier
+    primeiro. Creditado em 20/12/2025 e pago em 15/04/2026: 15%, declarado em 2025."""
+    [p], _ = _proventos(_jcp(date(2026, 4, 15), "0.5", "425", date(2025, 12, 20)))
+    assert (p.ano_declaracao, p.aliquota) == (2025, D("0.15"))
+
+
+def test_credito_depois_do_pagamento_falha_alto() -> None:
+    with pytest.raises(MotorError, match="depois do pagamento"):
+        _proventos(_jcp(date(2025, 3, 10), "0.5", "425", date(2025, 3, 11)))
+
+
+def test_reembolso_de_jcp_identificado_pelo_valor_por_acao() -> None:
+    """Parecer do especialista (21/10/2026): o reembolso é a quantidade emprestada vezes o valor
+    por ação do provento do dia, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II). JCP de
+    0,520530743 por ação pago em 14/03/2025 (pacote da B3), 1.000 ações emprestadas:
+    1.000 x 0,520530743 x 0,85 = 442,45 (não é dividendo de 2,141847479: 206,57 ações). Isento,
+    no ano do recebimento, sem 99.07; desde 2026, Lei 15.265/2025 art. 21 I."""
+    publicos = {("VALE", date(2025, 3, 14)): [("JCP", D("0.520530743")),
+                                               ("DIVIDENDO", D("2.141847479"))]}  # fmt: skip
+    linha = mov(date(2025, 3, 14), "Reembolso", "VALE3 - VALE", "0", None, "442.45")
+    avisos: list[str] = []
+    [p] = proventos([linha], TIPOS, REFS.parametros, avisos, publicos)
+    assert (p.tipo, p.reembolso_de, p.ano_declaracao, p.a_receber_em_31_12) == (
+        TipoProvento.REEMBOLSO_BTC, "JCP", 2025, False)  # fmt: skip
+    assert "reembolso de JCP de 1000 ações emprestadas" in p.observacao
+
+
+def test_reembolso_de_dividendo_pela_movimentacao_e_lei_15270() -> None:
+    """Reembolso de dividendo identificado pelo dividendo do mesmo dia na própria movimentação:
+    dividendo de 50,00 por ação; reembolso de 25.000,00 = 500 ações emprestadas inteiras (como JCP
+    a 15% seriam 588,24 ações: não). Com outro dividendo de 5.000,00 no mês, em 2026 o aviso da
+    Lei 15.270 soma os três (55.000,00 no mês, acima de R$ 50 mil; decisão do usuário de
+    21/10/2026)."""
+    lista, avisos = _proventos(
+        mov(date(2026, 4, 10), "Dividendo", "ITSA4 - ITAUSA", "500", "50", "25000"),
+        mov(date(2026, 4, 10), "Reembolso", "ITSA4 - ITAUSA", "0", None, "25000", i=2),
+        mov(date(2026, 4, 20), "Dividendo", "ITSA4 - ITAUSA", "100", "50", "5000", i=3),
+    )  # fmt: skip
+    [reembolso] = [p for p in lista if p.tipo is TipoProvento.REEMBOLSO_BTC]
+    assert reembolso.reembolso_de == "DIVIDENDO"
+    assert any("ITSA somam 55000" in a and "acima do limite" in a for a in avisos)
+
+
+def test_jcp_com_data_com_em_janeiro_e_retencao_do_ano_anterior_so_avisa() -> None:
+    """Caso 3 do parecer de 21/10/2026: aprovado em 15/12/2025, data com 05/01/2026, pago em
+    30/01/2026, 1.000 x 0,50 bruto. Crédito na data com (a mais tarde entre aprovação e data com:
+    IN SRF 41/1998 art. 3º; IN RFB 1.700/2017 art. 75 §10). 3a: retenção de 17,5% (líquido 412,50):
+    ano 2026, bruto 500,00, sem aviso. 3b: retenção de 15% (líquido 425,00): continua em 2026 pela
+    regra, bruto estimado 425 / 0,825 = 515,15, com aviso de que a empresa tratou o crédito como
+    de 2025 (decisão do usuário de 21/10/2026: só avisar)."""
+    credito = date(2026, 1, 5)
+    [a], _ = _proventos(_jcp(date(2026, 1, 30), "0.5", "412.5", credito))
+    assert (a.ano_declaracao, a.aliquota, a.bruto, a.a_receber_em_31_12) == (
+        2026, D("0.175"), D("500.00"), False)  # fmt: skip
+    assert "retenção implícita" not in a.observacao
+    [b], _ = _proventos(_jcp(date(2026, 1, 30), "0.5", "425", credito))
+    assert (b.ano_declaracao, b.bruto) == (2026, D("515.15"))
+    assert "a empresa tratou o crédito como de 2025 (confira o informe)" in b.observacao

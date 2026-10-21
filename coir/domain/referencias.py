@@ -2,6 +2,7 @@
 
 import re
 import unicodedata
+from collections.abc import Callable
 from datetime import date
 from decimal import Decimal
 from typing import Literal
@@ -9,6 +10,15 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 RE_SERIE_OPCAO = re.compile(r"^[A-Z0-9]{4}[A-X]\d")
+
+
+def opcao_de_compra(serie: str) -> bool:
+    """Letra do mês da série: A a L, opção de compra (call); M a X, de venda (put)."""
+    return serie[4:5] <= "L"
+
+
+def especie_opcao(serie: str) -> str:
+    return "compra" if opcao_de_compra(serie) else "venda"
 
 
 class ContratoFuturo(BaseModel):
@@ -70,3 +80,18 @@ class Referencias(BaseModel):
                 if ticker[:4] == t.ticker_impresso[:4] and dia <= t.ate:
                     return t.ticker[:4] + ticker[4:]  # RRRPT32 -> BRAVT32
         return ticker
+
+
+def codigo_atual(refs: Referencias) -> Callable[[str], str]:
+    """O código mais recente do ativo pela tabela de trocas (planilhas e declarações usam ora o
+    antigo, ora o novo; a série de opção segue a raiz)."""
+
+    def atual(ticker: str) -> str:
+        for _ in range(len(refs.trocas) + 1):
+            novo = refs.ticker_na_data(ticker, date.min)
+            if novo == ticker:
+                break
+            ticker = novo
+        return ticker
+
+    return atual

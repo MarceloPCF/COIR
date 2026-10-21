@@ -71,6 +71,13 @@ class Posicao:
             self.custo -= valor
         return baixa
 
+    def vender_lote(self, quantidade: Decimal, valor: Decimal, custo: Decimal) -> Baixa:
+        """Venda de um lote com custo próprio de dentro da posição comprada (ação do termo vendida
+        na data da liquidação, pelo preço a termo: IN 1.585 art. 62 I); o resto da posição fica com
+        o custo que sobra."""
+        self._sair(quantidade, custo)
+        return Baixa(resultado=valor - custo, custo_baixa=custo)
+
     def baixar_sem_resultado(self, quantidade: Decimal) -> Decimal:
         """Tira `quantidade` (em módulo) da posição e devolve o custo correspondente (com sinal):
         opção exercida (o prêmio vai para o ativo-objeto) e transferência entre contas."""

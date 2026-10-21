@@ -20,6 +20,7 @@ from coir.ui.telas import (
     conciliacao,
     configuracoes,
     darf,
+    declaracao,
     eventos,
     futuros,
     importar,
@@ -57,6 +58,7 @@ GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
         Tela("/darf", "DARF", "request_quote", darf.montar),
         Tela("/proventos", "Proventos", "payments", proventos.montar),
         Tela("/outros-custos", "Outros custos", "receipt", outros_custos.montar),
+        Tela("/declaracao", "Declaração anual", "assignment", declaracao.montar),
         Tela("/relatorios", "Relatórios", "description", relatorios.montar),
     )),
     ("Carteira", (

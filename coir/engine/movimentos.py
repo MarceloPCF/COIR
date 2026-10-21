@@ -10,7 +10,10 @@ Fontes:
 - Exercício (art. 58 §§): titular de call soma o prêmio ao custo; lançador de call soma o prêmio à
   alienação; titular de put subtrai o prêmio da alienação; lançador de put subtrai do custo.
 - Opção não exercida: o prêmio é perda (titular) ou ganho (lançador) no vencimento.
-- Termo: as ações entram na carteira na liquidação, pelo preço a termo + custos da nota.
+- Termo: as ações entram na carteira na liquidação, pelo preço a termo + custos da nota. Vendas
+  à vista na mesma data consomem primeiro o lote do termo, pelo preço a termo (art. 62 I, linha do
+  termo, sem isenção); o excedente sai da posição anterior pelo PM. O que sobra do lote fica no
+  custo médio (art. 62 §1º e art. 58). Decisões do usuário de 20 e 21/10/2026.
 """
 
 from collections import defaultdict
@@ -84,6 +87,16 @@ def _grupo(tipo: TipoAtivo) -> Grupo:
     return Grupo.OPCOES if tipo is TipoAtivo.OPCAO else Grupo.A_VISTA
 
 
+def _grupo_opcao(op: OperacaoMotor, params: ParametrosFiscais, dia: date) -> Grupo:
+    """Linha da ficha do IRPF para a opção: "opções - ações" se o ativo-objeto é de um dos tipos
+    do parâmetro (ação e unit); ETF, índice e outros vão para "opções - outros". Objeto não
+    identificado fica em ações, como antes da F8."""
+    acoes = {t.strip() for t in params.texto("opcoes_linha_acoes_tipos_objeto", dia).split(";")}
+    if op.objeto_tipo is None or op.objeto_tipo.value in acoes:
+        return Grupo.OPCOES
+    return Grupo.OPCOES_OUTROS
+
+
 def _categoria(tipo: TipoAtivo, day_trade: bool) -> Categoria:
     if tipo is TipoAtivo.FII:
         return Categoria.FII  # FII (inclusive day trade): 20%, compensação só entre FII
@@ -107,6 +120,10 @@ class Livro:
         self.corretoras: dict[int, str] = {}  # conta -> corretora
         self.tickers: dict[int, str] = {}
         self.tipos: dict[int, TipoAtivo] = {}
+        self.grupos: dict[int, Grupo] = {}  # opção: linha pelo ativo-objeto
+        # lote do termo liquidado no dia em processamento que ainda não foi vendido nesta data
+        # (quantidade e custo pelo preço a termo), por posição
+        self.termo_hoje: dict[Chave, Posicao] = {}
         self.movimentos: list[Movimento] = []
         self.avisos: list[str] = []
 
@@ -141,7 +158,8 @@ class Livro:
         categoria: Categoria, cv: str | None, quantidade: Decimal, valor: Decimal,
         custos: Decimal = ZERO, baixa: Baixa | None = None, venda_acao: Decimal = ZERO,
         isentavel: bool = False, mes_limite: date | None = None, isento_pme: bool = False,
-        toca_posicao: bool = True, base_irrf: Decimal = ZERO,
+        toca_posicao: bool = True, base_irrf: Decimal = ZERO, grupo: Grupo | None = None,
+        evento: TipoEvento | None = None,
     ) -> None:  # fmt: skip
         titular, _, ativo, _ = chave
         pos = self.posicoes[chave]
@@ -156,12 +174,13 @@ class Livro:
             Movimento(
                 data=dia, titular=titular, conta=conta, corretora=corretora, ativo=ativo,
                 ticker=self.tickers[ativo],
-                origem=origem, regra=regra, categoria=categoria, grupo=_grupo(tipo), tipo=tipo,
+                origem=origem, regra=regra, categoria=categoria,
+                grupo=grupo or self.grupos.get(ativo) or _grupo(tipo), tipo=tipo,
                 cv=cv,  # type: ignore[arg-type]
                 quantidade=quantidade, valor=valor, custos=custos, custo_baixa=b.custo_baixa,
                 resultado=b.resultado, venda_acao_a_vista=venda_acao, isentavel=isentavel,
                 mes_limite=mes_limite, isento_pme=isento_pme, base_irrf=base_irrf,
-                quantidade_apos=pos.quantidade, custo_apos=pos.custo,
+                quantidade_apos=pos.quantidade, custo_apos=pos.custo, evento=evento,
             )
         )  # fmt: skip
 
@@ -232,6 +251,13 @@ def _executar(
         for op, custo in zip(nota.operacoes, custos, strict=True):
             livro.tickers[op.ativo] = op.ticker
             livro.tipos[op.ativo] = op.tipo
+            if op.tipo is TipoAtivo.OPCAO:
+                livro.grupos[op.ativo] = _grupo_opcao(op, parametros, nota.data)
+                aviso = (f"opção {op.ticker}: ativo-objeto não identificado pela raiz "
+                         "(data/opcoes_raiz*.csv); no IRPF, linha \"opções - ações\"")  # fmt: skip
+                if (op.objeto_tipo is None and livro.visao is Visao.TITULAR
+                        and aviso not in livro.avisos):  # fmt: skip
+                    livro.avisos.append(aviso)
             item = _Op(nota, op, custo)
             if op.mercado == "TERMO":
                 if op.cv == "V" or op.liquidacao_termo is None:
@@ -285,6 +311,7 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
             raise MotorError(f"cisão de {grupo[0].ticker} ({grupo[0].data}) para dois ativos no "
                              "mesmo dia (não implementado)")  # fmt: skip
         _cisao(livro, chave, grupo)
+    livro.termo_hoje = {}
     for t in sorted(d.termos, key=lambda t: (t.nota.id, t.op.ordem)):
         chave = livro.chave(t.nota.titular, _de(t), t.op.ativo)
         pos = livro.posicoes[chave]
@@ -292,7 +319,13 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
         # ações vendidas antes da liquidação: a posição ficou vendida e o termo a cobre (resultado
         # na liquidação, limite de isenção do mês da venda, como na recompra da venda a descoberto)
         mes_limite = pos.descoberto_desde if pos.quantidade < 0 else None
+        antes = pos.quantidade
         baixa = pos.comprar(t.op.quantidade, t.valor)
+        # só a parte que ficou comprada pode ser vendida nesta data pelo preço a termo
+        longo = t.op.quantidade if antes >= 0 else max(ZERO, pos.quantidade)
+        if longo:
+            lote = livro.termo_hoje.setdefault(chave, Posicao())
+            lote.comprar(longo, _proporcao(t.valor, longo, t.op.quantidade))
         if pos.quantidade >= 0:
             pos.descoberto_desde = None
         regra = "termo liquidado: entra pelo preço a termo + custos da compra"
@@ -436,6 +469,37 @@ def _movimento_day_trade(
 def _aplicar(livro: Livro, dia: date, p: _Peca) -> None:
     o = p.base
     chave = livro.chave(o.nota.titular, _de(o), o.op.ativo, o.op.vencimento)
+    lote = livro.termo_hoje.get(chave)
+    if o.op.cv != "V" or o.op.mercado in MERCADOS_EXERCICIO or lote is None or not lote.quantidade:
+        _aplicar_parte(livro, dia, chave, p)
+        return
+    # venda na data da liquidação do termo (decisão do usuário de 21/10/2026, parecer do
+    # especialista): consome primeiro o lote do termo, pela ordem dos negócios; o excedente sai da
+    # posição anterior pelo PM, como venda à vista comum
+    q = min(p.quantidade, lote.quantidade)
+    custo = lote.baixar_sem_resultado(q)
+    regra = (p.regra + "; venda na data da liquidação do termo: custo = preço a termo + custos da "
+             "compra (IN 1.585 art. 62 I)")  # fmt: skip
+    _aplicar_parte(livro, dia, chave, _fatia(p, q, regra), custo_termo=custo)
+    if q < p.quantidade:
+        regra = (p.regra + "; venda na data da liquidação do termo, além do lote do termo: sai da "
+                 "posição anterior pelo PM")  # fmt: skip
+        _aplicar_parte(livro, dia, chave, _fatia(p, p.quantidade - q, regra))
+
+
+def _fatia(p: _Peca, quantidade: Decimal, regra: str) -> _Peca:
+    return _Peca(p.base, quantidade, _proporcao(p.valor, quantidade, p.quantidade),
+                 _proporcao(p.custos, quantidade, p.quantidade),
+                 _proporcao(p.bruto, quantidade, p.quantidade), regra)  # fmt: skip
+
+
+def _aplicar_parte(
+    livro: Livro, dia: date, chave: Chave, p: _Peca, custo_termo: Decimal | None = None
+) -> None:
+    """Aplica a peça à posição. Com `custo_termo`, é a venda de ações do lote do termo na data da
+    liquidação: sai pelo preço a termo, vai para a linha "Mercado a termo" da ficha do IRPF e nunca
+    é isenta (IN 1.585 art. 62 I e art. 59 §2º IV; decisão do usuário de 20/10/2026)."""
+    o = p.base
     pos = livro.posicoes[chave]
     # ação ou unit no mercado à vista (units só entram com o parâmetro units_na_isencao)
     acao = o.op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT) and o.op.mercado in MERCADOS_ACAO_A_VISTA
@@ -461,7 +525,13 @@ def _aplicar(livro: Livro, dia: date, p: _Peca) -> None:
         pme = pos.quantidade > 0 and pos.pme_ate is not None and dia <= pos.pme_ate
         if pme and p.quantidade > pos.quantidade:
             raise MotorError(f"venda de {o.op.ticker} ({dia}) além do lote isento de PME")
-        baixa = pos.vender(p.quantidade, p.valor)
+        if custo_termo is None:
+            baixa = pos.vender(p.quantidade, p.valor)
+        elif pos.quantidade >= p.quantidade:
+            baixa = pos.vender_lote(p.quantidade, p.valor, custo_termo)
+        else:
+            raise MotorError(f"{dia}: venda de {o.op.ticker} na data da liquidação do termo maior "
+                             f"que a posição ({pos.quantidade})")  # fmt: skip
         venda_acao = p.bruto if acao and not pme else ZERO
         if pos.quantidade == 0:
             pos.pme_ate = None
@@ -478,11 +548,13 @@ def _aplicar(livro: Livro, dia: date, p: _Peca) -> None:
     # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas
     base_irrf = p.bruto if (o.op.cv == "V" and o.op.mercado not in MERCADOS_EXERCICIO and not pme
                             and o.op.tipo is not TipoAtivo.ETF_RF) else ZERO  # fmt: skip
+    termo = custo_termo is not None
     livro.registrar(chave, dia, f"op:{o.op.id}", p.regra, de=_de(o),
                     categoria=_categoria(o.op.tipo, day_trade=False), cv=o.op.cv,
                     quantidade=p.quantidade, valor=p.valor, custos=p.custos, baixa=baixa,
-                    venda_acao=venda_acao, isentavel=isentavel and not pme, mes_limite=mes_limite,
-                    isento_pme=pme, base_irrf=base_irrf)  # fmt: skip
+                    venda_acao=venda_acao, isentavel=isentavel and not pme and not termo,
+                    mes_limite=mes_limite, isento_pme=pme, base_irrf=base_irrf,
+                    grupo=Grupo.TERMO if termo else None)  # fmt: skip
 
 
 def _lote_pme(pos: Posicao, op: OperacaoMotor, dia: date) -> None:
@@ -736,4 +808,4 @@ def _evento(livro: Livro, e: Evento) -> None:
     pos.ajustar(quantidade, custo)
     livro.registrar(chave, e.data, f"evento:{e.id}", f"evento {e.tipo.value.lower()}: ajusta "
                     "quantidade e custo, sem resultado", de=de, categoria=Categoria.COMUM, cv=e.cv,
-                    quantidade=quantidade, valor=custo)  # fmt: skip
+                    quantidade=quantidade, valor=custo, evento=e.tipo)  # fmt: skip

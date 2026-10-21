@@ -21,17 +21,20 @@ from coir.db import repositorio as repo
 from coir.db.modelos import EventoCorporativo, NotaCorretagem
 from coir.db.sessao import NOME_BANCO, conectar, migrar
 from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
+from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.proventos import Provento
-from coir.domain.referencias import Referencias
+from coir.domain.referencias import Referencias, codigo_atual
 from coir.domain.relatorio import DadosRelatorio
 from coir.erros import CoirError, ConfiguracaoError, ExportacaoError
 from coir.parsing.extrair import extrair_pdf
+from coir.reports.irpf import fichas
 from coir.servicos import (
     atualizacao,
     carteira,
     conciliacao,
     darf,
+    declaracao,
     derivativos,
     eventos,
     notas,
@@ -39,8 +42,8 @@ from coir.servicos import (
 )
 from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
 from coir.servicos.importacao import Extrator, aplicar_tabelas
-from coir.servicos.proventos import proventos_banco
-from coir.servicos.relatorios import dados_banco
+from coir.servicos.proventos import informar_creditos, proventos_banco
+from coir.servicos.relatorios import dados_banco, info_ativos
 
 log = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -260,7 +263,9 @@ class Estado:
         agora, titular, ano = self.agora(), self.titular, self.ano
         return self._guardado(
             ("relatorios", titular, ano, agora.date()),
-            lambda: dados_banco(self.banco, self.refs, self.fiscais, ano, agora, titular),
+            lambda: dados_banco(
+                self.banco, self.refs, self.fiscais, ano, agora, titular, pasta_refs=self.pasta_refs
+            ),
         )
 
     def darfs(self) -> list[darf.LinhaDarf]:
@@ -288,13 +293,53 @@ class Estado:
 
         return self._guardado(("darfs-todos", titular, hoje), calcular)
 
+    # ------------------------------------------------------------- declaração anual (tela 14)
+    def fichas_irpf(self) -> tuple[FichasIrpf | None, MapeamentoIrpf | None]:
+        """As fichas do IRPF do titular e ano escolhidos (None se o exercício não tem
+        mapeamento em data/irpf)."""
+        d = self.dados_relatorio()
+        return fichas(d), d.irpf
+
+    def lancados(self) -> set[str]:
+        if not self.existe or self.titular is None or self.ano is None:
+            return set()
+        return declaracao.lancados(self.banco, self.titular, self.ano)
+
+    def marcar_lancado(self, chave: str, lancado: bool) -> None:
+        if self.titular is None or self.ano is None:
+            raise ExportacaoError("escolha o titular e o ano")
+        declaracao.marcar(self.banco, self.titular, self.ano, chave, lancado, self.agora())
+
+    def conferir_dirpf(self) -> declaracao.Conferencia | None:
+        """Comparação com a DIRPF entregue do ano (PDF em <dados>/_dirpf), se houver."""
+        f, mapa = self.fichas_irpf()
+        if f is None or mapa is None:
+            return None
+        cpf = self.dados_relatorio().cpf
+        return declaracao.conferir(self.dados, f, mapa, codigo_atual(self.refs), cpf)
+
+    def propor_creditos_dirpf(self) -> tuple[list[declaracao.PropostaCredito], list[str]]:
+        """JCP cujo crédito, pelas DIRPF entregues em <dados>/_dirpf (99.07), foi no ano anterior
+        ao pagamento; o usuário confirma na tela de Proventos."""
+        lista, _ = self.proventos()
+        if not lista:
+            return [], []
+        info = info_ativos({p.codigo for p in lista}, self.refs, self.fiscais, self.pasta_refs)
+        cnpjs = {t: i.cnpj for t, i in info.items() if i.cnpj}
+        lidas, avisos = declaracao.declaracoes_lidas(self.dados, self.dados_relatorio().cpf)
+        return declaracao.propor_creditos(lista, cnpjs, lidas), avisos
+
+    def confirmar_creditos(self, propostas: list[declaracao.PropostaCredito]) -> None:
+        informar_creditos(self.banco, [(p.chave, p.credito) for p in propostas], self.agora())
+
     def proventos(self) -> tuple[list[Provento], list[str]]:
         """Proventos do titular escolhido (todos os anos) e os avisos."""
         if not self.existe or self.titular is None:
             return [], []
         titular = self.titular
         return self._guardado(
-            ("proventos", titular), lambda: proventos_banco(self.banco, self.fiscais, titular)
+            ("proventos", titular),
+            lambda: proventos_banco(self.banco, self.fiscais, titular, self.pasta_refs),
         )
 
     def propostas(self) -> list[eventos.Proposta]:

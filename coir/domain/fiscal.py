@@ -50,11 +50,14 @@ class Visao(StrEnum):
 class Grupo(StrEnum):
     """Subtotal da apuração (como no gabarito e no programa da Receita)."""
 
-    A_VISTA = "a_vista"  # ações, units, ETF, BDR, FII (inclui exercício e termo liquidado)
-    OPCOES = "opcoes"
+    A_VISTA = "a_vista"  # ações, units, ETF, BDR, FII (inclui exercício e termo vendido depois)
+    OPCOES = "opcoes"  # ativo-objeto ação ou unit (parâmetro opcoes_linha_acoes_tipos_objeto)
+    OPCOES_OUTROS = "opcoes_outros"  # ativo-objeto ETF, índice ou outro
     INDICE = "indice"
     DOLAR = "dolar"
+    JUROS = "juros"
     COMMODITY = "commodity"
+    TERMO = "termo"  # venda à vista na data da liquidação do termo (IN RFB 1.585 art. 62 I)
 
 
 # ------------------------------------------------------------------------------------- entradas
@@ -73,6 +76,7 @@ class OperacaoMotor(Modelo):
     total: Decimal  # valor bruto da operação (quantidade x preço)
     vencimento: date | None = None  # opção: data de vencimento da série
     opcao: int | None = None  # exercício: ativo da opção exercida
+    objeto_tipo: TipoAtivo | None = None  # opção: tipo do ativo-objeto (None: não identificado)
     liquidacao_termo: date | None = None  # compra a termo: entra na carteira nesta data
     pme_ate: date | None = None  # compra elegível à isenção de PME: vendas isentas até esta data
 
@@ -226,6 +230,7 @@ class Movimento(Modelo):
     mes_limite: date | None = None  # recompra de venda a descoberto: o limite é o do mês da venda
     isento_pme: bool = False  # venda de ações de PME (Lei 13.043): fora da apuração e do limite
     base_irrf: Decimal = ZERO  # venda comum bruta na base do IRRF 0,005% (repartição por ficha)
+    evento: TipoEvento | None = None  # passo de um evento corporativo: o tipo
     quantidade_apos: Decimal
     custo_apos: Decimal  # custo total da posição (negativo se vendida)
 

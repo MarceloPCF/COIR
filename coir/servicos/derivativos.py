@@ -26,7 +26,7 @@ from coir.domain.fiscal import (
     TipoAtivo,
 )
 from coir.domain.parametros import ReferenciasFiscais
-from coir.domain.referencias import Referencias
+from coir.domain.referencias import Referencias, opcao_de_compra
 from coir.engine.futuros import movimentos_futuros
 from coir.servicos.apuracao import entradas
 
@@ -130,7 +130,7 @@ def _ciclo(
     return CicloOpcao(
         ticker=ticker,
         objeto=objeto,
-        call=ticker[4] <= "L",  # letra do mês: A-L call, M-X put
+        call=opcao_de_compra(ticker),
         abertura=passos[0].data,
         fim=ultimo.data,
         vencimento=vencimento,

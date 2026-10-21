@@ -16,7 +16,8 @@ from coir.ui import tabela
 
 T = TipoColuna
 ZERO = Decimal(0)
-GRUPOS = {Grupo.INDICE: "Índice", Grupo.DOLAR: "Dólar", Grupo.COMMODITY: "Commodity"}
+GRUPOS = {Grupo.INDICE: "Índice", Grupo.DOLAR: "Dólar", Grupo.JUROS: "Juros",
+          Grupo.COMMODITY: "Commodity"}  # fmt: skip
 COLUNAS_ABERTAS = (
     Coluna("Contrato"),
     Coluna("Grupo"),
