@@ -196,3 +196,19 @@ def test_layout_inesperado_falha_alto() -> None:
     sem_bens[2] = CABECALHO + _renda_variavel()
     with pytest.raises(GabaritoError, match="BENS E DIREITOS"):
         ler_texto(sem_bens)
+
+
+def test_layout_ate_2025_sem_bem_com_usufruto() -> None:
+    """Até o exercício 2025 o programa não imprime "Bem com usufruto": o bem acaba quando começa
+    o seguinte (linha de valores) ou no TOTAL; a pergunta do topo muda e se repete por página."""
+    antiga = "Possui perdas a compensar de acordo com a Lei nº 14.754, de 2023 (art. 9º)? Não"
+    nova = (
+        "Atualizou o valor de algum bem imóvel e pagou o ganho de capital até 16/12/2024 de "
+        "acordo com a Lei nº 14.973/2024? Não"
+    )
+    paginas = [p.replace(" Bem com usufruto: Não", "").replace("Bem com usufruto: Não\n", "")
+               .replace(antiga, nova) for p in _paginas()]  # fmt: skip
+    bens = ler_texto(paginas).bens
+    assert [(b.ticker, b.anterior, b.atual) for b in bens] == [
+        ("VALE3", D("6000.00"), D("0")), ("ITSAA100", D("0"), D("24.00"))]  # fmt: skip
+    assert bens[0].discriminacao.endswith("EM 31/12/2024.")

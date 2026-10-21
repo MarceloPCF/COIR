@@ -41,6 +41,8 @@ RE_RENDIMENTO = re.compile(rf"^(?P<codigo>\d{{2}})\. (?P<nome>.+?)(?: (?P<total>
 CABECALHO = 6
 CABECALHO_BENS = ("DECLARAÇÃO DE BENS E DIREITOS (Valores em Reais)", "SITUAÇÃO EM",
                   "GRUPO CÓDIGO DISCRIMINAÇÃO")  # fmt: skip
+# perguntas do topo de Bens e Direitos, repetidas a cada página (variam com o exercício)
+PERGUNTAS_BENS = ("Possui perdas a compensar", "Atualizou o valor de algum bem")
 RV_TITULAR = "RENDA VARIÁVEL - OPERAÇÕES COMUNS/DAYTRADE - TITULAR"
 RV_FIM = "RENDA VARIÁVEL - OPERAÇÕES COMUNS/DAYTRADE - DEPENDENTES"
 FII = "FUNDOS DE INVESTIMENTO IMOBILIÁRIO OU NAS CADEIAS PRODUTIVAS AGROINDUSTRIAIS"
@@ -166,10 +168,16 @@ def _ficha(linhas: list[str], nome: str) -> tuple[MesFicha, ...]:
 def _bens(linhas: list[str]) -> tuple[BemDeclarado, ...]:
     corpo = [x for x in linhas if x not in CABECALHO_BENS and not re.fullmatch(
         r"31/12/\d{4} 31/12/\d{4}", x)]  # fmt: skip
+    corpo = [x for x in corpo if not x.startswith(PERGUNTAS_BENS)]
     bens: list[BemDeclarado] = []
     atual: dict[str, object] | None = None
     texto: list[str] = []
     for linha in corpo:
+        fim_do_bem = linha.startswith("TOTAL ") or RE_BEM_VALORES.match(linha)
+        if atual is not None and "grupo" in atual and fim_do_bem:
+            # layout até o exercício 2025: sem "Bem com usufruto", o bem acaba no seguinte
+            bens.append(BemDeclarado(discriminacao=" ".join(texto), **atual))  # type: ignore[arg-type]
+            atual = None
         if linha.startswith("TOTAL "):
             break
         if atual is None:
