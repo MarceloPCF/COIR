@@ -9,12 +9,17 @@
 
 # Importações padrão de bibliotecas Python
 import sys
+import logging
 import platform
 import subprocess
 from os.path import isfile, join, basename, exists
 from os import listdir
 from datetime import datetime
 import pandas as pd
+
+# O tabula-py avisa que não achou o jpype e usa o Java em linha de comando (comportamento esperado
+# no COIR); o aviso só confunde o usuário.
+logging.getLogger('tabula').setLevel(logging.ERROR)
 
 # Importação das funções definidas
 from coir.funcoes import print_atencao, valida_corretora
@@ -257,7 +262,7 @@ PROCESSADORES = {
 }
 
 # =================================================================================================
-#                  Módulo principal - SISTEMA DE CONTROLE DE OPERAÇÕES E IRPF
+#                  Módulo principal - SISTEMA DE CONTROLE DE OPERAÇÕES E IMPOSTO DE RENDA
 #    Leitura, análise, extração, formatação e conversão das Notas de Corretagem no padrão SINANCOR
 # =================================================================================================
 def extracao_nota_corretagem(path_origem='./Entrada/', ext='pdf'):
@@ -355,7 +360,7 @@ def _pergunta_sim_nao(mensagem):
 def principal():
     print()
     print('-=' * 50)
-    print(f'{"SISTEMA DE CONTROLE DE OPERAÇÕES E IRPF - COIR":^100}')
+    print(f'{"SISTEMA DE CONTROLE DE OPERAÇÕES E IMPOSTO DE RENDA - COIR":^100}')
     print(f'{"Versão " + __version__:^100}')
     print(f'{"Leitura, Extração e Formatação das Notas de Corretagem no padrão SINACOR":^100}')
     print('-=' * 50)

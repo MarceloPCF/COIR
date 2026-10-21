@@ -1083,7 +1083,7 @@ def arquivo_unico(current_path,cpf,normal_df,daytrade_df):
     # Python 3.15 usa UTF-8 por padrão; a saída do taskkill vem na página de código do Windows,
     # por isso a decodificação tolera caracteres inválidos e a mensagem é verificada com cuidado.
     if result.returncode != 0:
-        print("Cofirmado: programa Excel fechado.")
+        print("Confirmado: programa Excel fechado.")
     
     try:
         app = xw.App(visible=False)
