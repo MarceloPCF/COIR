@@ -528,12 +528,12 @@ def agrupar_btg(note_df):
     ],as_index=False
     ).agg(
         {
-            'Preço': sum,
-            'Quantidade': sum,
-            'Total': sum,
-            'Custos_Fin': sum,
-            'PM': sum,
-            'IRRF': sum
+            'Preço': 'sum',
+            'Quantidade': 'sum',
+            'Total': 'sum',
+            'Custos_Fin': 'sum',
+            'PM': 'sum',
+            'IRRF': 'sum'
         }
     )
     return note_df_agrupado
@@ -548,12 +548,12 @@ def agrupar(note_df):
     ],as_index=False
     ).agg(
         {
-            'Preço': sum,
-            'Quantidade': sum,
-            'Total': sum,
-            'Custos_Fin': sum,
-            'PM': sum,
-            'IRRF': sum
+            'Preço': 'sum',
+            'Quantidade': 'sum',
+            'Total': 'sum',
+            'Custos_Fin': 'sum',
+            'PM': 'sum',
+            'IRRF': 'sum'
         }
     )
     return note_df_agrupado
@@ -568,12 +568,12 @@ def agrupar_bmf(note_df):
     ],as_index=False
     ).agg(
         {
-            'Quantidade': sum,
-            'Total': sum,
-            'Custos_Fin': sum,
-            'PM': sum,
-            'IRRF': sum,
-            'IR_DT': sum
+            'Quantidade': 'sum',
+            'Total': 'sum',
+            'Custos_Fin': 'sum',
+            'PM': 'sum',
+            'IRRF': 'sum',
+            'IR_DT': 'sum'
         }
     )
     return note_df_agrupado
@@ -721,7 +721,7 @@ def isencao_imposto_renda(taxas_df,grouped,note_data):
 # Agrupa as operações por tipo de operação (Normal ou Daytrade)
 # =================================================================================================
 def agrupar_operacoes(grouped,cols):
-    groups = grouped.groupby(grouped.Operacao)
+    groups = grouped.groupby('Operacao')
     try:
         normal_df = groups.get_group("Normal")
     except KeyError:
@@ -906,7 +906,7 @@ def preco_medio_correcao(grouped):
 # de compra/venda a maior no DayTrade
 # =================================================================================================
 def agrupar_operacoes_correcao(grouped,cols):
-    groups = grouped.groupby(grouped.Operacao)
+    groups = grouped.groupby('Operacao')
     try:
         normal_df = groups.get_group("Normal")
     except KeyError:
@@ -1079,9 +1079,11 @@ def arquivo_unico(current_path,cpf,normal_df,daytrade_df):
     reprocessamento = 0
     #Fechar excel aberto para evitar erro no processamento
     result = subprocess.run(["taskkill", "/f", "/im", "excel.exe"],
-    capture_output=True, text=True)
-    if "não foi encontrado" in result.stderr:
-        print("Cofirmado: programa Excel fechado.")
+    capture_output=True, text=True, errors='replace')
+    # Python 3.15 usa UTF-8 por padrão; a saída do taskkill vem na página de código do Windows,
+    # por isso a decodificação tolera caracteres inválidos e a mensagem é verificada com cuidado.
+    if result.returncode != 0:
+        print("Confirmado: programa Excel fechado.")
     
     try:
         app = xw.App(visible=False)

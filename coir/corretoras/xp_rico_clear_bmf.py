@@ -72,45 +72,45 @@ def xp_rico_clear_bmf(corretora,filename,item,log,page,control):
         df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].apply(coir.funcoes.sanitiza_nota_bmf)
         df_gastos['Unnamed: 0'] = df_gastos[
         'Unnamed: 0'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 0'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].fillna(0)
     if 'Unnamed: 1' in df_gastos.columns:
-        df_gastos['Unnamed: 1'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].fillna(0)
     try:
         if 'Unnamed: 2' in df_gastos.columns:
             df_gastos['Unnamed: 2'] = df_gastos['Unnamed: 2'].apply(coir.funcoes.sanitiza_nota_bmf)
             df_gastos['Unnamed: 2'] = df_gastos[
             'Unnamed: 2'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-            df_gastos['Unnamed: 2'].fillna(0, inplace=True)
+            df_gastos['Unnamed: 2'] = df_gastos['Unnamed: 2'].fillna(0)
     except ValueError:
         if 'Unnamed: 2' in df_gastos.columns:
-            df_gastos['Unnamed: 2'].fillna(0, inplace=True)
+            df_gastos['Unnamed: 2'] = df_gastos['Unnamed: 2'].fillna(0)
     if 'Unnamed: 3' in df_gastos.columns:
         df_gastos['Unnamed: 3'] = df_gastos[
         'Unnamed: 3'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 3'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 3'] = df_gastos['Unnamed: 3'].fillna(0)
     if 'Unnamed: 4' in df_gastos.columns:
         df_gastos['Unnamed: 4'] = df_gastos['Unnamed: 4'].apply(coir.funcoes.sanitiza_nota_bmf)
         df_gastos['Unnamed: 4'] = df_gastos[
         'Unnamed: 4'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 4'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 4'] = df_gastos['Unnamed: 4'].fillna(0)
     if 'Unnamed: 5' in df_gastos.columns:
         df_gastos['Unnamed: 5'] = df_gastos['Unnamed: 5'].apply(coir.funcoes.sanitiza_nota_bmf)
         df_gastos['Unnamed: 5'] = df_gastos[
         'Unnamed: 5'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 5'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 5'] = df_gastos['Unnamed: 5'].fillna(0)
     if 'Unnamed: 6' in df_gastos.columns:
         df_gastos['Unnamed: 6'] = df_gastos['Unnamed: 6'].apply(coir.funcoes.sanitiza_nota_bmf)
         df_gastos['Unnamed: 6'] = df_gastos[
         'Unnamed: 6'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 6'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 6'] = df_gastos['Unnamed: 6'].fillna(0)
     if 'Unnamed: 7' in df_gastos.columns:
         df_gastos['Unnamed: 7'] = df_gastos[
         'Unnamed: 7'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 7'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 7'] = df_gastos['Unnamed: 7'].fillna(0)
     if 'Unnamed: 8' in df_gastos.columns:
         df_gastos['Unnamed: 8'] = df_gastos[
         'Unnamed: 8'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 8'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 8'] = df_gastos['Unnamed: 8'].fillna(0)
     lista = list(df_gastos[df_gastos['Venda disponível'].str.contains("IRRF",na=False)].index)
     note_taxa = []
 
@@ -456,41 +456,41 @@ def xp_rico_clear_bmf_old(corretora,filename,item,log,page,control):
         df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].apply(coir.funcoes.sanitiza_nota_bmf)
         df_gastos['Unnamed: 0'] = df_gastos[
         'Unnamed: 0'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 0'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].fillna(0)
     if 'Unnamed: 1' in df_gastos.columns:
-        df_gastos['Unnamed: 1'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].fillna(0)
     if 'Unnamed: 2' in df_gastos.columns:
         df_gastos['Unnamed: 2'] = df_gastos['Unnamed: 2'].apply(coir.funcoes.sanitiza_nota_bmf)
         df_gastos['Unnamed: 2'] = df_gastos[
         'Unnamed: 2'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 2'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 2'] = df_gastos['Unnamed: 2'].fillna(0)
     if 'Unnamed: 3' in df_gastos.columns:
         df_gastos['Unnamed: 3'] = df_gastos[
         'Unnamed: 3'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 3'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 3'] = df_gastos['Unnamed: 3'].fillna(0)
     if 'Unnamed: 4' in df_gastos.columns:
         df_gastos['Unnamed: 4'] = df_gastos['Unnamed: 4'].apply(coir.funcoes.sanitiza_nota_bmf)
         df_gastos['Unnamed: 4'] = df_gastos[
         'Unnamed: 4'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 4'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 4'] = df_gastos['Unnamed: 4'].fillna(0)
     if 'Unnamed: 5' in df_gastos.columns:
         df_gastos['Unnamed: 5'] = df_gastos['Unnamed: 5'].apply(coir.funcoes.sanitiza_nota_bmf)
         df_gastos['Unnamed: 5'] = df_gastos[
         'Unnamed: 5'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 5'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 5'] = df_gastos['Unnamed: 5'].fillna(0)
     if 'Unnamed: 6' in df_gastos.columns:
         df_gastos['Unnamed: 6'] = df_gastos['Unnamed: 6'].apply(coir.funcoes.sanitiza_nota_bmf)
         df_gastos['Unnamed: 6'] = df_gastos[
         'Unnamed: 6'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 6'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 6'] = df_gastos['Unnamed: 6'].fillna(0)
     if 'Unnamed: 7' in df_gastos.columns:
         df_gastos['Unnamed: 7'] = df_gastos[
         'Unnamed: 7'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 7'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 7'] = df_gastos['Unnamed: 7'].fillna(0)
     if 'Unnamed: 8' in df_gastos.columns:
         df_gastos['Unnamed: 8'] = df_gastos[
         'Unnamed: 8'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 8'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 8'] = df_gastos['Unnamed: 8'].fillna(0)
     lista = list(df_gastos[df_gastos['Venda disponível'].str.contains("IRRF",na=False)].index)
     note_taxa = []
 

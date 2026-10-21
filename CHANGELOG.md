@@ -8,6 +8,24 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [2.2.0] - 2026-10-19
+
+Atualização para o Python 3.15 e para as versões atuais das bibliotecas (pandas 3, numpy 2.5, tabula-py 2.10, xlwings 0.37, openpyxl 3.1). Compatibilidade com o pandas atual ([#11](https://github.com/MarceloPCF/COIR/issues/11)), com base na contribuição de [@tommmdl](https://github.com/tommmdl) ([#34](https://github.com/MarceloPCF/COIR/pull/34)).
+
+Os resultados foram comparados com os da versão 2.1.1 em todas as notas de teste (XP, BTG e Rico), valor por valor, e no Excel em uma amostra de notas de todos os anos e corretoras.
+
+### Corrigido
+- Preenchimento de células vazias com `fillna(..., inplace=True)` em uma coluna trocado por atribuição. No pandas 3 a forma antiga não altera nada e os valores vazios das taxas continuariam vazios. (@tommmdl)
+- Agrupamentos (`agrupar`, `agrupar_btg`, `agrupar_bmf`) usam `'sum'` em vez da função `sum` do Python, depreciada no pandas 2. (@tommmdl)
+- `agrupar_operacoes` e `agrupar_operacoes_correcao`: no pandas 3, `groupby(Series)` seguido de `get_group` falha quando o grupo tem uma só linha, e o erro era engolido, descartando a operação sem aviso. Agora o agrupamento é feito pelo nome da coluna.
+- Notas XP/Rico/Clear de várias páginas em que algumas linhas trazem só a quantidade (sem marca de observação) davam erro (`TypeError`) ou, no pandas 3, quantidade 0. Exemplo: XP 2024-11.
+- Python 3.15 usa UTF-8 por padrão; a saída do `taskkill` (usado para fechar o Excel) é lida agora com tolerância a caracteres inválidos, em vez de interromper a gravação no Excel.
+
+### Alterado
+- Python mínimo: 3.12 (exigido pelo numpy 2.5). Pacote para Windows com Python 3.15.
+- `requirements.txt` com as versões atuais testadas.
+- `tools/montar_pacote.py` passou a calcular as dependências do pacote a partir das bibliotecas instaladas (arquivo `RECORD` de cada uma), em vez de uma lista fixa de arquivos, e aceita a versão do Python embutido informada pelo arquivo `.zip`.
+
 ## [2.1.1] - 2026-10-09
 
 Correção de instalação: uma instalação nova da 2.1.0 falhava por incompatibilidade de bibliotecas. Nenhuma alteração no código do programa.
@@ -65,5 +83,6 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[2.2.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.2.0
 [2.1.1]: https://github.com/MarceloPCF/COIR/releases/tag/v2.1.1
 [2.1.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.1.0
