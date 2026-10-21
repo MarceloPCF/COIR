@@ -217,10 +217,19 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
   pela raiz fica em ações. Futuro de juros (DI1) tem linha própria (`grupo = juros` em
   `data/contratos_futuros.csv`; o contrato ainda não está cadastrado).
 - Termo (IN RFB 1.585/2015 art. 62 I e §1º): a venda à vista na data da liquidação vai para
-  "Mercado a termo - ações/ouro" e nunca é isenta (art. 59 §2º IV); vendida depois, é operação à
-  vista pelo preço a termo e pode ser isenta (decisão do usuário de 20/10/2026, que mantém a de
-  16/10 para a venda posterior). Venda no dia acima da quantidade liquidada falha alto. A venda feita
-  antes da liquidação e coberta por ela continua na linha à vista (nenhuma fonte decide).
+  "Mercado a termo - ações/ouro", com ganho pelo preço a termo + custos da compra, e nunca é isenta
+  (art. 59 §2º IV). Se o lote não for vendido nessa data, o custo de aquisição é o preço a termo +
+  custos (art. 62 §1º) e entra no custo médio (art. 58); a venda posterior é à vista comum e pode
+  ser isenta (decisão do usuário de 20/10/2026, mantida em 21/10 apesar do "ou posteriormente" do
+  P&R IRPF 2026 pergunta 723, que trata de lote isolado).
+- Termo com ações antigas em carteira (decisões do usuário de 21/10/2026, parecer do especialista):
+  no dia da liquidação, as vendas consomem primeiro o lote do termo, pela ordem dos negócios (por
+  analogia com o art. 65 §3º; nenhuma norma decide); o excedente sai da posição anterior pelo PM e
+  pode ser isento; a venda inteira entra na soma do limite de R$ 20 mil (leitura de 15/10). O que
+  sobra do lote entra no custo médio pelo preço a termo. Exemplo: 500 a 9,00 + termo de 1.000 a
+  10,00, venda de 600 a 11,00: ganho 600,00 no termo e 900 ações com custo 8.500,00 (pelo PM
+  misturado seriam 800,00 e 8.700,00). A venda feita antes da liquidação e coberta por ela continua
+  na linha à vista (nenhuma fonte decide).
 - Prejuízo herdado em janeiro: o recalculado pelo COIR, com aviso da diferença para o declarado
   (decisão do usuário; retificação dentro de 5 anos, se for o caso).
 - Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026

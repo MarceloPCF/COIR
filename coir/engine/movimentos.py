@@ -10,7 +10,10 @@ Fontes:
 - Exercício (art. 58 §§): titular de call soma o prêmio ao custo; lançador de call soma o prêmio à
   alienação; titular de put subtrai o prêmio da alienação; lançador de put subtrai do custo.
 - Opção não exercida: o prêmio é perda (titular) ou ganho (lançador) no vencimento.
-- Termo: as ações entram na carteira na liquidação, pelo preço a termo + custos da nota.
+- Termo: as ações entram na carteira na liquidação, pelo preço a termo + custos da nota. Vendas
+  à vista na mesma data consomem primeiro o lote do termo, pelo preço a termo (art. 62 I, linha do
+  termo, sem isenção); o excedente sai da posição anterior pelo PM. O que sobra do lote fica no
+  custo médio (art. 62 §1º e art. 58). Decisões do usuário de 20 e 21/10/2026.
 """
 
 from collections import defaultdict
@@ -118,8 +121,9 @@ class Livro:
         self.tickers: dict[int, str] = {}
         self.tipos: dict[int, TipoAtivo] = {}
         self.grupos: dict[int, Grupo] = {}  # opção: linha pelo ativo-objeto
-        # (titular, ativo) com termo liquidado no dia em processamento -> quantidade liquidada
-        self.termo_hoje: dict[tuple[int, int], Decimal] = {}
+        # lote do termo liquidado no dia em processamento que ainda não foi vendido nesta data
+        # (quantidade e custo pelo preço a termo), por posição
+        self.termo_hoje: dict[Chave, Posicao] = {}
         self.movimentos: list[Movimento] = []
         self.avisos: list[str] = []
 
@@ -309,15 +313,19 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
         _cisao(livro, chave, grupo)
     livro.termo_hoje = {}
     for t in sorted(d.termos, key=lambda t: (t.nota.id, t.op.ordem)):
-        liquidado = (t.nota.titular, t.op.ativo)
-        livro.termo_hoje[liquidado] = livro.termo_hoje.get(liquidado, ZERO) + t.op.quantidade
         chave = livro.chave(t.nota.titular, _de(t), t.op.ativo)
         pos = livro.posicoes[chave]
         _lote_pme(pos, t.op, dia)
         # ações vendidas antes da liquidação: a posição ficou vendida e o termo a cobre (resultado
         # na liquidação, limite de isenção do mês da venda, como na recompra da venda a descoberto)
         mes_limite = pos.descoberto_desde if pos.quantidade < 0 else None
+        antes = pos.quantidade
         baixa = pos.comprar(t.op.quantidade, t.valor)
+        # só a parte que ficou comprada pode ser vendida nesta data pelo preço a termo
+        longo = t.op.quantidade if antes >= 0 else max(ZERO, pos.quantidade)
+        if longo:
+            lote = livro.termo_hoje.setdefault(chave, Posicao())
+            lote.comprar(longo, _proporcao(t.valor, longo, t.op.quantidade))
         if pos.quantidade >= 0:
             pos.descoberto_desde = None
         regra = "termo liquidado: entra pelo preço a termo + custos da compra"
@@ -461,6 +469,37 @@ def _movimento_day_trade(
 def _aplicar(livro: Livro, dia: date, p: _Peca) -> None:
     o = p.base
     chave = livro.chave(o.nota.titular, _de(o), o.op.ativo, o.op.vencimento)
+    lote = livro.termo_hoje.get(chave)
+    if o.op.cv != "V" or o.op.mercado in MERCADOS_EXERCICIO or lote is None or not lote.quantidade:
+        _aplicar_parte(livro, dia, chave, p)
+        return
+    # venda na data da liquidação do termo (decisão do usuário de 21/10/2026, parecer do
+    # especialista): consome primeiro o lote do termo, pela ordem dos negócios; o excedente sai da
+    # posição anterior pelo PM, como venda à vista comum
+    q = min(p.quantidade, lote.quantidade)
+    custo = lote.baixar_sem_resultado(q)
+    regra = (p.regra + "; venda na data da liquidação do termo: custo = preço a termo + custos da "
+             "compra (IN 1.585 art. 62 I)")  # fmt: skip
+    _aplicar_parte(livro, dia, chave, _fatia(p, q, regra), custo_termo=custo)
+    if q < p.quantidade:
+        regra = (p.regra + "; venda na data da liquidação do termo, além do lote do termo: sai da "
+                 "posição anterior pelo PM")  # fmt: skip
+        _aplicar_parte(livro, dia, chave, _fatia(p, p.quantidade - q, regra))
+
+
+def _fatia(p: _Peca, quantidade: Decimal, regra: str) -> _Peca:
+    return _Peca(p.base, quantidade, _proporcao(p.valor, quantidade, p.quantidade),
+                 _proporcao(p.custos, quantidade, p.quantidade),
+                 _proporcao(p.bruto, quantidade, p.quantidade), regra)  # fmt: skip
+
+
+def _aplicar_parte(
+    livro: Livro, dia: date, chave: Chave, p: _Peca, custo_termo: Decimal | None = None
+) -> None:
+    """Aplica a peça à posição. Com `custo_termo`, é a venda de ações do lote do termo na data da
+    liquidação: sai pelo preço a termo, vai para a linha "Mercado a termo" da ficha do IRPF e nunca
+    é isenta (IN 1.585 art. 62 I e art. 59 §2º IV; decisão do usuário de 20/10/2026)."""
+    o = p.base
     pos = livro.posicoes[chave]
     # ação ou unit no mercado à vista (units só entram com o parâmetro units_na_isencao)
     acao = o.op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT) and o.op.mercado in MERCADOS_ACAO_A_VISTA
@@ -486,7 +525,13 @@ def _aplicar(livro: Livro, dia: date, p: _Peca) -> None:
         pme = pos.quantidade > 0 and pos.pme_ate is not None and dia <= pos.pme_ate
         if pme and p.quantidade > pos.quantidade:
             raise MotorError(f"venda de {o.op.ticker} ({dia}) além do lote isento de PME")
-        baixa = pos.vender(p.quantidade, p.valor)
+        if custo_termo is None:
+            baixa = pos.vender(p.quantidade, p.valor)
+        elif pos.quantidade >= p.quantidade:
+            baixa = pos.vender_lote(p.quantidade, p.valor, custo_termo)
+        else:
+            raise MotorError(f"{dia}: venda de {o.op.ticker} na data da liquidação do termo maior "
+                             f"que a posição ({pos.quantidade})")  # fmt: skip
         venda_acao = p.bruto if acao and not pme else ZERO
         if pos.quantidade == 0:
             pos.pme_ate = None
@@ -503,38 +548,13 @@ def _aplicar(livro: Livro, dia: date, p: _Peca) -> None:
     # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas
     base_irrf = p.bruto if (o.op.cv == "V" and o.op.mercado not in MERCADOS_EXERCICIO and not pme
                             and o.op.tipo is not TipoAtivo.ETF_RF) else ZERO  # fmt: skip
-    grupo, regra = _venda_na_liquidacao_do_termo(livro, dia, o, p)
-    livro.registrar(chave, dia, f"op:{o.op.id}", regra, de=_de(o),
+    termo = custo_termo is not None
+    livro.registrar(chave, dia, f"op:{o.op.id}", p.regra, de=_de(o),
                     categoria=_categoria(o.op.tipo, day_trade=False), cv=o.op.cv,
                     quantidade=p.quantidade, valor=p.valor, custos=p.custos, baixa=baixa,
-                    venda_acao=venda_acao,
-                    isentavel=isentavel and not pme and grupo is not Grupo.TERMO,
+                    venda_acao=venda_acao, isentavel=isentavel and not pme and not termo,
                     mes_limite=mes_limite, isento_pme=pme, base_irrf=base_irrf,
-                    grupo=grupo)  # fmt: skip
-
-
-def _venda_na_liquidacao_do_termo(
-    livro: Livro, dia: date, o: _Op, p: _Peca
-) -> tuple[Grupo | None, str]:
-    """IN RFB 1.585/2015 art. 62 I: o ganho do comprador a termo é a diferença entre a venda à
-    vista do ativo na data da liquidação e o preço a termo. Essa venda vai para a linha "Mercado a
-    termo" da ficha do IRPF e nunca é isenta (art. 59 §2º IV; decisão do usuário de 20/10/2026).
-    Vender depois da liquidação é operação à vista comum (art. 62 §1º)."""
-    chave = (o.nota.titular, o.op.ativo)
-    if o.op.cv != "V" or chave not in livro.termo_hoje or o.op.mercado in MERCADOS_EXERCICIO:
-        return None, p.regra
-    resta = livro.termo_hoje[chave]
-    if p.quantidade > resta:
-        situacao = ("as ações do termo já foram vendidas nesta data" if not resta
-                    else f"só {resta} vêm do termo")  # fmt: skip
-        raise MotorError(
-            f"{dia}: venda de {p.quantidade} {o.op.ticker} na data da liquidação do termo e "
-            f"{situacao}: a venda junta o lote do termo (art. 62 I: linha do termo, sem "
-            "isenção) com ações que já estavam na carteira, e a regra para separar os dois "
-            "ainda não foi decidida (pendência da F8)"
-        )
-    livro.termo_hoje[chave] = resta - p.quantidade
-    return Grupo.TERMO, p.regra + "; venda na data da liquidação do termo (IN 1.585 art. 62 I)"
+                    grupo=Grupo.TERMO if termo else None)  # fmt: skip
 
 
 def _lote_pme(pos: Posicao, op: OperacaoMotor, dia: date) -> None:

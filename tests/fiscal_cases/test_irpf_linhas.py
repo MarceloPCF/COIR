@@ -1,20 +1,18 @@
 """Linha da ficha "Renda variável - operações comuns/day trade" do programa IRPF (F8).
 
-Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero.
+Casos do especialista fiscal (pareceres de 20 e 21/10/2026), conferidos à mão.
 
 Fontes: programa IRPF, ficha de renda variável (linhas "Mercado de opções - ações/outros",
 "Mercado futuro - juros" e "Mercado a termo - ações/ouro"); P&R IRPF 2026 pergunta 707 (cotas de
 fundo de índice não são ações); IN RFB 1.585/2015 art. 62 I e §1º (ganho do comprador a termo pela
 venda à vista na data da liquidação; vendido depois, custo = preço a termo) e art. 59 §2º IV (esse
-ganho não é isento); decisão do usuário de 20/10/2026 (linha do termo).
+ganho não é isento); art. 58 (custo médio); decisões do usuário de 20/10/2026 (linha do
+termo) e de 21/10/2026 (lote do termo vendido primeiro, pela ordem dos negócios).
 """
 
 from datetime import date
 
-import pytest
-
 from coir.domain.fiscal import Categoria, Grupo, TipoAtivo
-from coir.erros import MotorError
 from tests.fiscal_cases.apoio import D, Livro, categoria, mes
 
 VENC = date(2025, 4, 17)
@@ -93,28 +91,60 @@ def test_venda_depois_da_liquidacao_e_a_vista_e_pode_ser_isenta() -> None:
     assert (comum.por_grupo[Grupo.TERMO], comum.isento, comum.imposto) == (0, D("2000.00"), 0)
 
 
-def test_venda_no_dia_acima_do_liquidado_falha_alto() -> None:
-    """Com 500 AAAA3 já em carteira, vender 1.200 no dia da liquidação de 1.000 mistura o termo
-    com a posição antiga: sem norma sobre qual lote foi vendido, o motor não chuta."""
-    livro = Livro()
+def _antigas_e_termo(livro: Livro, custos: str = "0") -> None:
+    """Parecer do especialista de 21/10/2026: 500 AAAA3 a 9,00 em carteira (custo 4.500,00) e
+    termo de 1.000 a 10,00 liquidado em 10/12/2025."""
     livro.nota(date(2025, 10, 1), livro.op("C", "AAAA3", 500, "9.00"))
-    _termo(livro)
-    livro.nota(date(2025, 12, 10), livro.op("V", "AAAA3", 1200, "11.00"))
-    with pytest.raises(MotorError, match="só 1000 vêm do termo"):
-        livro.apurar(date(2025, 12, 31))
+    termo = livro.op("C", "AAAA3", 1000, "10.00", mercado="TERMO", liquidacao=date(2025, 12, 10))
+    livro.nota(date(2025, 11, 10), termo, custos=custos)
 
 
-def test_segunda_venda_no_dia_depois_do_termo_vendido_falha_alto() -> None:
-    """Revisão da F8: 500 antigas + termo de 1.000; vende 1.000 e depois 500 no mesmo dia. A
-    segunda venda é da posição antiga, mas a regra para separar os lotes ainda não foi decidida:
-    falha alto com a explicação (pendência)."""
+def test_venda_no_dia_acima_do_termo_sai_das_antigas_pelo_pm() -> None:
+    """C1: venda de 1.500 a 11,00 no dia da liquidação. O lote do termo sai primeiro, pelo preço a
+    termo (IN 1.585 art. 62 I): 11.000,00 - 10.000,00 = 1.000,00 na linha do termo, tributável. O
+    excedente sai das antigas pelo PM: 5.500,00 - 4.500,00 = 1.000,00, isento (vendas de 16.500,00,
+    abaixo de R$ 20 mil; Lei 11.033/2004 art. 3º I). Imposto 150,00; posição zerada (decisão do
+    usuário de 21/10/2026)."""
     livro = Livro()
-    livro.nota(date(2025, 10, 1), livro.op("C", "AAAA3", 500, "9.00"))
-    _termo(livro)
+    _antigas_e_termo(livro)
+    livro.nota(date(2025, 12, 10), livro.op("V", "AAAA3", 1500, "11.00"))
+    comum = categoria(livro.apurar(date(2025, 12, 31)), 2025, 12, Categoria.COMUM)
+    assert (comum.por_grupo[Grupo.TERMO], comum.isento, comum.imposto) == (
+        D("1000.00"), D("1000.00"), D("150.00"))  # fmt: skip
+    assert livro.carteira(date(2025, 12, 31)) == []
+
+
+def test_varias_vendas_no_dia_consomem_o_termo_pela_ordem() -> None:
+    """C2 (variante): 1.000 a 11,00 e depois 500 a 12,00 no dia da liquidação. Pela ordem dos
+    negócios (decisão do usuário de 21/10/2026), a primeira venda é do termo (1.000,00 na linha do
+    termo) e a segunda das antigas: 6.000,00 - 4.500,00 = 1.500,00, isento (vendas de 17.000,00).
+    Imposto 150,00."""
+    livro = Livro()
+    _antigas_e_termo(livro)
     livro.nota(date(2025, 12, 10), livro.op("V", "AAAA3", 1000, "11.00"),
-               livro.op("V", "AAAA3", 500, "11.00"))  # fmt: skip
-    with pytest.raises(MotorError, match="já foram vendidas nesta data"):
-        livro.apurar(date(2025, 12, 31))
+               livro.op("V", "AAAA3", 500, "12.00"))  # fmt: skip
+    comum = categoria(livro.apurar(date(2025, 12, 31)), 2025, 12, Categoria.COMUM)
+    assert (comum.por_grupo[Grupo.TERMO], comum.isento, comum.imposto) == (
+        D("1000.00"), D("1500.00"), D("150.00"))  # fmt: skip
+
+
+def test_venda_no_dia_menor_que_o_termo_usa_o_preco_a_termo() -> None:
+    """C3: venda de 600 a 11,00 no dia da liquidação, com custos de 30,00 na nota do termo. As 600
+    saem pelo preço a termo + custos (art. 62 I): 6.600,00 - 6.018,00 = 582,00 na linha do termo,
+    imposto 87,30. As 400 que sobram entram no custo médio pelo preço a termo (art. 62 §1º e art.
+    58): 900 ações com custo 4.500,00 + 4.012,00 = 8.512,00. Pelo PM misturado o ganho seria
+    maior e o custo também (achado do parecer de 21/10/2026)."""
+    livro = Livro()
+    _antigas_e_termo(livro, custos="30")
+    livro.nota(date(2025, 12, 10), livro.op("V", "AAAA3", 600, "11.00"))
+    ap = livro.apurar(date(2025, 12, 31))
+    comum = categoria(ap, 2025, 12, Categoria.COMUM)
+    assert (comum.por_grupo[Grupo.TERMO], comum.isento, comum.imposto) == (
+        D("582.00"), 0, D("87.30"))  # fmt: skip
+    m = mes(ap, 2025, 12)
+    assert (m.darf, m.vencimento) == (D("87.30"), date(2026, 1, 30))
+    [pos] = livro.carteira(date(2025, 12, 31))
+    assert (pos.quantidade, pos.custo) == (900, D("8512.00"))
 
 
 def test_venda_do_termo_entra_na_soma_do_limite_de_isencao() -> None:
