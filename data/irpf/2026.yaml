@@ -54,7 +54,7 @@ bens:
       codigo: "01"
       descricao: "Ações (inclusive as listadas em Bolsa)"
       cnpj: emissor
-      nota: "como na DIRPF 2026 entregue (TAEE11)"
+      nota: "como na DIRPF 2026 entregue"
     - tipo: BDR
       grupo: "04"
       codigo: "04"
