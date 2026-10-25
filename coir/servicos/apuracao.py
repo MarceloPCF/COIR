@@ -35,12 +35,13 @@ from coir.domain.nota import NegocioBMF, NotaExtraida
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import RE_SERIE_OPCAO, Referencias
 from coir.engine.apuracao import apurar
+from coir.engine.apuracao import conta_na_isencao as conta_na_isencao  # para a tela
 from coir.engine.calendario import liquidacao_termo, vencimento_opcao
 from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import carteira, movimentar
 from coir.erros import ReferenciaError
 from coir.parsing import futuros
-from coir.servicos import outros_custos
+from coir.servicos import outros_custos, saldos_iniciais
 
 RE_PRAZO = re.compile(r"^(?P<mes>\d{2})/(?P<ano>\d{2})$")
 RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é put de novembro
@@ -131,6 +132,7 @@ def _nota_bovespa(
                 quantidade=o.quantidade, preco=o.preco, total=o.total,
                 vencimento=_vencimento(negocio.prazo, o.papel, refs) if opcao else None,
                 opcao=exercida, liquidacao_termo=liquidacao, pme_ate=pme_ate,
+                marcada_dt=negocio.day_trade,
                 objeto_tipo=_objeto_tipo(o.papel, publicas, refs) if opcao else None,
             )
         )  # fmt: skip
@@ -258,4 +260,5 @@ def apurar_banco(
     with conectar(banco) as fabrica, fabrica() as sessao:
         notas, eventos = entradas(sessao, refs, fiscais)
         custos = outros_custos.do_banco(sessao)
-    return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos)
+        saldos = saldos_iniciais.do_banco(sessao)
+    return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos, saldos)

@@ -51,8 +51,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("Declaração anual (IRPF)").classes("coir-titulo-pagina")
     ui.label(
         f"As fichas de renda variável do ano-calendário {estado.ano} na ordem do programa da "
-        "Receita: copie cada valor e marque o que já lançou. Os valores vêm do motor (custo médio "
-        "do titular, apuração mensal, proventos)."
+        "Receita: copie cada valor e marque o que já lançou. Os valores são calculados pelo COIR "
+        "(custo médio do titular, apuração mensal, proventos)."
     ).classes("coir-subtitulo")
     corpo = ui.column().classes("w-full gap-3")
 
@@ -109,11 +109,15 @@ def _tela(estado: Estado, f: FichasIrpf, mapa: MapeamentoIrpf, feitos: set[str])
             "lançado", value=chave in feitos, on_change=lambda e: marcar(chave, bool(e.value))
         ).mark(f"lancado-{chave}")
 
-    with ui.row().classes("w-full items-start gap-4 no-wrap"):
-        with ui.column().classes("w-[220px] shrink-0 gap-0 coir-folha p-1"):
+    # janela larga: fichas numa coluna à esquerda; estreita: numa faixa acima, e o conteúdo
+    # fica com a largura toda (os rótulos das fichas mensais não se espremem)
+    with ui.element("div").classes("w-full flex flex-col xl:flex-row items-stretch "
+                                   "xl:items-start gap-4"):  # fmt: skip
+        with ui.element("div").classes("xl:w-[220px] shrink-0 coir-folha p-1 flex flex-row "
+                                       "flex-wrap xl:flex-col gap-0"):  # fmt: skip
             itens = {chave: ui.item(rotulo).props("clickable dense").classes("rounded")
                      .mark(f"ficha-{chave}") for chave, rotulo in FICHAS}  # fmt: skip
-        painel = ui.column().classes("grow min-w-0 gap-2")
+        painel = ui.column().classes("grow min-w-0 max-w-full gap-2")
 
     def mostrar(chave: str) -> Callable[[], Awaitable[None] | None]:
         async def abrir() -> None:
@@ -207,7 +211,7 @@ def _meses(meses: tuple[MesFichaIrpf, ...], chave: str, lancado: Callable[[str],
     programa calcula: serve para conferir)."""
     if not meses:
         return
-    with ui.tabs().classes("w-full") as abas:
+    with ui.tabs().props("outside-arrows mobile-arrows").classes("w-full") as abas:
         tabs = {m.mes: ui.tab(MESES[m.mes - 1][:3]) for m in meses}
     with ui.tab_panels(abas, value=tabs[meses[0].mes]).classes("w-full"):
         for m in meses:
@@ -216,23 +220,36 @@ def _meses(meses: tuple[MesFichaIrpf, ...], chave: str, lancado: Callable[[str],
                     ui.label(MESES[m.mes - 1]).classes("coir-titulo")
                     ui.space()
                     lancado(f"{chave}:{m.mes:02d}")
-                for x in m.linhas:
-                    _linha_mes(x, x.digita, duas)
+                # grade de colunas fixas: os valores ficam alinhados mesmo com a janela estreita
+                # (o rótulo é que quebra a linha, sem empurrar os números)
+                colunas = "minmax(160px, 1fr) 140px" + (" 140px" if duas else "")
+                with ui.element("div").classes("w-full grid items-center gap-x-3 gap-y-1").style(
+                    f"grid-template-columns: {colunas}"
+                ):  # fmt: skip
+                    ui.label("")
+                    for titulo in ("Operações comuns", "Day trade")[: 2 if duas else 1]:
+                        ui.label(titulo).classes("coir-campo-rotulo text-right")
+                    for x in m.linhas:
+                        _linha_mes(x, x.digita, duas)
 
 
 def _linha_mes(x: LinhaFicha, digita: bool, duas: bool) -> None:
+    """Uma linha da ficha nas células da grade (rótulo e uma ou duas colunas de valor)."""
+
     def texto(v: Decimal) -> str:
         return aliquota(v) if x.rotulo == ALIQUOTA else _programa(v)
 
-    with ui.row().classes("w-full items-center gap-3 no-wrap"):
-        ui.label(x.rotulo).classes("grow text-sm" if digita else "grow text-sm coir-subtitulo")
-        for v in (x.comuns, *((x.day_trade,) if duas and x.day_trade is not None else ())):
+    ui.label(x.rotulo).classes("text-sm leading-tight" if digita
+                               else "text-sm leading-tight coir-subtitulo")  # fmt: skip
+    valores = (x.comuns, *((x.day_trade,) if duas else ()))
+    for v in valores:
+        with ui.row().classes("justify-end items-center no-wrap"):
+            if v is None:
+                continue
             if digita and v:
                 _copiar(texto(v), texto(v))
             else:
-                ui.label(texto(v)).classes("coir-numero w-[120px] text-right coir-subtitulo")
-        if duas and x.day_trade is None:
-            ui.label("").classes("w-[120px]")
+                ui.label(texto(v)).classes("coir-numero text-right coir-subtitulo")
 
 
 COLUNAS_CONFERENCIA = (

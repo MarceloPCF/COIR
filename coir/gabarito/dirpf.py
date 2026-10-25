@@ -41,6 +41,9 @@ RE_RENDIMENTO = re.compile(rf"^(?P<codigo>\d{{2}})\. (?P<nome>.+?)(?: (?P<total>
 CABECALHO = 6
 CABECALHO_BENS = ("DECLARAÇÃO DE BENS E DIREITOS (Valores em Reais)", "SITUAÇÃO EM",
                   "GRUPO CÓDIGO DISCRIMINAÇÃO")  # fmt: skip
+# layout até o exercício 2024: o código vem numa linha só, depois dos valores
+CABECALHO_BENS_2024 = ("GRUPO DISCRIMINAÇÃO SITUAÇÃO EM", "CÓDIGO")
+RE_BEM_GRUPO_2024 = re.compile(r"^(?P<grupo>\d{2}) (?P<texto>\D.*)$")
 # perguntas do topo de Bens e Direitos, repetidas a cada página (variam com o exercício)
 PERGUNTAS_BENS = ("Possui perdas a compensar", "Atualizou o valor de algum bem")
 RV_TITULAR = "RENDA VARIÁVEL - OPERAÇÕES COMUNS/DAYTRADE - TITULAR"
@@ -175,6 +178,8 @@ def _bens(linhas: list[str]) -> tuple[BemDeclarado, ...]:
     corpo = [x for x in linhas if x not in CABECALHO_BENS and not re.fullmatch(
         r"31/12/\d{4} 31/12/\d{4}", x)]  # fmt: skip
     corpo = [x for x in corpo if not x.startswith(PERGUNTAS_BENS)]
+    if CABECALHO_BENS_2024[0] in corpo:
+        return _bens_ate_2024([x for x in corpo if x not in CABECALHO_BENS_2024])
     bens: list[BemDeclarado] = []
     atual: dict[str, object] | None = None
     texto: list[str] = []
@@ -210,6 +215,47 @@ def _bens(linhas: list[str]) -> tuple[BemDeclarado, ...]:
             texto = [m["texto"]]
     if atual is not None:
         raise GabaritoError("DIRPF: Bens e Direitos terminou no meio de um bem")
+    return tuple(bens)
+
+
+def _bens_ate_2024(corpo: list[str]) -> tuple[BemDeclarado, ...]:
+    """Layout do exercício 2024 (e anteriores): cada bem começa pelo grupo seguido da
+    discriminação ("03 ACOES DA EMPRESA ..."), depois vêm os valores, o CNPJ, o código numa linha
+    só ("01"), o país e, nos negociados em bolsa, o código de negociação."""
+    bens: list[BemDeclarado] = []
+    atual: dict[str, object] | None = None
+    texto: list[str] = []
+
+    def fechar() -> None:
+        if atual is None:
+            return
+        if "codigo" not in atual or "anterior" not in atual:
+            raise GabaritoError("DIRPF: bem sem código ou sem valores (layout até 2024)")
+        atual.setdefault("ticker", None)
+        atual.setdefault("cnpj", None)
+        bens.append(BemDeclarado(discriminacao=" ".join(texto), **atual))  # type: ignore[arg-type]
+
+    for linha in corpo:
+        if linha.startswith("TOTAL "):
+            break
+        inicio = RE_BEM_GRUPO_2024.match(linha)
+        if inicio and (atual is None or "codigo" in atual):
+            fechar()
+            atual, texto = {"grupo": inicio["grupo"]}, [inicio["texto"]]
+        elif atual is None:
+            continue
+        elif "anterior" not in atual:
+            if m := RE_BEM_VALORES.match(linha):
+                atual |= {"anterior": _valor(m["anterior"]), "atual": _valor(m["atual"])}
+            else:
+                texto.append(linha)
+        elif linha.startswith("CNPJ: ") and "cnpj" not in atual:
+            atual["cnpj"] = so_digitos(linha[6:])
+        elif re.fullmatch(r"\d{2}", linha) and "codigo" not in atual:
+            atual["codigo"] = linha
+        elif m := RE_NEGOCIACAO.search(linha):
+            atual["ticker"] = m["ticker"]
+    fechar()
     return tuple(bens)
 
 

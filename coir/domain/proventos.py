@@ -34,6 +34,7 @@ class LinhaB3(Modelo):
     # JCP: data do crédito (informada pelo usuário ou a data de aprovação do pacote da B3)
     credito: date | None = None
     credito_origem: str = ""  # "informada", "B3" ou "B3, histórico"
+    reembolso_informado: str = ""  # reembolso de BTC: origem informada ("DIVIDENDO" ou "JCP")
 
 
 class Provento(Modelo):
@@ -55,6 +56,7 @@ class Provento(Modelo):
     credito_origem: str = ""  # "informada" (usuário ou DIRPF), "B3", "B3, histórico" ou ""
     chave: str = ""  # da linha em movimentacao_b3 (tela de Proventos: corrigir o crédito)
     reembolso_de: str = ""  # reembolso de BTC: "DIVIDENDO", "JCP" ou "" (não identificado)
+    reembolso_informado: bool = False  # a origem do reembolso foi informada pelo usuário
 
     @property
     def a_receber_em_31_12(self) -> bool:

@@ -8,10 +8,10 @@ from pathlib import Path
 
 from nicegui import run, ui
 
-from coir.config import ARQUIVO_REGISTRO
+from coir.config import ARQUIVO_REGISTRO, VERSAO
 from coir.erros import CoirError
 from coir.reports.modelo import Coluna
-from coir.servicos import atualizacao, manutencao
+from coir.servicos import atualizacao, manutencao, versao
 from coir.servicos.estado import Estado
 from coir.ui import preferencias, tabela
 
@@ -50,6 +50,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             on_change=lambda e: preferencias.escolher_tema(e.value),
         ).props("inline").mark("tema")
 
+    _programa(estado)
     _tabelas(estado, ao_mudar)
 
     with _secao(
@@ -115,7 +116,9 @@ def _registro(estado: Estado) -> None:
     ):
         with ui.row().classes("items-center gap-4"):
             problemas = ui.switch("Só avisos e erros", value=False).mark("registro-problemas")
-            ui.button("Atualizar", icon="refresh", on_click=lambda: ler()).props("flat dense")
+            ui.button("Ler de novo", icon="refresh", on_click=lambda: ler()).props(
+                "flat dense"
+            ).tooltip("Mostra o que foi registrado depois que esta tela abriu")
             ui.button("Abrir a pasta", icon="folder_open",
                       on_click=lambda: _abrir_pasta(estado.dados / ARQUIVO_REGISTRO.parent),
                       ).props("flat dense")  # fmt: skip
@@ -164,12 +167,47 @@ def _data(d: object) -> str:
     return f"{d:%d/%m/%Y}" if d is not None else "sem data"
 
 
+def _programa(estado: Estado) -> None:
+    with _secao(
+        "Versão do programa",
+        "Consulta a área de downloads do site do COIR e só avisa: nada é baixado nem instalado "
+        "sozinho. Para atualizar, baixe o .zip novo e troque a pasta do programa; os dados ficam "
+        "na pasta de dados e o banco é migrado com backup na primeira abertura.",
+    ):
+        with ui.row().classes("items-center gap-3"):
+            ui.label(f"Instalada: {VERSAO}").classes("coir-numero").mark("versao-instalada")
+            botao = ui.button("Verificar nova versão", icon="update").mark("verificar-versao")
+        resultado = ui.row().classes("items-center gap-3").mark("versao-resultado")
+
+    async def verificar() -> None:
+        botao.set_enabled(False)
+        resultado.clear()
+        try:
+            nova = await run.io_bound(versao.nova, obter=estado.baixar)
+        except CoirError as erro:
+            with resultado:
+                ui.label(f"Não foi possível verificar: {erro}").classes("coir-negativo text-sm")
+            return
+        finally:
+            botao.set_enabled(True)
+            estado.versao_verificada = True
+        estado.versao_nova = nova
+        with resultado:
+            if nova is None:
+                ui.label("Você já tem a versão mais nova.").classes("coir-positivo text-sm")
+            else:
+                ui.label(f"Versão nova: {nova.versao}.").classes("coir-carimbo text-sm")
+                ui.link("Ver as novidades e baixar", nova.pagina, new_tab=True)
+
+    botao.on_click(verificar)
+
+
 def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     with _secao(
-        "Tabelas de referência",
+        "Tabelas da B3 e da Receita (ativos, eventos e Selic)",
         "Ativos, nomes de pregão, eventos corporativos da B3 e Selic, do pacote público do COIR "
-        "(atualizado toda semana). Só baixa dados públicos do GitHub: nada da sua carteira sai do "
-        "computador. Sem rede, vale o pacote que já está em uso.",
+        "(atualizado toda semana na área de downloads do site do COIR). Só baixa dados públicos: "
+        "nada da sua carteira sai do computador. Sem internet, vale o pacote que já está em uso.",
     ):
         em_uso = ui.label("").classes("coir-numero").mark("tabelas-em-uso")
         with ui.row().classes("items-center gap-3"):
@@ -178,7 +216,7 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 ui.button("Voltar à anterior", icon="undo").props("flat").mark("voltar-tabelas")
             )
         ui.checkbox(
-            "Verificar ao abrir o app (só consulta a versão do pacote)",
+            "Verificar ao abrir o app se há tabelas ou versão do COIR novas (só consulta)",
             value=preferencias.verificar_tabelas(),
             on_change=lambda e: preferencias.escolher_verificar_tabelas(bool(e.value)),
         ).mark("verificar-ao-abrir")

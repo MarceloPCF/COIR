@@ -18,6 +18,7 @@ from coir.servicos.importacao import (
     importar_lista,
     por_arquivo,
 )
+from coir.ui import pastas
 from coir.ui.telas import importar_b3
 
 ICONES = {
@@ -132,7 +133,8 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 .props("outline")
                 .mark("importar-pasta")
             )
-        ui.label(f"Pasta das notas: {estado.pasta_notas}").classes("coir-subtitulo text-xs")
+        pastas.seletor(estado, "pasta_notas", "Pasta das notas", estado.pasta_notas,
+                       ui.navigate.reload)  # fmt: skip
         barra = ui.linear_progress(value=0, show_value=False).props("rounded size=8px")
         texto = ui.label("").classes("coir-subtitulo text-sm")
 

@@ -7,6 +7,7 @@ alcança, ``proventos_historico_b3.csv``, casando empresa, classe, valor e data 
 das duas, o motor usa a alíquota retida para perceber o crédito no ano anterior (decisões do
 usuário de 20 e 21/10/2026)."""
 
+import logging
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime
 from decimal import Decimal
@@ -15,14 +16,15 @@ from pathlib import Path
 from sqlalchemy import select
 
 from coir import referencias
-from coir.db.modelos import CreditoJcp, MovimentacaoB3
+from coir.db.modelos import CreditoJcp, MovimentacaoB3, OrigemReembolso
 from coir.db.sessao import conectar
 from coir.domain.b3 import LinhaMovimentacao
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.proventos import LinhaB3, Provento
-from coir.engine.proventos import JCP, proventos
+from coir.engine.proventos import JCP, REEMBOLSO, proventos
 from coir.erros import ImportacaoError
 
+log = logging.getLogger(__name__)
 JCP_B3 = "JRS CAP PROPRIO"
 TOLERANCIA_VALOR = Decimal("0.01")  # diferença relativa do valor por ação (arredondamento)
 
@@ -36,6 +38,10 @@ def linhas_banco(banco: Path, titular: int | None = None) -> list[LinhaB3]:
         if titular is not None:
             creditos = creditos.where(CreditoJcp.titular_id == titular)
         informados = {c.chave: c.data_credito for c in s.scalars(creditos)}
+        origens = select(OrigemReembolso)
+        if titular is not None:
+            origens = origens.where(OrigemReembolso.titular_id == titular)
+        reembolsos = {o.chave: o.origem for o in s.scalars(origens)}
         return [
             LinhaB3(
                 id=m.id,
@@ -54,6 +60,7 @@ def linhas_banco(banco: Path, titular: int | None = None) -> list[LinhaB3]:
                 ),
                 credito=informados.get(m.chave),
                 credito_origem="informada" if m.chave in informados else "",
+                reembolso_informado=reembolsos.get(m.chave, ""),
             )
             for m in s.scalars(consulta)
         ]
@@ -176,6 +183,34 @@ def por_pagamento(
             if item not in saida.setdefault(chave, []):
                 saida[chave].append(item)
     return saida
+
+
+ORIGENS_REEMBOLSO = ("DIVIDENDO", "JCP")
+
+
+def informar_origem_reembolso(banco: Path, chave: str, origem: str | None,
+                              agora: datetime) -> None:  # fmt: skip
+    """Grava (ou apaga, com None) a origem de um reembolso de BTC informada pelo usuário pelo
+    informe da empresa ou extrato da corretora; prevalece sobre a identificada pelo valor."""
+    if origem is not None and origem not in ORIGENS_REEMBOLSO:
+        raise ImportacaoError(f"origem de reembolso inválida: {origem}")
+    with conectar(banco) as fabrica, fabrica() as s, s.begin():
+        linha = s.scalar(select(MovimentacaoB3).where(MovimentacaoB3.chave == chave))
+        if linha is None:
+            raise ImportacaoError("linha da movimentação não encontrada")
+        if linha.movimentacao != REEMBOLSO:
+            raise ImportacaoError("só o reembolso de BTC tem origem a informar")
+        atual = s.scalar(select(OrigemReembolso).where(OrigemReembolso.chave == chave))
+        if origem is None:
+            if atual is not None:
+                s.delete(atual)
+        elif atual is None:
+            s.add(OrigemReembolso(titular_id=linha.titular_id, chave=chave, origem=origem,
+                                  registrado_em=agora))  # fmt: skip
+        else:
+            atual.origem, atual.registrado_em = origem, agora
+    log.info("origem do reembolso de BTC de %s em %s %s pelo usuário: %s", linha.codigo,
+             linha.data, "apagada" if origem is None else "informada", origem or "-")  # fmt: skip
 
 
 def informar_credito(banco: Path, chave: str, data_credito: date | None, agora: datetime) -> None:

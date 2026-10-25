@@ -507,6 +507,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
         Coluna("Ativo"),
         Coluna("Corretora"),
         Coluna("Categoria"),
+        Coluna("Tipo"),
         Coluna("Quantidade", T.QUANTIDADE),
         Coluna("Custo médio", T.PM),
         _dinheiro("Abertura"),
@@ -531,6 +532,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
                 m.ticker,
                 m.corretora or "",
                 CATEGORIA_CURTA[m.categoria],
+                NOME_GRUPO[m.grupo],
                 quantidade or None,
                 unit,
                 None if futuro else abertura,
@@ -545,7 +547,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
             f"{d.ano} - {MESES[mes - 1]} - {mercado}",
             colunas,
             tuple(linhas),
-            _total(linhas, colunas, {8}),
+            _total(linhas, colunas, {9}),
         )
         for (mes, mercado), linhas in sorted(
             blocos.items(), key=lambda x: (x[0][0], x[0][1] != "Bovespa")

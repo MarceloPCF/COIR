@@ -337,7 +337,9 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
                         valor=t.valor, custos=t.custos, baixa=baixa, isentavel=False,
                         mes_limite=mes_limite)  # fmt: skip
     mesma_corretora = params.booleano("day_trade_mesma_corretora", dia)
-    compras, vendas, exercicios = _day_trade(livro, dia, d.operacoes, mesma_corretora)
+    pela_marcacao = params.texto("day_trade_criterio", dia) == "marcacao_corretora"
+    compras, vendas, exercicios = _day_trade(livro, dia, d.operacoes, mesma_corretora,
+                                             pela_marcacao)  # fmt: skip
     for p in sorted(compras, key=_ordem):
         _aplicar(livro, dia, p)
     for o in sorted(exercicios, key=lambda o: (o.nota.id, o.op.ordem)):
@@ -366,10 +368,12 @@ def _ordem(p: _Peca) -> tuple[int, int]:
 
 
 def _day_trade(
-    livro: Livro, dia: date, ops: Sequence[_Op], mesma_corretora: bool
+    livro: Livro, dia: date, ops: Sequence[_Op], mesma_corretora: bool, pela_marcacao: bool
 ) -> tuple[list[_Peca], list[_Peca], list[_Op]]:
-    """Casa compras e vendas do mesmo ativo no dia pela ordem dos negócios; devolve as peças
-    comuns (compras, vendas) e os exercícios (nunca day trade)."""
+    """Casa compras e vendas do mesmo ativo no dia; devolve as peças comuns (compras, vendas) e os
+    exercícios (nunca day trade). Com `pela_marcacao` (parâmetro day_trade_criterio), os negócios
+    que a corretora marcou D formam o day trade quando a marcação é consistente; senão, a ordem
+    dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º)."""
     compras: list[_Peca] = []
     vendas: list[_Peca] = []
     exercicios: list[_Op] = []
@@ -381,7 +385,7 @@ def _day_trade(
             corretora = o.nota.corretora if mesma_corretora else None
             grupos[(o.nota.titular, corretora, o.op.ativo, o.op.vencimento)].append(o)
         else:
-            raise MotorError(f"mercado {o.op.mercado} sem regra no motor")
+            raise MotorError(f"mercado {o.op.mercado} sem regra de cálculo")
     for grupo in grupos.values():
         c = sorted((o for o in grupo if o.op.cv == "C"), key=_ordem_negocio)
         v = sorted((o for o in grupo if o.op.cv == "V"), key=_ordem_negocio)
@@ -392,12 +396,34 @@ def _day_trade(
             compras += [_peca_inteira(o) for o in c]
             vendas += [_peca_inteira(o) for o in v]
             continue
+        regra = ORDEM
+        if pela_marcacao and any(o.op.marcada_dt for o in grupo):
+            mc = [o for o in c if o.op.marcada_dt]
+            mv = [o for o in v if o.op.marcada_dt]
+            if (
+                sum((o.op.quantidade for o in mc), ZERO)
+                == dt
+                == sum((o.op.quantidade for o in mv), ZERO)
+            ):
+                # os negócios marcados D primeiro: são exatamente o day trade
+                c = mc + [o for o in c if not o.op.marcada_dt]
+                v = mv + [o for o in v if not o.op.marcada_dt]
+                regra = MARCACAO
+            else:
+                livro.avisos.append(
+                    f"{dia}: day trade de {grupo[0].op.ticker}: a marcação D da nota não fecha "
+                    f"com a quantidade do dia ({dt}); casado pela ordem dos negócios impressa"
+                )
         dt_c, sobra_c = _fatiar(c, dt, "compra")
         dt_v, sobra_v = _fatiar(v, dt, "venda")
-        _movimento_day_trade(livro, dia, grupo, dt, dt_c, dt_v)
+        _movimento_day_trade(livro, dia, grupo, dt, dt_c, dt_v, regra)
         compras += sobra_c
         vendas += sobra_v
     return compras, vendas, exercicios
+
+
+ORDEM = "day trade (IN 1.585 art. 65 §3º: 1ª compra com a 1ª venda, pela ordem impressa)"
+MARCACAO = "day trade (negócios marcados D pela corretora, que tem o horário; IN 1.585 art. 65 §3º)"
 
 
 def _ordem_negocio(o: _Op) -> tuple[date, str, int, int]:
@@ -439,7 +465,7 @@ def _parte(o: _Op, quantidade: Decimal, regra: str) -> _Peca:
 
 def _movimento_day_trade(
     livro: Livro, dia: date, grupo: list[_Op], dt: Decimal, compras: list[_Peca],
-    vendas: list[_Peca],
+    vendas: list[_Peca], regra: str,
 ) -> None:  # fmt: skip
     primeiro = min(grupo, key=_de)
     contas = {_de(o) for o in grupo}
@@ -459,8 +485,8 @@ def _movimento_day_trade(
     # afasta o limite de R$ 20 mil; decisão do usuário de 15/10/2026)
     pme = all(p.base.op.pme_ate is not None and dia <= p.base.op.pme_ate for p in compras)
     livro.registrar(chave, dia, origem,
-                    "day trade (IN 1.585 art. 65 §3º: 1ª compra com a 1ª venda, pela ordem): "
-                    "resultado = vendas casadas - compras casadas", de=de, toca_posicao=False,
+                    f"{regra}: resultado = vendas casadas - compras casadas", de=de,
+                    toca_posicao=False,
                     categoria=_categoria(tipo, day_trade=True), cv=None, quantidade=dt,
                     valor=alienacao, custos=custos, isento_pme=pme,
                     baixa=Baixa(resultado=alienacao - custo, custo_baixa=custo))  # fmt: skip
@@ -506,9 +532,6 @@ def _aplicar_parte(
     # IN 1.585 art. 59 §2º IV: a isenção não se aplica à alienação por exercício de opção; o valor
     # continua na soma do limite (decisão do usuário de 15/10/2026, leitura conservadora)
     isentavel = acao and o.op.mercado not in MERCADOS_EXERCICIO
-    descoberto = (
-        o.op.cv == "V" and o.op.tipo is not TipoAtivo.OPCAO and pos.quantidade < p.quantidade
-    )
     # venda a descoberto (leitura A1, decisão do usuário de 15/10/2026, sem norma específica): o
     # resultado sai na recompra, mas o limite de isenção é o do mês da venda
     mes_limite = pos.descoberto_desde if o.op.cv == "C" and pos.quantidade < 0 else None
@@ -537,13 +560,7 @@ def _aplicar_parte(
             pos.pme_ate = None
         if pos.quantidade < 0 and not ja_vendida:
             pos.descoberto_desde = dia
-    aviso = f"{dia}: venda a descoberto de {o.op.ticker}"
-    fiscal = livro.visao is Visao.TITULAR
-    if descoberto and fiscal and not any(x.startswith(aviso) for x in livro.avisos):
-        livro.avisos.append(
-            f"{dia}: venda a descoberto de {o.op.ticker} (posição {pos.quantidade} após a venda): "
-            "confira se falta transferência ou evento; o resultado sai na recompra"
-        )
+    # venda a descoberto é operação normal: sem aviso (decisão do usuário de 25/10/2026)
     # base do IRRF 0,005% (Lei 11.033/2004 art. 2º §§1º e 2º): venda comum, sem exercício, PME
     # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas
     base_irrf = p.bruto if (o.op.cv == "V" and o.op.mercado not in MERCADOS_EXERCICIO and not pme
@@ -738,6 +755,12 @@ def _leilao_fracao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
                     venda_acao=e.valor if isentavel else ZERO, isentavel=isentavel)  # fmt: skip
 
 
+CUSTODIA = (
+    "custódia inicial em 31/12: entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58; "
+    "o da declaração), sem resultado"
+)
+
+
 def _evento(livro: Livro, e: Evento) -> None:
     de = (e.conta, e.corretora)
     chave = _chave_evento(livro, e)
@@ -790,8 +813,18 @@ def _evento(livro: Livro, e: Evento) -> None:
     sinal = 1 if e.cv == "C" else -1
     quantidade = (e.quantidade or ZERO) * sinal
     custo = e.valor * sinal
-    if pos.quantidade == 0 and not (e.tipo is TipoEvento.SUBSCRICAO and e.cv == "C"):
-        # só a subscrição abre posição; nos demais o evento cairia numa posição que não existe
+    if e.tipo is TipoEvento.CUSTODIA_INICIAL and (
+        e.cv != "C" or e.tipo_ativo in (TipoAtivo.OPCAO, TipoAtivo.FUTURO)
+    ):
+        # decisão do usuário (25/10/2026): só posição comprada à vista; opção, futuro e posição
+        # vendida em aberto pedem as notas desde a abertura (prêmio, ajustes diários)
+        raise MotorError(f"custódia inicial de {e.ticker} ({e.data}): só compra de ações, ETF, "
+                         "BDR, units e FII; para opções, futuros e posição vendida, importe as "
+                         "notas desde a abertura")  # fmt: skip
+    abre = e.tipo in (TipoEvento.SUBSCRICAO, TipoEvento.CUSTODIA_INICIAL) and e.cv == "C"
+    if pos.quantidade == 0 and not abre:
+        # só a subscrição e a custódia inicial abrem posição; nos demais o evento cairia numa
+        # posição que não existe
         raise MotorError(
             f"evento {e.tipo.value} de {e.ticker} ({e.data}) sem posição na conta "
             f"{e.corretora} {e.conta} (confira data, conta e ticker do evento)"
@@ -806,6 +839,10 @@ def _evento(livro: Livro, e: Evento) -> None:
             f"{pos.quantidade} para {pos.quantidade + quantidade}"
         )
     pos.ajustar(quantidade, custo)
-    livro.registrar(chave, e.data, f"evento:{e.id}", f"evento {e.tipo.value.lower()}: ajusta "
-                    "quantidade e custo, sem resultado", de=de, categoria=Categoria.COMUM, cv=e.cv,
-                    quantidade=quantidade, valor=custo, evento=e.tipo)  # fmt: skip
+    regra = (
+        CUSTODIA
+        if e.tipo is TipoEvento.CUSTODIA_INICIAL
+        else f"evento {e.tipo.value.lower()}: ajusta quantidade e custo, sem resultado"
+    )
+    livro.registrar(chave, e.data, f"evento:{e.id}", regra, de=de, categoria=Categoria.COMUM,
+                    cv=e.cv, quantidade=quantidade, valor=custo, evento=e.tipo)  # fmt: skip

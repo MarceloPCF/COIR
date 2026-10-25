@@ -3,15 +3,18 @@ tickers, e os parâmetros fiscais com vigência e fonte (consulta: vêm da impor
 
 from collections.abc import Callable
 from datetime import date
+from decimal import Decimal
 
 from nicegui import run, ui
 
 from coir.domain.cpf import cpf_valido
+from coir.domain.fiscal import SaldoInicial
 from coir.erros import CoirError
-from coir.reports.modelo import Coluna, TipoColuna, Valor
-from coir.servicos import cadastros
+from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
+from coir.servicos import cadastros, saldos_iniciais
 from coir.servicos.estado import Estado
 from coir.ui import tabela
+from coir.ui.entrada import valor_br
 
 T = TipoColuna
 COLUNAS_CONTAS = (
@@ -38,6 +41,69 @@ COLUNAS_PARAMETROS = (
 )
 
 
+def _saldos(estado: Estado, ao_mudar: Callable[[], object]) -> None:
+    """Para quem começa sem as notas antigas: o prejuízo a compensar em 31/12 (aqui) e a posição
+    de cada ativo em 31/12 (em Eventos, tipo "Custódia inicial")."""
+    ui.label(
+        "Se você não tem todas as notas desde o começo, informe a situação em 31/12 de um ano: o "
+        "prejuízo a compensar (ficha de renda variável de dezembro da última declaração: "
+        "operações comuns, day trade e FII, cada um separado) e, em Eventos, a custódia inicial de "
+        "cada ativo (quantidade e custo do Bens e Direitos). Importe as notas a partir de janeiro "
+        "seguinte."
+    ).classes("coir-subtitulo text-sm")
+    if not estado.existe or estado.titular is None:
+        ui.label("Escolha ou cadastre um titular primeiro.").classes("coir-vazio w-full")
+        return
+    titular = estado.titular
+    atual = saldos_iniciais.ler(estado.banco, titular)
+    hoje = estado.agora().date()
+    with ui.column().classes("coir-folha gap-2 w-full max-w-[640px]").mark("form-saldos"):
+        ano = ui.select(list(range(hoje.year - 1, 2000, -1)), label="Situação em 31/12 de",
+                        value=atual.ano if atual else hoje.year - 1)  # fmt: skip
+        ano.props("outlined dense").classes("w-[200px]").mark("saldo-ano")
+        campos = {}
+        for chave, rotulo in (("comum", "Prejuízo a compensar: operações comuns"),
+                              ("day_trade", "Prejuízo a compensar: day trade"),
+                              ("fii", "Prejuízo a compensar: FII e Fiagro")):  # fmt: skip
+            valor = getattr(atual, chave) if atual else None
+            campos[chave] = ui.input(rotulo, value=_moeda(valor) if valor else "").props(
+                "outlined dense input-class=text-right").classes("w-[360px]").mark(
+                f"saldo-{chave}")  # fmt: skip
+
+        async def salvar(apagar: bool = False) -> None:
+            saldo = None
+            if not apagar:
+                valores: dict[str, Decimal] = {}
+                for chave, campo in campos.items():
+                    valor = valor_br(campo.value or "0")
+                    if valor is None:
+                        ui.notify("Valor inválido.", type="warning")
+                        return
+                    valores[chave] = valor
+                saldo = SaldoInicial(titular=titular, ano=int(ano.value), **valores)
+            try:
+                await run.io_bound(saldos_iniciais.gravar, estado.banco, saldo, titular,
+                                   estado.agora())  # fmt: skip
+            except CoirError as erro:
+                ui.notify(f"Não gravado: {erro}", type="negative")
+                return
+            estado.invalidar()
+            ao_mudar()
+            ui.notify("Saldos iniciais gravados." if saldo else "Saldos iniciais apagados.",
+                      type="positive")  # fmt: skip
+
+        with ui.row().classes("gap-2"):
+            ui.button("Salvar", icon="save", on_click=salvar).mark("salvar-saldos")
+            ui.button("Apagar", icon="delete_outline", on_click=lambda: salvar(apagar=True)).props(
+                "flat")  # fmt: skip
+            ui.button("Lançar a custódia inicial em Eventos", icon="event_repeat",
+                      on_click=lambda: ui.navigate.to("/eventos")).props("flat")  # fmt: skip
+
+
+def _moeda(valor: Decimal) -> str:
+    return formatar(valor, TipoColuna.DINHEIRO)
+
+
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("Cadastros").classes("coir-titulo-pagina")
     ui.label(
@@ -49,6 +115,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         t_contas = ui.tab("Contas e corretoras").mark("aba-contas")
         t_ativos = ui.tab("Ativos e tickers").mark("aba-ativos")
         t_parametros = ui.tab("Parâmetros fiscais").mark("aba-parametros")
+        t_saldos = ui.tab("Saldos iniciais").mark("aba-saldos")
     with ui.tab_panels(abas, value=t_titulares).classes("w-full bg-transparent"):
         with ui.tab_panel(t_titulares).classes("p-0 pt-3"):
             _titulares(estado, ao_mudar)
@@ -77,6 +144,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ui.label(
                 "Trocas de ticker (data/trocas_ticker.csv) mantêm o mesmo ativo e o mesmo PM."
             ).classes("coir-subtitulo text-xs")
+        with ui.tab_panel(t_saldos).classes("p-0 pt-3"):
+            _saldos(estado, ao_mudar)
         with ui.tab_panel(t_parametros).classes("p-0 pt-3"):
             parametros = sorted(
                 estado.fiscais.parametros.parametros, key=lambda p: (p.nome, p.inicio or date.min)

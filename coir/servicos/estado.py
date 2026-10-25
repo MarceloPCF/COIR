@@ -16,9 +16,15 @@ from typing import TypeVar
 from sqlalchemy import func, select
 
 from coir import referencias
-from coir.config import dados_dir, dentro_do_repositorio, salvar_dados_dir
+from coir.config import (
+    dados_dir,
+    dentro_do_repositorio,
+    ler_preferencia,
+    salvar_dados_dir,
+    salvar_preferencia,
+)
 from coir.db import repositorio as repo
-from coir.db.modelos import EventoCorporativo, NotaCorretagem
+from coir.db.modelos import EventoCorporativo, NotaCorretagem, Titular
 from coir.db.sessao import NOME_BANCO, conectar, migrar
 from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
 from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
@@ -41,9 +47,11 @@ from coir.servicos import (
     operacoes,
 )
 from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
+from coir.servicos.b3 import PASTA_B3
 from coir.servicos.importacao import Extrator, aplicar_tabelas
 from coir.servicos.proventos import informar_creditos, proventos_banco
 from coir.servicos.relatorios import dados_banco, info_ativos
+from coir.servicos.versao import VersaoRemota
 
 log = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -76,6 +84,9 @@ class Estado:
         self.baixar: atualizacao.Baixar = atualizacao.baixar  # GitHub (falso nos testes)
         self.remoto: atualizacao.PacoteRemoto | None = None  # última verificação do pacote
         self.verificado = False
+        self.versao_nova: VersaoRemota | None = None  # última verificação do programa
+        self.versao_verificada = False
+        self.darf_escolhida: tuple[int, int] | None = None  # o Painel abre a DARF desta competência
         self._cache: dict[tuple[object, ...], object] = {}
         self._trava = Lock()
         self._travas: dict[tuple[object, ...], Lock] = {}
@@ -92,7 +103,30 @@ class Estado:
 
     @property
     def pasta_notas(self) -> Path:
-        return self.dados / notas.PASTA_NOTAS
+        """Onde ficam os PDFs das notas: a pasta escolhida em Importar ou, sem ela,
+        ``<dados>/_notas-corretagens``."""
+        return self._pasta("pasta_notas", notas.PASTA_NOTAS)
+
+    @property
+    def pasta_b3(self) -> Path:
+        """Onde ficam as planilhas da Área do Investidor B3 (escolhida ou a padrão)."""
+        return self._pasta("pasta_b3", PASTA_B3)
+
+    def _pasta(self, chave: str, padrao: str) -> Path:
+        try:
+            escolhida = ler_preferencia(chave)
+        except ConfiguracaoError:
+            escolhida = None
+        return Path(escolhida) if escolhida else self.dados / padrao
+
+    def escolher_pasta(self, chave: str, pasta: Path | None) -> None:
+        """Grava a pasta das notas ou da B3 (``None``: volta à padrão, dentro da pasta de dados).
+        Fica na configuração deste computador, como a pasta de dados."""
+        if chave not in ("pasta_notas", "pasta_b3"):
+            raise ConfiguracaoError(f"pasta desconhecida: {chave}")
+        if pasta is not None and not pasta.is_dir():
+            raise ConfiguracaoError(f"pasta não encontrada: {pasta}")
+        salvar_preferencia(chave, str(pasta.resolve()) if pasta else "")
 
     @property
     def pronto(self) -> bool:
@@ -226,11 +260,11 @@ class Estado:
         return self._guardado(("notas", titular, ano),
                               lambda: notas.listar(self.banco, titular, ano))  # fmt: skip
 
-    def livro(self) -> list[operacoes.LinhaOperacao]:
-        """Livro de operações do titular e ano escolhidos."""
+    def livro(self, todos_os_anos: bool = False) -> list[operacoes.LinhaOperacao]:
+        """Livro de operações do titular e ano escolhidos (ou de todos os anos)."""
         if not self.existe or self.ano is None:
             return []
-        titular, ano = self.titular, self.ano
+        titular, ano = self.titular, None if todos_os_anos else self.ano
         return self._guardado(("operacoes", titular, ano),
                               lambda: operacoes.livro(self.banco, titular, ano))  # fmt: skip
 
@@ -315,8 +349,17 @@ class Estado:
         f, mapa = self.fichas_irpf()
         if f is None or mapa is None:
             return None
-        cpf = self.dados_relatorio().cpf
-        return declaracao.conferir(self.dados, f, mapa, codigo_atual(self.refs), cpf)
+        return declaracao.conferir(self.dados, f, mapa, codigo_atual(self.refs), self.cpf())
+
+    def cpf(self) -> str:
+        """CPF do titular escolhido (só para casar a DIRPF certa; sem recalcular relatórios)."""
+        if self.titular is None:
+            raise ExportacaoError("escolha o titular")
+        with conectar(self.banco) as fabrica, fabrica() as s:
+            titular = s.get(Titular, self.titular)
+            if titular is None:
+                raise ExportacaoError("titular não encontrado")
+            return titular.cpf
 
     def propor_creditos_dirpf(self) -> tuple[list[declaracao.PropostaCredito], list[str]]:
         """JCP cujo crédito, pelas DIRPF entregues em <dados>/_dirpf (99.07), foi no ano anterior
@@ -326,7 +369,7 @@ class Estado:
             return [], []
         info = info_ativos({p.codigo for p in lista}, self.refs, self.fiscais, self.pasta_refs)
         cnpjs = {t: i.cnpj for t, i in info.items() if i.cnpj}
-        lidas, avisos = declaracao.declaracoes_lidas(self.dados, self.dados_relatorio().cpf)
+        lidas, avisos = declaracao.declaracoes_lidas(self.dados, self.cpf())
         return declaracao.propor_creditos(lista, cnpjs, lidas), avisos
 
     def confirmar_creditos(self, propostas: list[declaracao.PropostaCredito]) -> None:

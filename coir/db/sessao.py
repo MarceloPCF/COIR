@@ -56,6 +56,21 @@ def revisao_final() -> str | None:
     return ScriptDirectory.from_config(_config_alembic()).get_current_head()
 
 
+def revisoes_conhecidas() -> set[str]:
+    return {r.revision for r in ScriptDirectory.from_config(_config_alembic()).walk_revisions()}
+
+
+def _recusar_mais_novo(banco: Path, atual: str | None) -> None:
+    """Banco gravado por uma versão mais nova do COIR (revisão que este programa não conhece):
+    abrir ou migrar estragaria os dados. Ver o guia de atualização (docs/manual)."""
+    if atual is not None and atual not in revisoes_conhecidas():
+        raise BancoError(
+            f"o banco {banco} foi gravado por uma versão mais nova do COIR (revisão {atual}). "
+            "Abra-o com a versão mais nova do programa, ou restaure um backup feito por esta "
+            "versão (pasta backups)."
+        )
+
+
 def migrar(banco: Path, agora: datetime, backup: bool = True) -> None:
     """Leva o banco à última revisão (cria se não existir); backup antes, se houver o que migrar
     (``backup=False`` quando quem chama acabou de copiar o banco)."""
@@ -65,6 +80,7 @@ def migrar(banco: Path, agora: datetime, backup: bool = True) -> None:
         atual = revisao_atual(engine)
         if atual == revisao_final():
             return
+        _recusar_mais_novo(banco, atual)
         if backup and banco.is_file() and atual is not None:
             fazer_backup(banco, agora)
         config = _config_alembic()
@@ -80,8 +96,10 @@ def _engine_migrado(banco: Path) -> Engine:
     if not banco.is_file():
         raise BancoError(f"banco não encontrado: {banco} (rode `coir banco migrar`)")
     engine = criar_engine(banco)
-    if revisao_atual(engine) != revisao_final():
+    atual = revisao_atual(engine)
+    if atual != revisao_final():
         engine.dispose()
+        _recusar_mais_novo(banco, atual)
         raise BancoError(f"banco desatualizado: {banco} (rode `coir banco migrar`)")
     return engine
 

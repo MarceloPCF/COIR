@@ -123,7 +123,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object], nota: int | None = No
 
     async def abrir(id_nota: int) -> None:
         try:
-            d = await run.io_bound(notas.detalhe, estado.banco, estado.dados, id_nota)
+            d = await run.io_bound(notas.detalhe, estado.banco, estado.pasta_notas, id_nota)
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return

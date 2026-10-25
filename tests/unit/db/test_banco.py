@@ -125,7 +125,7 @@ def test_decimal_texto_recusa_float() -> None:
 # ---------------------------------------------------------------------------------- migração
 def test_migracao_cria_esquema_igual_aos_modelos(banco: Path) -> None:
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == revisao_final() == "0007"
+    assert revisao_atual(engine) == revisao_final() == "0008"
     with engine.connect() as c:
         ctx = MigrationContext.configure(c, opts={"compare_type": True})
         assert compare_metadata(ctx, Base.metadata) == []
@@ -148,7 +148,7 @@ def test_banco_da_revisao_anterior_migra_com_backup(tmp_path: Path) -> None:
     engine.dispose()
     migrar(banco, AGORA)
     engine = criar_engine(banco)
-    assert revisao_atual(engine) == "0007"
+    assert revisao_atual(engine) == "0008"
     engine.dispose()
     with abrir(banco)() as s:
         assert [t.nome for t in repo.titulares(s)] == ["Titular de Teste"]
@@ -182,6 +182,24 @@ def test_banco_ausente_ou_desatualizado_falha_alto(tmp_path: Path) -> None:
     criar_engine(vazio).connect().close()
     with pytest.raises(BancoError, match="desatualizado"):
         abrir(vazio)
+
+
+def test_banco_de_versao_mais_nova_nao_abre_nem_migra(tmp_path: Path) -> None:
+    """Programa antigo com banco gravado por um mais novo (revisão desconhecida): a mensagem diz
+    isso (antes dizia "desatualizado") e nada é alterado no banco."""
+    banco = tmp_path / "coir.db"
+    migrar(banco, AGORA)
+    engine = criar_engine(banco)
+    with engine.begin() as c:
+        c.exec_driver_sql("UPDATE alembic_version SET version_num = '9999_futura'")
+    engine.dispose()
+    for acao in (lambda: abrir(banco), lambda: migrar(banco, AGORA)):
+        with pytest.raises(BancoError, match="versão mais nova do COIR"):
+            acao()
+    assert not (tmp_path / "backups").exists()
+    engine = criar_engine(banco)
+    assert revisao_atual(engine) == "9999_futura"
+    engine.dispose()
 
 
 def test_backup_mantem_os_mais_recentes(banco: Path) -> None:

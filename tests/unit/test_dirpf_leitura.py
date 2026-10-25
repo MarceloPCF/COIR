@@ -163,6 +163,49 @@ def test_bens_com_quebra_de_pagina_e_usufruto_colado() -> None:
     assert bens[0].discriminacao.endswith("EM 31/12/2024.")  # sem o "Bem com usufruto"
 
 
+BENS_2024_1 = """DECLARAÇÃO DE BENS E DIREITOS (Valores em Reais)
+GRUPO DISCRIMINAÇÃO SITUAÇÃO EM
+31/12/2022 31/12/2023
+CÓDIGO
+03 ACOES DA EMPRESA VALE SA; CNPJ: 33.592.510/0001-54.
+TOTALIZANDO 100 PAPEIS AO PRECO MEDIO DE 60,00.
+0,00 6.000,00
+CNPJ: 33.592.510/0001-54
+01
+105 - BRASIL
+Bem ou direito pertencente ao: Titular CPF: 000.000.000-00
+Negociados em Bolsa: Sim Código de Negociação: VALE3
+99 JCP A RECEBER DA ITAUSA, CREDITADO EM 2023
+Página 2 de 3
+"""
+BENS_2024_2 = """DECLARAÇÃO DE BENS E DIREITOS (Valores em Reais)
+GRUPO DISCRIMINAÇÃO SITUAÇÃO EM
+31/12/2022 31/12/2023
+CÓDIGO
+E PAGO EM 2024.
+0,00 85,00
+CNPJ: 61.532.644/0001-15
+07
+105 - BRASIL
+Bem ou direito pertencente ao: Titular CPF: 000.000.000-00
+TOTAL 0,00 6.085,00
+DÍVIDAS E ÔNUS REAIS (Valores em Reais)
+Sem Informações
+"""
+
+
+def test_bens_no_layout_ate_2024_com_quebra_de_pagina() -> None:
+    """Exercício 2024: a discriminação vem antes dos valores e o código numa linha só."""
+    paginas = [CABECALHO + RENDIMENTOS, CABECALHO + BENS_2024_1,
+               CABECALHO + BENS_2024_2 + _renda_variavel()]  # fmt: skip
+    bens = ler_texto(paginas).bens
+    assert [(b.grupo, b.codigo, b.ticker, b.cnpj, b.anterior, b.atual) for b in bens] == [
+        ("03", "01", "VALE3", "33592510000154", D("0"), D("6000.00")),
+        ("99", "07", None, "61532644000115", D("0"), D("85.00")),
+    ]
+    assert bens[1].discriminacao == "JCP A RECEBER DA ITAUSA, CREDITADO EM 2023 E PAGO EM 2024."
+
+
 def test_rendimentos_por_fonte_com_nome_quebrado() -> None:
     d = ler_texto(_paginas())
     assert d.totais[("isentos", "09")] == D("1300.50")

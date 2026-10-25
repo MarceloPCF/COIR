@@ -20,6 +20,7 @@ from coir.erros import CoirError
 from coir.reports.fiscais import GRUPOS, MESES, NOME_CATEGORIA, NOME_GRUPO
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import carteira
+from coir.servicos.apuracao import conta_na_isencao
 from coir.servicos.estado import Estado
 from coir.ui import tabela
 
@@ -149,7 +150,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ).mark("grade-apuracao")
             for aviso in apuracao.avisos:
                 if aviso[:4] == str(estado.ano) or not aviso[:4].isdigit():  # avisos do ano
-                    ui.label(f"Aviso do motor: {aviso}").classes("coir-carimbo text-sm")
+                    ui.label(f"Atenção: {aviso}").classes("coir-carimbo text-sm")
 
     def abrir(indice: int, mapa: dict[int, int]) -> None:
         m = meses[indice]
@@ -259,7 +260,10 @@ def _memoria(estado: Estado, m: MesApurado, movs: list[Movimento], mapa: dict[in
             x.valor,
             x.custo_baixa,
             x.resultado,
-            "isento" if x.isentavel and comum and comum.isento else ("PME" if x.isento_pme else ""),
+            # units fora do limite (ex.: UBBR11 em 2008): tributadas, nunca marcadas "isento"
+            "isento"
+            if conta_na_isencao(x, params) and comum and comum.isento
+            else ("PME" if x.isento_pme else ""),
         )
         for x in movs
     ]

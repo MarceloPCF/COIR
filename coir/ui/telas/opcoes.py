@@ -71,9 +71,9 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("Opções").classes("coir-titulo-pagina")
     ui.label(
         f"O ciclo de cada série: da abertura até zerar (venda, recompra, exercício ou vencimento "
-        f"sem exercício, o pó). As abertas são as da data de referência; as demais, as que "
-        f"terminaram em {estado.ano}. Prêmio = vendas - compras da série; no exercício o prêmio "
-        "vai para o custo ou a venda do ativo-objeto (sem resultado na opção)."
+        f"sem exercício, quando a opção vira pó). As abertas são as da data de referência; as "
+        f"demais, as que terminaram em {estado.ano}. Prêmio = vendas - compras da série; no "
+        "exercício o prêmio vai para o custo ou a venda do ativo-objeto (sem resultado na opção)."
     ).classes("coir-subtitulo")
     corpo = ui.column().classes("w-full gap-3")
 

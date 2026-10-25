@@ -26,7 +26,7 @@ from coir.reports.fiscais import TODOS, relatorios
 from coir.reports.saida_csv import escrever_csv
 from coir.reports.saida_pdf import escrever_pdf
 from coir.reports.saida_xlsx import escrever_xlsx
-from coir.servicos import outros_custos
+from coir.servicos import outros_custos, saldos_iniciais
 from coir.servicos.apuracao import entradas
 from coir.servicos.proventos import proventos_banco
 
@@ -80,6 +80,7 @@ def dados_banco(
                 raise ExportacaoError(f"titular {titular} não cadastrado")
         notas, eventos = entradas(sessao, refs, fiscais)
         custos = outros_custos.do_banco(sessao)
+        saldos = saldos_iniciais.do_banco(sessao)
         livro = tuple(NotaDoLivro(nota=n, operacoes=tuple(ops))
                       for n, ops in repo.carregar_notas(sessao, escolhido.id, ano))  # fmt: skip
         do_titular = select(Conta).where(Conta.titular_id == escolhido.id)
@@ -102,7 +103,7 @@ def dados_banco(
         custodia, custodia_anterior = [], []
         avisos_irpf.append(f"Custódia por corretora indisponível ({erro}): a discriminação dos "
                            "bens sai sem a quantidade em cada corretora")  # fmt: skip
-    apuracao = apurar(notas, eventos, params, fiscais.calendario, ate, custos)
+    apuracao = apurar(notas, eventos, params, fiscais.calendario, ate, custos, saldos)
     try:
         irpf = referencias.carregar_irpf(ano)
     except ConfiguracaoError:

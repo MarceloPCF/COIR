@@ -24,6 +24,7 @@ TIPOS = {
     TipoEvento.GRUPAMENTO: "Grupamento",
     TipoEvento.BONIFICACAO: "Bonificação",
     TipoEvento.SUBSCRICAO: "Subscrição",
+    TipoEvento.CUSTODIA_INICIAL: "Custódia inicial (31/12)",
     TipoEvento.REDUCAO_CAPITAL: "Redução de capital",
     TipoEvento.TRANSFERENCIA: "Transferência de custódia",
     TipoEvento.INCORPORACAO: "Incorporação / conversão / ajuste de série",
@@ -42,6 +43,9 @@ AJUDA = {
     TipoEvento.GRUPAMENTO: "V com as ações que deixam de existir, custo zero.",
     TipoEvento.BONIFICACAO: "C com as ações recebidas e o custo atribuído pela companhia.",
     TipoEvento.SUBSCRICAO: "C com as ações subscritas e o valor pago.",
+    TipoEvento.CUSTODIA_INICIAL: "Para quem não tem as notas antigas: C com a quantidade e o custo "
+                                 "em 31/12 do Bens e Direitos da última declaração (um por ativo "
+                                 "e conta). Opções e futuros em aberto pedem as notas.",
     TipoEvento.REDUCAO_CAPITAL: "V com o valor restituído: reduz o custo, sem resultado.",
     TipoEvento.TRANSFERENCIA: "Move a posição para outra conta do titular com o mesmo PM "
                               "(quantidade vazia = toda).",
@@ -395,6 +399,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 if d.tipo not in COM_DESTINO and d.tipo is not TipoEvento.TRANSFERENCIA:
                     rotulo_valor = {TipoEvento.BONIFICACAO: "Custo atribuído",
                                     TipoEvento.SUBSCRICAO: "Valor pago",
+                                    TipoEvento.CUSTODIA_INICIAL: "Custo de aquisição",
                                     TipoEvento.REDUCAO_CAPITAL: "Valor restituído",
                                     TipoEvento.LEILAO_FRACAO: "Valor líquido recebido",
                                     }.get(d.tipo, "Custo")  # fmt: skip

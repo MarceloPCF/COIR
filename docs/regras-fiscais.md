@@ -76,7 +76,11 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
 - **Regra geral (15/10/2026):** a norma oficial prevalece sobre preferência do usuário; havendo
   divergência ou ambiguidade, o usuário é consultado antes de aplicar.
 - **Day trade:** casamento pela ordem dos negócios (IN 1.585 art. 65 §3º: 1ª compra com a 1ª venda),
-  pela ordem impressa nas notas do dia (número da nota e linha; a nota não traz horário); o
+  que é a ordem cronológica. A nota não traz horário; a corretora, que o tem e retém o IRRF de 1%,
+  marca os negócios de day trade com "D". Vale a marcação D quando consistente (quantidade D de
+  compra = de venda = a menor das duas no dia); sem marcação ou com marcação inconsistente (aviso),
+  a ordem impressa nas notas do dia (número da nota e linha). Parâmetro `day_trade_criterio`
+  (decisão do usuário de 25/10/2026, parecer do especialista; antes, só a ordem impressa). O
   excedente vira comum pelo preço do próprio negócio. Substitui a "média do dia". Antes de
   28/07/2010 conta em qualquer corretora (MP 497/2010 art. 21). Exercício de opção não é day trade
   (IN 1.585 art. 65 §13). Day trade de FII fica na categoria FII. Sem compensação entre comum e day
@@ -327,7 +331,10 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
   21/10/2026). A origem (dividendo ou JCP) sai do valor: quantidade emprestada inteira vezes o
   valor por ação de um provento do mesmo dia e empresa (movimentação do titular e pacote da B3),
   com o fator 1 - alíquota no JCP; sem origem única, aviso. Desde 2026 o aviso da Lei 15.270
-  soma os reembolsos de dividendos.
+  soma os reembolsos de dividendos. A origem informada pelo usuário na tela de Proventos (informe
+  da empresa ou extrato da corretora) prevalece sobre a do valor, com aviso quando a contradiz ou
+  quando não há provento dessa origem no dia; a quantidade só fica quando as duas coincidem
+  (parecer do especialista, F9, 21/10/2026).
 - Restituição de capital: reduz o custo (IN 1.585 art. 58 §8º), proposta como evento; não é
   rendimento. Acima do custo: o motor falha alto.
 - "- Transferido": pares que se anulam (provento acompanhando a transferência de custódia).

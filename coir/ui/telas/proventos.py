@@ -6,13 +6,14 @@ from datetime import datetime
 from decimal import Decimal
 
 from nicegui import run, ui
+from nicegui.events import ValueChangeEventArguments
 
 from coir.domain.proventos import Provento, TipoProvento
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES, NOME_PROVENTO
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos.estado import Estado
-from coir.servicos.proventos import informar_credito
+from coir.servicos.proventos import informar_credito, informar_origem_reembolso
 from coir.ui import tabela, tema
 
 T = TipoColuna
@@ -84,6 +85,10 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 p.ano_declaracao, p.data.year)]  # fmt: skip
             if jcp:
                 _creditos(estado, jcp, recarregar)
+            reembolsos = [p for p in do_ano if p.tipo is TipoProvento.REEMBOLSO_BTC
+                          and (not p.reembolso_de or p.reembolso_informado)]  # fmt: skip
+            if reembolsos:
+                _reembolsos(estado, reembolsos, recarregar)
 
     async def recarregar() -> None:
         corpo.clear()
@@ -91,6 +96,47 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         await carregar()
 
     ui.timer(0.01, carregar, once=True)
+
+
+ORIGENS = {"": "não sei", "DIVIDENDO": "Dividendos", "JCP": "JCP"}
+
+
+def _reembolsos(estado: Estado, lista: list[Provento],
+                recarregar: Callable[[], Awaitable[None]]) -> None:  # fmt: skip
+    """Reembolsos de BTC cuja origem o valor não identificou (ou que o usuário já informou): a
+    origem pelo informe da empresa ou extrato da corretora prevalece (parecer do especialista)."""
+
+    async def salvar(p: Provento, origem: str) -> None:
+        try:
+            await run.io_bound(informar_origem_reembolso, estado.banco, p.chave, origem or None,
+                               estado.agora())  # fmt: skip
+        except CoirError as erro:
+            ui.notify(f"Não gravado: {erro}", type="negative")
+            return
+        ui.notify("Origem gravada." if origem else "Origem informada apagada.", type="positive")
+        await recarregar()
+
+    def ao_mudar(p: Provento) -> Callable[[ValueChangeEventArguments], Awaitable[None]]:
+        return lambda e: salvar(p, str(e.value or ""))
+
+    with ui.column().classes("coir-folha w-full gap-2").mark("origens-reembolso"):
+        ui.label("Origem dos reembolsos de BTC").classes("coir-titulo text-base")
+        ui.label(
+            "O reembolso que o tomador paga ao doador substitui um dividendo ou um JCP. Quando o "
+            "valor não diz qual (sem o provento do dia nas tabelas, ou mais de uma conta que "
+            "fecha), informe pelo informe de rendimentos da empresa ou pelo extrato da corretora. "
+            "Os dois são isentos para o doador; a origem muda a ficha e o limite da Lei 15.270."
+        ).classes("coir-subtitulo text-xs")
+        for p in sorted(lista, key=lambda p: (p.data, p.codigo)):
+            with ui.row().classes("items-center gap-3 w-full"):
+                ui.label(f"{p.data:%d/%m/%Y} {p.codigo}").classes("coir-numero w-[180px]")
+                ui.label(_r(p.liquido)).classes("coir-numero w-[110px] text-right")
+                situacao = "informada" if p.reembolso_informado else "não identificada"
+                ui.label(situacao).classes("coir-subtitulo text-xs w-[120px]")
+                ui.select(ORIGENS, value=p.reembolso_de if p.reembolso_informado else "",
+                          label="Origem", on_change=ao_mudar(p),
+                          ).props("outlined dense options-dense").classes("w-[170px]").mark(
+                    f"origem-{p.chave[:12]}")  # fmt: skip
 
 
 def _creditos(estado: Estado, jcp: list[Provento],
@@ -210,7 +256,7 @@ def _conteudo(do_ano: list[Provento]) -> None:
                 ui.label(_r(sum((p.liquido for p in a_receber), ZERO))).classes(
                     "coir-numero text-2xl")  # fmt: skip
     meses = sorted({(p.data.year, p.data.month) for p in do_ano})
-    tinta = "#7A8792"
+    tinta = tema.CLARO.eixo  # legível no claro e no escuro
     ui.echart({
         "animation": False,
         "grid": {"left": 70, "right": 20, "top": 40, "bottom": 30},
@@ -228,10 +274,28 @@ def _conteudo(do_ano: list[Provento]) -> None:
                       for am in meses]}
             for tipo, cor in SERIES
         ],
-    }).classes("w-full h-[300px] coir-folha").mark("grafico-proventos")  # fmt: skip
-    valores: list[tuple[Valor, ...]] = [
-        (p.data, p.codigo, NOME_PROVENTO[p.tipo], p.instituicao, p.quantidade, p.liquido, p.bruto,
-         p.irrf, p.observacao)
-        for p in sorted(do_ano, key=lambda p: (p.data, p.codigo))
-    ]  # fmt: skip
-    tabela.grade(COLUNAS, valores, altura="h-[480px]", pelo_conteudo=True).mark("grade-proventos")
+    }, on_point_click=lambda e: filtrar(meses[e.data_index])).classes(
+        "w-full h-[300px] coir-folha cursor-pointer").mark("grafico-proventos")  # fmt: skip
+
+    def valores(mes: tuple[int, int] | None) -> list[tuple[Valor, ...]]:
+        return [
+            (p.data, p.codigo, NOME_PROVENTO[p.tipo], p.instituicao, p.quantidade, p.liquido,
+             p.bruto, p.irrf, p.observacao)
+            for p in sorted(do_ano, key=lambda p: (p.data, p.codigo))
+            if mes is None or (p.data.year, p.data.month) == mes
+        ]  # fmt: skip
+
+    todos_os_meses = "Todos os meses do ano (clique numa barra para ver só aquele mês)"
+    with ui.row().classes("items-center gap-3"):
+        filtro = ui.label(todos_os_meses)
+        filtro.classes("coir-subtitulo text-sm").mark("filtro-proventos")
+        todos = ui.button("Ver o ano todo", icon="filter_alt_off", on_click=lambda: filtrar(None))
+        todos.props("flat dense").set_visibility(False)
+    grade = tabela.grade(COLUNAS, valores(None), altura="h-[480px]", pelo_conteudo=True)
+    grade.mark("grade-proventos")
+
+    def filtrar(mes: tuple[int, int] | None) -> None:
+        tabela.atualizar(grade, COLUNAS, valores(mes))
+        todos.set_visibility(mes is not None)
+        filtro.set_text(todos_os_meses if mes is None
+                        else f"Só {MESES[mes[1] - 1].lower()} de {mes[0]}")  # fmt: skip

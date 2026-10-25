@@ -177,7 +177,8 @@ def test_detalhe_acha_o_pdf_na_pasta_das_notas(demo: Path, tmp_path: Path) -> No
     nota = notas.listar(demo, 1, None)[0]
     (tmp_path / notas.PASTA_NOTAS).mkdir()
     (tmp_path / notas.PASTA_NOTAS / nota.arquivo).write_bytes(b"%PDF")
-    assert notas.detalhe(demo, tmp_path, nota.id).pdf == tmp_path / notas.PASTA_NOTAS / nota.arquivo
+    pasta = tmp_path / notas.PASTA_NOTAS
+    assert notas.detalhe(demo, pasta, nota.id).pdf == pasta / nota.arquivo
 
 
 def test_pagina_do_pdf_em_png(tmp_path: Path) -> None:

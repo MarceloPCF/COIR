@@ -112,7 +112,7 @@ def _conferencias(nota: NotaExtraida) -> tuple[Conferencia, ...]:
     )
 
 
-def detalhe(banco: Path, dados: Path, id_nota: int) -> DetalheNota:
+def detalhe(banco: Path, pasta_notas: Path, id_nota: int) -> DetalheNota:
     """A nota como impressa, as operações normalizadas e a conciliação refeita (regra 4)."""
     with conectar(banco) as fabrica, fabrica() as s:
         registro = s.scalars(
@@ -133,7 +133,7 @@ def detalhe(banco: Path, dados: Path, id_nota: int) -> DetalheNota:
         conciliada, motivo = True, ""
     except ConciliacaoError as erro:
         conciliada, motivo = False, str(erro)
-    pdf = dados / PASTA_NOTAS / resumo.arquivo
+    pdf = pasta_notas / resumo.arquivo
     return DetalheNota(resumo, nota, ops, _conferencias(nota), conciliada, motivo,
                        pdf if pdf.is_file() else None)  # fmt: skip
 

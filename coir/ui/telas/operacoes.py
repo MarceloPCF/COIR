@@ -75,13 +75,18 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label(
         f"O livro de operações de {estado.ano}, como lido das notas. Custos: os da nota "
         "rateados pelo valor de cada operação (no BM&F, entram no resultado do dia). Clique "
-        "numa operação para abrir a nota.",
+        'numa operação para abrir a nota. Para o histórico de um ativo, ligue "Todos os anos" '
+        "e digite o código.",
     ).classes("coir-subtitulo")
     todas = estado.livro()
-    if not todas:
-        ui.label("Nenhuma operação neste ano.").classes("coir-vazio w-full")
+    if not todas and not estado.livro(todos_os_anos=True):
+        ui.label("Nenhuma operação importada.").classes("coir-vazio w-full")
         return
     filtro: dict[str, object] = {"ativo": "", "corretora": "", "mercado": "", "mes": 0, "dt": False}
+
+    def ano_todo(todos: bool) -> None:
+        todas[:] = estado.livro(todos_os_anos=todos)
+        mudar("mes", 0 if todos else filtro["mes"])
 
     def vistas() -> list[LinhaOperacao]:
         ativo = str(filtro["ativo"]).strip().upper()
@@ -130,6 +135,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             on_change=lambda e: mudar("mes", e.value),
         ).props("outlined dense options-dense").classes("w-[170px]")
         ui.checkbox("Só day trade", on_change=lambda e: mudar("dt", e.value)).mark("filtro-dt")
+        ui.switch("Todos os anos", on_change=lambda e: ano_todo(bool(e.value))).mark(
+            "filtro-todos-os-anos")  # fmt: skip
     grade = tabela.grade(
         COLUNAS,
         _valores(todas),

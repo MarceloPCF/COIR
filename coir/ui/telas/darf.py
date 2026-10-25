@@ -57,7 +57,7 @@ def _valores(linhas: list[darf.LinhaDarf]) -> list[tuple[Valor, ...]]:
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("DARF").classes("coir-titulo-pagina")
     ui.label(
-        f"As DARFs de {estado.ano} de renda variável, o vencimento, o pagamento e a multa de "
+        f"As DARFs de {estado.ano} de renda variável, o vencimento, o pagamento, a multa "
         "e os juros de mora por atraso (Lei 9.430/1996 art. 61)."
     ).classes("coir-subtitulo")
     with ui.row().classes("w-full items-start gap-4"):
@@ -113,7 +113,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         ao_mudar()
         await carregar(competencia)
 
-    ui.timer(0.01, carregar, once=True)
+    escolhida, estado.darf_escolhida = estado.darf_escolhida, None
+    ui.timer(0.01, lambda: carregar(escolhida), once=True)
 
 
 def _campo(numero: str, rotulo: str, valor: str, classe: str = "") -> None:
@@ -235,12 +236,17 @@ def _formulario(
     hoje = estado.agora().date()
     sugestao = x.multa.pagamento if x.multa else hoje
     comprovante: list[tuple[str, bytes]] = []
-    titulo = "Alterar o pagamento" if x.pagamento else "Marcar como paga"
-    with (
-        ui.expansion(titulo, icon="task_alt", value=x.pagamento is None)
-        .classes("coir-folha w-full")
-        .mark("form-pagamento")
-    ):
+    if x.pagamento:
+        caixa = ui.expansion("Alterar o pagamento", icon="edit", value=False)
+    else:  # aberto e fixo: o título não fecha o formulário
+        caixa = ui.column().classes("gap-2")
+        with caixa:
+            ui.label("Registrar o pagamento").classes("coir-titulo text-base")
+            ui.label(
+                "Informe a data e o valor pagos (com multa e juros, se pagou em atraso) e salve: a "
+                "DARF passa a constar como paga."
+            ).classes("coir-subtitulo text-xs")
+    with caixa.classes("coir-folha w-full").mark("form-pagamento"):
         data = (
             ui.input(
                 "Data do pagamento",
@@ -297,4 +303,4 @@ def _formulario(
             ui.notify("Pagamento registrado.", type="positive")
             await _chamar(recarregar, (x.ano, x.mes))
 
-        ui.button("Salvar o pagamento", icon="save", on_click=salvar).mark("salvar-pagamento")
+        ui.button("Salvar o pagamento", icon="task_alt", on_click=salvar).mark("salvar-pagamento")
