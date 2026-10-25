@@ -1,10 +1,14 @@
-"""Banco de demonstração para a interface: as notas anonimizadas de tests/fixtures/notas com um
-titular fictício (CPF sintético). Serve às capturas de tela e aos testes da UI; nenhum dado real.
+"""Banco de demonstração para a interface, com titular fictício (CPF sintético); nenhum dado real.
 
-Com ``pdfs=True``, cada nota vira também um PDF (o texto da fixture, página a página) em
-``<pasta>/_notas-corretagens``, para a tela de notas mostrar o original ao lado.
+- Padrão (testes da UI): as notas anonimizadas de tests/fixtures/notas. Com ``pdfs=True``, cada
+  nota vira também um PDF (o texto da fixture) em ``<pasta>/_notas-corretagens``, para a tela de
+  notas mostrar o original ao lado.
+- Com ``roteiro`` (capturas de tela e manual): as notas fictícias do gerador
+  (tools/notas_ficticias.py), em PDF, lidas pelo extrator real, e os proventos do roteiro pela
+  planilha de movimentação da B3.
 
-Uso: uv run python -m tools.banco_demo <pasta>   (cria <pasta>/coir.db e os PDFs)
+Uso: uv run python -m tools.banco_demo <pasta> [--fixtures]
+     (cria <pasta>/coir.db e os PDFs; sem --fixtures, com o roteiro de demonstração)
 """
 
 import sys
@@ -16,9 +20,13 @@ from coir import referencias
 from coir.db import repositorio as repo
 from coir.db.sessao import NOME_BANCO, conectar, migrar
 from coir.parsing.extrair import ResultadoExtracao, extrair_textos
+from coir.servicos.b3 import importar_planilhas
+from coir.servicos.darf import registrar_pagamento
+from coir.servicos.estado import Estado
 from coir.servicos.importacao import importar_arquivos
 from coir.servicos.notas import PASTA_NOTAS
 from tests.apoio import cpf_de_teste
+from tools import notas_ficticias
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "notas"
 AGORA = datetime(2026, 10, 16, 12, 0, 0)
@@ -49,36 +57,18 @@ def notas() -> list[Path]:
     return [p for p in sorted(FIXTURES.glob("*.txt")) if "exercicio" not in p.stem]
 
 
-def _pdf(texto: str, destino: Path) -> Path:
-    """O texto da fixture num PDF de páginas A4 deitadas, em fonte de largura fixa."""
-    from reportlab.lib.pagesizes import A4, landscape
-    from reportlab.pdfgen.canvas import Canvas
-
-    largura, altura = landscape(A4)
-    tela = Canvas(str(destino), pagesize=(largura, altura))
-    for pagina in texto.split(""):
-        linhas = pagina.splitlines()
-        tamanho = min(7.0, (altura - 48) / max(len(linhas), 1) / 1.15)
-        tela.setFont("Courier", tamanho)
-        y = altura - 28
-        for linha in linhas:
-            tela.drawString(28, y, linha)
-            y -= tamanho * 1.15
-        tela.showPage()
-    tela.save()
-    return destino
-
-
-def criar(pasta: Path, pdfs: bool = False) -> Path:
+def criar(pasta: Path, pdfs: bool = False, roteiro: Path | None = None) -> Path:
     banco = pasta / NOME_BANCO
     pasta.mkdir(parents=True, exist_ok=True)
     migrar(banco, AGORA)
+    if roteiro is not None:
+        return _do_roteiro(banco, notas_ficticias.carregar(roteiro))
     cpf = cpf_de_teste()
     arquivos = notas()
     if pdfs:
         destino = pasta / PASTA_NOTAS
         destino.mkdir(exist_ok=True)
-        arquivos = [_pdf(a.read_text(encoding="utf-8"), destino / f"{a.stem}.pdf")
+        arquivos = [notas_ficticias.pdf(a.read_text(encoding="utf-8"), destino / f"{a.stem}.pdf")
                     for a in arquivos]  # fmt: skip
     with conectar(banco) as fabrica:
         with fabrica.begin() as s:
@@ -90,5 +80,34 @@ def criar(pasta: Path, pdfs: bool = False) -> Path:
     return banco
 
 
+def _do_roteiro(banco: Path, roteiro: notas_ficticias.Roteiro) -> Path:
+    pasta = banco.parent
+    arquivos, planilha = notas_ficticias.gerar(roteiro, pasta / PASTA_NOTAS)
+    with conectar(banco) as fabrica:
+        with fabrica.begin() as s:
+            titular = repo.titular_por_cpf(s, roteiro.cpf)
+            if titular is None:
+                titular = repo.adicionar_titular(s, roteiro.cpf, roteiro.titular)
+            id_titular = titular.id
+        with fabrica() as s:
+            importar_arquivos(s, arquivos, referencias.carregar(), AGORA)
+    if planilha is not None:
+        destino = pasta / "planilhas-b3"
+        destino.mkdir(exist_ok=True)
+        importar_planilhas(banco, [planilha.replace(destino / planilha.name)], id_titular, AGORA)
+    if roteiro.darfs_pagas:
+        estado = Estado(banco)
+        estado.preparar(AGORA)
+        estado.titular = id_titular
+        for linha in estado.darfs_todos_os_anos():
+            pago_em = roteiro.darfs_pagas.get((linha.ano, linha.mes))
+            if pago_em is not None:
+                registrar_pagamento(banco, pasta, id_titular, linha.ano, linha.mes, pago_em,
+                                    linha.principal, AGORA)  # fmt: skip
+    return banco
+
+
 if __name__ == "__main__":
-    print(criar(Path(sys.argv[1]), pdfs=True))
+    fixtures = "--fixtures" in sys.argv[2:]
+    roteiro_demo = None if fixtures else notas_ficticias.ROTEIRO_DEMONSTRACAO
+    print(criar(Path(sys.argv[1]), pdfs=True, roteiro=roteiro_demo))
