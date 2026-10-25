@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>COIR — Controle de Operações e Imposto de Renda (B3)</title>
+  <meta name="description" content="Sistema local e gratuito que importa notas de corretagem SINACOR e planilhas da B3, calcula preço médio, apura o IR de renda variável, gera DARF e prepara a declaração anual.">
+  <meta name="google-site-verification" content="vDjlNKkJJRVfJJTE-ybAxmtGzT-z72kWETuAConlxOg">
+  <link rel="canonical" href="https://marcelopcf.github.io/COIR/">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#0f6e5a">
+  <meta property="og:title" content="COIR v3">
+  <meta property="og:description" content="Notas de corretagem → preço médio → IR mensal → DARF → IRPF. Local, offline e open source.">
+  <meta property="og:url" content="https://marcelopcf.github.io/COIR/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"COIR","applicationCategory":"FinanceApplication",
+   "operatingSystem":"Windows","url":"https://marcelopcf.github.io/COIR/","license":"https://www.gnu.org/licenses/agpl-3.0.html",
+   "description":"Controle de Operações e Imposto de Renda para investidores pessoa física na B3."}
+  </script>
+  <style>
+    :root {
+      --fundo: #f6f5f1; --papel: #ffffff; --tinta: #1c2321; --suave: #5b6663; --linha: #dedbd2;
+      --destaque: #0f6e5a; --destaque-suave: #e3f1ec; --alerta: #8a5a00; --alerta-suave: #fbf1dc;
+      --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fundo: #111614; --papel: #18201d; --tinta: #e6ebe8; --suave: #9aa6a1; --linha: #2a3531;
+        --destaque: #4cc3a3; --destaque-suave: #16302a; --alerta: #f0c060; --alerta-suave: #2e2614;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--fundo); color: var(--tinta);
+      font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main { max-width: 860px; margin: 0 auto; padding: 48px 16px 64px; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .marca { font-weight: 800; letter-spacing: .04em; font-size: 20px; }
+    .marca span { color: var(--destaque); }
+    nav a { color: var(--suave); text-decoration: none; margin-left: 18px; font-size: 15px; }
+    nav a:hover { color: var(--destaque); }
+    h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.15; margin: 56px 0 16px; letter-spacing: -.01em; }
+    .lead { font-size: 19px; color: var(--suave); max-width: 660px; }
+    .status {
+      display: inline-block; margin-top: 28px; padding: 10px 14px; border-radius: 8px;
+      background: var(--alerta-suave); color: var(--alerta); font-size: 15px;
+    }
+    .fluxo {
+      margin: 40px 0; padding: 20px; border: 1px solid var(--linha); border-radius: 12px; background: var(--papel);
+      font-family: var(--mono); font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .fluxo b { background: var(--destaque-suave); color: var(--destaque); padding: 4px 10px; border-radius: 6px; font-weight: 600; }
+    .fluxo i { color: var(--suave); font-style: normal; }
+    h2 { font-size: 22px; margin: 48px 0 12px; }
+    .grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+    .cartao { background: var(--papel); border: 1px solid var(--linha); border-radius: 12px; padding: 18px; }
+    .cartao h3 { margin: 0 0 6px; font-size: 16px; }
+    .cartao p { margin: 0; color: var(--suave); font-size: 15px; }
+    ul { padding-left: 20px; } li { margin: 4px 0; }
+    a { color: var(--destaque); }
+    code { font-family: var(--mono); font-size: .9em; background: var(--destaque-suave); padding: 1px 5px; border-radius: 4px; }
+    footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--linha); color: var(--suave); font-size: 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="marca">CO<span>IR</span></div>
+    <nav>
+      <a href="https://github.com/MarceloPCF/COIR/tree/v3">Código</a>
+      <a href="https://github.com/MarceloPCF/COIR/releases">Downloads</a>
+      <a href="legacy/index.html">Versão 2</a>
+    </nav>
+  </header>
+
+  <h1>Imposto de renda da bolsa, calculado no seu computador.</h1>
+  <p class="lead">
+    O COIR importa suas notas de corretagem (padrão SINACOR) e as planilhas da Área do Investidor da B3,
+    calcula o preço médio, apura o IR mensal de renda variável, gera o DARF e prepara as fichas da declaração anual.
+    Gratuito, software livre (AGPL v3), sem servidor e sem enviar seus dados para lugar nenhum.
+  </p>
+  <div class="status">
+    A versão 3 está em desenvolvimento. Enquanto isso, use a versão 2.1.1 (baseada em Excel), na
+    <a href="https://github.com/MarceloPCF/COIR/releases/tag/v2.1.1">página de Releases</a>.
+  </div>
+
+  <div class="fluxo" aria-label="Fluxo do COIR">
+    <b>Notas PDF</b><i>+</i><b>Planilhas B3</b><i>→</i><b>Preço médio</b><i>→</i>
+    <b>Apuração mensal</b><i>→</i><b>DARF</b><i>→</i><b>IRPF</b>
+  </div>
+
+  <h2>O que muda na versão 3</h2>
+  <div class="grade">
+    <div class="cartao"><h3>Sem instalar nada</h3><p>Baixe o .zip, extraia e abra o <code>COIR.exe</code>. Não precisa de Python nem de Excel.</p></div>
+    <div class="cartao"><h3>Conferência de cada nota</h3><p>Operações e custos são conciliados com o resumo da nota; divergência é avisada, nunca ignorada.</p></div>
+    <div class="cartao"><h3>Cálculo explicável</h3><p>Todo valor de apuração e DARF mostra as operações e a regra aplicada.</p></div>
+    <div class="cartao"><h3>Vários titulares</h3><p>Vários CPFs e contas no mesmo banco de dados, tudo separado por titular.</p></div>
+  </div>
+
+  <h2>Mercados</h2>
+  <ul>
+    <li>Ações, ETF, BDR e units — operações comuns e day trade</li>
+    <li>Opções, inclusive exercício</li>
+    <li>Futuros (WIN, WDO, IND, DOL) e commodities; termo</li>
+    <li>FII e Fiagro; proventos e eventos corporativos</li>
+  </ul>
+
+  <footer>
+    COIR é software livre, distribuído sob a licença AGPL v3, e não substitui a orientação de um contador.
+    Confira sempre os valores antes de pagar um DARF ou entregar a declaração.
+  </footer>
+</main>
+</body>
+</html>
