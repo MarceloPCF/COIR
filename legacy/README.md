@@ -26,7 +26,7 @@ Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, 
 Para ter acesso a todas as funcionalidades do sistema será necessário o Microsoft Excel instalado, em um Windows de 64 bits. O Python e o Java já vêm dentro do pacote: **não é preciso instalar mais nada**.
 * Baixe o `.zip` da última [Release](https://github.com/MarceloPCF/COIR/releases/latest) e **extraia todo o conteúdo** para uma pasta de seu interesse (não execute de dentro do zip).
 * Baixe suas notas de corretagem no padrão SINACOR direto do portal de sua corretora.
-   * O sistema foi testado para as corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato (marcelo.pcf@gmail.com ou uma issue aqui no GitHub) para que ela seja adicionada.
+   * O sistema foi testado para as corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato (https://marcelopcf.github.io/COIR/#contato ou uma issue aqui no GitHub) para que ela seja adicionada.
 * Copie as notas de corretagens baixadas para a pasta `Entrada`.
 * Dê dois cliques em **`COIR.bat`**. O programa extrai as notas da pasta `Entrada` automaticamente.
 * As notas de corretagem processadas serão movidas da pasta `Entrada` para a pasta `Saida`.

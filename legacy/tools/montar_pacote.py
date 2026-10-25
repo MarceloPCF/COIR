@@ -227,7 +227,7 @@ comum para programas baixados da internet; ele faz parte deste pacote.
 Corretoras testadas: XP, Clear, Rico, Necton e BTG. Se voce opera em outra,
 entre em contato para que ela seja adicionada.
 
-Contato:  marcelo.pcf@gmail.com
+Contato:  https://marcelopcf.github.io/COIR/#contato
 Projeto:  https://github.com/MarceloPCF/COIR
 Pagina:   https://marcelopcf.github.io/COIR/
 Licenca:  MIT (arquivo LICENSE)
