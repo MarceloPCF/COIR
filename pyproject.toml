@@ -29,6 +29,7 @@ coir = "coir.cli:main"
 [dependency-groups]
 dev = [
     "hypothesis>=6.120",
+    "playwright>=1.48",
     "pre-commit>=4.0",
     "pyright>=1.1.390",
     "pytest>=8.3",

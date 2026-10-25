@@ -94,13 +94,14 @@ TELAS = [
     ("Relatórios", "Exportação em Excel, CSV e PDF."),
 ]
 
+# capturas do banco de demonstração (tools/capturas.py), tema claro
 IMAGENS = [
-    ("tela-painel.jpg", "Painel do ano (banco de demonstração)", "Painel"),
-    (
-        "tela-apuracao.jpg",
-        "Apuração mensal no tema escuro (banco de demonstração)",
-        "Apuração mensal",
-    ),
+    ("tela-painel.jpg", "Painel do ano com o banco de demonstração", "Painel"),
+    ("tela-apuracao.jpg", "Apuração mensal por categoria", "Apuração mensal"),
+    ("tela-darf.jpg", "DARFs do ano, pagas e em aberto", "DARF"),
+    ("tela-carteira.jpg", "Carteira e preço médio", "Carteira e preço médio"),
+    ("tela-declaracao.jpg", "Fichas da declaração anual", "Declaração anual"),
+    ("tela-notas.jpg", "Notas de corretagem importadas", "Notas"),
 ]
 
 DUVIDAS = [
@@ -461,6 +462,12 @@ def escuro(raiz: str) -> str:
             "    summary { cursor: pointer; font-weight: 600; }\n"
             "    details p { margin: 8px 0 0; color: var(--suave); }\n"
             "    .pequeno { font-size: 14px; color: var(--suave); }\n"
+            "    .galeria { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; "
+            "padding-bottom: 8px; }\n"
+            "    .galeria figure { flex: 0 0 min(86%, 720px); scroll-snap-align: start; margin: 0; }\n"
+            "    .galeria img { width: 100%; height: auto; border-radius: 10px; "
+            "border: 1px solid var(--linha); }\n"
+            "    .galeria figcaption { color: var(--suave); font-size: 14px; margin-top: 6px; }\n"
             "  </style>"
         ),
     )
@@ -468,6 +475,11 @@ def escuro(raiz: str) -> str:
         f'    <div class="cartao"><h3>{t}</h3><p>{d}</p></div>' for t, d in TELAS[:6]
     )
     passos = "\n".join(f"    <li><strong>{t}</strong>{p}</li>" for t, p, _ in PASSOS)
+    galeria = "\n".join(
+        f'    <figure><img src="{raiz}docs/site/imagens/{a}" loading="lazy" width="1440" '
+        f'height="900" alt="{alt}"><figcaption>{leg}</figcaption></figure>'
+        for a, alt, leg in IMAGENS
+    )
     mercados = "\n".join(f"    <li>{t} — {s.lower()}</li>" for t, s in MERCADOS)
     duvidas = "\n".join(
         f"  <details><summary>{q}</summary><p>{r.replace('{R}', raiz)}</p></details>"
@@ -514,6 +526,11 @@ def escuro(raiz: str) -> str:
   <h2>O que o COIR faz</h2>
   <div class="grade">
 {cartoes}
+  </div>
+
+  <h2 id="telas">Telas</h2>
+  <div class="galeria" aria-label="Telas do COIR (banco de demonstração)">
+{galeria}
   </div>
 
   <h2>Mercados</h2>

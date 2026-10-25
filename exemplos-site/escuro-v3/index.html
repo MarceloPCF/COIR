@@ -82,6 +82,10 @@
     summary { cursor: pointer; font-weight: 600; }
     details p { margin: 8px 0 0; color: var(--suave); }
     .pequeno { font-size: 14px; color: var(--suave); }
+    .galeria { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
+    .galeria figure { flex: 0 0 min(86%, 720px); scroll-snap-align: start; margin: 0; }
+    .galeria img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--linha); }
+    .galeria figcaption { color: var(--suave); font-size: 14px; margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -126,6 +130,16 @@
     <div class="cartao"><h3>Apuração mensal</h3><p>Resultado por categoria com a memória de cálculo de cada mês.</p></div>
     <div class="cartao"><h3>DARF</h3><p>Vencimento em dia útil, multa e juros por atraso e o registro do pagamento.</p></div>
     <div class="cartao"><h3>Proventos</h3><p>Dividendos, JCP e reembolsos, com a data do crédito do JCP.</p></div>
+  </div>
+
+  <h2 id="telas">Telas</h2>
+  <div class="galeria" aria-label="Telas do COIR (banco de demonstração)">
+    <figure><img src="../../docs/site/imagens/tela-painel.jpg" loading="lazy" width="1440" height="900" alt="Painel do ano com o banco de demonstração"><figcaption>Painel</figcaption></figure>
+    <figure><img src="../../docs/site/imagens/tela-apuracao.jpg" loading="lazy" width="1440" height="900" alt="Apuração mensal por categoria"><figcaption>Apuração mensal</figcaption></figure>
+    <figure><img src="../../docs/site/imagens/tela-darf.jpg" loading="lazy" width="1440" height="900" alt="DARFs do ano, pagas e em aberto"><figcaption>DARF</figcaption></figure>
+    <figure><img src="../../docs/site/imagens/tela-carteira.jpg" loading="lazy" width="1440" height="900" alt="Carteira e preço médio"><figcaption>Carteira e preço médio</figcaption></figure>
+    <figure><img src="../../docs/site/imagens/tela-declaracao.jpg" loading="lazy" width="1440" height="900" alt="Fichas da declaração anual"><figcaption>Declaração anual</figcaption></figure>
+    <figure><img src="../../docs/site/imagens/tela-notas.jpg" loading="lazy" width="1440" height="900" alt="Notas de corretagem importadas"><figcaption>Notas</figcaption></figure>
   </div>
 
   <h2>Mercados</h2>
