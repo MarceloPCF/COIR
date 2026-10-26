@@ -37,7 +37,7 @@ PASSOS = [
         "SINACOR) e as planilhas da Área do Investidor da B3. Cada nota é conferida com o resumo dela; "
         "divergência é avisada, nunca ignorada.",
         "Testado com XP, Clear, Rico, BTG, Necton e Ágora. Se a sua corretora não for lida, use o "
-        '<a href="{R}#corretora">pedido de corretora</a> (sem mandar a nota nem dados pessoais).',
+        '<a href="#corretora">pedido de corretora</a> (sem mandar a nota nem dados pessoais).',
     ),
     (
         "Confira e pague",
@@ -241,7 +241,8 @@ def inicial(raiz: str, exemplo: bool) -> str:
         "</style>",
         (
             ".topo{padding:10px 0 26px}\n"
-            ".topo .wrap{gap:22px}\n"
+            ".topo .wrap{gap:0}\n"
+            ".barra{padding-bottom:14px;margin-bottom:26px;border-bottom:1px solid #ffffff1f}\n"
             ".barra{display:flex;align-items:center;justify-content:space-between;gap:16px;"
             "flex-wrap:wrap}\n"
             ".marca{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;"
