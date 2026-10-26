@@ -243,6 +243,15 @@ def carteira_banco(
     return carteira(notas, eventos, fiscais.parametros, ate, visao), contas
 
 
+def carteiras_banco(
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, datas: list[date], visao: Visao
+) -> dict[date, list[PosicaoAtivo]]:
+    """Posições em várias datas lendo o banco uma vez só (conciliação com a B3)."""
+    with conectar(banco) as fabrica, fabrica() as sessao:
+        notas, eventos = entradas(sessao, refs, fiscais)
+    return {dia: carteira(notas, eventos, fiscais.parametros, dia, visao) for dia in datas}
+
+
 def movimentos_banco(
     banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date, visao: Visao
 ) -> list[Movimento]:

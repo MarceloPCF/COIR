@@ -8,10 +8,10 @@ from decimal import Decimal
 from nicegui import run, ui
 
 from coir.domain.cpf import cpf_valido
-from coir.domain.fiscal import SaldoInicial
+from coir.domain.fiscal import SaldoInicial, TipoEvento
 from coir.erros import CoirError
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
-from coir.servicos import cadastros, saldos_iniciais
+from coir.servicos import cadastros, eventos, saldos_iniciais
 from coir.servicos.estado import Estado
 from coir.ui import tabela
 from coir.ui.entrada import valor_br
@@ -43,12 +43,12 @@ COLUNAS_PARAMETROS = (
 
 def _saldos(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     """Para quem começa sem as notas antigas: o prejuízo a compensar em 31/12 (aqui) e a posição
-    de cada ativo em 31/12 (em Eventos, tipo "Custódia inicial")."""
+    de cada ativo em 31/12 (eventos "Custódia inicial", lançados aqui em grupo)."""
     ui.label(
         "Se você não tem todas as notas desde o começo, informe a situação em 31/12 de um ano: o "
         "prejuízo a compensar (ficha de renda variável de dezembro da última declaração: "
-        "operações comuns, day trade e FII, cada um separado) e, em Eventos, a custódia inicial de "
-        "cada ativo (quantidade e custo do Bens e Direitos). Importe as notas a partir de janeiro "
+        "operações comuns, day trade e FII, cada um separado) e, abaixo, a custódia de cada ativo "
+        "(quantidade e custo do Bens e Direitos). Importe as notas a partir de janeiro "
         "seguinte."
     ).classes("coir-subtitulo text-sm")
     if not estado.existe or estado.titular is None:
@@ -96,8 +96,102 @@ def _saldos(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ui.button("Salvar", icon="save", on_click=salvar).mark("salvar-saldos")
             ui.button("Apagar", icon="delete_outline", on_click=lambda: salvar(apagar=True)).props(
                 "flat")  # fmt: skip
-            ui.button("Lançar a custódia inicial em Eventos", icon="event_repeat",
-                      on_click=lambda: ui.navigate.to("/eventos")).props("flat")  # fmt: skip
+    _custodia(estado, titular, ano, ao_mudar)
+
+
+LINHAS_CUSTODIA = 5  # linhas em branco por vez
+
+
+def _custodia(estado: Estado, titular: int, ano: ui.select, ao_mudar: Callable[[], object]) -> None:
+    """Custódia em 31/12 (eventos "Custódia inicial"): os lançados e linhas para lançar vários
+    ativos de uma vez, conferidos juntos pelo motor."""
+    contas = eventos.contas_do_titular(estado.banco, titular)
+
+    @ui.refreshable
+    def lancados() -> None:
+        lista = [e for e in eventos.listar(estado.banco, titular)
+                 if e.dados.tipo is TipoEvento.CUSTODIA_INICIAL]  # fmt: skip
+        if not lista:
+            ui.label("Nenhuma custódia inicial lançada.").classes("coir-subtitulo text-sm")
+        for e in lista:
+            d = e.dados
+            with ui.row().classes("items-center gap-3"):
+                ui.label(f"{d.data:%d/%m/%Y} {e.conta_nome} {d.ticker}").classes(
+                    "coir-numero w-[260px]")  # fmt: skip
+                ui.label(f"{formatar(d.quantidade, T.INTEIRO)} ações · custo "
+                         f"{_moeda(d.valor)}").classes("coir-numero")  # fmt: skip
+                ui.button(icon="delete_outline", on_click=lambda _, i=e.id: excluir(i)).props(
+                    "flat dense round").tooltip("Excluir")  # fmt: skip
+
+    async def excluir(evento_id: int) -> None:
+        try:
+            await run.io_bound(eventos.excluir, estado.banco, titular, evento_id, estado.refs,
+                               estado.fiscais)  # fmt: skip
+        except CoirError as erro:
+            ui.notify(f"Não excluído: {erro}", type="negative", multi_line=True)
+            return
+        estado.invalidar()
+        ao_mudar()
+        lancados.refresh()
+
+    with ui.column().classes("coir-folha gap-2 w-full").mark("form-custodia"):
+        ui.label("Custódia em 31/12").classes("coir-titulo text-base")
+        ui.label(
+            "Cada ativo que você tinha em 31/12 do ano acima, como no Bens e Direitos da "
+            "declaração: conta, ticker, quantidade e custo total. Só ações, units, ETF, BDR e FII "
+            "(opções, futuros e posição vendida pedem as notas)."
+        ).classes("coir-subtitulo text-xs")
+        if not contas:
+            ui.label("Importe ao menos uma nota para criar a conta da corretora.").classes(
+                "coir-vazio")  # fmt: skip
+            return
+        lancados()
+        linhas = []
+        for i in range(LINHAS_CUSTODIA):
+            with ui.row().classes("items-center gap-2 no-wrap"):
+                linhas.append((
+                    ui.select(contas, value=next(iter(contas)), label="Conta").props(
+                        "outlined dense").classes("w-[200px]"),
+                    ui.input("Ticker").props("outlined dense").classes("w-[120px]").mark(
+                        f"custodia-ticker-{i}"),
+                    ui.input("Quantidade").props("outlined dense input-class=text-right"
+                                                 ).classes("w-[130px]"),
+                    ui.input("Custo total (R$)").props("outlined dense input-class=text-right"
+                                                       ).classes("w-[170px]"),
+                ))  # fmt: skip
+
+        async def gravar() -> None:
+            lote: list[tuple[eventos.DadosEvento, int | None]] = []
+            dia = date(int(ano.value), 12, 31)
+            for conta, ticker, quantidade, custo in linhas:
+                if not (ticker.value or "").strip():
+                    continue
+                q, c = valor_br(quantidade.value or ""), valor_br(custo.value or "")
+                if q is None or c is None:
+                    ui.notify(f"{ticker.value}: quantidade ou custo inválido.", type="warning")
+                    return
+                lote.append((eventos.DadosEvento(
+                    tipo=TipoEvento.CUSTODIA_INICIAL, data=dia, conta=int(conta.value),
+                    ticker=ticker.value, cv="C", quantidade=q, valor=c), None))  # fmt: skip
+            if not lote:
+                ui.notify("Preencha ao menos um ticker.", type="warning")
+                return
+            try:
+                await run.io_bound(eventos.salvar_lote, estado.banco, titular, lote, estado.refs,
+                                   estado.fiscais)  # fmt: skip
+            except CoirError as erro:
+                ui.notify(f"Nada gravado: {erro}", type="negative", multi_line=True)
+                return
+            for _, ticker, quantidade, custo in linhas:
+                for campo in (ticker, quantidade, custo):
+                    campo.set_value("")
+            estado.invalidar()
+            ao_mudar()
+            lancados.refresh()
+            ui.notify(f"{len(lote)} ativo(s) lançado(s) na custódia de 31/12/{dia.year}.",
+                      type="positive")  # fmt: skip
+
+        ui.button("Gravar a custódia", icon="save", on_click=gravar).mark("gravar-custodia")
 
 
 def _moeda(valor: Decimal) -> str:
@@ -131,13 +225,14 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ).classes("coir-subtitulo text-xs")
         with ui.tab_panel(t_ativos).classes("p-0 pt-3"):
             tickers = cadastros.tickers(estado.banco) if estado.existe else []
-            valores = [(x.ticker, x.ativo, x.inicio, x.fim, x.isin) for x in tickers]
+            # nome próprio: ``valores`` é reaproveitado abaixo e o filtro leria a outra lista
+            de_tickers = [(x.ticker, x.ativo, x.inicio, x.fim, x.isin) for x in tickers]
             busca = ui.input("Buscar ticker").props("outlined dense clearable").classes("w-[220px]")
-            grade = tabela.grade(COLUNAS_TICKERS, valores, altura="h-[560px]")
+            grade = tabela.grade(COLUNAS_TICKERS, de_tickers, altura="h-[560px]")
             grade.mark("grade-tickers")
 
             def filtrar(texto: str) -> None:
-                vistos = [v for v in valores if texto.strip().upper() in str(v[0])]
+                vistos = [v for v in de_tickers if texto.strip().upper() in str(v[0])]
                 tabela.atualizar(grade, COLUNAS_TICKERS, vistos)
 
             busca.on_value_change(lambda e: filtrar(e.value or ""))

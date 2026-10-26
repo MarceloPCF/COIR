@@ -25,7 +25,7 @@ from coir.config import (
 )
 from coir.db import repositorio as repo
 from coir.db.modelos import EventoCorporativo, NotaCorretagem, Titular
-from coir.db.sessao import NOME_BANCO, conectar, migrar
+from coir.db.sessao import NOME_BANCO, Migracao, conectar, migrar
 from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
 from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
 from coir.domain.parametros import ReferenciasFiscais
@@ -46,7 +46,7 @@ from coir.servicos import (
     notas,
     operacoes,
 )
-from coir.servicos.apuracao import apurar_banco, carteira_banco, movimentos_banco
+from coir.servicos.apuracao import apurar_banco, carteira_banco, carteiras_banco, movimentos_banco
 from coir.servicos.b3 import PASTA_B3
 from coir.servicos.importacao import Extrator, aplicar_tabelas
 from coir.servicos.proventos import informar_creditos, proventos_banco
@@ -78,6 +78,7 @@ class Estado:
         self.fiscais = fiscais or referencias.carregar_fiscais(pasta)
         self.titular: int | None = None
         self.aviso_tabelas: str | None = None  # erro ao aplicar data/ ao abrir (preparar)
+        self.migracao: Migracao | None = None  # banco atualizado nesta abertura (o Painel avisa)
         self.ano: int | None = None
         self.agora: Callable[[], datetime] = datetime.now  # relógio (fixo nos testes)
         self.extrator: Extrator = extrair_pdf  # leitura dos PDFs (textos nos testes)
@@ -163,7 +164,7 @@ class Estado:
         """Cria ou migra o banco (com backup antes de migrar um banco existente) e aplica as
         tabelas de data/ que mudaram depois da importação (ex.: troca de ticker nova)."""
         self.banco.parent.mkdir(parents=True, exist_ok=True)
-        migrar(self.banco, agora)
+        self.migracao = migrar(self.banco, agora) or self.migracao
         self.aviso_tabelas = None
         try:
             aplicar_tabelas(self.banco, self.refs, agora)
@@ -405,9 +406,12 @@ class Estado:
         def calcular() -> list[conciliacao.Conciliacao]:
             saida: list[conciliacao.Conciliacao] = []
             anterior = None
-            for dia in conciliacao.datas_b3(self.banco, titular):
+            datas = conciliacao.datas_b3(self.banco, titular)
+            carteiras = carteiras_banco(self.banco, self.refs, self.fiscais, datas,
+                                        Visao.CORRETORA)  # fmt: skip
+            for dia in datas:
                 saida.append(conciliacao.conciliar(self.banco, self.refs, self.fiscais, titular,
-                                                   dia, anterior))  # fmt: skip
+                                                   dia, anterior, carteiras[dia]))  # fmt: skip
                 anterior = dia
             return saida
 

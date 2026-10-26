@@ -210,7 +210,7 @@ def resumo_fiscal(d: DadosRelatorio) -> Relatorio:
     ]
     secoes.append(
         Secao(
-            "Consolidação do mês",
+            "Imposto, IRRF e DARF do mês (como a DARF é calculada)",
             colunas,
             tuple(linhas),
             _total(linhas, colunas, {1, 2, 4, 6, 8, 11}) if linhas else None,
@@ -280,27 +280,27 @@ def darfs(d: DadosRelatorio) -> Relatorio:
 def irpf_mensal(d: DadosRelatorio) -> Relatorio:
     meses = _meses(d)
     comum, dt = Categoria.COMUM, Categoria.DAY_TRADE
-    colunas = (
-        Coluna("Mês"),
-        *(_dinheiro(f"Comum: {NOME_GRUPO[g]}") for g in GRUPOS),
-        *(_dinheiro(f"Day trade: {NOME_GRUPO[g]}") for g in GRUPOS),
+    colunas = (Coluna("Mês"), *(_dinheiro(NOME_GRUPO[g]) for g in GRUPOS))
+    nota_termo = (
+        "Termo: a venda à vista na data da liquidação vai para a linha do termo (IN RFB "
+        "1.585/2015 art. 62 I); vendido depois, à vista. Ouro não é operado."
     )
-    linhas: list[tuple[Valor, ...]] = [
-        (
-            MESES[m.mes - 1],
-            *(_cat(m, comum).por_grupo.get(g, ZERO) for g in GRUPOS),
-            *(_cat(m, dt).por_grupo.get(g, ZERO) for g in GRUPOS),
-        )
-        for m in meses
-    ]
-    mercados = Secao(
-        "Resultados por mercado",
-        colunas,
-        tuple(linhas),
-        _total(linhas, colunas, set(range(1, 2 * len(GRUPOS) + 1))) if linhas else None,
-        nota="Termo: a venda à vista na data da liquidação vai para a linha do termo (IN RFB "
-        "1.585/2015 art. 62 I); vendido depois, à vista. Ouro não é operado.",
-    )
+
+    def por_mercado(titulo: str, cats: tuple[Categoria, ...], nota: str | None) -> Secao:
+        linhas: list[tuple[Valor, ...]] = [
+            (MESES[m.mes - 1],
+             *(_soma(_cat(m, c).por_grupo.get(g, ZERO) for c in cats) for g in GRUPOS))
+            for m in meses
+        ]  # fmt: skip
+        total = _total(linhas, colunas, set(range(1, len(GRUPOS) + 1))) if linhas else None
+        return Secao(titulo, colunas, tuple(linhas), total, nota=nota or "")
+
+    mercados = [
+        por_mercado("Resultados por mercado - operações comuns", (comum,), None),
+        por_mercado("Resultados por mercado - day trade", (dt,), None),
+        por_mercado("Resultados por mercado - comuns e day trade somados (só para conferir)",
+                    (comum, dt), nota_termo),
+    ]  # fmt: skip
 
     def bloco(r: ResultadoCategoria) -> tuple[Valor, ...]:
         return (
@@ -349,10 +349,11 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
 
     linhas = [(MESES[m.mes - 1], *ficha(m.ficha(Ficha.COMUNS))) for m in meses]
     consolidacao = Secao(
-        "Consolidação do mês",
+        "Consolidação do mês (quadro final da ficha de renda variável do programa IRPF)",
         colunas,
         tuple(linhas),
-        nota="Só comuns e day trade (FII tem ficha própria). A DARF deduz o IRRF de um saldo "
+        nota='Os valores a copiar no quadro "Consolidação do mês" do programa. Só comuns e '
+        "day trade (FII tem ficha própria). A DARF deduz o IRRF de um saldo "
         "único; cada ficha recebe o IRRF que consumiu nele (o de day trade primeiro) e o retido "
         "nela que sobrou, sem usar o mesmo valor duas vezes. Imposto pago: o a pagar do mês "
         "quando a DARF que o cobriu (inclusive acumulada abaixo de R$ 10) já foi emitida.",
@@ -363,7 +364,7 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
         _dinheiro("Lucro isento (Lei 11.033/2004)"),
         _dinheiro("Resultado isento de PME (Lei 13.043/2014 art. 16)"),
     )
-    linhas = [
+    linhas: list[tuple[Valor, ...]] = [
         (MESES[m.mes - 1], _cat(m, comum).vendas_acoes, _cat(m, comum).isento, m.isento_pme)
         for m in meses
     ]
@@ -406,7 +407,7 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
         "irpf-mensal",
         "Renda variável mês a mês (ordem do programa IRPF)",
         _cab(d),
-        (mercados, *resultados, consolidacao, outras, fii),
+        (*mercados, *resultados, consolidacao, outras, fii),
         pdf=True,
         notas=("Mesma ordem dos blocos do programa da Receita; as fichas por ano ficam na F8.",),
     )

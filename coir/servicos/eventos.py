@@ -390,6 +390,9 @@ def salvar_lote(
     return feitos
 
 
+RE_TICKER_CUSTODIA = re.compile(r"^[A-Z0-9]{4}\d{1,2}$")  # ação, unit, ETF, BDR, FII
+
+
 def _gravar(s: Session, titular: int, d: DadosEvento, evento_id: int | None) -> int:
     d = replace(d, ticker=d.ticker.strip().upper(),
                 ticker_destino=(d.ticker_destino or "").strip().upper() or None,
@@ -411,6 +414,11 @@ def _gravar(s: Session, titular: int, d: DadosEvento, evento_id: int | None) -> 
     ativo = repo.ativo_existente(s, d.ticker, d.data) or repo.ativo_pelo_codigo_antigo(
         s, d.ticker, d.data
     )
+    if ativo is None and d.tipo is TipoEvento.CUSTODIA_INICIAL:
+        # quem começa sem as notas antigas lança ativos que ainda não têm negócio no banco
+        if not RE_TICKER_CUSTODIA.match(d.ticker):
+            raise ImportacaoError(f"{d.ticker}: código de negociação inválido (ex.: PETR4)")
+        ativo = repo.Ativos(s).ativo_id(d.ticker, d.data)
     if ativo is None:
         raise ImportacaoError(f"{d.ticker} sem negócio no banco em {d.data:%d/%m/%Y}")
     _preencher(s, registro, d, chaves[0], ativo)

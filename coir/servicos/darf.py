@@ -74,6 +74,18 @@ class LinhaDarf:
         return None if self.pagamento is None else self.pagamento.valor - self.total
 
 
+def devido_em(linha: LinhaDarf, dia: date, fiscais: ReferenciasFiscais) -> Decimal:
+    """Principal + multa + juros de mora se pago em ``dia`` (o valor sugerido no formulário)."""
+    if linha.vencimento is None or dia <= linha.vencimento:
+        return linha.principal
+    competencia = date(linha.ano, linha.mes, 1)
+    multa = multa_mora(linha.principal, competencia, linha.vencimento, dia, fiscais.parametros,
+                       fiscais.calendario)  # fmt: skip
+    juros = juros_mora(linha.principal, competencia, linha.vencimento, dia, fiscais.parametros,
+                       fiscais.calendario, fiscais.selic)  # fmt: skip
+    return linha.principal + multa.valor + juros.valor
+
+
 def pagamentos(banco: Path, titular: int) -> dict[tuple[int, int], Pagamento]:
     with conectar(banco) as fabrica, fabrica() as s:
         linhas = s.scalars(select(DarfPagamento).where(DarfPagamento.titular_id == titular))

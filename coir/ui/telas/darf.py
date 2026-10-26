@@ -202,9 +202,11 @@ def _documento(
                     "tabela do COIR."
                 ).classes("coir-subtitulo text-sm")
             elif dif is not None and dif > 0:
-                ui.label(f"Pago a maior: {_r(dif)} (restituição pelo PER/DCOMP).").classes(
-                    "coir-carimbo text-sm"
-                )
+                ui.label(
+                    f"O valor registrado é {_r(dif)} maior que o devido para essa data. Se foi "
+                    "engano no registro, corrija abaixo; se pagou mesmo a mais, a diferença pode "
+                    "ser pedida de volta à Receita (PER/DCOMP)."
+                ).classes("coir-carimbo text-sm")
             if p.comprovante:
                 ui.label(f"Comprovante: {p.comprovante}").classes("coir-subtitulo text-xs")
             if p.observacao:
@@ -263,6 +265,20 @@ def _formulario(
             .mark("valor-pagamento")
         )
         observacao = ui.input("Observação").props("outlined dense").classes("w-full")
+        sugerido = {"valor": valor.value}
+
+        def nova_data() -> None:
+            """Troca a data: o valor sugerido acompanha (multa e juros até essa data), a não ser
+            que o valor já tenha sido digitado."""
+            try:
+                dia = date.fromisoformat(data.value or "")
+            except ValueError:
+                return
+            if valor.value == sugerido["valor"]:
+                sugerido["valor"] = _r(darf.devido_em(x, dia, estado.fiscais))
+                valor.set_value(sugerido["valor"])
+
+        data.on_value_change(nova_data)
 
         async def receber(e: events.UploadEventArguments) -> None:
             comprovante[:] = [(e.file.name, await e.file.read())]

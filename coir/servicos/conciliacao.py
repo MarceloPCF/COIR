@@ -30,7 +30,7 @@ from coir.db.modelos import (
     PosicaoB3,
 )
 from coir.db.sessao import conectar
-from coir.domain.fiscal import TipoAtivo, Visao
+from coir.domain.fiscal import PosicaoAtivo, TipoAtivo, Visao
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias
 from coir.engine.calendario import UM_DIA, dia_de_pregao
@@ -96,8 +96,11 @@ def conciliar(
     titular: int,
     dia: date,
     anterior: date | None = None,
+    posicoes: list[PosicaoAtivo] | None = None,
 ) -> Conciliacao:
-    """B3 x COIR na data `dia`; `anterior` (a posição B3 anterior) limita a busca de causas."""
+    """B3 x COIR na data `dia`; `anterior` (a posição B3 anterior) limita a busca de causas.
+    `posicoes`: a carteira do COIR na data por corretora, já calculada (várias datas de uma vez:
+    ``carteiras_banco``); sem ela, calcula aqui."""
     avisos: list[str] = []
     b3: dict[tuple[str, str], Decimal] = defaultdict(Decimal)
     with conectar(banco) as fabrica, fabrica() as s:
@@ -131,7 +134,8 @@ def conciliar(
             )
         )
         a_liquidar = _a_liquidar(s, titular, dia, fiscais)
-    posicoes, _ = carteira_banco(banco, refs, fiscais, dia, Visao.CORRETORA)
+    if posicoes is None:
+        posicoes, _ = carteira_banco(banco, refs, fiscais, dia, Visao.CORRETORA)
     coir: dict[tuple[str, str], Decimal] = defaultdict(Decimal)
     for p in posicoes:
         if p.titular == titular and p.quantidade and p.tipo is not TipoAtivo.FUTURO:

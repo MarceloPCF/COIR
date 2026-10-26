@@ -43,6 +43,13 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     nome = next((t.nome for t in estado.titulares() if t.id == estado.titular), "")
     ui.label(f"Painel de {estado.ano}").classes("coir-titulo-pagina")
     ui.label(nome).classes("coir-subtitulo")
+    if estado.migracao is not None:
+        m = estado.migracao
+        copia = f" Cópia de antes: {m.backup}." if m.backup else ""
+        with ui.row().classes("w-full items-center gap-2").mark("aviso-migracao"):
+            ui.icon("upgrade").classes("coir-positivo")
+            ui.label(f"Banco atualizado para esta versão do COIR (revisão {m.de} → {m.para})."
+                     f"{copia}").classes("text-sm")  # fmt: skip
     aviso = ui.row().classes("w-full items-center gap-3").mark("aviso-tabelas-novas")
     corpo = ui.column().classes("w-full gap-4")
 

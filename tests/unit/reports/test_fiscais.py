@@ -44,6 +44,9 @@ def _dados(livro: Livro, notas: tuple[NotaDoLivro, ...] = ()) -> DadosRelatorio:
     )  # fmt: skip
 
 
+CONSOLIDACAO = "Consolidação do mês (quadro final da ficha de renda variável do programa IRPF)"
+
+
 def _secao(rel: Relatorio, titulo: str) -> Secao:
     return next(s for s in rel.secoes if s.titulo == titulo)
 
@@ -78,7 +81,7 @@ def test_resumo_fiscal_igual_a_apuracao() -> None:
     assert marco[_coluna(comum, "Imposto")] == D("2999.40")
     fev = next(x for x in comum.linhas if x[0] == "Fevereiro")
     assert fev[_coluna(comum, "Isento")] == D("2994.00")
-    consol = _secao(rel, "Consolidação do mês")
+    consol = _secao(rel, "Imposto, IRRF e DARF do mês (como a DARF é calculada)")
     linha = next(x for x in consol.linhas if x[0] == "Março")
     assert linha[_coluna(consol, "DARF")] == mes(d.apuracao, 2025, 3).darf == D("3094.40")
     assert consol.total is not None and consol.total[_coluna(consol, "DARF")] == D("3094.40")
@@ -90,12 +93,12 @@ def test_darfs_e_ordem_do_irpf_batem_com_a_apuracao() -> None:
     pagar = darfs.secoes[0]
     assert [x[0] for x in pagar.linhas] == ["03/2025"] and pagar.linhas[0][2] == D("3094.40")
     irpf = TODOS["irpf-mensal"](d)
-    mercados = _secao(irpf, "Resultados por mercado")
+    mercados = _secao(irpf, "Resultados por mercado - day trade")
     marco = next(x for x in mercados.linhas if x[0] == "Março")
     m = mes(d.apuracao, 2025, 3)
     dt = next(c for c in m.categorias if c.categoria is Categoria.DAY_TRADE)
-    assert marco[_coluna(mercados, "Day trade: À vista")] == dt.por_grupo[Grupo.A_VISTA] == D(500)
-    consol = _secao(irpf, "Consolidação do mês")
+    assert marco[_coluna(mercados, "À vista")] == dt.por_grupo[Grupo.A_VISTA] == D(500)
+    consol = _secao(irpf, CONSOLIDACAO)
     linha = next(x for x in consol.linhas if x[0] == "Março")
     assert linha[_coluna(consol, "IR fonte de day trade no mês")] == D(5)
     assert linha[_coluna(consol, "IR fonte (Lei 11.033/2004) no mês")] == 0
@@ -167,7 +170,7 @@ def test_ordem_do_irpf_separa_a_ficha_de_fii() -> None:
     fim = date(2024, 12, 31)
     d = _dados(livro).model_copy(update={"ano": 2024, "apuracao": livro.apurar(fim), "ate": fim})
     rel = TODOS["irpf-mensal"](d)
-    consol = _secao(rel, "Consolidação do mês")
+    consol = _secao(rel, CONSOLIDACAO)
     junho = next(x for x in consol.linhas if x[0] == "Junho")
     assert junho[_coluna(consol, "Total do imposto devido")] == D("1500.00")
     assert junho[_coluna(consol, "IR fonte (Lei 11.033/2004) no mês")] == D("1.46")

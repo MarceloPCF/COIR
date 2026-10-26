@@ -7,6 +7,7 @@ from nicegui import ui
 
 from coir.erros import ConfiguracaoError
 from coir.servicos.estado import Estado
+from coir.ui.dialogos import escolher_pasta
 
 
 def seletor(estado: Estado, chave: str, rotulo: str, atual: Path,
@@ -30,7 +31,15 @@ def seletor(estado: Estado, chave: str, rotulo: str, atual: Path,
                 ui.notify("Pasta trocada." if pasta else "Voltou à pasta padrão.", type="positive")
                 recarregar()
 
+            async def procurar() -> None:
+                escolhida = await escolher_pasta(Path(campo.value or str(atual)))
+                if escolhida is not None:
+                    campo.set_value(str(escolhida))
+                    usar(escolhida)
+
             with ui.row().classes("gap-2"):
+                ui.button("Procurar...", icon="folder_open", on_click=procurar).props(
+                    "flat dense").mark(f"{chave}-procurar")  # fmt: skip
                 ui.button("Usar esta pasta", icon="check",
                           on_click=lambda: usar(Path((campo.value or "").strip().strip('"'))),
                           ).props("flat dense").mark(f"{chave}-usar")  # fmt: skip

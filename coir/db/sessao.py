@@ -8,6 +8,7 @@ import logging
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -71,23 +72,35 @@ def _recusar_mais_novo(banco: Path, atual: str | None) -> None:
         )
 
 
-def migrar(banco: Path, agora: datetime, backup: bool = True) -> None:
+@dataclass(frozen=True)
+class Migracao:
+    """O que ``migrar`` fez com um banco existente (a tela avisa na abertura)."""
+
+    de: str
+    para: str
+    backup: Path | None
+
+
+def migrar(banco: Path, agora: datetime, backup: bool = True) -> Migracao | None:
     """Leva o banco à última revisão (cria se não existir); backup antes, se houver o que migrar
-    (``backup=False`` quando quem chama acabou de copiar o banco)."""
+    (``backup=False`` quando quem chama acabou de copiar o banco). Devolve a migração feita num
+    banco que já existia; None se ele já estava na última revisão ou acabou de ser criado."""
     banco.parent.mkdir(parents=True, exist_ok=True)
     engine = criar_engine(banco)
     try:
         atual = revisao_atual(engine)
         if atual == revisao_final():
-            return
+            return None
         _recusar_mais_novo(banco, atual)
+        copia = None
         if backup and banco.is_file() and atual is not None:
-            fazer_backup(banco, agora)
+            copia = fazer_backup(banco, agora)
         config = _config_alembic()
         with engine.begin() as conexao:
             config.attributes["connection"] = conexao
             command.upgrade(config, "head")
         log.info("banco migrado de %s para %s: %s", atual, revisao_final(), banco)
+        return None if atual is None else Migracao(atual, str(revisao_final()), copia)
     finally:
         engine.dispose()
 

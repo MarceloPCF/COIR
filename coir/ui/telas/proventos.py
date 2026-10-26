@@ -165,6 +165,7 @@ def _creditos(estado: Estado, jcp: list[Provento],
         return lambda: salvar(p, campo, apagar)
 
     async def propor() -> None:
+        ui.notify("Lendo as declarações entregues em _dirpf...", type="ongoing", timeout=2000)
         try:
             resultado = await run.io_bound(estado.propor_creditos_dirpf)
         except CoirError as erro:
@@ -176,7 +177,18 @@ def _creditos(estado: Estado, jcp: list[Provento],
         for aviso in avisos:
             ui.notify(aviso, type="warning", multi_line=True)
         if not propostas:
-            ui.notify("Nenhum JCP a propor pelas declarações em _dirpf (99.07).", type="info")
+            pasta = estado.dados / "_dirpf"
+            tem_pdf = pasta.is_dir() and any(pasta.glob("*.pdf"))
+            motivo = ("Nenhum JCP pago no ano seguinte fecha com o JCP a receber (99.07) das "
+                      "declarações: as datas atuais ficam como estão." if tem_pdf else
+                      f"Nenhuma declaração em PDF em {pasta}. Salve lá o PDF da declaração "
+                      "entregue (programa IRPF: Imprimir > Declaração) e clique de novo."
+                      )  # fmt: skip
+            with ui.dialog() as aviso, ui.card().classes("max-w-[560px]").mark("sem-propostas"):
+                ui.label("Nada a propor pela DIRPF").classes("coir-titulo text-base")
+                ui.label(motivo).classes("text-sm")
+                ui.button("OK", on_click=aviso.close).props("flat").classes("self-end")
+            aviso.open()
             return
         with ui.dialog() as janela, ui.card().classes("min-w-[560px]").mark("propostas-credito"):
             ui.label("Créditos propostos pela DIRPF entregue").classes("coir-titulo text-base")
@@ -219,25 +231,51 @@ def _creditos(estado: Estado, jcp: list[Provento],
             "pela mudança de alíquota. Corrija pelo informe de rendimentos da empresa, ou use a "
             "DIRPF entregue (99.07) em _dirpf na pasta de dados."
         ).classes("coir-subtitulo text-xs")
-        for p in sorted(jcp, key=lambda p: (p.data, p.codigo)):
-            with ui.row().classes("items-center gap-3 w-full"):
-                ui.label(f"{p.data:%d/%m/%Y} {p.codigo}").classes("coir-numero w-[180px]")
-                ui.label(_r(p.liquido)).classes("coir-numero w-[110px] text-right")
-                origem = p.credito_origem or "sem data"
-                ui.label(f"declarado em {p.ano_declaracao} · {origem}").classes(
-                    "coir-subtitulo text-xs w-[200px]")  # fmt: skip
-                campo = ui.input("Creditado em", placeholder="dd/mm/aaaa",
-                                 value=f"{p.credito:%d/%m/%Y}" if p.credito else "",
-                                 ).props("outlined dense").classes("w-[150px]").mark(
-                    f"credito-{p.chave[:12]}")  # fmt: skip
-                ui.button("Salvar", on_click=clique(p, campo)).props("flat dense").mark(
-                    f"salvar-credito-{p.chave[:12]}")  # fmt: skip
-                if origem == "informada":
-                    ui.button("Limpar", on_click=clique(p, campo, apagar=True)).props(
-                        "flat dense")  # fmt: skip
+        ordenados = sorted(jcp, key=lambda p: (p.data, p.codigo))
+        atencao = [p for p in ordenados if not (p.credito_origem or "").startswith("B3")]
+        pela_b3 = [p for p in ordenados if (p.credito_origem or "").startswith("B3")]
+        if not atencao:
+            ui.label("Todos os JCP do ano têm a data do crédito pela B3: nada a informar.",
+                     ).classes("coir-positivo text-sm")  # fmt: skip
+        for p in atencao:
+            _linha_credito(p, clique)
+        if pela_b3:
+            titulo = f"Ver os {len(pela_b3)} JCP com a data da B3 (para corrigir algum)"
+            with ui.expansion(titulo, icon="expand_more").props("dense").classes("w-full text-sm"):
+                for p in pela_b3:
+                    _linha_credito(p, clique)
+
+
+def _linha_credito(p: Provento, clique: Callable[..., Callable[[], Awaitable[None]]]) -> None:
+    with ui.row().classes("items-center gap-3 w-full"):
+        ui.label(f"{p.data:%d/%m/%Y} {p.codigo}").classes("coir-numero w-[180px]")
+        ui.label(_r(p.liquido)).classes("coir-numero w-[110px] text-right")
+        origem = p.credito_origem or "sem data"
+        ui.label(f"declarado em {p.ano_declaracao} · {origem}").classes(
+            "coir-subtitulo text-xs w-[200px]")  # fmt: skip
+        campo = ui.input("Creditado em", placeholder="dd/mm/aaaa",
+                         value=f"{p.credito:%d/%m/%Y}" if p.credito else "",
+                         ).props("outlined dense").classes("w-[150px]").mark(
+            f"credito-{p.chave[:12]}")  # fmt: skip
+        ui.button("Salvar", on_click=clique(p, campo)).props("flat dense").mark(
+            f"salvar-credito-{p.chave[:12]}")  # fmt: skip
+        if origem == "informada":
+            ui.button("Limpar", on_click=clique(p, campo, apagar=True)).props(
+                "flat dense")  # fmt: skip
 
 
 def _conteudo(do_ano: list[Provento]) -> None:
+    @ui.refreshable
+    def cartoes(mes: tuple[int, int] | None = None) -> None:
+        """Totais do ano, ou só do mês da barra clicada."""
+        lista_mes = [p for p in do_ano if mes is None or (p.data.year, p.data.month) == mes]
+        _cartoes(lista_mes)
+
+    cartoes()
+    _grafico_e_grade(do_ano, cartoes)
+
+
+def _cartoes(do_ano: list[Provento]) -> None:
     with ui.row().classes("w-full items-stretch gap-3").mark("cartoes-proventos"):
         for tipo, rotulo in CARTOES:
             lista = [p for p in do_ano if p.tipo is tipo]
@@ -255,6 +293,9 @@ def _conteudo(do_ano: list[Provento]) -> None:
                 ui.label("JCP a receber em 31/12 (99.07)").classes("coir-campo-rotulo")
                 ui.label(_r(sum((p.liquido for p in a_receber), ZERO))).classes(
                     "coir-numero text-2xl")  # fmt: skip
+
+
+def _grafico_e_grade(do_ano: list[Provento], cartoes: ui.refreshable[..., None]) -> None:
     meses = sorted({(p.data.year, p.data.month) for p in do_ano})
     tinta = tema.CLARO.eixo  # legível no claro e no escuro
     ui.echart({
@@ -295,6 +336,7 @@ def _conteudo(do_ano: list[Provento]) -> None:
     grade.mark("grade-proventos")
 
     def filtrar(mes: tuple[int, int] | None) -> None:
+        cartoes.refresh(mes)
         tabela.atualizar(grade, COLUNAS, valores(mes))
         todos.set_visibility(mes is not None)
         filtro.set_text(todos_os_meses if mes is None

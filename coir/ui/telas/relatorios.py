@@ -102,7 +102,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         [rel] = gerados
         espera.delete()
         with corpo:
-            _relatorio(rel)
+            _relatorio(rel, Path(pasta.value or str(destino_padrao)))
 
     async def gravar() -> None:
         escolhidos = tuple(f for f, caixa in formatos.items() if caixa.value)
@@ -127,7 +127,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.timer(0.01, lambda: mostrar("resumo-fiscal"), once=True)
 
 
-def _relatorio(rel: Relatorio) -> None:
+def _relatorio(rel: Relatorio, pasta: Path) -> None:
     c = rel.cabecalho
     with ui.row().classes("items-baseline gap-3"):
         ui.label(rel.titulo).classes("coir-titulo text-xl")
@@ -138,7 +138,7 @@ def _relatorio(rel: Relatorio) -> None:
     elif rel.chave == "operacoes-finalizadas":
         _finalizadas(secoes)
     elif len(secoes) > MAX_SECOES:
-        _uma_por_vez(rel, secoes)
+        _uma_por_vez(rel, secoes, pasta)
     else:
         for s in secoes:
             tabela.secao(s, altura="h-[480px]")
@@ -146,28 +146,41 @@ def _relatorio(rel: Relatorio) -> None:
         ui.label(nota).classes("coir-subtitulo text-xs")
 
 
-def _uma_por_vez(rel: Relatorio, secoes: list[Secao]) -> None:
+def _uma_por_vez(rel: Relatorio, secoes: list[Secao], pasta: Path) -> None:
     """Relatório com muitas seções (a conferência do PM tem uma por ativo; a renda variável, uma
-    por mês): uma grade por vez, escolhida na lista, ou todas, para imprimir. Dezenas de grades de
-    uma vez deixam a página lenta."""
+    por mês): uma grade por vez, escolhida na lista. Para imprimir, o PDF do relatório inteiro
+    (dezenas de grades de uma vez travam a página)."""
     rotulo = "Ativo" if rel.chave == "conferencia-pm" else "Seção"
     nomes = {i: s.titulo or f"{rotulo} {i + 1}" for i, s in enumerate(secoes)}
+
+    async def imprimir() -> None:
+        from coir.reports.saida_pdf import escrever_pdf
+
+        destino = pasta / f"coir-{rel.chave}.pdf"
+        try:
+            pasta.mkdir(parents=True, exist_ok=True)
+            await run.io_bound(escrever_pdf, rel, destino)
+        except OSError as erro:
+            ui.notify(f"PDF não gravado: {erro}", type="negative")
+            return
+        if sys.platform == "win32":
+            os.startfile(destino)
+        ui.notify(f"PDF gravado: {destino}", type="positive")
+
     with ui.row().classes("items-center gap-4"):
         escolha = ui.select(nomes, value=0, label=f"{rotulo} ({len(secoes)})", with_input=True)
         escolha.props("outlined dense options-dense").classes("min-w-[260px]")
         escolha.mark("secao-relatorio")
-        todas = ui.checkbox("Mostrar todas (para imprimir)").mark("todas-as-secoes")
+        ui.button("Abrir em PDF (para imprimir)", icon="print", on_click=imprimir).props(
+            "flat").mark("imprimir-secoes")  # fmt: skip
     area = ui.column().classes("w-full gap-2")
 
     def ver() -> None:
         area.clear()
-        escolha.set_enabled(not todas.value)
         with area:
-            for s in secoes if todas.value else [secoes[int(escolha.value or 0)]]:
-                tabela.secao(s, altura="h-[520px]")
+            tabela.secao(secoes[int(escolha.value or 0)], altura="h-[520px]")
 
     escolha.on_value_change(lambda _: ver())
-    todas.on_value_change(lambda _: ver())
     ver()
 
 
