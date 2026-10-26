@@ -177,7 +177,8 @@ def test_detalhe_acha_o_pdf_na_pasta_das_notas(demo: Path, tmp_path: Path) -> No
     nota = notas.listar(demo, 1, None)[0]
     (tmp_path / notas.PASTA_NOTAS).mkdir()
     (tmp_path / notas.PASTA_NOTAS / nota.arquivo).write_bytes(b"%PDF")
-    assert notas.detalhe(demo, tmp_path, nota.id).pdf == tmp_path / notas.PASTA_NOTAS / nota.arquivo
+    pasta = tmp_path / notas.PASTA_NOTAS
+    assert notas.detalhe(demo, pasta, nota.id).pdf == pasta / nota.arquivo
 
 
 def test_pagina_do_pdf_em_png(tmp_path: Path) -> None:
@@ -267,6 +268,31 @@ def test_registro_de_atividades_nunca_grava_cpf(tmp_path: Path) -> None:
         for h in [h for h in raiz.handlers if getattr(h, "baseFilename", "") == str(arquivo)]:
             raiz.removeHandler(h)
             h.close()
+
+
+def test_registro_legivel_para_a_tela(tmp_path: Path) -> None:
+    """O arquivo cru (com tracebacks) vira entradas com tipo, área e mensagem em português, a mais
+    recente primeiro; o erro de uma tela aponta a tela e a última linha do traceback."""
+    from coir.servicos.manutencao import registro
+
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs" / "coir.log").write_text(
+        "2026-10-21 14:30:47,100 INFO coir.servicos.importacao: importação: 3 notas gravadas\n"
+        "2026-10-21 15:22:15,998 ERROR nicegui: <TipoProvento.ATUALIZACAO: 'ATUALIZACAO'>\n"
+        "Traceback (most recent call last):\n"
+        '  File "E:\\COIR\\coir\\ui\\telas\\proventos.py", line 79, in carregar\n'
+        "KeyError: <TipoProvento.ATUALIZACAO: 'ATUALIZACAO'>\n"
+        "2026-10-21 15:30:00,000 WARNING coir.db.sessao: backup lento\n",
+        encoding="utf-8",
+    )
+    aviso, erro, info = registro(tmp_path)
+    assert (info.tipo, info.area, info.detalhe) == ("Informação", "Importação de notas", "")
+    assert (erro.tipo, erro.area) == ("Erro", "Tela Proventos")
+    assert erro.mensagem == "Erro inesperado: KeyError: <TipoProvento.ATUALIZACAO: 'ATUALIZACAO'>"
+    assert "proventos.py" in erro.detalhe
+    assert (aviso.tipo, aviso.area, aviso.problema) == ("Aviso", "Banco e backups", True)
+    assert not info.problema
+    assert registro(tmp_path / "vazia") == []
 
 
 def test_preferencia_de_tema_fica_na_configuracao(tmp_path: Path) -> None:

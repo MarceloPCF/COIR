@@ -74,6 +74,30 @@ def _origem_reembolso(x: LinhaMovimentacao, params: ParametrosFiscais,
     return "", 0
 
 
+NOME_ORIGEM = {"DIVIDENDO": "dividendos", "JCP": "JCP"}
+
+
+def _informada(item: LinhaB3, de: str, acoes: int, candidatos: Candidatos,
+               avisos: list[str]) -> tuple[str, int]:  # fmt: skip
+    """Origem do reembolso informada pelo usuário (informe da empresa ou extrato da corretora):
+    prevalece sobre a identificada pelo valor, com aviso quando a contradiz ou quando não há
+    provento dessa origem da empresa no dia. A quantidade só fica quando as duas coincidem
+    (parecer do especialista e pendência do usuário, F9)."""
+    x, informada = item.linha, item.reembolso_informado
+    nome = NOME_ORIGEM[informada]
+    if de and de != informada:
+        avisos.append(
+            f"{x.data}: reembolso de BTC de {x.codigo}: a origem informada ({nome}) diverge da "
+            f"identificada pelo valor ({NOME_ORIGEM[de]}, {acoes} ações); confira o informe"
+        )
+    elif not de and all(t != informada for t, _ in candidatos.get((x.codigo[:4], x.data), ())):
+        avisos.append(
+            f"{x.data}: reembolso de BTC de {x.codigo}: não há {nome} da empresa pagos no mesmo "
+            "dia nas tabelas da B3; confira o informe"
+        )
+    return informada, acoes if de == informada else 0
+
+
 def _vigente(params: ParametrosFiscais, nome: str, dia: date) -> Decimal | None:
     achados = [p for p in params.parametros if p.nome == nome and p.vigente(dia)]
     return Decimal(achados[0].valor) if len(achados) == 1 else None
@@ -133,7 +157,7 @@ def proventos(
                 "(confira no informe da empresa)"
             )
             continue
-        saida.append(_provento(item, tipos, params, pagos, por_dia))
+        saida.append(_provento(item, tipos, params, pagos, por_dia, avisos))
     for (_, dia, codigo, base, valor), saldo in sorted(pares.items()):
         if saldo:
             avisos.append(
@@ -172,12 +196,13 @@ def _criar(
         credito_origem=item.credito_origem if tipo is TipoProvento.JCP else "",
         chave=item.chave,
         reembolso_de=reembolso_de,
+        reembolso_informado=bool(item.reembolso_informado) and tipo is TipoProvento.REEMBOLSO_BTC,
     )
 
 
 def _provento(
     item: LinhaB3, tipos: TiposAtivo, params: ParametrosFiscais, pagos: set[tuple[int, str, date]],
-    candidatos: Candidatos,
+    candidatos: Candidatos, avisos: list[str],
 ) -> Provento:  # fmt: skip
     x = item.linha
     if x.movimentacao == JCP:
@@ -214,12 +239,17 @@ def _provento(
             obs = f"rendimento em {tipo_ativo.value} sem dividendo ou JCP no mesmo dia: fora"
     elif x.movimentacao == REEMBOLSO:
         de, acoes = _origem_reembolso(x, params, candidatos)
+        informada = ""
+        if item.reembolso_informado:
+            de, acoes = _informada(item, de, acoes, candidatos, avisos)
+            informada = " (origem informada pelo usuário)"
+        de_quantas = f"de {acoes} ações emprestadas" if acoes else "de ações emprestadas"
         if de == "JCP":
-            obs = (f"reembolso de JCP de {acoes} ações emprestadas (BTC): isento para o doador "
+            obs = (f"reembolso de JCP {de_quantas} (BTC){informada}: isento para o doador "
                    "(Lei 13.043/2014 art. 7º; desde 2026, Lei 15.265/2025 art. 21 I), no ano do "
                    "recebimento e sem JCP a receber (99.07)")  # fmt: skip
         else:
-            origem = (f"reembolso de dividendos de {acoes} ações emprestadas (BTC)" if de else
+            origem = (f"reembolso de dividendos {de_quantas} (BTC){informada}" if de else
                       "reembolso de BTC sem identificar se de dividendos ou de JCP (isento nos "
                       "dois casos até 2025; confira o informe)")  # fmt: skip
             obs = origem

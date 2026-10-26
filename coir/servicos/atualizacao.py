@@ -48,11 +48,16 @@ def baixar(url: str) -> bytes:
         with urllib.request.urlopen(pedido, timeout=60) as resposta:
             dados: bytes = resposta.read(LIMITE + 1)
     except urllib.error.HTTPError as erro:
-        motivo = ("limite de consultas do GitHub atingido; tente mais tarde" if erro.code == 403
-                  else f"o GitHub respondeu {erro.code}")  # fmt: skip
+        motivo = (
+            "limite de consultas à área de downloads atingido; tente mais tarde"
+            if erro.code == 403
+            else f"a área de downloads respondeu {erro.code}"
+        )
         raise AtualizacaoError(f"{motivo}; nada foi alterado") from erro
     except (urllib.error.URLError, TimeoutError, OSError) as erro:
-        raise AtualizacaoError(f"sem conexão com o GitHub ({erro}); nada foi alterado") from erro
+        raise AtualizacaoError(
+            f"sem conexão com a área de downloads do COIR ({erro}); nada foi alterado"
+        ) from erro
     if len(dados) > LIMITE:
         raise AtualizacaoError("resposta grande demais; nada foi alterado")
     return dados
@@ -104,7 +109,7 @@ def verificar(obter: Baixar = baixar) -> PacoteRemoto | None:
     try:
         lista = json.loads(obter(RELEASES))
     except json.JSONDecodeError as erro:
-        raise AtualizacaoError("resposta inesperada do GitHub") from erro
+        raise AtualizacaoError("resposta inesperada da área de downloads") from erro
     pacotes: list[PacoteRemoto] = []
     for r in lista if isinstance(lista, list) else []:
         if not isinstance(r, dict):

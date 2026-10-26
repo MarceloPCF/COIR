@@ -1,6 +1,7 @@
 """Tela 2 — Painel do ano do titular: a DARF da vez, as pendências, o resultado mês a mês por
 categoria (gráfico) e os números do ano, com atalhos para importar e exportar."""
 
+import logging
 from collections.abc import Callable
 from decimal import Decimal
 
@@ -10,9 +11,11 @@ from coir.domain.fiscal import Apuracao, Categoria, MesApurado
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import TipoColuna, formatar
-from coir.servicos import atualizacao, darf, notas, painel
+from coir.servicos import atualizacao, darf, notas, painel, versao
 from coir.servicos.estado import Estado
 from coir.ui import preferencias, tema
+
+log = logging.getLogger(__name__)
 
 ZERO = Decimal(0)
 SERIES = (
@@ -40,6 +43,13 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     nome = next((t.nome for t in estado.titulares() if t.id == estado.titular), "")
     ui.label(f"Painel de {estado.ano}").classes("coir-titulo-pagina")
     ui.label(nome).classes("coir-subtitulo")
+    if estado.migracao is not None:
+        m = estado.migracao
+        copia = f" Cópia de antes: {m.backup}." if m.backup else ""
+        with ui.row().classes("w-full items-center gap-2").mark("aviso-migracao"):
+            ui.icon("upgrade").classes("coir-positivo")
+            ui.label(f"Banco atualizado para esta versão do COIR (revisão {m.de} → {m.para})."
+                     f"{copia}").classes("text-sm")  # fmt: skip
     aviso = ui.row().classes("w-full items-center gap-3").mark("aviso-tabelas-novas")
     corpo = ui.column().classes("w-full gap-4")
 
@@ -55,6 +65,15 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 return
             finally:
                 estado.verificado = True
+        if not estado.versao_verificada:
+            try:
+                estado.versao_nova = await run.io_bound(versao.nova, obter=estado.baixar)
+            except CoirError as erro:  # sem rede: o botão de Configurações mostra o motivo
+                log.info("verificação de versão nova sem resposta: %s", erro)
+            finally:
+                estado.versao_verificada = True
+        if estado.versao_nova is not None:
+            _aviso_versao(aviso, estado.versao_nova)
         if atualizacao.mais_novo(estado.dados, estado.remoto) and estado.remoto is not None:
             with aviso:
                 texto = f"Há tabelas de referência novas ({estado.remoto.data:%d/%m/%Y})."
@@ -79,10 +98,16 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         if apuracao is None or darfs is None or todas is None or incompletos is None:
             return
         with corpo:
-            _conteudo(estado, apuracao, darfs, todas, incompletos)
+            _conteudo(estado, apuracao, darfs, todas, incompletos, ao_mudar)
 
     ui.timer(0.01, carregar, once=True)
     ui.timer(0.05, tabelas_novas, once=True)
+
+
+def _aviso_versao(aviso: ui.row, nova: versao.VersaoRemota) -> None:
+    with aviso:
+        ui.label(f"Há uma versão nova do COIR: {nova.versao}.").classes("coir-carimbo text-sm")
+        ui.link("Ver as novidades e baixar", nova.pagina, new_tab=True).classes("text-sm")
 
 
 def _conteudo(
@@ -91,8 +116,18 @@ def _conteudo(
     darfs: list[darf.LinhaDarf],
     todas: list[darf.LinhaDarf],
     incompletos: list[str],
+    ao_mudar: Callable[[], object],
 ) -> None:
     """`darfs`: as do ano escolhido (números); `todas`: as de todos os anos (pendências)."""
+
+    def ir_para(linha: darf.LinhaDarf | None) -> None:
+        """Abre a tela de DARF no ano da competência (a atrasada pode ser de outro ano)."""
+        if linha is not None and linha.ano != estado.ano:
+            estado.ano = linha.ano
+            ao_mudar()
+        estado.darf_escolhida = (linha.ano, linha.mes) if linha else None
+        ui.navigate.to("/darf")
+
     meses = [m for m in apuracao.meses if m.titular == estado.titular and m.ano == estado.ano]
     avisos = [a for a in apuracao.avisos if a[:4] == str(estado.ano) or not a[:4].isdigit()]
     atrasadas = [x for x in todas if x.situacao is darf.Situacao.EM_ATRASO]
@@ -111,23 +146,30 @@ def _conteudo(
                     f"{vez.situacao.value}{juros}"
                 ).classes("text-sm")
             ui.button(
-                "Ver as DARFs", icon="request_quote", on_click=lambda: ui.navigate.to("/darf")
-            ).props("flat dense")
+                "Ver esta DARF" if vez else "Ver as DARFs",
+                icon="request_quote",
+                on_click=lambda: ir_para(vez),
+            ).props("flat dense").mark("ver-darf")
         with _cartao("Pendências").mark("cartao-pendencias"):
             anos = sorted({x.ano for x in atrasadas})
             itens = [
                 (len(atrasadas), "DARF(s) em atraso"
                  + (f" ({', '.join(map(str, anos))})" if anos else ""), "/darf"),
                 (len(incompletos), "arquivo(s) com nota rejeitada", "/importar"),
-                (len(avisos), "aviso(s) do motor no ano", "/apuracao"),
+                (len(avisos), "aviso(s) para conferir no ano", "/apuracao"),
             ]  # fmt: skip
             if not any(n for n, _, _ in itens):
                 ui.label("Nenhuma pendência.").classes("coir-positivo")
+            mais_antiga = min(atrasadas, key=lambda x: (x.ano, x.mes), default=None)
             for n, texto, rota in itens:
                 if n:
                     with ui.row().classes("items-center gap-2"):
                         ui.icon("error_outline", size="18px").classes("coir-carimbo")
-                        ui.link(f"{n} {texto}", rota).classes("text-sm")
+                        if rota == "/darf":
+                            ui.link(f"{n} {texto}").classes("text-sm cursor-pointer").on(
+                                "click", lambda: ir_para(mais_antiga))  # fmt: skip
+                        else:
+                            ui.link(f"{n} {texto}", rota).classes("text-sm")
         with _cartao("Atalhos"):
             ui.button(
                 "Importar notas", icon="upload_file", on_click=lambda: ui.navigate.to("/importar")
@@ -162,7 +204,7 @@ def _numeros(r: painel.ResumoAno, ultimo_mes: str) -> None:
 
 def _grafico(meses: list[MesApurado]) -> None:
     ui.label("Resultado mês a mês por categoria").classes("coir-titulo text-base")
-    tinta = "#7A8792"  # legível no claro e no escuro
+    tinta = tema.CLARO.eixo  # legível no claro e no escuro
     ui.echart({
         "animation": False,
         "grid": {"left": 70, "right": 20, "top": 40, "bottom": 30},

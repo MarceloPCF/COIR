@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Histórico de versões · COIR</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+:root{--marinho:#102a43;--verde:#2ea043;--azul-claro:#a8d4ff;--fundo:#f4f7fa;--tinta:#243b53;--linha:#d9e2ec}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.6 "Segoe UI",system-ui,sans-serif;color:var(--tinta);background:var(--fundo)}
+.topo{background:var(--marinho);border-left:16px solid var(--verde)}
+.topo div{max-width:980px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.topo a{color:var(--azul-claro);text-decoration:none}
+.topo .marca{color:#fff;font-weight:800;font-size:22px}
+main{max-width:980px;margin:0 auto;padding:24px 20px 64px}
+h1{color:var(--marinho);line-height:1.2}
+h2{color:var(--marinho);margin-top:2em}
+a{color:#0b5cad}
+img{max-width:100%;height:auto;border:1px solid var(--linha);border-radius:6px}
+table{border-collapse:collapse;width:100%;margin:1em 0;background:#fff;font-size:15px;display:block;overflow-x:auto}
+th,td{border:1px solid var(--linha);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:#e9eff5}
+code{background:#e9eff5;padding:1px 5px;border-radius:4px;font-size:.92em}
+pre{background:#fff;border:1px solid var(--linha);padding:12px;overflow-x:auto;border-radius:6px}
+pre code{background:none;padding:0}
+blockquote{margin:1em 0;padding:8px 16px;border-left:5px solid var(--verde);background:#e8f5ec}
+footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#627d98}
+</style>
+</head>
+<body>
+<header class="topo"><div><a class="marca" href="index.html">COIR</a>
+<nav><a href="index.html">Início</a> · <a href="docs/manual/index.html">Manual</a> · <a href="novidades.html">Novidades</a> · <a href="fontes.html">Fontes fiscais</a></nav></div></header>
+<main>
+<h1 id="historico-de-versoes">Histórico de versões</h1>
+
+<p>Este projeto segue o <a href="https://semver.org/lang/pt-BR/">Versionamento Semântico</a> (<code>MAIOR.MENOR.CORREÇÃO</code>):</p>
+
+<ul>
+<li><strong>MAIOR</strong> – mudança que quebra a compatibilidade (ex.: novo formato da planilha de resultado);</li>
+<li><strong>MENOR</strong> – funcionalidade nova que continua compatível;</li>
+<li><strong>CORREÇÃO</strong> – correção de erro, sem funcionalidade nova.</li>
+</ul>
+
+<p>O formato deste arquivo segue o <a href="https://keepachangelog.com/pt-BR/">Keep a Changelog</a>.</p>
+
+<h2 id="300-2026-10-26">[3.0.0] - 2026-10-26</h2>
+
+<p>Nova versão escrita do zero, sem dependência do Excel. É um programa para Windows que se baixa,
+extrai e abre (<code>COIR.exe</code>), sem instalar Python nem Java. Os dados ficam numa pasta sua
+(<code>COIR_DADOS</code>); nada sai do computador. O código da 2.1.1 fica em <code>legacy/</code> como referência.</p>
+
+<h3 id="em-resumo">Em resumo</h3>
+
+<ul>
+<li><strong>Telas</strong>: painel do ano, importação de notas e planilhas da B3, notas com o PDF ao lado,
+operações, apuração mensal com memória de cálculo, DARF (com multa e juros de mora, pagamento e
+comprovante), proventos, outros custos, declaração anual ficha a ficha, relatórios, carteira e
+preço médio, eventos corporativos, opções, futuros, conciliação com a B3, cadastros e
+configurações. Tema claro e escuro.</li>
+<li><strong>Leitura das notas</strong>: um só extrator SINACOR (Bovespa e BM&amp;F) para Ágora, BTG/Necton, Clear,
+Rico e XP, com conciliação ao centavo: nota que não fecha não entra.</li>
+<li><strong>Imposto</strong>: preço médio por titular, day trade pela marcação da corretora, isenção de
+R$ 20 mil, compensação de prejuízo por categoria, FII, opções (exercício e pó), termo, futuros
+(inclusive em US$), IRRF por ficha, DARF com mínimo de R$ 10 e vencimento no último dia útil.</li>
+<li><strong>Declaração</strong>: Bens e Direitos (um item por ativo, CNPJ e discriminação prontos), rendimentos
+isentos e exclusivos por fonte pagadora, renda variável mês a mês, conferência com a declaração
+entregue.</li>
+<li><strong>Tabelas públicas</strong> (eventos, proventos, feriados, Selic) atualizadas pelo botão "Atualizar
+tabelas"; aviso de versão nova do programa (só avisa, não baixa).</li>
+<li><strong>Atualização segura</strong>: o banco é migrado automaticamente com backup; banco criado por versão
+mais nova é recusado com explicação.</li>
+<li>O que ficou para depois está em <a href="https://github.com/MarceloPCF/COIR/blob/main/docs/roteiro-pos-3.0.md"><code>docs/roteiro-pos-3.0.md</code></a>.</li>
+</ul>
+
+<h3 id="por-que-meus-numeros-mudaram-em-relacao-a-v2">Por que meus números mudaram em relação à v2</h3>
+
+<p>A v3 refaz o cálculo a partir das notas, pela norma. Diferenças esperadas em relação à planilha
+da v2 (todas são correções da v2):
+- <strong>Preço médio por titular</strong>, somando todas as corretoras (a v2 usava o PM por conta).
+- <strong>Custos da nota inteiros</strong>: a v3 usa o total que concilia com o resumo da nota; a v2 lançava
+  parte dos custos.
+- <strong>IRRF de day trade (1%) deduzido</strong> no mês; a v2 não o deduzia.
+- <strong>Saldo de IRRF transportado</strong> para os meses seguintes do ano; a v2 o perdia no próprio mês.
+- <strong>Isenção de R$ 20 mil pelo valor das vendas de ações à vista do mês</strong>; a v2 a inferia pelo IRRF,
+  o que falhava com duas ou mais corretoras e podia isentar ETF.
+- <strong>Prejuízo de mês isento compensável</strong>; a v2 o descartava.
+- <strong>FII como categoria própria</strong> (20%, prejuízo separado); a v2 não tinha FII.
+- <strong>DARF</strong>: mínimo de R$ 10 (abaixo disso acumula para o mês seguinte) e vencimento no último dia
+  útil do mês seguinte; a v2 não aplicava o mínimo e usava o último dia corrido.
+- <strong>Eventos corporativos</strong> (desdobramento, grupamento, bonificação, incorporação, cisão, troca de
+  ticker) aplicados pelas tabelas públicas da B3, sem ajuste manual.
+- <strong>Exercício de opção</strong> na linha do ativo-objeto, sem isenção; opção que virou pó apurada no
+  vencimento.
+- <strong>IRRF até R$ 1,00</strong> (dispensado, não retido) não vira crédito.</p>
+
+<h3 id="adicionado">Adicionado</h3>
+
+<ul>
+<li>Licença da v3: AGPL-3.0-or-later (a v2 em <code>legacy/</code> continua MIT).</li>
+<li>Fase F0 (fundação): projeto uv com Python 3.13, estrutura <code>coir/</code>, configuração da pasta de dados (<code>COIR_DADOS</code>), CLI mínima, verificador de dados pessoais (pre-commit, pre-push e CI) e testes automatizados em Windows e Linux.</li>
+<li>Fase F8 (declaração anual): fichas do programa IRPF por exercício (<code>data/irpf/&lt;exercício&gt;.yaml</code>) com Bens e Direitos (um item por ativo, CNPJ do pacote público da B3, discriminação pronta), Dívidas (posição vendida), rendimentos isentos e exclusivos por fonte pagadora, renda variável mês a mês e imposto pago; tela "Declaração anual" com botão de copiar e marcação do que já foi lançado; leitura e conferência da declaração entregue (PDF do programa); data do crédito do JCP (a mais tarde entre a aprovação e a data com) pela B3, inclusive pelo histórico público de JCP desde 2016 (<code>data/proventos_historico_b3.csv</code>), pela declaração entregue ou informada; JCP pago mais de um ano depois do crédito a receber em cada 31/12; origem dos reembolsos de BTC; venda no dia da liquidação do termo pelo preço a termo, com o excedente saindo das ações antigas pelo custo médio; lista gerada das fontes fiscais (<code>docs/fontes-fiscais.md</code>).</li>
+<li>Fase F9 (versão 3.0): programa para Windows em pasta (<code>COIR.exe</code> e <code>coir-cli.exe</code>, PyInstaller) com <code>tools/empacotar.py</code> e workflow que cria o release como rascunho; identidade visual da logomarca (topo marinho, menu retrátil); aviso de versão nova; banco mais novo que o programa recusado com tela de erro; day trade pela marcação D da corretora (parâmetro <code>day_trade_criterio</code>); saldos iniciais em 31/12 (custódia e prejuízo por categoria); origem do reembolso de BTC informada pelo usuário; leitura da DIRPF 2024; registro de atividades legível; gerador de notas fictícias (<code>tools/notas_ficticias.py</code>) e banco de demonstração; capturas de tela automáticas (<code>tools/capturas.py</code>); manual do usuário em <code>docs/manual/</code>, guia de como adicionar corretora e site novo.</li>
+</ul>
+
+<h2 id="220-2026-10-21">[2.2.0] - 2026-10-21</h2>
+
+<p>Versão da v2 (planilha), em <code>legacy/</code>.</p>
+
+<p>Atualização para o Python 3.15 e para as versões atuais das bibliotecas (pandas 3, numpy 2.5, tabula-py 2.10, xlwings 0.37, openpyxl 3.1). Compatibilidade com o pandas atual (<a href="https://github.com/MarceloPCF/COIR/issues/11">#11</a>), com base na contribuição de <a href="https://github.com/tommmdl">@tommmdl</a> (<a href="https://github.com/MarceloPCF/COIR/pull/34">#34</a>).</p>
+
+<p>Os resultados foram comparados com os da versão 2.1.1 em todas as notas de teste (XP, BTG e Rico), valor por valor, e no Excel em uma amostra de notas de todos os anos e corretoras.</p>
+
+<h3 id="corrigido">Corrigido</h3>
+
+<ul>
+<li>Preenchimento de células vazias com <code>fillna(..., inplace=True)</code> em uma coluna trocado por atribuição. No pandas 3 a forma antiga não altera nada e os valores vazios das taxas continuariam vazios. (@tommmdl)</li>
+<li>Agrupamentos (<code>agrupar</code>, <code>agrupar_btg</code>, <code>agrupar_bmf</code>) usam <code>'sum'</code> em vez da função <code>sum</code> do Python, depreciada no pandas 2. (@tommmdl)</li>
+<li><code>agrupar_operacoes</code> e <code>agrupar_operacoes_correcao</code>: no pandas 3, <code>groupby(Series)</code> seguido de <code>get_group</code> falha quando o grupo tem uma só linha, e o erro era engolido, descartando a operação sem aviso. Agora o agrupamento é feito pelo nome da coluna.</li>
+<li>Notas XP/Rico/Clear de várias páginas em que algumas linhas trazem só a quantidade (sem marca de observação) davam erro (<code>TypeError</code>) ou, no pandas 3, quantidade 0. Exemplo: XP 2024-11.</li>
+<li>Python 3.15 usa UTF-8 por padrão; a saída do <code>taskkill</code> (usado para fechar o Excel) é lida agora com tolerância a caracteres inválidos, em vez de interromper a gravação no Excel.</li>
+</ul>
+
+<h3 id="alterado">Alterado</h3>
+
+<ul>
+<li>Python mínimo: 3.12 (exigido pelo numpy 2.5). Pacote para Windows com Python 3.15.</li>
+<li><code>requirements.txt</code> com as versões atuais testadas.</li>
+<li><code>tools/montar_pacote.py</code> passou a calcular as dependências do pacote a partir das bibliotecas instaladas (arquivo <code>RECORD</code> de cada uma), em vez de uma lista fixa de arquivos, e aceita a versão do Python embutido informada pelo arquivo <code>.zip</code>.</li>
+</ul>
+
+<h2 id="211-2026-10-09">[2.1.1] - 2026-10-09</h2>
+
+<p>Correção de instalação: uma instalação nova da 2.1.0 falhava por incompatibilidade de bibliotecas. Nenhuma alteração no código do programa.</p>
+
+<h3 id="corrigido-2">Corrigido</h3>
+
+<ul>
+<li><code>requirements.txt</code> fixa <code>numpy==1.23.5</code> e <code>setuptools==69.5.1</code>. Sem isso o pip instalava o numpy 2.x, incompatível com o pandas 1.3.3, e o setuptools 81 ou superior, que não traz o <code>pkg_resources</code> usado pelo tabula-py 2.3.0.</li>
+</ul>
+
+<h3 id="alterado-2">Alterado</h3>
+
+<ul>
+<li>O pacote para Windows passa a levar o <strong>Python 3.9.7 e o Java 17 (Temurin) embutidos</strong>. Não é preciso instalar Python, bibliotecas nem Java: basta extrair o <code>.zip</code> e dar dois cliques em <code>COIR.bat</code>.</li>
+<li>Estrutura do pacote simplificada: na pasta principal ficam <code>COIR.bat</code>, <code>Entrada</code>, <code>Saida</code>, <code>Resultado</code>, <code>dados</code>, <code>modelos</code> e <code>sistema</code> (programa, Python e Java).</li>
+<li>A instalação manual (Python próprio, <code>pip install -r requirements.txt</code>) continua possível para quem usa o código-fonte.</li>
+<li>Novo <code>tools/montar_pacote.py</code>, que monta o pacote para Windows.</li>
+<li>Planilha-modelo <code>modelos/COIR.xlsb</code> revisada: uma linha que estava oculta foi corrigida.</li>
+</ul>
+
+<h2 id="210-2026-10-08">[2.1.0] - 2026-10-08</h2>
+
+<p>Primeira versão do repositório reorganizado. O histórico anterior foi reiniciado (veja "Removido").</p>
+
+<h3 id="alterado-3">Alterado</h3>
+
+<ul>
+<li>Pastas reorganizadas: código em <code>coir/</code> (antes <code>Utils/</code>), planilha-modelo em <code>modelos/</code>, tabelas auxiliares em <code>dados/</code> (antes <code>Utils/Tickets/</code>) e capturas de tela em <code>docs/imagens/</code> (antes <code>Utils/Screenshots/</code>).</li>
+<li><code>COIR.py</code> refatorado: despacho por corretora em uma tabela, validações em funções auxiliares e exigência explícita de Python 3.9.2 ou superior.</li>
+<li>A planilha de resultado passa a ser gravada uma única vez, ao final do processamento de todas as notas: os extratores das corretoras agora devolvem os dados em vez de gravar a cada nota.</li>
+<li>Ajustes nas áreas de leitura dos PDFs das corretoras BTG e XP/Rico/Clear e nas funções comuns (<code>coir/funcoes.py</code>).</li>
+<li><code>requirements.txt</code> convertido para UTF-8 (as versões das bibliotecas não foram alteradas).</li>
+</ul>
+
+<h3 id="adicionado-2">Adicionado</h3>
+
+<ul>
+<li>Leitura da conta do cliente por nota, quando um mesmo PDF reúne notas de contas diferentes.</li>
+<li>Correções manuais opcionais em <code>dados/ajustes_manuais.csv</code> (mudança de ticker, conta, corretora, quantidade ou preço); modelo em <code>dados/ajustes_manuais.modelo.csv</code>.</li>
+<li>Novos tickers em <code>dados/acoes.csv</code> (Lojas Renner, Moura Dubeux, PRIO, Porto Seguro).</li>
+<li>Número da versão exibido na abertura do programa (<code>VERSION</code> e <code>coir/__init__.py</code>).</li>
+<li><code>.gitignore</code> e <code>.gitattributes</code>.</li>
+<li>Verificação contra dados pessoais (<code>tools/verificar_dados_pessoais.py</code>) e hook de pre-commit em <code>.githooks/</code>.</li>
+<li>Este <code>CHANGELOG.md</code>.</li>
+</ul>
+
+<h3 id="removido">Removido</h3>
+
+<ul>
+<li>Executáveis e pacotes <code>.zip</code> das versões antigas, que existiam no histórico anterior do repositório.</li>
+<li>Link para um <code>style.css</code> inexistente em <code>index.html</code>.</li>
+</ul>
+
+<h2 id="versoes-anteriores-historico-reiniciado">Versões anteriores (histórico reiniciado)</h2>
+
+<p>Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram removidas quando o histórico foi reiniciado. A tabela abaixo é apenas um registro das datas; os detalhes técnicos de cada uma não foram reconstruídos.</p>
+
+<table>
+<thead>
+<tr>
+  <th>Tag antiga</th>
+  <th>Data</th>
+  <th>Equivale a</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>v1.0.0</td>
+  <td>2024-01-05</td>
+  <td>1.0.0</td>
+</tr>
+<tr>
+  <td>V1.0.1</td>
+  <td>2024-01-07</td>
+  <td>1.0.1</td>
+</tr>
+<tr>
+  <td>v1.0.2</td>
+  <td>2024-02-08</td>
+  <td>1.0.2</td>
+</tr>
+<tr>
+  <td>v1.0.3</td>
+  <td>2024-02-13</td>
+  <td>1.0.3</td>
+</tr>
+<tr>
+  <td>v1.0.4</td>
+  <td>2024-09-19</td>
+  <td>1.0.4</td>
+</tr>
+<tr>
+  <td>v.2.0</td>
+  <td>2024-11-13</td>
+  <td>2.0.0 (código dividido em pacote com um módulo por corretora)</td>
+</tr>
+<tr>
+  <td>v.2.01</td>
+  <td>2024-11-29</td>
+  <td>2.0.1 (página do projeto no GitHub Pages)</td>
+</tr>
+<tr>
+  <td>v.2.02</td>
+  <td>2024-12-25</td>
+  <td>2.0.2</td>
+</tr>
+<tr>
+  <td>v2.03</td>
+  <td>2025-04-05</td>
+  <td>2.0.3</td>
+</tr>
+<tr>
+  <td>v2.04</td>
+  <td>2025-04-05</td>
+  <td>2.0.4</td>
+</tr>
+</tbody>
+</table>
+
+<p>Entre abril de 2025 e junho de 2026 houve atualizações sem tag (<code>xp_rico_clear.py</code>, <code>acoes.csv</code>, <code>opcoes.csv</code> e a planilha-modelo); elas estão incorporadas à 2.1.0.</p>
+
+</main>
+<footer>COIR é gratuito e software livre (AGPL-3.0). Não substitui a orientação de um contador.</footer>
+</body>
+</html>

@@ -32,6 +32,7 @@ from coir.domain.fiscal import (
     NotaMotor,
     OutroCusto,
     ResultadoCategoria,
+    SaldoInicial,
     TipoAtivo,
     TributacaoExclusiva,
 )
@@ -74,6 +75,7 @@ def apurar(
     calendario: Calendario,
     ate: date,
     outros_custos: Sequence[OutroCusto] = (),
+    saldos_iniciais: Sequence[SaldoInicial] = (),
 ) -> Apuracao:
     """Apuração de todos os titulares, mês a mês, até o mês de `ate` (visão por titular)."""
     avisos: list[str] = []
@@ -105,7 +107,7 @@ def apurar(
     anuais: list[IrrfAnual] = []
     for titular in sorted(inicio):
         m, a = _apurar_titular(titular, _meses(inicio[titular], ate), por_mes, irrf, pme,
-                               parametros, calendario, avisos)  # fmt: skip
+                               parametros, calendario, avisos, saldos_iniciais)  # fmt: skip
         meses += m
         anuais += a
     return Apuracao(movimentos=tuple(movimentos), meses=tuple(meses), exclusiva=tuple(exclusiva),
@@ -142,8 +144,11 @@ def _apurar_titular(
     params: ParametrosFiscais,
     cal: Calendario,
     avisos: list[str],
+    saldos_iniciais: Sequence[SaldoInicial] = (),
 ) -> tuple[list[MesApurado], list[IrrfAnual]]:
     prejuizo = {c: ZERO for c in Categoria}
+    # saldo inicial: substitui o prejuízo acumulado no primeiro mês apurado depois do 31/12 dele
+    iniciais = sorted((s for s in saldos_iniciais if s.titular == titular), key=lambda s: s.ano)
     vendas_mes: dict[tuple[int, int], Decimal] = defaultdict(lambda: ZERO)
     for (t, ano, mes), movs in por_mes.items():
         if t == titular:
@@ -157,6 +162,10 @@ def _apurar_titular(
     pendentes: list[tuple[int, int]] = []
     anos: dict[int, tuple[SaldoPorFicha, list[MesApurado]]] = {}
     for ano, mes in meses:
+        while iniciais and (ano, mes) > (iniciais[0].ano, 12):
+            inicial = iniciais.pop(0)
+            prejuizo = {c: -inicial.de(c) for c in Categoria}
+            acumulado_darf = ZERO  # em 31/12 não fica imposto abaixo de R$ 10 para o ano seguinte
         dia = fim_do_mes(ano, mes)
         movs = por_mes.get((titular, ano, mes), [])
         categorias: list[ResultadoCategoria] = []
@@ -217,6 +226,13 @@ def _apurar_titular(
     return saida, anuais
 
 
+def conta_na_isencao(m: Movimento, params: ParametrosFiscais) -> bool:
+    """O resultado do movimento pode ser isento (se o mês ficar no limite)? Ação no mercado à
+    vista, fora do exercício; units só com o parâmetro ``units_na_isencao``."""
+    return m.isentavel and (m.tipo is not TipoAtivo.UNIT
+                            or params.booleano("units_na_isencao", m.data))  # fmt: skip
+
+
 def _vendas_no_limite(m: Movimento, params: ParametrosFiscais) -> Decimal:
     """Valor bruto que entra na soma do limite de R$ 20 mil (units só com o parâmetro)."""
     if m.categoria is not Categoria.COMUM:
@@ -242,11 +258,10 @@ def _categoria(
     isento = ZERO
     if cat is Categoria.COMUM:
         vendas = vendas_mes.get((dia.year, dia.month), ZERO)
-        units = params.booleano("units_na_isencao", dia)
         # resultado isentável por mês de referência do limite (o da venda, na venda a descoberto)
         por_ref: dict[tuple[int, int], Decimal] = defaultdict(lambda: ZERO)
         for m in movs:
-            if m.isentavel and (units or m.tipo is not TipoAtivo.UNIT):
+            if conta_na_isencao(m, params):
                 ref = m.mes_limite or m.data
                 por_ref[(ref.year, ref.month)] += m.resultado
         compensa = params.booleano("prejuizo_mes_isento_compensavel", dia)

@@ -224,6 +224,34 @@ class CreditoJcp(Base):
     registrado_em: Mapped[datetime]
 
 
+class OrigemReembolso(Base):
+    """Origem de um reembolso de BTC (``DIVIDENDO`` ou ``JCP``) informada pelo usuário, quando o
+    valor não a identifica. ``chave``: a da linha em ``movimentacao_b3``."""
+
+    __tablename__ = "origem_reembolso"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"))
+    chave: Mapped[str] = mapped_column(String(64), unique=True)
+    origem: Mapped[str] = mapped_column(String(10))
+    registrado_em: Mapped[datetime]
+
+
+class PrejuizoInicial(Base):
+    """Prejuízo a compensar em 31/12 de ``ano`` informado pelo usuário que começa sem o histórico
+    de notas (um por titular): comum, day trade e FII, positivos (ficha de dezembro da DIRPF)."""
+
+    __tablename__ = "prejuizo_inicial"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    titular_id: Mapped[int] = mapped_column(ForeignKey("titular.id"), unique=True)
+    ano: Mapped[int]
+    comum: Mapped[Decimal]
+    day_trade: Mapped[Decimal]
+    fii: Mapped[Decimal]
+    registrado_em: Mapped[datetime]
+
+
 class IrpfLancado(Base):
     """Item da declaração anual que o usuário marcou como já lançado no programa IRPF (tela 14).
     ``chave``: identifica o item nas fichas do COIR (ex.: "bens:BBAS3", "rv:01")."""

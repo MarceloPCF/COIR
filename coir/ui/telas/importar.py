@@ -18,6 +18,7 @@ from coir.servicos.importacao import (
     importar_lista,
     por_arquivo,
 )
+from coir.ui import pastas
 from coir.ui.telas import importar_b3
 
 ICONES = {
@@ -132,7 +133,8 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 .props("outline")
                 .mark("importar-pasta")
             )
-        ui.label(f"Pasta das notas: {estado.pasta_notas}").classes("coir-subtitulo text-xs")
+        pastas.seletor(estado, "pasta_notas", "Pasta das notas", estado.pasta_notas,
+                       ui.navigate.reload)  # fmt: skip
         barra = ui.linear_progress(value=0, show_value=False).props("rounded size=8px")
         texto = ui.label("").classes("coir-subtitulo text-sm")
 
@@ -161,8 +163,18 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             with ui.column().classes("coir-folha w-full gap-0 p-0"):
                 for linha in linhas:
                     _linha(linha)
-            for aviso in (a for a in rel.avisos if not any(x.arquivo in a for x in linhas)):
+            avisos = [a for a in rel.avisos if not any(x.arquivo in a for x in linhas)]
+            for aviso in (a for a in avisos if "já importada" not in a):
                 ui.label(f"Aviso: {aviso}").classes("coir-carimbo text-sm")
+            repetidas = [a for a in avisos if "já importada" in a]
+            if rel.arquivos_ignorados or rel.notas_ja_no_banco or repetidas:
+                ui.label(
+                    "Notas que já estavam no banco não são gravadas de novo (cada nota entra uma "
+                    "vez só): não há nada a fazer. Os PDFs continuam na pasta onde estão; a tela "
+                    "Notas abre o original de lá."
+                ).classes("coir-subtitulo text-sm").mark("info-repetidas")
+                for aviso in repetidas:
+                    ui.label(aviso).classes("coir-subtitulo text-xs")
 
 
 def _resumo(rel: RelatorioImportacao, linhas: list[ResultadoArquivo]) -> None:

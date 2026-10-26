@@ -26,6 +26,7 @@ from coir.erros import ImportacaoError
 from coir.importers import b3
 
 log = logging.getLogger(__name__)
+PASTA_B3 = "_relatorios-b3"  # padrão das planilhas da B3 dentro da pasta de dados
 
 
 @dataclass(frozen=True)

@@ -11,7 +11,7 @@ import pytest
 from coir import referencias
 from coir.erros import AtualizacaoError
 from coir.recursos import pasta_data
-from coir.servicos import atualizacao
+from coir.servicos import atualizacao, versao
 from tools.referencias import pacote
 from tools.referencias.gerar import COLUNAS_EVENTOS
 
@@ -40,9 +40,12 @@ def _pacote(tmp: Path, data: str = "2099-01-01", formato: int = referencias.FORM
     return zip_.read_bytes()
 
 
+PAGINA_V3 = "https://github.com/MarceloPCF/COIR/releases/tag/v99.0.0"
+
+
 def _github(zip_: bytes) -> atualizacao.Baixar:
     releases = [
-        {"tag_name": "v3.0.0", "draft": False, "prerelease": False, "assets": []},
+        {"tag_name": "v99.0.0", "draft": False, "prerelease": False, "assets": []},
         {"tag_name": "referencias-2099.01.01", "draft": False, "prerelease": False,
          "assets": [{"name": "referencias-2099.01.01.zip", "browser_download_url": URL_ZIP}]},
         {"tag_name": "referencias-2099.02.01", "draft": True, "prerelease": False,
@@ -52,6 +55,8 @@ def _github(zip_: bytes) -> atualizacao.Baixar:
     def obter(url: str) -> bytes:
         if url == atualizacao.RELEASES:
             return json.dumps(releases).encode()
+        if url == versao.ULTIMO:  # o último release é o do programa
+            return json.dumps(releases[0] | {"html_url": PAGINA_V3}).encode()
         assert url == URL_ZIP
         return zip_
 

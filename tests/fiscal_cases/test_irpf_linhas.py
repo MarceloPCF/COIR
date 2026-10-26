@@ -56,9 +56,8 @@ def test_opcao_sobre_unit_e_sem_objeto_ficam_em_acoes() -> None:
     assert (comum.por_grupo[Grupo.OPCOES], comum.por_grupo[Grupo.OPCOES_OUTROS]) == (
         D("300.00"), D("0"))  # fmt: skip
     # objeto não identificado não fica calado (revisão da F8)
-    assert [a for a in ap.avisos if "ativo-objeto não identificado" in a] == [
-        'opção XXXXC100: ativo-objeto não identificado pela raiz (data/opcoes_raiz*.csv); no '
-        'IRPF, linha "opções - ações"']  # fmt: skip
+    [aviso] = [a for a in ap.avisos if "não identificou o ativo-objeto" in a]
+    assert aviso.startswith("Opção XXXXC100:") and '"Mercado de opções - ações"' in aviso
 
 
 def _termo(livro: Livro) -> None:

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
+from coir.config import ARQUIVO_REGISTRO
 from coir.servicos.estado import Estado
 from coir.ui import preferencias, tema
 from coir.ui.telas import (
@@ -48,7 +49,7 @@ class Tela:
 
 GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
     ("", (Tela("/", "Painel", "space_dashboard", painel.montar),)),
-    ("Notas", (
+    ("Lançamentos", (
         Tela("/importar", "Importar", "upload_file", importar.montar),
         Tela("/notas", "Notas", "receipt_long", notas.montar),
         Tela("/operacoes", "Operações", "list_alt", operacoes.montar),
@@ -106,9 +107,56 @@ def _nota(estado: Estado, avisar: Avisar) -> Callable[[str], None]:
     return construir
 
 
+def _erro_inesperado(erro: Exception) -> None:
+    """Erro não previsto numa tela: avisa na própria janela (o detalhe vai para o registro de
+    atividades) em vez de deixar a tela calada ou girando."""
+    ui.notify(
+        f"Erro inesperado: {erro!r}. O detalhe está em Configurações > Registro de atividades.",
+        type="negative", multi_line=True, timeout=0, close_button="Fechar",
+    )  # fmt: skip
+
+
+def _itens(telas: tuple[Tela, ...]) -> None:
+    for t in telas:
+        with ui.item(on_click=_ir(t.rota)).props("clickable").mark(f"menu{t.rota}"):
+            with ui.item_section().props("avatar").classes("min-w-0 pr-3"):
+                ui.icon(t.icone, size="20px")
+            ui.item_section(t.rotulo)
+
+
+def _marca() -> None:
+    with ui.row().classes("items-center gap-3 no-wrap").mark("marca"):
+        ui.html(tema.simbolo_svg(), sanitize=False).classes("coir-simbolo")  # arquivo nosso
+        ui.label("COIR").classes("coir-marca")
+        ui.label("Controle de Operações e Imposto de Renda").classes("coir-marca-nome gt-sm")
+
+
+def montar_erro(estado: Estado, mensagem: str) -> None:
+    """O banco não abriu (ex.: gravado por uma versão mais nova do COIR, ou a migração falhou):
+    a janela explica o que houve e onde estão os dados e os backups, em vez de não abrir."""
+    tema.aplicar()
+    preferencias.aplicar_tema()
+    with ui.header().classes("coir-topo items-center gap-4 pl-6 pr-4 py-2"):
+        _marca()
+    with ui.column().classes("w-full max-w-[900px] mx-auto px-6 py-8 gap-4"):
+        ui.label("O banco de dados não pôde ser aberto").classes("coir-titulo-pagina")
+        ui.label(mensagem).classes("coir-negativo").mark("erro-abertura")
+        with ui.column().classes("coir-folha w-full gap-1"):
+            ui.label(f"Pasta de dados: {estado.dados}").classes("coir-numero")
+            ui.label(f"Backups do banco: {estado.dados / 'backups'}").classes("coir-numero")
+            ui.label(f"Registro de atividades: {estado.dados / ARQUIVO_REGISTRO}").classes(
+                "coir-numero")  # fmt: skip
+        ui.label(
+            "Nada foi alterado no banco. Se você instalou uma versão mais antiga por cima de uma "
+            "mais nova, volte a usar a mais nova. O guia de atualização do manual explica como "
+            "restaurar um backup."
+        ).classes("coir-subtitulo")
+
+
 def montar(estado: Estado) -> None:
     """Página raiz (uma por janela)."""
     tema.aplicar()
+    ui.on_exception(_erro_inesperado)
     preferencias.aplicar_tema()  # sistema, claro ou escuro (Configurações)
     estado.escolher_padrao(estado.agora().date())
     paginas: ui.sub_pages | None = None
@@ -136,27 +184,31 @@ def montar(estado: Estado) -> None:
         ui.select(estado.anos(hoje), label="Ano", value=estado.ano, on_change=escolher("ano"),
                   ).props("outlined dense options-dense").classes("w-[110px]")  # fmt: skip
 
-    with ui.header().classes("coir-topo items-center gap-4 px-4 py-2"):
-        ui.label("COIR").classes("coir-marca")
+    with ui.header().classes("coir-topo items-center gap-4 pl-6 pr-4 py-2"):
+        ui.button(icon="menu", on_click=lambda: gaveta.toggle()).props(
+            "flat round dense color=white").tooltip("Mostrar ou ocultar o menu").mark(
+            "alternar-menu")  # fmt: skip
+        _marca()
         ui.space()
         with ui.row().classes("items-center gap-4"):
             seletores()
         ui.button(icon="contrast", on_click=preferencias.alternar_tema).props(
-            "flat round").tooltip("Tema claro ou escuro")  # fmt: skip
+            "flat round color=white").tooltip("Tema claro ou escuro")  # fmt: skip
 
     with (
         ui.left_drawer(value=True, fixed=True, bordered=False)
         .props("width=232 breakpoint=700 show-if-above")
-        .classes("coir-lateral p-0")
+        .classes("coir-lateral p-0") as gaveta
     ):
         for grupo, telas in GRUPOS:
-            if grupo:
-                ui.label(grupo).classes("coir-grupo")
-            for t in telas:
-                with ui.item(on_click=_ir(t.rota)).props("clickable").mark(f"menu{t.rota}"):
-                    with ui.item_section().props("avatar").classes("min-w-0 pr-3"):
-                        ui.icon(t.icone, size="20px")
-                    ui.item_section(t.rotulo)
+            if not grupo:
+                _itens(telas)
+                continue
+            # grupo retrátil: clicar no título oculta ou mostra as telas dele
+            with ui.expansion(grupo, value=True).props("dense header-class=coir-grupo").mark(
+                f"grupo-{grupo}"
+            ):  # fmt: skip
+                _itens(telas)
 
     with ui.column().classes("w-full max-w-[1400px] mx-auto px-6 py-5 gap-4"):
         if estado.aviso_tabelas:

@@ -35,12 +35,13 @@ from coir.domain.nota import NegocioBMF, NotaExtraida
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import RE_SERIE_OPCAO, Referencias
 from coir.engine.apuracao import apurar
+from coir.engine.apuracao import conta_na_isencao as conta_na_isencao  # para a tela
 from coir.engine.calendario import liquidacao_termo, vencimento_opcao
 from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import carteira, movimentar
 from coir.erros import ReferenciaError
 from coir.parsing import futuros
-from coir.servicos import outros_custos
+from coir.servicos import outros_custos, saldos_iniciais
 
 RE_PRAZO = re.compile(r"^(?P<mes>\d{2})/(?P<ano>\d{2})$")
 RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é put de novembro
@@ -93,15 +94,18 @@ def _vencimento(prazo: str, serie: str, refs: ReferenciasFiscais) -> date:
 
 
 def _objeto_tipo(serie: str, publicas: Referencias, refs: ReferenciasFiscais) -> TipoAtivo | None:
-    """Tipo do ativo-objeto de uma série, pela raiz de 4 letras (opcoes_raiz*.csv); None se a raiz
-    não está nas tabelas (o motor a mantém na linha "opções - ações")."""
+    """Tipo do ativo-objeto de uma série, pela raiz de 4 letras (opcoes_raiz*.csv); sem a raiz
+    nessa tabela, pelos tickers da lista pública com a mesma raiz, se todos forem do mesmo tipo
+    (ex.: LIGTA50 -> LIGT3, ação). None se nada identifica (linha "opções - ações")."""
     objeto = publicas.opcoes_raiz.get(serie[:4])
-    if objeto is None:
-        return None
-    try:
-        return refs.tipos.tipo(objeto)
-    except ReferenciaError:
-        return None
+    candidatos = {objeto} if objeto else {t for t in publicas.ativos.values() if t[:4] == serie[:4]}
+    tipos: set[TipoAtivo] = set()
+    for ticker in candidatos:
+        try:
+            tipos.add(refs.tipos.tipo(ticker))
+        except ReferenciaError:
+            return None
+    return tipos.pop() if len(tipos) == 1 else None
 
 
 def _nota_bovespa(
@@ -131,6 +135,7 @@ def _nota_bovespa(
                 quantidade=o.quantidade, preco=o.preco, total=o.total,
                 vencimento=_vencimento(negocio.prazo, o.papel, refs) if opcao else None,
                 opcao=exercida, liquidacao_termo=liquidacao, pme_ate=pme_ate,
+                marcada_dt=negocio.day_trade,
                 objeto_tipo=_objeto_tipo(o.papel, publicas, refs) if opcao else None,
             )
         )  # fmt: skip
@@ -241,6 +246,15 @@ def carteira_banco(
     return carteira(notas, eventos, fiscais.parametros, ate, visao), contas
 
 
+def carteiras_banco(
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, datas: list[date], visao: Visao
+) -> dict[date, list[PosicaoAtivo]]:
+    """Posições em várias datas lendo o banco uma vez só (conciliação com a B3)."""
+    with conectar(banco) as fabrica, fabrica() as sessao:
+        notas, eventos = entradas(sessao, refs, fiscais)
+    return {dia: carteira(notas, eventos, fiscais.parametros, dia, visao) for dia in datas}
+
+
 def movimentos_banco(
     banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date, visao: Visao
 ) -> list[Movimento]:
@@ -258,4 +272,5 @@ def apurar_banco(
     with conectar(banco) as fabrica, fabrica() as sessao:
         notas, eventos = entradas(sessao, refs, fiscais)
         custos = outros_custos.do_banco(sessao)
-    return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos)
+        saldos = saldos_iniciais.do_banco(sessao)
+    return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos, saldos)

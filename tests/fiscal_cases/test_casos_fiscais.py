@@ -539,7 +539,7 @@ def test_venda_a_descoberto_resultado_na_recompra_e_limite_do_mes_da_venda(
     assert categoria(ap, 2025, 5, Categoria.COMUM).resultado == 0
     junho = categoria(ap, 2025, 6, Categoria.COMUM)
     assert junho.imposto == D(imposto)
-    assert any("descoberto" in a for a in ap.avisos)
+    assert not any("descoberto" in a for a in ap.avisos)  # operação normal: sem aviso
 
 
 def test_evento_que_inverte_a_posicao_falha_alto() -> None:

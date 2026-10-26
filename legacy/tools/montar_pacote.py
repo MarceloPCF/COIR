@@ -2,11 +2,13 @@
 """Monta o pacote COIR para Windows x64 com Python e Java (JRE) embutidos.
 
 Uso:
-    python montar_pacote.py <projeto> <python39> <py-embed.zip> <jre.zip> <saida>
+    python montar_pacote.py <projeto> <python_orig> <py-embed.zip> <jre.zip> <saida>
 
     projeto      pasta com o codigo do COIR (esta pasta do repositorio)
-    python39     instalacao do Python 3.9.x que ja roda o COIR (origem das bibliotecas)
-    py-embed.zip Python embeddable da mesma versao (python.org, "Windows embeddable package (64-bit)")
+    python_orig  instalacao (ou ambiente virtual) do Python que ja roda o COIR, com as bibliotecas
+                 do requirements.txt instaladas (origem das bibliotecas)
+    py-embed.zip Python embeddable da MESMA versao do python_orig (python.org, "Windows embeddable
+                 package (64-bit)")
     jre.zip      Eclipse Temurin 17 JRE para Windows x64, em .zip (adoptium.net)
     saida        pasta onde serao criados COIR-v<versao>/ e o .zip
 
@@ -26,7 +28,7 @@ import shutil
 import sys
 import zipfile
 
-projeto, py39, embed_zip, jre_zip, saida = [os.path.abspath(a) for a in sys.argv[1:6]]
+projeto, py_orig, embed_zip, jre_zip, saida = [os.path.abspath(a) for a in sys.argv[1:6]]
 
 with open(os.path.join(projeto, "VERSION"), encoding="utf-8") as f:
     VERSAO = f.read().strip()
@@ -77,72 +79,107 @@ if not feito("embed"):
         z.extractall(py)
     marca("embed")
 
-sp_origem = os.path.join(py39, "Lib", "site-packages")
+sp_origem = os.path.join(py_orig, "Lib", "site-packages")
 sp_destino = os.path.join(py, "Lib", "site-packages")
 os.makedirs(sp_destino, exist_ok=True)
 
-PACOTES = [
-    "numpy", "pandas", "pytz", "dateutil", "six.py",
-    "openpyxl", "et_xmlfile", "jdcal.py",
-    "tabula", "distro.py",
-    "xlwings",
-    "win32", "win32com", "win32comext", "pythoncom.py",
-    "pkg_resources",
-]
+# Versao do Python embutido (ex.: "315" para o 3.15), lida do proprio embeddable.
+import importlib.metadata as md
+import re
+
+TAG = None
+for _n in os.listdir(py):
+    _m = re.fullmatch(r"python(\d)(\d+)\.zip", _n)
+    if _m:
+        TAG = _m.group(1) + _m.group(2)
+if TAG is None:
+    sys.exit("Embeddable invalido: python3xx.zip nao encontrado em " + py)
+
+# ------------------------------------------------------------ bibliotecas
+# As bibliotecas sao copiadas a partir do arquivo RECORD de cada pacote instalado, incluindo as
+# dependencias (numpy.libs, pandas.libs, tzdata, etc.), em vez de uma lista fixa de nomes que
+# quebra a cada atualizacao. Parte-se de requirements.txt; o resto vem das dependencias.
+RAIZES = ["pandas", "numpy", "openpyxl", "tabula-py", "xlwings"]
 
 
-def ignorar_libs(pasta, nomes):
-    out = set()
-    for n in nomes:
-        if n == "__pycache__" or n.endswith(".pyc"):
-            out.add(n)
-        elif n == "tests" and ("pandas" in pasta or "numpy" in pasta):
-            out.add(n)
-        elif n in ("Demos", "test", "scripts", "include") and "win32" in pasta:
-            out.add(n)
-    return out
+def _norm(nome):
+    return re.sub(r"[-_.]+", "-", nome).lower()
 
 
-for nome in PACOTES:
-    if feito("pkg-" + nome):
+try:
+    from pip._vendor.packaging.requirements import Requirement
+except ImportError:  # pragma: no cover
+    from packaging.requirements import Requirement
+
+dists = {_norm(d.metadata["Name"]): d for d in md.distributions(path=[sp_origem])}
+fila, fechamento = list(RAIZES), {}
+while fila:
+    nome = _norm(fila.pop())
+    if nome in fechamento:
         continue
-    src = os.path.join(sp_origem, nome)
-    dst = os.path.join(sp_destino, nome)
-    limpar(dst)
-    if os.path.isdir(src):
-        shutil.copytree(src, dst, ignore=ignorar_libs)
-    elif os.path.isfile(src):
+    if nome not in dists:
+        sys.exit("FALTA no Python de origem: " + nome + " (instale o requirements.txt)")
+    fechamento[nome] = dists[nome]
+    for r in dists[nome].requires or []:
+        req = Requirement(r)
+        if req.marker is not None and not req.marker.evaluate({"extra": ""}):
+            continue
+        fila.append(req.name)
+
+# pywin32: so o necessario ao xlwings (o resto sao ferramentas e o editor Pythonwin)
+PYWIN32_USAR = {"win32", "win32com", "win32comext", "pythoncom.py"}
+
+
+def ignorar(dist, rel):
+    partes = rel.replace("\\", "/").split("/")
+    if "__pycache__" in partes or rel.endswith(".pyc"):
+        return True
+    if dist in ("pandas", "numpy") and "tests" in partes:
+        return True
+    if dist == "pywin32":
+        topo = partes[0]
+        if topo.endswith(".dist-info") or topo in PYWIN32_USAR:
+            return False
+        return True
+    return False
+
+
+for dist, d in sorted(fechamento.items()):
+    if feito("pkg-" + dist):
+        continue
+    n = 0
+    for f in d.files or []:
+        rel = str(f)
+        if rel.startswith("..") or os.path.isabs(rel) or ignorar(dist, rel):
+            continue  # scripts/executaveis fora da pasta site-packages
+        src = os.path.join(sp_origem, rel)
+        if not os.path.isfile(src):
+            continue
+        dst = os.path.join(sp_destino, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy2(src, dst)
-    else:
-        sys.exit("FALTA no Python de origem: " + nome)
-    marca("pkg-" + nome)
-    print("ok", nome, flush=True)
+        n += 1
+    if n == 0:
+        sys.exit("Nenhum arquivo copiado de " + dist)
+    marca("pkg-" + dist)
+    print("ok", dist, d.version, "(%d arquivos)" % n, flush=True)
 
 if not feito("metadados"):
-    # dist-info / egg-info: nome e versao das bibliotecas (util para diagnostico)
-    LISTA = ("numpy", "pandas", "pytz", "python-dateutil", "openpyxl", "et-xmlfile",
-             "jdcal", "tabula-py", "pywin32", "distro", "six")
-    for n in os.listdir(sp_origem):
-        src = os.path.join(sp_origem, n)
-        if n.endswith(".dist-info") and n.split("-")[0].lower().replace("_", "-") in LISTA:
-            shutil.copytree(src, os.path.join(sp_destino, n), dirs_exist_ok=True)
-        elif n.startswith("xlwings") and n.endswith(".egg-info"):
-            if os.path.isdir(src):
-                shutil.copytree(src, os.path.join(sp_destino, n), dirs_exist_ok=True)
-            else:
-                shutil.copy2(src, os.path.join(sp_destino, n))
     # DLLs que ficam na raiz do python: pywin32 e xlwings
-    for dll in ("pythoncom39.dll", "pywintypes39.dll"):
-        shutil.copy2(os.path.join(sp_origem, "pywin32_system32", dll), py)
-    for n in os.listdir(py39):
+    for dll in ("pythoncom%s.dll" % TAG, "pywintypes%s.dll" % TAG):
+        origem_dll = os.path.join(sp_origem, "pywin32_system32", dll)
+        if not os.path.isfile(origem_dll):
+            sys.exit("FALTA a DLL do pywin32: " + origem_dll)
+        shutil.copy2(origem_dll, py)
+    for n in os.listdir(py_orig):  # versoes antigas do xlwings gravavam as DLLs na raiz do Python
         if n.startswith("xlwings") and n.endswith(".dll"):
-            shutil.copy2(os.path.join(py39, n), py)
+            shutil.copy2(os.path.join(py_orig, n), py)
     # O embeddable ignora PYTHONPATH e nao enxerga a pasta do script:
     # ".." e a pasta "sistema", onde esta o pacote "coir".
-    with open(os.path.join(py, "python39._pth"), "w", newline="\r\n") as f:
-        f.write("python39.zip\n.\n..\nLib\\site-packages\n"
+    with open(os.path.join(py, "python%s._pth" % TAG), "w", newline="\r\n") as f:
+        f.write("python%s.zip\n.\n..\nLib\\site-packages\n"
                 "Lib\\site-packages\\win32\nLib\\site-packages\\win32\\lib\n"
-                "import site\n")
+                "import site\n" % TAG)
     marca("metadados")
 
 # ------------------------------------------------------------ 3. java
@@ -227,7 +264,7 @@ comum para programas baixados da internet; ele faz parte deste pacote.
 Corretoras testadas: XP, Clear, Rico, Necton e BTG. Se voce opera em outra,
 entre em contato para que ela seja adicionada.
 
-Contato:  marcelo.pcf@gmail.com
+Contato:  https://marcelopcf.github.io/COIR/#contato
 Projeto:  https://github.com/MarceloPCF/COIR
 Pagina:   https://marcelopcf.github.io/COIR/
 Licenca:  MIT (arquivo LICENSE)

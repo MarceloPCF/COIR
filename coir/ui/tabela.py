@@ -115,11 +115,24 @@ def atualizar(
     tabela.update()
 
 
+MUITAS_COLUNAS = 6  # acima disso, a seção ganha o botão para esconder colunas
+
+
 def secao(s: Secao, altura: str = "h-[520px]") -> ui.aggrid:
-    """Uma seção de relatório (reports.modelo) na tela."""
-    if s.titulo:
-        ui.label(s.titulo).classes("coir-titulo text-base")
+    """Uma seção de relatório (reports.modelo) na tela; com muitas colunas, um menu para
+    escolher quais mostrar (só na tela: os arquivos exportados continuam completos)."""
+    with ui.row().classes("w-full items-center gap-2"):
+        if s.titulo:
+            ui.label(s.titulo).classes("coir-titulo text-base")
+        ui.space()
+        botao = ui.button("Colunas", icon="view_column").props("flat dense")
+        botao.set_visibility(len(s.colunas) > MUITAS_COLUNAS)
     tabela = grade(s.colunas, s.linhas, total=s.total, altura=altura, pelo_conteudo=True)
+    if len(s.colunas) > MUITAS_COLUNAS:
+        with botao, ui.menu().props("auto-close=false"), ui.column().classes("gap-0 p-2"):
+            for i, c in enumerate(s.colunas):
+                ui.checkbox(c.nome, value=True, on_change=lambda e, i=i: tabela.run_grid_method(
+                    "setColumnsVisible", [f"c{i}"], bool(e.value)))  # fmt: skip
     if s.nota:
         ui.label(s.nota).classes("coir-subtitulo text-xs")
     return tabela

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corretoras e mercados compatíveis com o COIR (XP, Clear, Rico, Necton, BTG)</title>
+<meta name="description" content="Quais corretoras o COIR já foi testado (XP, Clear, Rico, Necton e BTG), quais mercados da B3 ele controla e o que fazer se a sua corretora não está na lista.">
+<link rel="canonical" href="https://marcelopcf.github.io/COIR/guias/corretoras-e-mercados-compativeis/">
+<meta property="og:title" content="Corretoras e mercados compatíveis com o COIR">
+<meta property="og:description" content="Corretoras testadas (XP, Clear, Rico, Necton e BTG) e mercados da B3 controlados pelo COIR.">
+<meta property="og:url" content="https://marcelopcf.github.io/COIR/guias/corretoras-e-mercados-compativeis/">
+<meta property="og:site_name" content="COIR">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#102a43">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link rel="stylesheet" href="../guias.css">
+<script type="application/ld+json">
+{
+	"@context":"https://schema.org",
+	"@type":"TechArticle",
+	"headline":"Corretoras e mercados compatíveis com o COIR",
+	"description":"Corretoras testadas (XP, Clear, Rico, Necton e BTG) e mercados da B3 controlados pelo COIR.",
+	"inLanguage":"pt-BR",
+	"mainEntityOfPage":"https://marcelopcf.github.io/COIR/guias/corretoras-e-mercados-compativeis/",
+	"dateModified":"2026-10-13",
+	"isPartOf":{"@type":"WebSite","name":"COIR","url":"https://marcelopcf.github.io/COIR/"}
+}
+</script>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav aria-label="Navegação">
+      <a href="../../">COIR</a>
+      <a href="../extrair-notas-de-corretagem-sinacor-para-excel/">Como extrair as notas</a>
+      <a href="../planilhas-darf-irrf-irpf/">Planilhas</a>
+      <a href="https://github.com/MarceloPCF/COIR">GitHub</a>
+    </nav>
+    <h1>Corretoras e mercados compatíveis com o COIR</h1>
+    <p class="sub">Em quais corretoras o COIR foi testado e quais mercados da B3 ele controla.</p>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <h2>Corretoras testadas</h2>
+    <p>O COIR lê notas de corretagem no padrão SINACOR e foi testado com as corretoras abaixo.</p>
+    <ul>
+      <li>XP</li>
+      <li>Clear</li>
+      <li>Rico</li>
+      <li>Necton</li>
+      <li>BTG</li>
+    </ul>
+    <p>É possível contabilizar notas de corretoras diferentes para um mesmo CPF, e o programa lê a conta do cliente por nota quando um mesmo PDF reúne notas de contas diferentes.</p>
+
+    <h2>Minha corretora não está na lista</h2>
+    <p>Se você opera em outra corretora, abra um <a href="https://github.com/MarceloPCF/COIR/issues">pedido de corretora no GitHub</a> para que ela seja adicionada ao sistema.</p>
+    <div class="aviso">
+      <p><strong>Não anexe suas notas.</strong> Elas contêm dados pessoais, como CPF, operações e contas. Descreva o problema e indique a corretora, sem enviar os arquivos em issues, commits ou pull requests.</p>
+    </div>
+
+    <h2>Mercados controlados</h2>
+    <p>O COIR trabalha com as notas de corretagem da B3 (Brasil, Bolsa e Balcão) e contabiliza cada mercado à parte:</p>
+    <table>
+      <thead><tr><th scope="col">Mercado</th><th scope="col">O que inclui</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">À Vista</th><td>Operações comuns (Normais) e Day Trade</td></tr>
+        <tr><th scope="row">Futuros</th><td>Operações em contratos futuros</td></tr>
+        <tr><th scope="row">Commodities</th><td>Operações em commodities</td></tr>
+        <tr><th scope="row">Derivativos</th><td>Opções</td></tr>
+      </tbody>
+    </table>
+    <p>O resultado de cada mercado é organizado por mês e por ano. Veja como cada planilha funciona em <a href="../planilhas-darf-irrf-irpf/">planilhas do COIR para DARF, IRRF e IRPF</a>.</p>
+
+    <h2>Correções manuais</h2>
+    <p>Quando uma nota precisa de ajuste, o COIR aceita correções opcionais no arquivo <code>dados/ajustes_manuais.csv</code>, que permitem mudar ticker, conta, corretora, quantidade ou preço. O repositório traz um modelo do arquivo em <code>dados/ajustes_manuais.modelo.csv</code>.</p>
+
+    <h2>Requisitos</h2>
+    <ul>
+      <li>Windows de 64 bits.</li>
+      <li>Microsoft Excel instalado.</li>
+      <li>Nada além disso: o Python e o Java já vêm dentro do pacote.</li>
+    </ul>
+
+    <p><a class="cta" href="https://github.com/MarceloPCF/COIR/releases/latest">Baixar o COIR</a></p>
+
+    <nav class="relacionados" aria-label="Guias relacionados">
+      <h2>Veja também</h2>
+      <ul>
+        <li><a href="../extrair-notas-de-corretagem-sinacor-para-excel/">Como extrair notas de corretagem SINACOR para Excel</a></li>
+        <li><a href="../planilhas-darf-irrf-irpf/">Planilhas do COIR para DARF, IRRF e declaração do IRPF</a></li>
+        <li><a href="../../">Página inicial do COIR</a></li>
+      </ul>
+    </nav>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Dúvidas e pedidos: <a href="https://github.com/MarceloPCF/COIR/issues">issues no GitHub</a></span>
+    <span>COIR é gratuito, com licença MIT. <a href="https://github.com/MarceloPCF/COIR">Código-fonte no GitHub</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

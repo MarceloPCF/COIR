@@ -242,7 +242,10 @@ async def test_configuracoes_atualiza_as_tabelas_e_o_painel_avisa(
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/")
         await user.should_see("Há tabelas de referência novas (01/01/2099).", retries=ESPERA)
+        await user.should_see("Há uma versão nova do COIR: 99.0.0.")
         await user.open("/configuracoes")
+        user.find(marker="verificar-versao").click()
+        await user.should_see("Versão nova: 99.0.0.", retries=ESPERA)
         await user.should_see("o da instalação")
         user.find(marker="verificar-tabelas").click()
         await user.should_see("Novo: 01/01/2099", retries=ESPERA)
@@ -279,6 +282,41 @@ async def test_proventos_data_do_credito_do_jcp_muda_o_ano(tmp_path: Path) -> No
         user.find(marker=f"credito-{chave[:12]}").type("15/12/2025")
         user.find(marker=f"salvar-credito-{chave[:12]}").click()
         await user.should_see("declarado em 2025 · informada", retries=ESPERA)
+
+
+@pytest.mark.asyncio
+async def test_proventos_origem_do_reembolso_informada(tmp_path: Path) -> None:
+    """F9: reembolso de BTC sem provento do dia para comparar (origem não identificada); o
+    usuário informa JCP pelo informe e a origem passa a valer, gravada no banco."""
+    from sqlalchemy import select
+
+    from coir.db.modelos import MovimentacaoB3, OrigemReembolso
+    from coir.db.sessao import conectar
+
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    mov = planilha(tmp_path / "movimentacao-2026-10-16.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "10/03/2026", "Reembolso", "ITSA4 - ITAUSA",
+         "XP INVESTIMENTOS CCTVM S/A", 0, "-", "37,15"],
+    ]})  # fmt: skip
+    importar_planilhas(estado.banco, [mov], 1, AGORA)
+    with conectar(estado.banco) as fabrica, fabrica() as s:
+        chave = s.scalars(select(MovimentacaoB3.chave)).one()
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/proventos")
+        await user.should_see("Origem dos reembolsos de BTC", retries=ESPERA)
+        await user.should_see("não identificada")
+        seletor = user.find(marker=f"origem-{chave[:12]}").elements.pop()
+        assert isinstance(seletor, ui.select)
+        seletor.set_value("JCP")
+        await user.should_see("Origem gravada.", retries=ESPERA)
+        await user.should_see("informada", retries=ESPERA)
+    with conectar(estado.banco) as fabrica, fabrica() as s:
+        assert [o.origem for o in s.scalars(select(OrigemReembolso))] == ["JCP"]
+    [p] = [x for x in estado.proventos()[0] if x.chave == chave]
+    assert (p.reembolso_de, p.reembolso_informado) == ("JCP", True)
 
 
 @pytest.mark.asyncio

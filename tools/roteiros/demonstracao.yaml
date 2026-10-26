@@ -1,0 +1,115 @@
+# Roteiro de demonstração: um ano (2025) de um investidor fictício, para o banco das capturas de
+# tela e do manual. Tudo é inventado (titular, conta, preços); os tickers e as datas de pregão são
+# reais para o COIR reconhecer os ativos e o calendário.
+#
+# Negócio Bovespa: "C|V [MERCADO] ESPECIFICAÇÃO QUANTIDADE PREÇO [D]". MERCADO: VISTA (padrão),
+# CALL, PUT, EXERC_CALL, EXERC_PUT; D no fim marca day trade. Ação e FII pelo ticker (a nota imprime
+# o nome de pregão); opção pela série seguida da classe do objeto ("PETRC380 PN"; exercício com o
+# sufixo E). Negócio BM&F (segmento: bmf): "C|V CONTRATO QUANTIDADE PREÇO", sempre day trade; o
+# preço de ajuste do dia é o do último negócio da nota. Preços sempre com vírgula ("36,20").
+#
+# O que o ano mostra: compras à vista, venda isenta (abaixo de R$ 20 mil), venda coberta de CALL
+# com exercício (venda tributável), day trade de ações e de mini-índice, PUT que vira pó, prejuízo
+# compensado meses depois, FII com lucro (20%) e rendimentos, dividendos e JCP, DARF a pagar.
+
+titular: Titular de Demonstração
+corretora: XP
+conta: "1234567"
+primeira_nota: 41001
+
+# Custos impressos nas notas (proporção do volume, ao centavo) e a retenção na fonte (0,005% das
+# vendas comuns; 1% do resultado positivo do day trade; até R$ 1,00 a retenção é dispensada).
+custos:
+  liquidacao: "0.00025"
+  emolumentos: "0.00005"
+  corretagem: "0.00"
+  bmf_registro_por_contrato: "0.10"
+  bmf_emolumentos_por_contrato: "0.25"
+irrf:
+  comum: "0.00005"
+  day_trade: "0.01"
+  minimo: "1.00"
+
+vencimentos_futuros:
+  WINM25: 2025-06-18
+  WINV25: 2025-10-15
+
+notas:
+  - data: 2025-01-10
+    negocios:
+      - C PETR4 1000 36,20
+      - C BBAS3 500 26,40
+      - C WEGE3 200 52,10
+      - C HGLG11 100 155,00
+  - data: 2025-02-07
+    negocios:
+      - V CALL PETRC380 PN 1000 0,85
+  - data: 2025-02-14
+    negocios:
+      - V WEGE3 200 55,30
+  - data: 2025-03-21
+    negocios:
+      - V EXERC_CALL PETRC380E PN 1000 38,00
+  - data: 2025-04-08
+    negocios:
+      - C VALE3 500 54,00 D
+      - V VALE3 500 55,20 D
+  - data: 2025-05-06
+    negocios:
+      - C PUT VALEQ550 ON 1000 0,40
+  - data: 2025-05-12
+    negocios:
+      - V BBAS3 500 24,10
+  - data: 2025-06-03
+    segmento: bmf
+    negocios:
+      - C WINM25 2 137.500,00
+      - V WINM25 2 138.250,00
+  - data: 2025-06-17
+    negocios:
+      - C ITSA4 2000 10,50
+  - data: 2025-07-15
+    negocios:
+      - V HGLG11 100 162,00
+      - C PETR4 500 32,00
+  - data: 2025-08-20
+    negocios:
+      - V ITSA4 2000 11,80
+  - data: 2025-09-10
+    segmento: bmf
+    negocios:
+      - C WINV25 3 141.000,00
+      - V WINV25 3 140.600,00
+  - data: 2025-10-14
+    negocios:
+      - C BBAS3 1000 22,00 D
+      - V BBAS3 1000 22,50 D
+  - data: 2025-11-04
+    negocios:
+      - C MXRF11 1000 9,60
+  - data: 2025-12-05
+    negocios:
+      - V PETR4 300 33,50
+
+# DARFs pagas em dia (competência -> data do pagamento, pelo valor apurado); a de 10/2025 fica em
+# aberto para a tela mostrar multa e juros de mora.
+darfs_pagas:
+  2025-03: 2025-04-25
+  2025-04: 2025-05-28
+  2025-06: 2025-07-29
+  2025-07: 2025-08-27
+  2025-08: 2025-09-26
+
+# Proventos creditados (planilha de movimentação da B3): data, tipo como a B3 imprime, ticker,
+# quantidade, valor por ação e, se diferente de quantidade x valor, o valor creditado (o JCP vem
+# líquido do IRRF de 15%; o valor por ação é o bruto aprovado, que casa com a data com da B3).
+proventos:
+  - [2025-02-17, Rendimento, HGLG11, 100, "1,10"]
+  - [2025-03-17, Rendimento, HGLG11, 100, "1,10"]
+  - [2025-03-20, Dividendo, PETR4, 1000, "0,45"]
+  - [2025-03-31, Juros Sobre Capital Próprio, BBAS3, 500, "0,3426", "145,61"]
+  - [2025-04-15, Rendimento, HGLG11, 100, "1,10"]
+  - [2025-05-15, Rendimento, HGLG11, 100, "1,10"]
+  - [2025-06-16, Rendimento, HGLG11, 100, "1,10"]
+  - [2025-08-20, Dividendo, PETR4, 500, "0,35"]
+  - [2025-12-15, Rendimento, MXRF11, 1000, "0,10"]

@@ -1,5 +1,5 @@
 """Importação das planilhas da Área do Investidor da B3 (movimentação, negociação e relatórios
-consolidados), guardadas em ``<dados>/_relatorios-b3``."""
+consolidados), guardadas na pasta da B3 (``<dados>/_relatorios-b3`` ou a escolhida)."""
 
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -10,8 +10,8 @@ from coir.erros import CoirError
 from coir.servicos.b3 import RelatorioB3, importar_planilhas
 from coir.servicos.estado import Estado
 from coir.servicos.importacao import copiar_para_pasta
+from coir.ui import pastas
 
-PASTA_B3 = "_relatorios-b3"
 TIPOS = {"movimentacao": "movimentação", "negociacao": "negociação", "posicao": "posição"}
 
 
@@ -22,7 +22,7 @@ def _planilhas(pasta: Path) -> list[Path]:
 
 
 def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
-    pasta_b3 = estado.dados / PASTA_B3
+    pasta_b3 = estado.pasta_b3
     ocupado = {"sim": False}
 
     async def importar(arquivos: Sequence[Path]) -> None:
@@ -91,7 +91,8 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 icon="folder_open",
                 on_click=lambda: importar(_planilhas(pasta_b3)),
             ).props("outline").mark("importar-pasta-b3")
-        ui.label(f"Pasta das planilhas: {pasta_b3}").classes("coir-subtitulo text-xs")
+        pastas.seletor(estado, "pasta_b3", "Pasta das planilhas", pasta_b3,
+                       ui.navigate.reload)  # fmt: skip
     resultado = ui.column().classes("w-full gap-0")
 
     def mostrar(rel: RelatorioB3) -> None:

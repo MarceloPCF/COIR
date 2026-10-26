@@ -8,14 +8,77 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
-## [Não lançado] - 3.0.0 (em desenvolvimento)
+## [3.0.0] - 2026-10-26
 
-Nova versão escrita do zero, sem dependência do Excel. O código da 2.1.1 fica em `legacy/` como referência.
+Nova versão escrita do zero, sem dependência do Excel. É um programa para Windows que se baixa,
+extrai e abre (`COIR.exe`), sem instalar Python nem Java. Os dados ficam numa pasta sua
+(`COIR_DADOS`); nada sai do computador. O código da 2.1.1 fica em `legacy/` como referência.
+
+### Em resumo
+- **Telas**: painel do ano, importação de notas e planilhas da B3, notas com o PDF ao lado,
+  operações, apuração mensal com memória de cálculo, DARF (com multa e juros de mora, pagamento e
+  comprovante), proventos, outros custos, declaração anual ficha a ficha, relatórios, carteira e
+  preço médio, eventos corporativos, opções, futuros, conciliação com a B3, cadastros e
+  configurações. Tema claro e escuro.
+- **Leitura das notas**: um só extrator SINACOR (Bovespa e BM&F) para Ágora, BTG/Necton, Clear,
+  Rico e XP, com conciliação ao centavo: nota que não fecha não entra.
+- **Imposto**: preço médio por titular, day trade pela marcação da corretora, isenção de
+  R$ 20 mil, compensação de prejuízo por categoria, FII, opções (exercício e pó), termo, futuros
+  (inclusive em US$), IRRF por ficha, DARF com mínimo de R$ 10 e vencimento no último dia útil.
+- **Declaração**: Bens e Direitos (um item por ativo, CNPJ e discriminação prontos), rendimentos
+  isentos e exclusivos por fonte pagadora, renda variável mês a mês, conferência com a declaração
+  entregue.
+- **Tabelas públicas** (eventos, proventos, feriados, Selic) atualizadas pelo botão "Atualizar
+  tabelas"; aviso de versão nova do programa (só avisa, não baixa).
+- **Atualização segura**: o banco é migrado automaticamente com backup; banco criado por versão
+  mais nova é recusado com explicação.
+- O que ficou para depois está em [`docs/roteiro-pos-3.0.md`](docs/roteiro-pos-3.0.md).
+
+### Por que meus números mudaram em relação à v2
+A v3 refaz o cálculo a partir das notas, pela norma. Diferenças esperadas em relação à planilha
+da v2 (todas são correções da v2):
+- **Preço médio por titular**, somando todas as corretoras (a v2 usava o PM por conta).
+- **Custos da nota inteiros**: a v3 usa o total que concilia com o resumo da nota; a v2 lançava
+  parte dos custos.
+- **IRRF de day trade (1%) deduzido** no mês; a v2 não o deduzia.
+- **Saldo de IRRF transportado** para os meses seguintes do ano; a v2 o perdia no próprio mês.
+- **Isenção de R$ 20 mil pelo valor das vendas de ações à vista do mês**; a v2 a inferia pelo IRRF,
+  o que falhava com duas ou mais corretoras e podia isentar ETF.
+- **Prejuízo de mês isento compensável**; a v2 o descartava.
+- **FII como categoria própria** (20%, prejuízo separado); a v2 não tinha FII.
+- **DARF**: mínimo de R$ 10 (abaixo disso acumula para o mês seguinte) e vencimento no último dia
+  útil do mês seguinte; a v2 não aplicava o mínimo e usava o último dia corrido.
+- **Eventos corporativos** (desdobramento, grupamento, bonificação, incorporação, cisão, troca de
+  ticker) aplicados pelas tabelas públicas da B3, sem ajuste manual.
+- **Exercício de opção** na linha do ativo-objeto, sem isenção; opção que virou pó apurada no
+  vencimento.
+- **IRRF até R$ 1,00** (dispensado, não retido) não vira crédito.
 
 ### Adicionado
 - Licença da v3: AGPL-3.0-or-later (a v2 em `legacy/` continua MIT).
 - Fase F0 (fundação): projeto uv com Python 3.13, estrutura `coir/`, configuração da pasta de dados (`COIR_DADOS`), CLI mínima, verificador de dados pessoais (pre-commit, pre-push e CI) e testes automatizados em Windows e Linux.
 - Fase F8 (declaração anual): fichas do programa IRPF por exercício (`data/irpf/<exercício>.yaml`) com Bens e Direitos (um item por ativo, CNPJ do pacote público da B3, discriminação pronta), Dívidas (posição vendida), rendimentos isentos e exclusivos por fonte pagadora, renda variável mês a mês e imposto pago; tela "Declaração anual" com botão de copiar e marcação do que já foi lançado; leitura e conferência da declaração entregue (PDF do programa); data do crédito do JCP (a mais tarde entre a aprovação e a data com) pela B3, inclusive pelo histórico público de JCP desde 2016 (`data/proventos_historico_b3.csv`), pela declaração entregue ou informada; JCP pago mais de um ano depois do crédito a receber em cada 31/12; origem dos reembolsos de BTC; venda no dia da liquidação do termo pelo preço a termo, com o excedente saindo das ações antigas pelo custo médio; lista gerada das fontes fiscais (`docs/fontes-fiscais.md`).
+- Fase F9 (versão 3.0): programa para Windows em pasta (`COIR.exe` e `coir-cli.exe`, PyInstaller) com `tools/empacotar.py` e workflow que cria o release como rascunho; identidade visual da logomarca (topo marinho, menu retrátil); aviso de versão nova; banco mais novo que o programa recusado com tela de erro; day trade pela marcação D da corretora (parâmetro `day_trade_criterio`); saldos iniciais em 31/12 (custódia e prejuízo por categoria); origem do reembolso de BTC informada pelo usuário; leitura da DIRPF 2024; registro de atividades legível; gerador de notas fictícias (`tools/notas_ficticias.py`) e banco de demonstração; capturas de tela automáticas (`tools/capturas.py`); manual do usuário em `docs/manual/`, guia de como adicionar corretora e site novo.
+
+## [2.2.0] - 2026-10-21
+
+Versão da v2 (planilha), em `legacy/`.
+
+Atualização para o Python 3.15 e para as versões atuais das bibliotecas (pandas 3, numpy 2.5, tabula-py 2.10, xlwings 0.37, openpyxl 3.1). Compatibilidade com o pandas atual ([#11](https://github.com/MarceloPCF/COIR/issues/11)), com base na contribuição de [@tommmdl](https://github.com/tommmdl) ([#34](https://github.com/MarceloPCF/COIR/pull/34)).
+
+Os resultados foram comparados com os da versão 2.1.1 em todas as notas de teste (XP, BTG e Rico), valor por valor, e no Excel em uma amostra de notas de todos os anos e corretoras.
+
+### Corrigido
+- Preenchimento de células vazias com `fillna(..., inplace=True)` em uma coluna trocado por atribuição. No pandas 3 a forma antiga não altera nada e os valores vazios das taxas continuariam vazios. (@tommmdl)
+- Agrupamentos (`agrupar`, `agrupar_btg`, `agrupar_bmf`) usam `'sum'` em vez da função `sum` do Python, depreciada no pandas 2. (@tommmdl)
+- `agrupar_operacoes` e `agrupar_operacoes_correcao`: no pandas 3, `groupby(Series)` seguido de `get_group` falha quando o grupo tem uma só linha, e o erro era engolido, descartando a operação sem aviso. Agora o agrupamento é feito pelo nome da coluna.
+- Notas XP/Rico/Clear de várias páginas em que algumas linhas trazem só a quantidade (sem marca de observação) davam erro (`TypeError`) ou, no pandas 3, quantidade 0. Exemplo: XP 2024-11.
+- Python 3.15 usa UTF-8 por padrão; a saída do `taskkill` (usado para fechar o Excel) é lida agora com tolerância a caracteres inválidos, em vez de interromper a gravação no Excel.
+
+### Alterado
+- Python mínimo: 3.12 (exigido pelo numpy 2.5). Pacote para Windows com Python 3.15.
+- `requirements.txt` com as versões atuais testadas.
+- `tools/montar_pacote.py` passou a calcular as dependências do pacote a partir das bibliotecas instaladas (arquivo `RECORD` de cada uma), em vez de uma lista fixa de arquivos, e aceita a versão do Python embutido informada pelo arquivo `.zip`.
 
 ## [2.1.1] - 2026-10-09
 
@@ -74,5 +137,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.0.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.0
+[2.2.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.2.0
 [2.1.1]: https://github.com/MarceloPCF/COIR/releases/tag/v2.1.1
 [2.1.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.1.0

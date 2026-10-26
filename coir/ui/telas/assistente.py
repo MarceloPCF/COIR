@@ -15,6 +15,7 @@ from coir.domain.cpf import cpf_valido
 from coir.erros import CoirError
 from coir.servicos import cadastros
 from coir.servicos.estado import Estado
+from coir.ui.dialogos import escolher_pasta
 from coir.ui.telas import importar
 
 
@@ -40,12 +41,21 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ui.label("As notas em PDF, o banco do COIR, os backups e os relatórios.").classes(
                 "coir-subtitulo"
             )
-            campo = (
-                ui.input("Pasta de dados", value=str(estado.dados))
-                .props("outlined dense")
-                .classes("w-full")
-                .mark("pasta-dados")
-            )
+            with ui.row().classes("w-full items-center gap-2 no-wrap"):
+                campo = (
+                    ui.input("Pasta de dados", value=str(estado.dados))
+                    .props("outlined dense")
+                    .classes("grow")
+                    .mark("pasta-dados")
+                )
+
+                async def procurar() -> None:
+                    escolhida = await escolher_pasta(Path(campo.value or str(estado.dados)))
+                    if escolhida is not None:
+                        campo.set_value(str(escolhida))
+
+                ui.button("Procurar...", icon="folder_open", on_click=procurar).props(
+                    "outline").mark("procurar-pasta")  # fmt: skip
             situacao = ui.label(_contar_pdfs(estado.dados)).classes("coir-subtitulo text-sm")
             if os.environ.get(VAR_DADOS, "").strip():
                 ui.label(

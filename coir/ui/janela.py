@@ -9,9 +9,11 @@ from datetime import datetime
 
 from nicegui import native, ui
 
-from coir.config import configurar_registro
+from coir.config import VERSAO, configurar_registro
+from coir.erros import CoirError
 from coir.servicos.estado import Estado
-from coir.ui.app import montar
+from coir.ui import tema
+from coir.ui.app import montar, montar_erro
 
 log = logging.getLogger(__name__)
 WEBVIEW2 = (
@@ -41,16 +43,25 @@ def tem_webview2() -> bool:
 
 def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None,
             abrir: bool = True) -> None:  # fmt: skip
-    if estado.existe:  # banco de versão anterior: migra (com backup) antes de abrir as telas
-        estado.preparar(datetime.now())
     configurar_registro(estado.dados)
+    log.info("COIR %s aberto (pasta de dados: %s)", VERSAO, estado.dados)
+    erro: str | None = None
+    if estado.existe:  # banco de versão anterior: migra (com backup) antes de abrir as telas
+        try:
+            estado.preparar(datetime.now())
+        except CoirError as falha:  # a janela abre e explica (banco mais novo, migração falhou)
+            log.exception("o banco não abriu")
+            erro = str(falha)
     nativo = not navegador and tem_webview2()
     if not navegador and not nativo:
         log.warning("WebView2 não encontrado: o COIR abre no navegador padrão")
     ui.run(
-        lambda: montar(estado),
-        title="COIR", host="127.0.0.1", port=porta or native.find_open_port(),
+        (lambda: montar_erro(estado, erro)) if erro else (lambda: montar(estado)),
+        title="COIR", favicon=tema.ICONE, host="127.0.0.1", port=porta or native.find_open_port(),
         native=nativo, window_size=(1440, 900) if nativo else None, reload=False,
         show=abrir and not nativo, language="pt-BR", dark=None, show_welcome_message=False,
         uvicorn_logging_level="warning",
+        # cálculo pesado (apuração do histórico inteiro) pode segurar o servidor alguns segundos:
+        # a janela espera reconectar em vez de perder a página ("conexão perdida")
+        reconnect_timeout=30,
     )  # fmt: skip

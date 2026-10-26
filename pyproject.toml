@@ -1,6 +1,6 @@
 [project]
 name = "coir"
-version = "3.0.0.dev0"
+version = "3.0.0"
 description = "Controle de Operações e Imposto de Renda (B3) — local e offline"
 readme = "README.md"
 license = "AGPL-3.0-or-later"
@@ -29,7 +29,9 @@ coir = "coir.cli:main"
 [dependency-groups]
 dev = [
     "hypothesis>=6.120",
+    "playwright>=1.48",
     "pre-commit>=4.0",
+    "pyinstaller>=6.10",
     "pyright>=1.1.390",
     "pytest>=8.3",
     "pytest-asyncio>=1.4.0",

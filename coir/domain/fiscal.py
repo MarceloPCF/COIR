@@ -79,6 +79,7 @@ class OperacaoMotor(Modelo):
     objeto_tipo: TipoAtivo | None = None  # opção: tipo do ativo-objeto (None: não identificado)
     liquidacao_termo: date | None = None  # compra a termo: entra na carteira nesta data
     pme_ate: date | None = None  # compra elegível à isenção de PME: vendas isentas até esta data
+    marcada_dt: bool = False  # a nota marca o negócio como day trade (observação "D")
 
 
 class TipoAjuste(StrEnum):
@@ -145,11 +146,29 @@ class OutroCusto(Modelo):
     descricao: str = ""
 
 
+class SaldoInicial(Modelo):
+    """Prejuízo a compensar em 31/12 de ``ano`` (valores positivos), de quem começa a usar o COIR
+    sem o histórico de notas: vale como o prejuízo anterior de janeiro seguinte, por categoria
+    (comum, day trade e FII não se compensam entre si; IN RFB 1.585/2015 arts. 37 §2º, 64 e 65).
+    Vem da ficha de renda variável de dezembro da última declaração."""
+
+    titular: int
+    ano: int
+    comum: Decimal = ZERO
+    day_trade: Decimal = ZERO
+    fii: Decimal = ZERO
+
+    def de(self, categoria: "Categoria") -> Decimal:
+        return {Categoria.COMUM: self.comum, Categoria.DAY_TRADE: self.day_trade,
+                Categoria.FII: self.fii}[categoria]  # fmt: skip
+
+
 class TipoEvento(StrEnum):
     DESDOBRAMENTO = "DESDOBRAMENTO"
     GRUPAMENTO = "GRUPAMENTO"
     BONIFICACAO = "BONIFICACAO"
     SUBSCRICAO = "SUBSCRICAO"
+    CUSTODIA_INICIAL = "CUSTODIA_INICIAL"  # posição em 31/12 de quem não tem as notas anteriores
     REDUCAO_CAPITAL = "REDUCAO_CAPITAL"
     TRANSFERENCIA = "TRANSFERENCIA"  # custódia entre contas do mesmo titular
     INCORPORACAO = "INCORPORACAO"  # troca de A por B com o custo (ver NaturezaEvento)

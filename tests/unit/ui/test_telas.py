@@ -1,5 +1,6 @@
 """F6: fluxos das telas 1, 3, 4 e 5 sem navegador (assistente, importar, notas, operações)."""
 
+import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
@@ -129,6 +130,27 @@ async def test_notas_abre_a_nota_com_a_conciliacao(demo: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_notas_amplia_a_pagina_do_pdf(tmp_path: Path) -> None:
+    """A página ampliada aparecia em branco (q-img preguiçoso dentro do diálogo): agora é uma
+    imagem simples, renderizada maior ao abrir."""
+    estado = _estado(criar(tmp_path / "demo", pdfs=True))
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/notas")
+        lista = user.find(marker="lista-notas").elements.pop()
+        assert isinstance(lista, ui.aggrid)
+        user.find(marker="lista-notas").trigger("rowClicked", {"data": lista.options["rowData"][0]})
+        await user.should_see(marker="pagina-pdf", retries=ESPERA)
+        user.find(marker="pagina-pdf").trigger("click")
+        ampliada = user.find(marker="pagina-ampliada").elements.pop()
+        assert isinstance(ampliada, ui.interactive_image)
+        for _ in range(ESPERA):
+            if ampliada.source:
+                break
+            await asyncio.sleep(0.1)
+        assert str(ampliada.source).startswith("data:image/png;base64,")
+
+
+@pytest.mark.asyncio
 async def test_notas_filtra_pelo_numero(demo: Path) -> None:
     estado = _estado(demo)
     async with user_simulation(lambda: montar(estado)) as user:
@@ -159,6 +181,24 @@ async def test_operacoes_filtra_por_ativo_e_soma_no_rodape(demo: Path) -> None:
         assert {r["c4"] for r in grade.options["rowData"]} <= {
             r["c4"] for r in linhas if ativo in r["c4"]
         }
+
+
+@pytest.mark.asyncio
+async def test_operacoes_historico_de_todos_os_anos(demo: Path) -> None:
+    """O histórico de um ativo em todos os anos: com o interruptor, a grade passa a ter as
+    operações de todos os anos (a demonstração tem notas de 2008 a 2026)."""
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/operacoes")
+        grade = user.find(marker="grade-operacoes").elements.pop()
+        assert isinstance(grade, ui.aggrid)
+        do_ano = {r["c0"][-4:] for r in grade.options["rowData"]}
+        chave = user.find(marker="filtro-todos-os-anos").elements.pop()
+        assert isinstance(chave, ui.switch)
+        chave.set_value(True)
+        await user.should_see("Operações")
+        anos = {r["c0"][-4:] for r in grade.options["rowData"]}
+    assert do_ano == {"2026"} and len(anos) > 1
 
 
 @pytest.mark.asyncio
@@ -228,6 +268,46 @@ async def test_relatorios_mostra_e_exporta(demo: Path, tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_relatorio_com_muitas_secoes_mostra_uma_por_vez(
+    demo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A conferência do PM tem uma seção por ativo: dezenas de grades de uma vez derrubavam a
+    conexão da página; acima do limite, uma grade por vez, escolhida na lista."""
+    from coir.ui.telas import relatorios as tela
+
+    monkeypatch.setattr(tela, "MAX_SECOES", 1)
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/relatorios")
+        await user.should_see("Resumo fiscal do ano", retries=ESPERA)
+        user.find(marker="relatorio-conferencia-pm").click()
+        await user.should_see(marker="secao-relatorio", retries=ESPERA)
+        escolha = user.find(marker="secao-relatorio").elements.pop()
+        assert isinstance(escolha, ui.select) and len(escolha.options) > 1
+
+
+@pytest.mark.asyncio
+async def test_operacoes_finalizadas_numa_grade_com_filtros_e_resumo(demo: Path) -> None:
+    """Operações finalizadas do ano numa grade só, com o resumo por categoria e tipo; filtrar
+    pelo ativo deixa só as dele e o resumo acompanha (2016: day trade da nota XP antiga)."""
+    estado = _estado(demo)
+    estado.ano = 2016
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/relatorios")
+        await user.should_see("Resumo fiscal do ano", retries=ESPERA)
+        user.find(marker="relatorio-operacoes-finalizadas").click()
+        await user.should_see("Resultado por categoria e tipo", retries=ESPERA)
+        grade = user.find(marker="finalizadas").elements.pop()
+        resumo = user.find(marker="finalizadas-resumo").elements.pop()
+        assert isinstance(grade, ui.aggrid) and isinstance(resumo, ui.aggrid)
+        ativo = grade.options["rowData"][0]["c1"]
+        user.find(marker="finalizadas-ativo").type(ativo)
+        await user.should_see("Resultado por categoria e tipo")
+        assert {r["c1"] for r in grade.options["rowData"]} == {ativo}
+        assert resumo.options["pinnedBottomRowData"][0]["c2"] == str(len(grade.options["rowData"]))
+
+
+@pytest.mark.asyncio
 async def test_darf_marcar_como_paga(tmp_path: Path) -> None:
     from datetime import date
     from decimal import Decimal
@@ -262,6 +342,19 @@ async def test_darf_marcar_como_paga(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_painel_abre_a_darf_atrasada_de_outro_ano(demo: Path) -> None:
+    """A DARF da vez é de 2023 com o Painel em 2026: o botão leva à DARF no ano dela, já aberta,
+    com o formulário de pagamento fixo (antes era um painel retrátil que fechava ao clicar)."""
+    estado = _estado(demo)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/")
+        await user.should_see("Competência 02/2023", retries=ESPERA)
+        user.find(marker="ver-darf").click()
+        await user.should_see("Registrar o pagamento", retries=ESPERA)
+    assert estado.ano == 2023 and estado.darf_escolhida is None
+
+
+@pytest.mark.asyncio
 async def test_painel_mostra_darf_pendencias_e_grafico(demo: Path) -> None:
     estado = _estado(demo)
     async with user_simulation(lambda: montar(estado)) as user:
@@ -269,7 +362,7 @@ async def test_painel_mostra_darf_pendencias_e_grafico(demo: Path) -> None:
         await user.should_see("Painel de 2026")
         await user.should_see("Competência 02/2023", retries=ESPERA)  # atraso de outro ano
         await user.should_see("DARF(s) em atraso (2023")
-        await user.should_see("aviso(s) do motor no ano")
+        await user.should_not_see("aviso(s) para conferir no ano")  # venda a descoberto: sem aviso
         grafico = user.find(marker="grafico-resultado").elements.pop()
         assert isinstance(grafico, ui.echart)
         assert [s["name"] for s in grafico.options["series"]] == ["Comum", "Day trade", "FII"]
@@ -323,3 +416,45 @@ async def test_configuracoes_backup_restaurar_e_tema(
     assert [t.nome for t in estado.titulares()] == ["Antes"]
     assert len(list((tmp_path / "backups").glob("coir-*.db"))) == 2  # o de antes da restauração
     assert json.loads(configuracao_temporaria.read_text(encoding="utf-8"))["tema"] == "escuro"
+
+
+@pytest.mark.asyncio
+async def test_importar_troca_a_pasta_das_notas(
+    tmp_path: Path, configuracao_temporaria: Path
+) -> None:
+    """A pasta das notas pode ser outra (a que o usuário já usa); fica na configuração."""
+    estado = _estado(tmp_path / "dados" / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    minhas = tmp_path / "minhas-notas"
+    minhas.mkdir()
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/importar")
+        user.find(marker="pasta_notas-campo").clear().type(str(minhas))
+        user.find(marker="pasta_notas-usar").click()
+        await user.should_see("Pasta trocada.")
+    assert estado.pasta_notas == minhas.resolve()
+    assert json.loads(configuracao_temporaria.read_text(encoding="utf-8"))["pasta_notas"]
+
+
+@pytest.mark.asyncio
+async def test_cadastros_grava_o_prejuizo_inicial(tmp_path: Path) -> None:
+    """Quem começa sem as notas antigas informa o prejuízo a compensar em 31/12."""
+    from decimal import Decimal
+
+    from coir.servicos import saldos_iniciais
+
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/cadastros")
+        user.find(marker="aba-saldos").click()
+        user.find(marker="saldo-comum").type("1.234,56")
+        user.find(marker="saldo-fii").type("10")
+        user.find(marker="salvar-saldos").click()
+        await user.should_see("Saldos iniciais gravados.", retries=ESPERA)
+    saldo = saldos_iniciais.ler(estado.banco, 1)
+    assert saldo is not None
+    assert (saldo.ano, saldo.comum, saldo.day_trade, saldo.fii) == (
+        2025, Decimal("1234.56"), Decimal("0"), Decimal("10"))  # fmt: skip

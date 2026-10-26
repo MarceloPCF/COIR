@@ -1,15 +1,21 @@
 """Tela 18 — Configurações, em seções: pasta de dados, aparência, backups (fazer agora e
 restaurar, com cópia do banco atual antes) e o registro de atividades (sem CPF nem nome)."""
 
+import os
+import sys
 from collections.abc import Callable
+from pathlib import Path
 
 from nicegui import run, ui
 
-from coir.config import ARQUIVO_REGISTRO, ler_registro
+from coir.config import ARQUIVO_REGISTRO, VERSAO
 from coir.erros import CoirError
-from coir.servicos import atualizacao, manutencao
+from coir.reports.modelo import Coluna
+from coir.servicos import atualizacao, manutencao, versao
 from coir.servicos.estado import Estado
-from coir.ui import preferencias
+from coir.ui import preferencias, tabela
+
+COLUNAS_REGISTRO = (Coluna("Data e hora"), Coluna("Tipo"), Coluna("Área"), Coluna("O que houve"))
 
 
 def _tamanho(n: int) -> str:
@@ -44,6 +50,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             on_change=lambda e: preferencias.escolher_tema(e.value),
         ).props("inline").mark("tema")
 
+    _programa(estado)
     _tabelas(estado, ao_mudar)
 
     with _secao(
@@ -97,32 +104,110 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     mostrar_backups()
 
+    _registro(estado)
+
+
+def _registro(estado: Estado) -> None:
     with _secao(
         "Registro de atividades",
-        f"As últimas linhas de {ARQUIVO_REGISTRO.as_posix()} na pasta de dados: importações, "
-        "backups, migrações e erros. O registro mascara CPF e não grava os dados das consultas.",
+        "O que o COIR fez e os problemas que encontrou (importações, backups, migrações, "
+        "atualizações e erros), o mais recente primeiro. Clique numa linha com detalhe técnico "
+        "para vê-lo. O registro mascara CPF e não grava os dados das consultas.",
     ):
-        registro = ui.log(max_lines=300).classes("w-full h-[320px] text-xs").mark("registro")
+        with ui.row().classes("items-center gap-4"):
+            problemas = ui.switch("Só avisos e erros", value=False).mark("registro-problemas")
+            ui.button("Ler de novo", icon="refresh", on_click=lambda: ler()).props(
+                "flat dense"
+            ).tooltip("Mostra o que foi registrado depois que esta tela abriu")
+            ui.button("Abrir a pasta", icon="folder_open",
+                      on_click=lambda: _abrir_pasta(estado.dados / ARQUIVO_REGISTRO.parent),
+                      ).props("flat dense")  # fmt: skip
+        entradas: list[manutencao.EntradaRegistro] = []
+        grade = tabela.grade(COLUNAS_REGISTRO, [], larguras=(150, 100, 190, None),
+                             altura="h-[360px]", ao_clicar=lambda i: detalhe(i))  # fmt: skip
+        grade.mark("registro")
+        grade.options["columnDefs"][-1]["flex"] = 1  # a mensagem ocupa o resto da largura
+        grade.options["overlayNoRowsTemplate"] = "Nada registrado ainda."
 
         def ler() -> None:
-            registro.clear()
-            for linha in ler_registro(estado.dados) or ["(ainda sem registro)"]:
-                registro.push(linha)
+            entradas[:] = [e for e in manutencao.registro(estado.dados)
+                           if e.problema or not problemas.value]  # fmt: skip
+            tabela.atualizar(grade, COLUNAS_REGISTRO, [
+                (f"{e.quando:%d/%m/%Y %H:%M:%S}", e.tipo, e.area,
+                 e.mensagem + (" (ver detalhe)" if e.detalhe else ""))
+                for e in entradas
+            ], chaves=list(range(len(entradas))))  # fmt: skip
 
-        ui.button("Atualizar", icon="refresh", on_click=ler).props("flat dense")
+        def detalhe(indice: object) -> None:
+            if not isinstance(indice, int) or not entradas[indice].detalhe:
+                return
+            e = entradas[indice]
+            with ui.dialog() as janela, ui.card().classes("w-[900px] max-w-full"):
+                ui.label(f"{e.tipo} · {e.area} · {e.quando:%d/%m/%Y %H:%M:%S}").classes(
+                    "coir-titulo text-base")  # fmt: skip
+                ui.label(e.mensagem)
+                ui.label("Detalhe técnico (para enviar junto com o pedido de ajuda):").classes(
+                    "coir-subtitulo text-xs")  # fmt: skip
+                ui.code(e.detalhe, language="text").classes("w-full max-h-[50vh] overflow-auto")
+                ui.button("Fechar", on_click=janela.close).props("flat")
+            janela.open()
+
+        problemas.on_value_change(lambda _: ler())
         ler()
+
+
+def _abrir_pasta(pasta: Path) -> None:
+    if sys.platform == "win32" and pasta.is_dir():
+        os.startfile(pasta)
+    else:
+        ui.notify(str(pasta))
 
 
 def _data(d: object) -> str:
     return f"{d:%d/%m/%Y}" if d is not None else "sem data"
 
 
+def _programa(estado: Estado) -> None:
+    with _secao(
+        "Versão do programa",
+        "Consulta a área de downloads do site do COIR e só avisa: nada é baixado nem instalado "
+        "sozinho. Para atualizar, baixe o .zip novo e troque a pasta do programa; os dados ficam "
+        "na pasta de dados e o banco é migrado com backup na primeira abertura.",
+    ):
+        with ui.row().classes("items-center gap-3"):
+            ui.label(f"Instalada: {VERSAO}").classes("coir-numero").mark("versao-instalada")
+            botao = ui.button("Verificar nova versão", icon="update").mark("verificar-versao")
+        resultado = ui.row().classes("items-center gap-3").mark("versao-resultado")
+
+    async def verificar() -> None:
+        botao.set_enabled(False)
+        resultado.clear()
+        try:
+            nova = await run.io_bound(versao.nova, obter=estado.baixar)
+        except CoirError as erro:
+            with resultado:
+                ui.label(f"Não foi possível verificar: {erro}").classes("coir-negativo text-sm")
+            return
+        finally:
+            botao.set_enabled(True)
+            estado.versao_verificada = True
+        estado.versao_nova = nova
+        with resultado:
+            if nova is None:
+                ui.label("Você já tem a versão mais nova.").classes("coir-positivo text-sm")
+            else:
+                ui.label(f"Versão nova: {nova.versao}.").classes("coir-carimbo text-sm")
+                ui.link("Ver as novidades e baixar", nova.pagina, new_tab=True)
+
+    botao.on_click(verificar)
+
+
 def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     with _secao(
-        "Tabelas de referência",
+        "Tabelas da B3 e da Receita (ativos, eventos e Selic)",
         "Ativos, nomes de pregão, eventos corporativos da B3 e Selic, do pacote público do COIR "
-        "(atualizado toda semana). Só baixa dados públicos do GitHub: nada da sua carteira sai do "
-        "computador. Sem rede, vale o pacote que já está em uso.",
+        "(atualizado toda semana na área de downloads do site do COIR). Só baixa dados públicos: "
+        "nada da sua carteira sai do computador. Sem internet, vale o pacote que já está em uso.",
     ):
         em_uso = ui.label("").classes("coir-numero").mark("tabelas-em-uso")
         with ui.row().classes("items-center gap-3"):
@@ -131,7 +216,7 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 ui.button("Voltar à anterior", icon="undo").props("flat").mark("voltar-tabelas")
             )
         ui.checkbox(
-            "Verificar ao abrir o app (só consulta a versão do pacote)",
+            "Verificar ao abrir o app se há tabelas ou versão do COIR novas (só consulta)",
             value=preferencias.verificar_tabelas(),
             on_change=lambda e: preferencias.escolher_verificar_tabelas(bool(e.value)),
         ).mark("verificar-ao-abrir")

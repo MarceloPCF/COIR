@@ -1,6 +1,7 @@
 """F7a, tela 7: eventos lançados pela tela (conferidos pelo motor antes de gravar) e propostas
 vindas da movimentação da B3, sobre o banco de demonstração (sem dados reais)."""
 
+from dataclasses import replace
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -307,3 +308,14 @@ def test_ignorar_a_proposta_da_movimentacao_ignora_a_do_pacote(demo: Path) -> No
     eventos.ignorar(demo, 1, da_movimentacao.chave, AGORA)
     [unica] = eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
     assert ("eventos da B3" in unica.movimentacao, unica.situacao) == (True, "ignorada")
+
+
+def test_custodia_inicial_de_ativo_sem_nota_cadastra_o_ativo(demo: Path) -> None:
+    """Quem começa sem as notas antigas lança ativos que ainda não têm negócio no banco (rodada
+    do beta, 26/10/2026); código fora do formato de negociação é recusado."""
+    d = DadosEvento(tipo=TipoEvento.CUSTODIA_INICIAL, data=date(2023, 12, 31), conta=AGORA_CONTA,
+                    ticker="itub4", cv="C", quantidade=D(100), valor=D(3000))  # fmt: skip
+    eventos.salvar_lote(demo, 1, [(d, None)], REFS, FISCAIS)
+    assert _carteira(demo, date(2024, 1, 31))["ITUB4"] == (D(100), D(3000))
+    with pytest.raises(ImportacaoError, match="código de negociação inválido"):
+        eventos.salvar(demo, 1, replace(d, ticker="ITAU"), REFS, FISCAIS)

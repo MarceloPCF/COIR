@@ -57,7 +57,7 @@ def _valores(linhas: list[darf.LinhaDarf]) -> list[tuple[Valor, ...]]:
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("DARF").classes("coir-titulo-pagina")
     ui.label(
-        f"As DARFs de {estado.ano} de renda variável, o vencimento, o pagamento e a multa de "
+        f"As DARFs de {estado.ano} de renda variável, o vencimento, o pagamento, a multa "
         "e os juros de mora por atraso (Lei 9.430/1996 art. 61)."
     ).classes("coir-subtitulo")
     with ui.row().classes("w-full items-start gap-4"):
@@ -113,7 +113,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         ao_mudar()
         await carregar(competencia)
 
-    ui.timer(0.01, carregar, once=True)
+    escolhida, estado.darf_escolhida = estado.darf_escolhida, None
+    ui.timer(0.01, lambda: carregar(escolhida), once=True)
 
 
 def _campo(numero: str, rotulo: str, valor: str, classe: str = "") -> None:
@@ -201,9 +202,11 @@ def _documento(
                     "tabela do COIR."
                 ).classes("coir-subtitulo text-sm")
             elif dif is not None and dif > 0:
-                ui.label(f"Pago a maior: {_r(dif)} (restituição pelo PER/DCOMP).").classes(
-                    "coir-carimbo text-sm"
-                )
+                ui.label(
+                    f"O valor registrado é {_r(dif)} maior que o devido para essa data. Se foi "
+                    "engano no registro, corrija abaixo; se pagou mesmo a mais, a diferença pode "
+                    "ser pedida de volta à Receita (PER/DCOMP)."
+                ).classes("coir-carimbo text-sm")
             if p.comprovante:
                 ui.label(f"Comprovante: {p.comprovante}").classes("coir-subtitulo text-xs")
             if p.observacao:
@@ -235,12 +238,17 @@ def _formulario(
     hoje = estado.agora().date()
     sugestao = x.multa.pagamento if x.multa else hoje
     comprovante: list[tuple[str, bytes]] = []
-    titulo = "Alterar o pagamento" if x.pagamento else "Marcar como paga"
-    with (
-        ui.expansion(titulo, icon="task_alt", value=x.pagamento is None)
-        .classes("coir-folha w-full")
-        .mark("form-pagamento")
-    ):
+    if x.pagamento:
+        caixa = ui.expansion("Alterar o pagamento", icon="edit", value=False)
+    else:  # aberto e fixo: o título não fecha o formulário
+        caixa = ui.column().classes("gap-2")
+        with caixa:
+            ui.label("Registrar o pagamento").classes("coir-titulo text-base")
+            ui.label(
+                "Informe a data e o valor pagos (com multa e juros, se pagou em atraso) e salve: a "
+                "DARF passa a constar como paga."
+            ).classes("coir-subtitulo text-xs")
+    with caixa.classes("coir-folha w-full").mark("form-pagamento"):
         data = (
             ui.input(
                 "Data do pagamento",
@@ -257,6 +265,20 @@ def _formulario(
             .mark("valor-pagamento")
         )
         observacao = ui.input("Observação").props("outlined dense").classes("w-full")
+        sugerido = {"valor": valor.value}
+
+        def nova_data() -> None:
+            """Troca a data: o valor sugerido acompanha (multa e juros até essa data), a não ser
+            que o valor já tenha sido digitado."""
+            try:
+                dia = date.fromisoformat(data.value or "")
+            except ValueError:
+                return
+            if valor.value == sugerido["valor"]:
+                sugerido["valor"] = _r(darf.devido_em(x, dia, estado.fiscais))
+                valor.set_value(sugerido["valor"])
+
+        data.on_value_change(nova_data)
 
         async def receber(e: events.UploadEventArguments) -> None:
             comprovante[:] = [(e.file.name, await e.file.read())]
@@ -297,4 +319,4 @@ def _formulario(
             ui.notify("Pagamento registrado.", type="positive")
             await _chamar(recarregar, (x.ano, x.mes))
 
-        ui.button("Salvar o pagamento", icon="save", on_click=salvar).mark("salvar-pagamento")
+        ui.button("Salvar o pagamento", icon="task_alt", on_click=salvar).mark("salvar-pagamento")

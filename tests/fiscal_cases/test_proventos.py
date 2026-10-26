@@ -18,7 +18,7 @@ from coir.domain.b3 import LinhaMovimentacao
 from coir.domain.fiscal import TipoAtivo
 from coir.domain.parametros import TiposAtivo
 from coir.domain.proventos import LinhaB3, Provento, TipoProvento
-from coir.engine.proventos import proventos
+from coir.engine.proventos import Candidatos, proventos
 from coir.erros import MotorError
 from tests.fiscal_cases.apoio import REFS
 
@@ -256,3 +256,31 @@ def test_jcp_com_data_com_em_janeiro_e_retencao_do_ano_anterior_so_avisa() -> No
     [b], _ = _proventos(_jcp(date(2026, 1, 30), "0.5", "425", credito))
     assert (b.ano_declaracao, b.bruto) == (2026, D("515.15"))
     assert "a empresa tratou o crédito como de 2025 (confira o informe)" in b.observacao
+
+
+def test_reembolso_com_origem_informada_pelo_usuario() -> None:
+    """F9 (parecer do especialista): a origem informada pelo usuário, pelo informe ou extrato,
+    prevalece sobre a identificada pelo valor; o tratamento é o da origem (Lei 13.043/2014 art.
+    7º; Lei 15.265/2025 arts. 20 e 21). Mesmo caso do JCP de 0,520530743 por ação (442,45 = 1.000
+    ações): (a) informada JCP = a identificada: fica a quantidade; (b) informada DIVIDENDO
+    contradiz o valor: vale a informada, sem quantidade, com aviso; (c) sem provento do dia nas
+    tabelas: vale a informada, com aviso de que não há provento dessa origem."""
+    publicos = {("VALE", date(2025, 3, 14)): [("JCP", D("0.520530743")),
+                                               ("DIVIDENDO", D("2.141847479"))]}  # fmt: skip
+    linha = mov(date(2025, 3, 14), "Reembolso", "VALE3 - VALE", "0", None, "442.45")
+
+    def com(origem: str, candidatos: Candidatos = publicos) -> tuple[Provento, list[str]]:
+        avisos: list[str] = []
+        informada = linha.model_copy(update={"reembolso_informado": origem})
+        [p] = proventos([informada], TIPOS, REFS.parametros, avisos, candidatos)
+        return p, avisos
+
+    a, avisos_a = com("JCP")
+    assert a.reembolso_de == "JCP" and avisos_a == []
+    assert "de 1000 ações emprestadas (BTC) (origem informada pelo usuário)" in a.observacao
+    b, avisos_b = com("DIVIDENDO")
+    assert b.reembolso_de == "DIVIDENDO" and "1000 ações" not in b.observacao
+    assert any("diverge da identificada pelo valor (JCP, 1000 ações)" in x for x in avisos_b)
+    c, avisos_c = com("JCP", {})
+    assert c.reembolso_de == "JCP"
+    assert any("não há JCP da empresa pagos no mesmo dia" in x for x in avisos_c)

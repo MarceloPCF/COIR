@@ -32,17 +32,21 @@ class LinhaOperacao:
     custos: Decimal | None  # BM&F: os custos entram no resultado do dia (não por negócio)
 
 
-def livro(banco: Path, titular: int | None, ano: int) -> list[LinhaOperacao]:
+def livro(banco: Path, titular: int | None, ano: int | None) -> list[LinhaOperacao]:
+    """As operações do ano (``ano=None``: de todos os anos, para o histórico de um ativo)."""
     consulta = (
         select(NotaCorretagem)
         .join(Conta)
-        .where(NotaCorretagem.data_pregao.between(date(ano, 1, 1), date(ano, 12, 31)))
         .options(
             selectinload(NotaCorretagem.operacoes),
             selectinload(NotaCorretagem.conta).selectinload(Conta.corretora),
         )
         .order_by(NotaCorretagem.data_pregao, NotaCorretagem.id)
     )
+    if ano is not None:
+        consulta = consulta.where(
+            NotaCorretagem.data_pregao.between(date(ano, 1, 1), date(ano, 12, 31))
+        )
     if titular is not None:
         consulta = consulta.where(Conta.titular_id == titular)
     linhas: list[LinhaOperacao] = []
