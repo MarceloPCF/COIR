@@ -1,6 +1,6 @@
 [project]
 name = "coir"
-version = "3.0.0.dev0"
+version = "3.0.0"
 description = "Controle de Operações e Imposto de Renda (B3) — local e offline"
 readme = "README.md"
 license = "AGPL-3.0-or-later"

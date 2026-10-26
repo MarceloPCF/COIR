@@ -40,12 +40,12 @@ def _pacote(tmp: Path, data: str = "2099-01-01", formato: int = referencias.FORM
     return zip_.read_bytes()
 
 
-PAGINA_V3 = "https://github.com/MarceloPCF/COIR/releases/tag/v3.0.0"
+PAGINA_V3 = "https://github.com/MarceloPCF/COIR/releases/tag/v99.0.0"
 
 
 def _github(zip_: bytes) -> atualizacao.Baixar:
     releases = [
-        {"tag_name": "v3.0.0", "draft": False, "prerelease": False, "assets": []},
+        {"tag_name": "v99.0.0", "draft": False, "prerelease": False, "assets": []},
         {"tag_name": "referencias-2099.01.01", "draft": False, "prerelease": False,
          "assets": [{"name": "referencias-2099.01.01.zip", "browser_download_url": URL_ZIP}]},
         {"tag_name": "referencias-2099.02.01", "draft": True, "prerelease": False,

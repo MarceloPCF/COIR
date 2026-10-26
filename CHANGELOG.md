@@ -8,7 +8,7 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
-## [Não lançado] - 3.0.0 (em desenvolvimento)
+## [3.0.0] - 2026-10-26
 
 Nova versão escrita do zero, sem dependência do Excel. É um programa para Windows que se baixa,
 extrai e abre (`COIR.exe`), sem instalar Python nem Java. Os dados ficam numa pasta sua
@@ -137,6 +137,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.0.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.0
 [2.2.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.2.0
 [2.1.1]: https://github.com/MarceloPCF/COIR/releases/tag/v2.1.1
 [2.1.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.1.0

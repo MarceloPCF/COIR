@@ -242,10 +242,10 @@ async def test_configuracoes_atualiza_as_tabelas_e_o_painel_avisa(
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/")
         await user.should_see("Há tabelas de referência novas (01/01/2099).", retries=ESPERA)
-        await user.should_see("Há uma versão nova do COIR: 3.0.0.")
+        await user.should_see("Há uma versão nova do COIR: 99.0.0.")
         await user.open("/configuracoes")
         user.find(marker="verificar-versao").click()
-        await user.should_see("Versão nova: 3.0.0.", retries=ESPERA)
+        await user.should_see("Versão nova: 99.0.0.", retries=ESPERA)
         await user.should_see("o da instalação")
         user.find(marker="verificar-tabelas").click()
         await user.should_see("Novo: 01/01/2099", retries=ESPERA)
