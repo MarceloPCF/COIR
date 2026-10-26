@@ -1,0 +1,29 @@
+nome,valor,inicio,fim,fonte
+aliquota_comum,0.15,2005-01-01,,Lei 11.033/2004 art. 2º II; RIR/2018 art. 839
+aliquota_day_trade,0.20,2005-01-01,,Lei 11.033/2004 art. 2º I
+aliquota_fii,0.20,1999-01-01,,Lei 8.668/1993 art. 18 II (red. Lei 9.779/1999); inclui day trade de FII
+limite_isencao_acoes,20000.00,2005-01-01,,Lei 11.033/2004 art. 3º I (valor bruto das alienações de ações à vista no mês)
+units_na_isencao,false,2005-01-01,,decisão do usuário (05/10/2026): units fora do limite e da isenção
+prejuizo_mes_isento_compensavel,true,2005-01-01,,Lei 8.981/1995 art. 72 §8º; Manual MIR 2026; decisão do usuário (14/10/2026)
+day_trade_mesma_corretora,false,2000-01-01,2010-07-27,Lei 9.959/2000 art. 8º §1º I a (redação original): day trade em qualquer corretora
+day_trade_mesma_corretora,true,2010-07-28,,MP 497/2010 art. 21 (conv. Lei 12.350/2010): mesma corretora
+darf_minimo,10.00,1997-01-01,,Lei 9.430/1996 art. 68 caput e §1º (abaixo do mínimo acumula)
+darf_codigo,6015,2005-01-01,,Agenda Tributária RFB (código de renda variável PF)
+multa_mora_dia,0.0033,1997-01-01,,"Lei 9.430/1996 art. 61 caput (0,33% por dia de atraso sobre o principal)"
+multa_mora_teto,0.20,1997-01-01,,Lei 9.430/1996 art. 61 §2º (limite de 20%)
+multa_mora_inicio_contagem,rfb,1997-01-01,,RFB/Sicalc (Como calcular multa de mora): do primeiro dia útil após o vencimento; alternativa lei (art. 61 §1º); decisão do usuário (17/10/2026)
+multa_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido pelo usuário em 17/10/2026: R$ 1234.57 x 0.0231 = 28.518567 -> 28.51)
+juros_mora_mes_pagamento,0.01,1997-01-01,,Lei 9.430/1996 art. 61 §3º c/c art. 5º §3º (1% no mês do pagamento; Selic acumulada nos meses entre o vencimento e o pagamento)
+juros_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido pelo usuário em 17/10/2026: R$ 1234.57 x 0.01 = 12.3457 -> 12.34)
+aliquota_irrf_jcp,0.15,1996-01-01,2025-12-31,Lei 9.249/1995 art. 9º §2º (15% na data do pagamento ou crédito)
+aliquota_irrf_jcp,0.175,2026-01-01,,"LC 224/2025 art. 8º e art. 14 III (17,5% pago ou creditado desde 01/01/2026)"
+dividendos_limite_mensal_mesma_pj,50000.00,2026-01-01,,Lei 15.270/2025 (Lei 9.250 art. 6º-A): acima de R$ 50 mil no mês da mesma PJ há retenção de 10% sobre o total
+aliquota_irrf_dividendos_acima_limite,0.10,2026-01-01,,Lei 15.270/2025 (Lei 9.250 art. 6º-A caput e §§1º e 2º)
+reembolso_btc_dividendos_isento,true,2005-01-01,2025-12-31,IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
+reembolso_btc_dividendos_isento,true,2026-01-01,,Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: isento por equivalência (decisão do usuário 19/10/2026; rever se a RFB se manifestar)
+incorporacao_acoes_tratamento,custo_mantido,1976-12-15,,"Lei 6.404 art. 252: custo das ações entregues mantido nas recebidas (TRF1/TRF3/TRF4; decisão do usuário 19/10/2026). A RFB diverge (SC Cosit 224/2014: alienação, ganho de capital no GCAP); a tela de Eventos avisa"
+leilao_fracao_isentavel,true,1976-12-15,,"sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (decisão do usuário 19/10/2026)"
+reembolso_btc_norma_omissa,false,2005-01-01,2025-12-31,IN RFB 1.585/2015 art. 74 §1º I a (reembolso de dividendos de BTC expressamente isento)
+reembolso_btc_norma_omissa,true,2026-01-01,,Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: a tela de proventos avisa (isento por equivalência)
+opcoes_linha_acoes_tipos_objeto,ACAO;UNIT,2005-01-01,,"programa IRPF, ficha Renda variável: ""Mercado de opções - ações"" para opção sobre ação; ETF, índice e outros em ""Mercado de opções - outros"" (P&R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, coerente com o Bens e Direitos do programa (código 03.01, ações inclusive units)"
+day_trade_criterio,marcacao_corretora,2000-01-01,,"IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (decisão do usuário de 25/10/2026, parecer do especialista). Alternativa: ordem_impressa"

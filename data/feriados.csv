@@ -1,0 +1,275 @@
+data,tipo,descricao
+2008-01-01,bancario,Confraternização Universal
+2008-01-25,pregao,Aniversário de São Paulo
+2008-02-04,bancario,Carnaval (segunda)
+2008-02-05,bancario,Carnaval (terça)
+2008-03-21,bancario,Sexta-feira Santa
+2008-04-21,bancario,Tiradentes
+2008-05-01,bancario,Dia do Trabalho
+2008-05-22,bancario,Corpus Christi
+2008-07-09,pregao,Revolução Constitucionalista (SP)
+2008-11-20,pregao,Consciência Negra (SP)
+2008-12-24,pregao,Véspera de Natal (sem pregão)
+2008-12-25,bancario,Natal
+2008-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2009-01-01,bancario,Confraternização Universal
+2009-02-23,bancario,Carnaval (segunda)
+2009-02-24,bancario,Carnaval (terça)
+2009-04-10,bancario,Sexta-feira Santa
+2009-04-21,bancario,Tiradentes
+2009-05-01,bancario,Dia do Trabalho
+2009-06-11,bancario,Corpus Christi
+2009-07-09,pregao,Revolução Constitucionalista (SP)
+2009-09-07,bancario,Independência
+2009-10-12,bancario,Nossa Senhora Aparecida
+2009-11-02,bancario,Finados
+2009-11-20,pregao,Consciência Negra (SP)
+2009-12-24,pregao,Véspera de Natal (sem pregão)
+2009-12-25,bancario,Natal
+2009-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2010-01-01,bancario,Confraternização Universal
+2010-01-25,pregao,Aniversário de São Paulo
+2010-02-15,bancario,Carnaval (segunda)
+2010-02-16,bancario,Carnaval (terça)
+2010-04-02,bancario,Sexta-feira Santa
+2010-04-21,bancario,Tiradentes
+2010-06-03,bancario,Corpus Christi
+2010-07-09,pregao,Revolução Constitucionalista (SP)
+2010-09-07,bancario,Independência
+2010-10-12,bancario,Nossa Senhora Aparecida
+2010-11-02,bancario,Finados
+2010-11-15,bancario,Proclamação da República
+2010-12-24,pregao,Véspera de Natal (sem pregão)
+2010-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2011-01-25,pregao,Aniversário de São Paulo
+2011-03-07,bancario,Carnaval (segunda)
+2011-03-08,bancario,Carnaval (terça)
+2011-04-21,bancario,Tiradentes
+2011-04-22,bancario,Sexta-feira Santa
+2011-06-23,bancario,Corpus Christi
+2011-09-07,bancario,Independência
+2011-10-12,bancario,Nossa Senhora Aparecida
+2011-11-02,bancario,Finados
+2011-11-15,bancario,Proclamação da República
+2011-12-30,bancario,Último dia útil do ano (sem expediente bancário)
+2012-01-25,pregao,Aniversário de São Paulo
+2012-02-20,bancario,Carnaval (segunda)
+2012-02-21,bancario,Carnaval (terça)
+2012-04-06,bancario,Sexta-feira Santa
+2012-05-01,bancario,Dia do Trabalho
+2012-06-07,bancario,Corpus Christi
+2012-07-09,pregao,Revolução Constitucionalista (SP)
+2012-09-07,bancario,Independência
+2012-10-12,bancario,Nossa Senhora Aparecida
+2012-11-02,bancario,Finados
+2012-11-15,bancario,Proclamação da República
+2012-11-20,pregao,Consciência Negra (SP)
+2012-12-24,pregao,Véspera de Natal (sem pregão)
+2012-12-25,bancario,Natal
+2012-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2013-01-01,bancario,Confraternização Universal
+2013-01-25,pregao,Aniversário de São Paulo
+2013-02-11,bancario,Carnaval (segunda)
+2013-02-12,bancario,Carnaval (terça)
+2013-03-29,bancario,Sexta-feira Santa
+2013-05-01,bancario,Dia do Trabalho
+2013-05-30,bancario,Corpus Christi
+2013-07-09,pregao,Revolução Constitucionalista (SP)
+2013-11-15,bancario,Proclamação da República
+2013-11-20,pregao,Consciência Negra (SP)
+2013-12-24,pregao,Véspera de Natal (sem pregão)
+2013-12-25,bancario,Natal
+2013-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2014-01-01,bancario,Confraternização Universal
+2014-03-03,bancario,Carnaval (segunda)
+2014-03-04,bancario,Carnaval (terça)
+2014-04-18,bancario,Sexta-feira Santa
+2014-04-21,bancario,Tiradentes
+2014-05-01,bancario,Dia do Trabalho
+2014-06-12,pregao,Abertura da Copa do Mundo (sem pregão)
+2014-06-19,bancario,Corpus Christi
+2014-07-09,pregao,Revolução Constitucionalista (SP)
+2014-11-20,pregao,Consciência Negra (SP)
+2014-12-24,pregao,Véspera de Natal (sem pregão)
+2014-12-25,bancario,Natal
+2014-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2015-01-01,bancario,Confraternização Universal
+2015-02-16,bancario,Carnaval (segunda)
+2015-02-17,bancario,Carnaval (terça)
+2015-04-03,bancario,Sexta-feira Santa
+2015-04-21,bancario,Tiradentes
+2015-05-01,bancario,Dia do Trabalho
+2015-06-04,bancario,Corpus Christi
+2015-07-09,pregao,Revolução Constitucionalista (SP)
+2015-09-07,bancario,Independência
+2015-10-12,bancario,Nossa Senhora Aparecida
+2015-11-02,bancario,Finados
+2015-11-20,pregao,Consciência Negra (SP)
+2015-12-24,pregao,Véspera de Natal (sem pregão)
+2015-12-25,bancario,Natal
+2015-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2016-01-01,bancario,Confraternização Universal
+2016-01-25,pregao,Aniversário de São Paulo
+2016-02-08,bancario,Carnaval (segunda)
+2016-02-09,bancario,Carnaval (terça)
+2016-03-25,bancario,Sexta-feira Santa
+2016-04-21,bancario,Tiradentes
+2016-05-26,bancario,Corpus Christi
+2016-09-07,bancario,Independência
+2016-10-12,bancario,Nossa Senhora Aparecida
+2016-11-02,bancario,Finados
+2016-11-15,bancario,Proclamação da República
+2016-12-30,bancario,Último dia útil do ano (sem expediente bancário)
+2017-01-25,pregao,Aniversário de São Paulo
+2017-02-27,bancario,Carnaval (segunda)
+2017-02-28,bancario,Carnaval (terça)
+2017-04-14,bancario,Sexta-feira Santa
+2017-04-21,bancario,Tiradentes
+2017-05-01,bancario,Dia do Trabalho
+2017-06-15,bancario,Corpus Christi
+2017-09-07,bancario,Independência
+2017-10-12,bancario,Nossa Senhora Aparecida
+2017-11-02,bancario,Finados
+2017-11-15,bancario,Proclamação da República
+2017-11-20,pregao,Consciência Negra (SP)
+2017-12-25,bancario,Natal
+2017-12-29,bancario,Último dia útil do ano (sem expediente bancário)
+2018-01-01,bancario,Confraternização Universal
+2018-01-25,pregao,Aniversário de São Paulo
+2018-02-12,bancario,Carnaval (segunda)
+2018-02-13,bancario,Carnaval (terça)
+2018-03-30,bancario,Sexta-feira Santa
+2018-05-01,bancario,Dia do Trabalho
+2018-05-31,bancario,Corpus Christi
+2018-07-09,pregao,Revolução Constitucionalista (SP)
+2018-09-07,bancario,Independência
+2018-10-12,bancario,Nossa Senhora Aparecida
+2018-11-02,bancario,Finados
+2018-11-15,bancario,Proclamação da República
+2018-11-20,pregao,Consciência Negra (SP)
+2018-12-24,pregao,Véspera de Natal (sem pregão)
+2018-12-25,bancario,Natal
+2018-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2019-01-01,bancario,Confraternização Universal
+2019-01-25,pregao,Aniversário de São Paulo
+2019-03-04,bancario,Carnaval (segunda)
+2019-03-05,bancario,Carnaval (terça)
+2019-04-19,bancario,Sexta-feira Santa
+2019-05-01,bancario,Dia do Trabalho
+2019-06-20,bancario,Corpus Christi
+2019-07-09,pregao,Revolução Constitucionalista (SP)
+2019-11-15,bancario,Proclamação da República
+2019-11-20,pregao,Consciência Negra (SP)
+2019-12-24,pregao,Véspera de Natal (sem pregão)
+2019-12-25,bancario,Natal
+2019-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2020-01-01,bancario,Confraternização Universal
+2020-02-24,bancario,Carnaval (segunda)
+2020-02-25,bancario,Carnaval (terça)
+2020-04-10,bancario,Sexta-feira Santa
+2020-04-21,bancario,Tiradentes
+2020-05-01,bancario,Dia do Trabalho
+2020-06-11,bancario,Corpus Christi
+2020-09-07,bancario,Independência
+2020-10-12,bancario,Nossa Senhora Aparecida
+2020-11-02,bancario,Finados
+2020-12-24,pregao,Véspera de Natal (sem pregão)
+2020-12-25,bancario,Natal
+2020-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2021-01-01,bancario,Confraternização Universal
+2021-01-25,pregao,Aniversário de São Paulo
+2021-02-15,bancario,Carnaval (segunda)
+2021-02-16,bancario,Carnaval (terça)
+2021-04-02,bancario,Sexta-feira Santa
+2021-04-21,bancario,Tiradentes
+2021-06-03,bancario,Corpus Christi
+2021-07-09,pregao,Revolução Constitucionalista (SP)
+2021-09-07,bancario,Independência
+2021-10-12,bancario,Nossa Senhora Aparecida
+2021-11-02,bancario,Finados
+2021-11-15,bancario,Proclamação da República
+2021-12-24,pregao,Véspera de Natal (sem pregão)
+2021-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2022-02-28,bancario,Carnaval (segunda)
+2022-03-01,bancario,Carnaval (terça)
+2022-04-15,bancario,Sexta-feira Santa
+2022-04-21,bancario,Tiradentes
+2022-06-16,bancario,Corpus Christi
+2022-09-07,bancario,Independência
+2022-10-12,bancario,Nossa Senhora Aparecida
+2022-11-02,bancario,Finados
+2022-11-15,bancario,Proclamação da República
+2022-12-30,bancario,Último dia útil do ano (sem expediente bancário)
+2023-02-20,bancario,Carnaval (segunda)
+2023-02-21,bancario,Carnaval (terça)
+2023-04-07,bancario,Sexta-feira Santa
+2023-04-21,bancario,Tiradentes
+2023-05-01,bancario,Dia do Trabalho
+2023-06-08,bancario,Corpus Christi
+2023-09-07,bancario,Independência
+2023-10-12,bancario,Nossa Senhora Aparecida
+2023-11-02,bancario,Finados
+2023-11-15,bancario,Proclamação da República
+2023-12-25,bancario,Natal
+2023-12-29,bancario,Último dia útil do ano (sem expediente bancário)
+2024-01-01,bancario,Confraternização Universal
+2024-02-12,bancario,Carnaval (segunda)
+2024-02-13,bancario,Carnaval (terça)
+2024-03-29,bancario,Sexta-feira Santa
+2024-05-01,bancario,Dia do Trabalho
+2024-05-30,bancario,Corpus Christi
+2024-11-15,bancario,Proclamação da República
+2024-11-20,bancario,Consciência Negra (Lei 14.759/2023)
+2024-12-24,pregao,Véspera de Natal (sem pregão)
+2024-12-25,bancario,Natal
+2024-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2025-01-01,bancario,Confraternização Universal
+2025-03-03,bancario,Carnaval (segunda)
+2025-03-04,bancario,Carnaval (terça)
+2025-04-18,bancario,Sexta-feira Santa
+2025-04-21,bancario,Tiradentes
+2025-05-01,bancario,Dia do Trabalho
+2025-06-19,bancario,Corpus Christi
+2025-11-20,bancario,Consciência Negra (Lei 14.759/2023)
+2025-12-24,pregao,Véspera de Natal (sem pregão)
+2025-12-25,bancario,Natal
+2025-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2026-01-01,bancario,Confraternização Universal
+2026-02-16,bancario,Carnaval (segunda)
+2026-02-17,bancario,Carnaval (terça)
+2026-04-03,bancario,Sexta-feira Santa
+2026-04-21,bancario,Tiradentes
+2026-05-01,bancario,Dia do Trabalho
+2026-06-04,bancario,Corpus Christi
+2026-09-07,bancario,Independência
+2026-10-12,bancario,Nossa Senhora Aparecida
+2026-11-02,bancario,Finados
+2026-11-20,bancario,Consciência Negra (Lei 14.759/2023)
+2026-12-24,pregao,Véspera de Natal (sem pregão)
+2026-12-25,bancario,Natal
+2026-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2027-01-01,bancario,Confraternização Universal
+2027-02-08,bancario,Carnaval (segunda)
+2027-02-09,bancario,Carnaval (terça)
+2027-03-26,bancario,Sexta-feira Santa
+2027-04-21,bancario,Tiradentes
+2027-05-27,bancario,Corpus Christi
+2027-09-07,bancario,Independência
+2027-10-12,bancario,Nossa Senhora Aparecida
+2027-11-02,bancario,Finados
+2027-11-15,bancario,Proclamação da República
+2027-12-24,pregao,Véspera de Natal (sem pregão)
+2027-12-31,bancario,Último dia útil do ano (sem expediente bancário)
+2028-02-28,bancario,Carnaval (segunda)
+2028-02-29,bancario,Carnaval (terça)
+2028-04-14,bancario,Sexta-feira Santa
+2028-04-21,bancario,Tiradentes
+2028-05-01,bancario,Dia do Trabalho
+2028-06-15,bancario,Corpus Christi
+2028-09-07,bancario,Independência
+2028-10-12,bancario,Nossa Senhora Aparecida
+2028-11-02,bancario,Finados
+2028-11-15,bancario,Proclamação da República
+2028-11-20,bancario,Consciência Negra (Lei 14.759/2023)
+2028-12-25,bancario,Natal
+2028-12-29,bancario,Último dia útil do ano (sem expediente bancário)

@@ -1,0 +1,89 @@
+Negociações
+Negócios realizados Q Negociação C/V Tipo mercado Prazo Especificação do título Obs. (*) Quantidade Preço / Ajuste Valor Operação / Ajuste D/C
+1-BOVESPA V VISTA COPASA ON NM @ 100 55,47 5.547,00 C
+1-BOVESPA V VISTA COPASA ON NM @ 100 55,02 5.502,00 C
+1-BOVESPA V VISTA COPASA ON NM @# 300 55,06 16.518,00 C
+1-BOVESPA V VISTA COPASA ON NM @ 100 55,44 5.544,00 C
+1-BOVESPA V VISTA COPASA ON NM @# 100 55,50 5.550,00 C
+1-BOVESPA V VISTA COPASA ON NM @ 100 55,46 5.546,00 C
+1-BOVESPA V VISTA COPASA ON NM @ 100 55,01 5.501,00 C
+1-BOVESPA V VISTA COPASA ON NM @ 100 55,00 5.500,00 C
+1-BOVESPA V VISTA OCEANPACT ON NM @ 500 9,62 4.810,00 C
+1-BOVESPA V VISTA OCEANPACT ON NM @ 500 9,62 4.810,00 C
+1-BOVESPA V VISTA OCEANPACT ON NM @ 700 9,62 6.734,00 C
+1-BOVESPA V VISTA OCEANPACT ON NM @ 300 9,62 2.886,00 C
+1-BOVESPA V VISTA OCEANPACT ON NM @ 1000 9,62 9.620,00 C
+NOTA DE NEGOCIAÇÃO
+Nr. nota
+1000002
+Folha
+1
+Data pregão
+14/08/2026
+XP INVESTIMENTOS CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.
+AV ATAULFO DE PAIVA, 153 - SALA 201 LEBLON 22440-032 RIO DE JANEIRO - RJ
+Tel. +55 11 4003-3710 Fax:
+Internet: https://www.xpi.com.br/ SAC: 0800-772-0202 e-mail: C.N.P.J: 02.332.886/0001-04 Carta Patente: Ouvidoria: Tel. 0800 722 3730 e-mail ouvidoria:
+Cliente
+Participante destino do repasse
+-
+Cliente
+0
+Valor
+Banco Agência Conta corrente Acionista Administrador
+C.P.F./C.N.P.J/C.V.M./C.O.B.
+Código cliente Assessor
+0000
+Custodiante C.I N
+Complemento nome P. Vinc N
+0,00
+84.068,00
+0,00
+0,00
+0,00
+0,00
+0,00
+84.068,00
+Resumo dos Negócios Debêntures
+Vendas à vista Compras à vista Opções - compras Opções - vendas Operações à termo
+Valor das oper. c/ títulos públ. (v. nom.)
+Valor das operações
+Especificações diversas
+A coluna Q indica liquidação no Agente do Qualificado.
+(*) Observações A - Posição futuro T - Liquidação pelo Bruto
+2 - Corretora ou pessoa vinculada atuou na
+contra parte. C - Clubes e fundos de Ações I - POP
+# - Negócio direto P - Carteira Própria
+8 - Liquidação Institucional H - Home Broker
+D - Day Trade X - Box
+F - Cobertura Y - Desmanche de Box
+B - Debêntures L - Precatório
+Total CBLC 84.049,17 C
+Valor líquido das operações 84.068,00 C
+Taxa de liquidação 18,83 D
+Taxa de Registro 0,00
+Total Bovespa / Soma 6,38 D
+Taxa de termo/opções 0,00
+Taxa A.N.A. 0,00
+Emolumentos 4,20 D
+Taxa de Transf. de Ativos 2,18 D
+Total Custos / Despesas 15,01 D
+Taxa Operacional 8,00 D
+Execução 0,00
+Taxa de Custódia 0,00
+Impostos 0,85 D
+I.R.R.F. s/ operações, base R$84.068,00 4,20 D
+Outros 1,96 D
+Líquido para 18/08/2026 84.027,78 C
+Resumo Financeiro Clearing
+Bolsa
+Custos Operacionais
+Observação: (1) As operações a termo não são computadas no líquido da
+fatura.
+Capitais e regiões metropolitanas: +55 11 4003-3710 Demais localidades: 0800-880-3710 SAC: 0800-772-0202 Ouvidoria: 0800 722 3730
+000000 FULANO DE TAL
+Rua Exemplo, 0 - Apto 0 - Bairro Tel. (00) 00000-
+0000
+00000-000 Cidade - UF
+000.000.000-00
+ 3-5 000000 

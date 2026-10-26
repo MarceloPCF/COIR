@@ -1,0 +1,49 @@
+Negociações
+C/V Mercadoria Vencimento Quantidade Preço/Ajuste Tipo Negócio Vlr de Operação/Ajuste D/C Taxa Operacional
+C CCM H24 15/03/2024 4 76,67 AJUPOS 756,00 C 0,00
+C CCM H24 @15/03/2024 1 76,78 DAY TRADE 49,50 D 4,00
+C CCM H24 @15/03/2024 1 76,78 DAY TRADE 49,50 D 4,00
+C CCM H24 @15/03/2024 1 76,78 DAY TRADE 49,50 D 4,00
+C CCM H24 @15/03/2024 1 76,79 DAY TRADE 54,00 D 4,00
+V CCM H24 @15/03/2024 4 76,00 DAY TRADE 1.206,00 D 16,00
+NOTA DE NEGOCIAÇÃO Nr. nota
+1.000.008
+Folha
+1
+Data pregão
+04/01/2024
+XP INVESTIMENTOS CORRETORA DE CÂMBIO, TÍTULOS E VALORES
+MOBILIÁRIOS S.A.
+Fone: +55 11 4003-3710 Fax:
+AV ATAULFO DE PAIVA, 153 - SALA 201 LEBLON 22440-032 RIO DE JANEIRO - RJ
+Internet: https://www.xpi.com.br/ SAC: 0800-772-0202 e-mail: Ouvidoria: 0800 722 3730 e-mail ouvidoria:
+Corretora
+Cliente
+C.N.P.J.
+02.332.886/0001-04
+Numero da Corretora
+3-5
+C.N.P.J/C.P.F
+Codigo do Cliente
+000000
+Venda disponível Compra disponível Venda Opções Compra Opções Valor dos negócios
+0,00 0,00 0,00 0,00 652,50 | D
+IRRF IRRF Day Trade (proj.) Taxa operacional Taxa registro BM&F Taxas BM&F (emol+f.gar)
+0,00| 0,00 32,00 1,84 1,04 | D
++Outros Custos Impostos Ajuste de posição Ajuste day trade Total de custos operacionais
+0,00 3,38 756,00 | C 1.408,50 | D 34,88 | D
+Outros IRRF operacional Total Conta Investimento Total Conta Normal Total liquido (#) Total líquido da nota
+0,00 0,00 0,00| 687,38 | D 0,00 | 690,76 | D
++Custos BM&F, conforme Ofício Circular BM&F 079/2007-DG
+-Exercícios de opções=EXO
+-OZ1=249,72 grs. / OZ2=9,990 grs. / OZ3=0,225 grs.
+@ Corretora ou Pessoa Vinculada atuou na Contra Parte
+* Negocios gerados automaticamente pelo sistema.
+** Valores pagos conforme previsão do Contrato de Transferência de negócios realizados na BMF (Repasse / Brokerage),
+celebrando entre as Corretoras Intermediadoras e a Corretora
+*** Taxa referente à liquidação das operações intermediadas por Terceiros e as operações feitas integralmente pela Corretora.
+Capitais e regiões metropolitanas: +55 11 4003-3710 Demais localidades: 0800-880-3710 SAC: 0800-772-0202 Ouvidoria: 0800 722 3730
+FULANO DE TAL
+Rua Exemplo, 0 - Apto 0
+00000-000 BAIRRO CIDADE - UF
+000.000.000.00

@@ -1,46 +1,27 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<!-- Exemplo 1 do site da v3: o visual do site inicial (marinho e verde), texto da v3. -->
 <meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>COIR | Programa para extração de Notas de Corretagem no Padrão SINACOR</title>
-<meta name="google-site-verification" content="vDjlNKkJJRVfJJTE-ybAxmtGzT-z72kWETuAConlxOg"/>
-<meta name="description" content="Programa gratuito que extrai notas de corretagem SINACOR (XP, Clear, Rico, Necton, BTG) para planilhas do Excel e apoia DARF, IRRF e IRPF.">
-<meta property="og:title" content="COIR | Controle de Operações e Imposto de Renda">
-<meta property="og:locale" content="pt_BR">
-<meta property="og:description" content="Programa gratuito que extrai notas de corretagem SINACOR (XP, Clear, Rico, Necton, BTG) para planilhas do Excel e apoia DARF, IRRF e IRPF.">
+<title>COIR — imposto de renda da bolsa calculado no seu computador</title>
+<meta name="description" content="Programa gratuito para Windows que importa notas de corretagem SINACOR e planilhas da B3, calcula o preço médio, apura o IR mensal de renda variável, gera o DARF e prepara a declaração anual. Seus dados não saem do computador.">
+<meta name="google-site-verification" content="vDjlNKkJJRVfJJTE-ybAxmtGzT-z72kWETuAConlxOg">
 <link rel="canonical" href="https://marcelopcf.github.io/COIR/">
-<meta property="og:url" content="https://marcelopcf.github.io/COIR/">
-<meta property="og:site_name" content="COIR">
-<meta property="og:type" content="website">
-<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="640">
-<meta property="og:image:alt" content="COIR - Controle de Operações e Imposto de Renda">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="COIR | Controle de Operações e Imposto de Renda">
-<meta name="twitter:description" content="Programa gratuito que extrai notas de corretagem SINACOR (XP, Clear, Rico, Necton, BTG) para planilhas do Excel e apoia DARF, IRRF e IRPF.">
-<meta name="twitter:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#102a43">
-<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<meta property="og:title" content="COIR — IR da bolsa no seu computador">
+<meta property="og:description" content="Notas de corretagem → preço médio → IR mensal → DARF → declaração anual. Gratuito, sem enviar seus dados.">
+<meta property="og:url" content="https://marcelopcf.github.io/COIR/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
-{
-	"@context":"https://schema.org",
-	"@type":"SoftwareApplication",
-	"name":"COIR - Controle de Operações e Imposto de Renda",
-	"description":"Programa para extração de Notas de Corretagem no Padrão SINACOR para planilhas do Excel, com apuração de DARF e apoio à declaração do IRPF.",
-	"applicationCategory":"FinanceApplication",
-	"operatingSystem":"Windows",
-	"softwareVersion":"2.2.0",
-	"inLanguage":"pt-BR",
-	"url":"https://marcelopcf.github.io/COIR/",
-	"downloadUrl":"https://github.com/MarceloPCF/COIR/releases/latest",
-	"license":"https://opensource.org/licenses/MIT",
-	"author":{"@type":"Person","name":"MarceloPCF","url":"https://github.com/MarceloPCF"},
-	"sameAs":["https://github.com/MarceloPCF/COIR"],
-	"offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"}
-}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"COIR","applicationCategory":"FinanceApplication",
+ "operatingSystem":"Windows 10, Windows 11","offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"},
+ "url":"https://marcelopcf.github.io/COIR/","license":"https://www.gnu.org/licenses/agpl-3.0.html",
+ "description":"Controle de operações e imposto de renda de renda variável para pessoa física na B3."}
 </script>
 <style>
 :root{
@@ -173,29 +154,52 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
   .botao{width:100%;text-align:center}
   .passos li{padding-left:54px}
 }
+.topo{padding:10px 0 26px}
+.topo .wrap{gap:0}
+.barra{padding-bottom:14px;margin-bottom:26px;border-bottom:1px solid #ffffff1f}
+.barra{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.marca{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:800;font-size:22px;letter-spacing:.02em}
+.simbolo{width:34px;height:34px;flex:none}
+.apresentacao{margin-top:0;max-width:52em}
+.apresentacao h1 .sigla{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.apresentacao h1 .nome{margin:0;font-size:clamp(24px,3.2vw,34px);color:#fff;line-height:1.15;font-weight:800}
+.apresentacao .resumo{font-size:17px;margin-top:10px}
+.acoes{margin-top:16px}
+.privacidade{margin-top:34px;padding:16px 20px;background:#e8f5ec;border-left:5px solid var(--verde);border-radius:0 6px 6px 0;max-width:46em}
+.pequeno{font-size:15px;color:var(--suave)}
+.botao.claro{color:var(--marinho);border-color:var(--linha)}
+.avisos{display:grid;gap:8px;max-width:560px;margin-top:12px}
+.avisos .linha-form{display:flex;gap:8px;flex-wrap:wrap}
+.avisos input[type=email]{flex:1 1 240px;padding:10px 12px;border-radius:8px;border:1px solid var(--linha,#999);font:inherit;background:transparent;color:inherit}
+.avisos textarea,.avisos input[type=text]{padding:10px 12px;border-radius:8px;border:1px solid var(--linha,#999);font:inherit;background:transparent;color:inherit}
+.avisos :disabled{opacity:.6;cursor:not-allowed}
+.botao.claro:hover{border-color:var(--marinho)}
 </style>
 </head>
 <body>
 
 <header class="topo">
   <div class="wrap">
-    <nav aria-label="Atalhos">
-      <a href="#como-usar">Como usar</a>
-      <a href="#planilhas">Planilhas</a>
-      <a href="#guias">Guias</a>
-      <a href="#telas">Telas</a>
-      <a href="#duvidas">Dúvidas</a>
-      <a href="https://github.com/MarceloPCF/COIR">GitHub</a>
-    </nav>
+    <div class="barra">
+      <a class="marca" href="#" aria-label="COIR, início"><svg class="simbolo" viewBox="0 0 200 200" role="img" aria-label="Símbolo do COIR"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0.35"><stop offset="0" stop-color="#050F2A"/><stop offset="0.55" stop-color="#0E3A78"/><stop offset="1" stop-color="#1B5DA8"/></linearGradient></defs><g transform="scale(1.25) translate(-20 -20)"><rect x="20" y="20" width="160" height="160" rx="36" fill="url(#g)"/><rect x="30" y="30" width="140" height="140" rx="28" fill="none" stroke="#fff" stroke-opacity="0.16" stroke-width="1.2"/><path d="M132.70 70.56 A44 44 0 1 0 103.07 143.89" fill="none" stroke="#fff" stroke-width="9"/><path d="M108.40 143.19 A44 44 0 0 0 132.70 129.44" fill="none" stroke="#8FBBEA" stroke-width="9"/></g></svg><span>COIR</span></a>
+      <nav aria-label="Atalhos">
+        <a href="#como-usar">Como usar</a>
+        <a href="#controle">O que faz</a>
+        <a href="#telas-lista">Telas</a>
+        <a href="#duvidas">Dúvidas</a>
+        <a href="#contato">Avisos</a>
+        <a href="#corretora">Corretora</a>
+      </nav>
+    </div>
     <div class="apresentacao">
-      <div>
-        <h1><span class="sigla">COIR</span> <span class="nome">Controle de Operações e Imposto de Renda: notas de corretagem SINACOR para Excel</span></h1>
-        <p class="resumo">Extrai as notas de corretagem no padrão SINACOR (B3) para planilhas do Excel e prepara a apuração da DARF mensal, o IRRF e a declaração anual do IRPF.</p>
+      <div class="texto">
+        <h1><span class="sigla">COIR</span> <span class="nome">Controle de Operações e Imposto de Renda da bolsa</span></h1>
+        <p class="resumo">O imposto de renda da bolsa calculado no seu computador: importa as notas de corretagem e as planilhas da B3, calcula o preço médio, apura o IR de cada mês, prepara o DARF e as fichas da declaração anual. Gratuito, e seus dados não saem do computador.</p>
         <div class="acoes">
-          <a class="botao principal" id="baixar" href="https://github.com/MarceloPCF/COIR/releases/latest">Baixar o COIR</a>
-          <a class="botao secundario" href="https://github.com/MarceloPCF/COIR">Ver no GitHub</a>
+          <a class="botao principal" id="baixar" href="https://github.com/MarceloPCF/COIR/releases/latest/download/COIR-windows.zip">Baixar para Windows</a>
+          <a class="botao secundario" href="./docs/manual/index.html">Ler o manual</a>
         </div>
-        <p class="versao" id="versao">Gratuito, código aberto (licença MIT).</p>
+        <p class="versao" id="versao">Gratuito, para Windows 10 ou 11. Não precisa instalar nada.</p>
       </div>
     </div>
   </div>
@@ -206,29 +210,29 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
 <section id="como-usar">
   <div class="wrap">
     <h2>Como usar</h2>
-    <p class="intro">Você precisa só do Microsoft Excel: o Python e o Java já vêm no pacote. Em quatro passos, as notas viram planilhas.</p>
+    <p class="intro">Não precisa de Excel, Python nem Java: o programa vem pronto. Em quatro passos, as notas viram apuração, DARF e declaração.</p>
     <ol class="passos">
       <li>
-        <h3>Baixe e descompacte</h3>
-        <p>Use o botão <strong>Baixar o COIR</strong> e extraia todo o conteúdo do zip para uma pasta de sua escolha. Não execute de dentro do zip.</p>
+        <h3>Baixe e extraia</h3>
+        <p>Use o botão <strong>Baixar para Windows</strong>, extraia o .zip numa pasta e dê dois cliques em <code>COIR.exe</code>. Não é preciso instalar Python, Excel nem outro programa.</p>
+        <p class="nota">Se o Windows avisar que o programa não é reconhecido, clique em “Mais informações” e “Executar assim mesmo”: o aviso aparece porque o programa ainda não tem assinatura digital paga.</p>
       </li>
       <li>
-        <h3>Coloque as notas na pasta Entrada</h3>
-        <p>Baixe suas notas de corretagem no padrão SINACOR direto do portal da corretora e copie para a pasta <code>Entrada</code>.</p>
-        <p class="nota">O COIR foi testado com as corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato pelo e-mail <a href="mailto:marcelo.pcf@gmail.com">marcelo.pcf@gmail.com</a> ou abra uma <a href="https://github.com/MarceloPCF/COIR/issues">issue</a>, para que ela seja adicionada ao sistema.</p>
+        <h3>Escolha a pasta dos seus dados</h3>
+        <p>Na primeira vez, o COIR pergunta onde guardar os dados e o nome do titular. Use uma pasta fora da pasta do programa: assim, para atualizar, basta trocar a pasta do programa.</p>
       </li>
       <li>
-        <h3>Dê dois cliques em COIR.bat</h3>
-        <p>O arquivo fica na pasta principal. Ao rodar, o COIR extrai automaticamente as notas que estiverem na pasta <code>Entrada</code>.</p>
-        <p class="nota">Se o Windows alertar sobre o <code>python.exe</code>, é um aviso comum para programas baixados da internet; ele faz parte do pacote.</p>
+        <h3>Importe as notas e as planilhas da B3</h3>
+        <p>Arraste os PDFs das notas de corretagem (padrão SINACOR) e as planilhas da Área do Investidor da B3. Cada nota é conferida com o resumo dela; divergência é avisada, nunca ignorada.</p>
+        <p class="nota">Testado com XP, Clear, Rico, BTG, Necton e Ágora. Se a sua corretora não for lida, use o <a href="#corretora">pedido de corretora</a> (sem mandar a nota nem dados pessoais).</p>
       </li>
       <li>
-        <h3>Abra o resultado</h3>
-        <p>As notas processadas são movidas de <code>Entrada</code> para <code>Saida</code>. O resultado fica no arquivo <code>Resultado\CPF.xlsb</code>, onde CPF é o número do CPF do investidor. Ele traz os dados em várias planilhas: Normais, DayTrade, Contabilidade, DARF, Isentos e outras.</p>
+        <h3>Confira e pague</h3>
+        <p>Veja a apuração mês a mês com a memória de cálculo, o DARF com vencimento, multa e juros, e as fichas da declaração anual prontas para copiar no programa da Receita.</p>
       </li>
     </ol>
-    <div class="aviso-simples">
-      <strong>Contribuições são muito bem-vindas.</strong> Encontrou um problema ou quer ajudar? Abra uma <a href="https://github.com/MarceloPCF/COIR/issues">issue</a> no GitHub.
+    <div class="privacidade">
+      <strong>Seus dados ficam com você.</strong> O COIR roda só no seu computador. Nada da sua carteira é enviado para lugar nenhum, e nada sai do computador sem uma ação sua.
     </div>
   </div>
 </section>
@@ -238,65 +242,50 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
     <h2>O que o COIR controla</h2>
     <p class="intro">Notas de corretagem da B3 (Brasil, Bolsa e Balcão) nos mercados:</p>
     <ul class="mercados">
-      <li><strong>À Vista</strong><span>Operações comuns e Day Trade</span></li>
-      <li><strong>Futuros</strong></li>
-      <li><strong>Commodities</strong></li>
-      <li><strong>Derivativos</strong><span>Opções</span></li>
+      <li><strong>Ações, ETF, BDR e units</strong><span>Operações comuns e day trade</span></li>
+      <li><strong>Opções</strong><span>Compra, lançamento, exercício e vencimento</span></li>
+      <li><strong>Futuros e termo</strong><span>Minicontratos, commodities e termo</span></li>
+      <li><strong>FII e Fiagro</strong><span>Ganho na venda e rendimentos</span></li>
     </ul>
     <div class="historia coluna-leitura">
       <ul class="recursos">
-        <li>Você envia as notas. O COIR extrai os dados.</li>
-        <li>Controle separado por CPF, com notas de várias corretoras no mesmo CPF.</li>
-        <li>Cada mercado é contabilizado à parte.</li>
-        <li>Apuração mensal da DARF e cálculo do IRRF.</li>
-        <li>Apoio à declaração anual do IRPF.</li>
+        <li>Seus dados ficam com você: tudo roda no seu computador e nada é enviado a terceiros.</li>
+        <li>Preço médio por titular, somando todas as corretoras, com eventos corporativos (desdobramento, bonificação, incorporação, cisão).</li>
+        <li>Comum, day trade e FII apurados à parte, com isenção de R$ 20 mil, prejuízo a compensar, IRRF e DARF com mínimo de R$ 10.</li>
+        <li>Proventos (dividendos, JCP e reembolsos de aluguel) e a declaração anual na ordem do programa.</li>
+        <li>Todo valor mostra as operações e a regra aplicada, com a norma da Receita.</li>
+        <li>Relatórios em Excel, CSV e PDF sem precisar do Excel instalado.</li>
       </ul>
-      </div>
+    </div>
     <h2 style="margin-top:56px">História</h2>
     <ol class="linha-tempo">
       <li><strong>2017</strong><span>Primeira versão, em planilhas Excel, com operações do mercado à vista.</span></li>
-      <li><strong>2021</strong><span>Extração automática das notas de corretagem com Python. Até então, o trabalho era manual.</span></li>
-      <li><strong>2022</strong><span>Controles de Futuros, Commodities e Derivativos (Opções).</span></li>
+      <li><strong>2021</strong><span>Extração automática das notas de corretagem com Python.</span></li>
+      <li><strong>2022</strong><span>Controles de futuros, commodities e opções.</span></li>
+      <li><strong>2026</strong><span>Versão 3: programa próprio, sem Excel, com apuração, DARF e declaração anual.</span></li>
     </ol>
     <p class="coluna-leitura" style="margin-top:28px">Desde o início, o objetivo foi a simplicidade e a correção dos dados extraídos e contabilizados.</p>
   </div>
 </section>
 
-<section id="planilhas">
+<section id="telas-lista">
   <div class="wrap">
-    <h2>As planilhas do COIR</h2>
-    <p class="intro">Resumo das funcionalidades de cada planilha do arquivo <code>COIR.xlsb</code>.</p>
+    <h2>As telas do COIR</h2>
+    <p class="intro">O que cada tela do programa faz. O <a href="./docs/manual/index.html">manual</a> tem o passo a passo de cada uma.</p>
     <dl class="planilhas">
-      <div><dt>Indice</dt><dd>Acesso, habilitação e descrição de cada uma das planilhas do COIR.</dd></div>
-      <div><dt>Normais_Op</dt><dd>Operações comuns importadas automaticamente das notas de corretagens no padrão SINACOR.</dd></div>
-      <div><dt>Normais_Cont</dt><dd>Resultado das operações comuns, separado por mês e por ano no padrão do IRPF.</dd></div>
-      <div><dt>Normais_Dados</dt><dd>Dados importados das notas de corretagens que serão utilizados na aba “Normais_Op”.</dd></div>
-      <div><dt>DayTrade_Op</dt><dd>Operações Day Trade importadas automaticamente das notas de corretagens no padrão SINACOR.</dd></div>
-      <div><dt>DayTrade_Cont</dt><dd>Resultado das operações Day Trade separado por mês e por ano no padrão do IRPF.</dd></div>
-      <div><dt>DayTrade_Dados</dt><dd>Dados importados das notas de corretagens que serão utilizados na aba “DayTrade_Op”.</dd></div>
-      <div><dt>Eventos B3</dt><dd>Eventos da B3, tais como Bonificação, Desdobramento, Grupamento e Subscrição, que alteram o preço médio do ativo em carteira e que não constam das notas de corretagens.</dd></div>
-      <div><dt>Isentos</dt><dd>Apresenta os Rendimentos Isentos e Não Tributáveis auferidos no mercado financeiro e que devem ser declarados na DIRPF.</dd></div>
-      <div><dt>DARF</dt><dd>Disponibiliza os dados para a apuração do DARF mensal.</dd></div>
-      <div><dt>Custodia inicial</dt><dd>Dados de custódia para pessoas que já possuem resultados apurados com a Receita.</dd></div>
-      <div><dt>Alocação</dt><dd>Saldo da Alocação por ativos com porcentagem da alocação atual e a porcentagem “desejada” para cada ativo.</dd></div>
-      <div><dt>Balanceamento</dt><dd>Apresenta uma forma de balanceamento de carteira, com os aportes mensais ou por variação de cada ativo da carteira.</dd></div>
-      <div><dt>Patrimônio</dt><dd>Total do patrimônio investido em todas as classes de ativo.</dd></div>
-      <div><dt>Rendimento</dt><dd>Mostra a rentabilidade da carteira ao longo do tempo.</dd></div>
-      <div><dt>ManejoRisco</dt><dd>Destinado à configuração do Manejo de Risco por operação de renda variável.</dd></div>
-      <div><dt>ManejoPosicao</dt><dd>Destinado à estimativa do Tamanho de Posição para cada operação que será aberta em renda variável.</dd></div>
+      <div><dt>Painel</dt><dd>A DARF da vez, as pendências e o resultado mês a mês.</dd></div>
+      <div><dt>Importar</dt><dd>Notas em PDF e planilhas da B3, com conferência de cada nota.</dd></div>
+      <div><dt>Notas e operações</dt><dd>A nota ao lado do original e o livro de operações com filtros.</dd></div>
+      <div><dt>Apuração mensal</dt><dd>Resultado por categoria com a memória de cálculo de cada mês.</dd></div>
+      <div><dt>DARF</dt><dd>Vencimento em dia útil, multa e juros por atraso e o registro do pagamento.</dd></div>
+      <div><dt>Proventos</dt><dd>Dividendos, JCP e reembolsos, com a data do crédito do JCP.</dd></div>
+      <div><dt>Declaração anual</dt><dd>Fichas de renda variável, bens e direitos e rendimentos para copiar.</dd></div>
+      <div><dt>Carteira e preço médio</dt><dd>A posição em qualquer data e a evolução do preço médio.</dd></div>
+      <div><dt>Eventos corporativos</dt><dd>Os eventos da B3 que atingem a sua posição, para confirmar.</dd></div>
+      <div><dt>Opções e futuros</dt><dd>O ciclo de cada série e os ajustes de cada contrato.</dd></div>
+      <div><dt>Conciliação com a B3</dt><dd>A posição calculada comparada com a da B3.</dd></div>
+      <div><dt>Relatórios</dt><dd>Exportação em Excel, CSV e PDF.</dd></div>
     </dl>
-  </div>
-</section>
-
-<section id="guias">
-  <div class="wrap">
-    <h2>Guias</h2>
-    <p class="intro">Explicações mais detalhadas sobre o uso do COIR.</p>
-    <ul class="recursos">
-      <li><a href="./guias/extrair-notas-de-corretagem-sinacor-para-excel/">Como extrair notas de corretagem SINACOR para Excel</a></li>
-      <li><a href="./guias/planilhas-darf-irrf-irpf/">Planilhas do COIR para DARF, IRRF e declaração do IRPF</a></li>
-      <li><a href="./guias/corretoras-e-mercados-compativeis/">Corretoras e mercados compatíveis com o COIR</a></li>
-    </ul>
   </div>
 </section>
 
@@ -308,17 +297,12 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
     <button type="button" class="seta ant" aria-label="Telas anteriores" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></button>
     <button type="button" class="seta prox" aria-label="Próximas telas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4 8 8-8 8"/></svg></button>
     <div class="galeria" id="galeria">
-      <figure><button type="button" data-img="tela-programa"><span class="moldura"><img src="./docs/imagens/tela-programa.JPG" width="1014" height="354" loading="lazy" alt="Tela principal do COIR"></span><figcaption>Tela principal</figcaption></button></figure>
-      <figure><button type="button" data-img="indice"><span class="moldura"><img src="./docs/imagens/indice.JPG" width="1144" height="785" loading="lazy" alt="Índice das planilhas do COIR"></span><figcaption>Índice</figcaption></button></figure>
-      <figure><button type="button" data-img="operacoes"><span class="moldura"><img src="./docs/imagens/operacoes.JPG" width="1872" height="734" loading="lazy" alt="Planilha de operações importadas das notas de corretagem"></span><figcaption>Controle das operações realizadas</figcaption></button></figure>
-      <figure><button type="button" data-img="contabilidade"><span class="moldura"><img src="./docs/imagens/contabilidade.JPG" width="1149" height="733" loading="lazy" alt="Contabilidade das operações por mês e por ano"></span><figcaption>Contabilidade das operações realizadas</figcaption></button></figure>
-      <figure><button type="button" data-img="alocacao"><span class="moldura"><img src="./docs/imagens/alocacao.JPG" width="1024" height="757" loading="lazy" alt="Alocação da carteira por classe de ativo"></span><figcaption>Alocação por classe de ativo</figcaption></button></figure>
-      <figure><button type="button" data-img="isentos"><span class="moldura"><img src="./docs/imagens/isentos.JPG" width="1871" height="547" loading="lazy" alt="Controle de operações isentas de IR"></span><figcaption>Controle de operações isentas de IR</figcaption></button></figure>
-      <figure><button type="button" data-img="darf"><span class="moldura"><img src="./docs/imagens/darf.JPG" width="1015" height="847" loading="lazy" alt="Controle da DARF mensal"></span><figcaption>Controle de DARF mensal</figcaption></button></figure>
-      <figure><button type="button" data-img="eventos"><span class="moldura"><img src="./docs/imagens/eventos.JPG" width="1727" height="835" loading="lazy" alt="Eventos da B3: bonificação, desdobramento e subscrição"></span><figcaption>Eventos da B3</figcaption></button></figure>
-      <figure><button type="button" data-img="custodia-inicial"><span class="moldura"><img src="./docs/imagens/custodia-inicial.JPG" width="1424" height="760" loading="lazy" alt="Custódia inicial"></span><figcaption>Custódia inicial</figcaption></button></figure>
-      <figure><button type="button" data-img="balanceamento"><span class="moldura"><img src="./docs/imagens/balanceamento.JPG" width="1498" height="802" loading="lazy" alt="Balanceamento da carteira"></span><figcaption>Balanceamento da carteira</figcaption></button></figure>
-      <figure><button type="button" data-img="manejo-risco"><span class="moldura"><img src="./docs/imagens/manejo-risco.JPG" width="728" height="537" loading="lazy" alt="Manejo de risco antimartingale por tipo de operação"></span><figcaption>Manejo de risco antimartingale com porcentagem fixa por tipo de operação</figcaption></button></figure>
+      <figure><button type="button"><span class="moldura"><img src="./docs/site/imagens/tela-painel.jpg" loading="lazy" alt="Painel do ano com o banco de demonstração"></span><figcaption>Painel</figcaption></button></figure>
+      <figure><button type="button"><span class="moldura"><img src="./docs/site/imagens/tela-apuracao.jpg" loading="lazy" alt="Apuração mensal por categoria"></span><figcaption>Apuração mensal</figcaption></button></figure>
+      <figure><button type="button"><span class="moldura"><img src="./docs/site/imagens/tela-darf.jpg" loading="lazy" alt="DARFs do ano, pagas e em aberto"></span><figcaption>DARF</figcaption></button></figure>
+      <figure><button type="button"><span class="moldura"><img src="./docs/site/imagens/tela-carteira.jpg" loading="lazy" alt="Carteira e preço médio"></span><figcaption>Carteira e preço médio</figcaption></button></figure>
+      <figure><button type="button"><span class="moldura"><img src="./docs/site/imagens/tela-declaracao.jpg" loading="lazy" alt="Fichas da declaração anual"></span><figcaption>Declaração anual</figcaption></button></figure>
+      <figure><button type="button"><span class="moldura"><img src="./docs/site/imagens/tela-notas.jpg" loading="lazy" alt="Notas de corretagem importadas"></span><figcaption>Notas</figcaption></button></figure>
     </div>
     </div>
   </div>
@@ -329,18 +313,57 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
     <h2>Dúvidas frequentes</h2>
     <div class="faq coluna-leitura">
       <h3>O COIR é gratuito?</h3>
-      <p>Sim. É código aberto, com licença MIT.</p>
+      <p>Sim. É software livre, com licença AGPL-3.0.</p>
       <h3>O que preciso ter instalado?</h3>
-      <p>Apenas o Microsoft Excel, em um Windows de 64 bits. O Python e o Java já vêm dentro do pacote. O passo a passo está em <a href="#como-usar">Como usar</a>.</p>
-      <h3>Quais corretoras funcionam?</h3>
-      <p>O COIR lê notas no padrão SINACOR e foi testado com XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, entre em contato para que ela seja adicionada ao sistema.</p>
-      <h3>Onde fica o resultado?</h3>
-      <p>No arquivo <code>Resultado\CPF.xlsb</code>, onde CPF é o número do CPF do investidor.</p>
+      <p>Nada: só o Windows 10 ou 11. Basta extrair o .zip e abrir o <code>COIR.exe</code>.</p>
+      <h3>Meus dados saem do computador?</h3>
+      <p>Não. Notas, planilhas e o banco ficam numa pasta sua. As únicas consultas à internet (tabelas públicas da B3 e versão nova do programa) são feitas quando você pede, ou ao abrir, se você ligar essa opção.</p>
+      <h3>Como atualizo para uma versão nova?</h3>
+      <p>Baixe o .zip novo e troque a pasta do programa. Os dados continuam na pasta deles; na primeira abertura o COIR faz um backup do banco e o atualiza.</p>
+      <h3>Usei a versão 2 (planilha). Por que alguns números mudaram?</h3>
+      <p>A versão 3 corrige pontos da versão 2: isenção pela soma das vendas, saldo de IRRF transportado entre os meses, DARF com mínimo de R$ 10 e vencimento em dia útil, FII separado e eventos corporativos no preço médio. As <a href="./novidades.html">notas da versão</a> explicam cada caso.</p>
       <h3>O COIR substitui um contador?</h3>
-      <p>Não. Ele organiza e calcula as informações das suas operações, mas não substitui a análise nem a responsabilidade de um profissional contábil.</p>
-      <h3>Encontrei um erro. O que faço?</h3>
-      <p>Abra uma <a href="https://github.com/MarceloPCF/COIR/issues">issue</a> no GitHub ou escreva para <a href="mailto:marcelo.pcf@gmail.com">marcelo.pcf@gmail.com</a>.</p>
+      <p>Não. Ele faz as contas e mostra de onde vem cada valor, mas confira sempre antes de pagar um DARF ou entregar a declaração. As <a href="./fontes.html">fontes fiscais</a> usadas estão listadas.</p>
     </div>
+  </div>
+</section>
+
+<section id="contato">
+  <div class="wrap">
+    <h2>Avisos de versão nova</h2>
+    <p class="intro">Quer saber quando sair uma versão nova? Deixe o seu e-mail. É opcional: o download não depende disso, e o próprio programa também avisa quando há versão nova.</p>
+    <form id="form-avisos" class="avisos" method="post">
+      <label for="avisos-email">Seu e-mail</label>
+      <div class="linha-form">
+        <input id="avisos-email" type="email" name="email" required autocomplete="email" placeholder="voce@exemplo.com">
+        <button type="submit" class="botao principal">Quero ser avisado</button>
+      </div>
+      <input type="hidden" name="_subject" value="COIR: aviso de versão nova">
+      <p id="avisos-situacao" class="pequeno" role="status"></p>
+    </form>
+    <p class="pequeno">Ao enviar, você aceita receber e-mails só sobre versões novas do COIR. O e-mail nunca é repassado, e você pode pedir a remoção a qualquer momento (LGPD). O formulário é de um serviço externo e só recebe o que foi digitado.</p>
+  </div>
+</section>
+
+<section id="corretora">
+  <div class="wrap">
+    <h2>Pedido de corretora</h2>
+    <p class="intro">A sua corretora não foi lida? Conte qual é e o que o COIR mostrou. Não mande a nota nem dados pessoais (nome, CPF, conta): se for preciso ver o layout, a resposta explica como mandar um texto da nota sem esses dados.</p>
+    <form id="form-pedido" class="avisos" method="post">
+      <label for="pedido-corretora">Corretora</label>
+      <input id="pedido-corretora" type="text" name="corretora" required placeholder="Ex.: Nova Corretora">
+      <label for="pedido-segmento">Segmento e ano das notas</label>
+      <input id="pedido-segmento" type="text" name="segmento" placeholder="Ex.: Bovespa, 2024 e 2025">
+      <label for="pedido-mensagem">O que o COIR mostrou (a mensagem da importação)</label>
+      <textarea id="pedido-mensagem" name="mensagem" rows="4"></textarea>
+      <label for="pedido-email">Seu e-mail, se quiser resposta (opcional)</label>
+      <div class="linha-form">
+        <input id="pedido-email" type="email" name="email" autocomplete="email" placeholder="voce@exemplo.com">
+        <button type="submit" class="botao principal">Enviar pedido</button>
+      </div>
+      <input type="hidden" name="_subject" value="COIR: pedido de corretora">
+      <p id="pedido-situacao" class="pequeno" role="status"></p>
+    </form>
   </div>
 </section>
 
@@ -348,8 +371,8 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
 
 <footer>
   <div class="wrap">
-    <span>Contato: <a href="mailto:marcelo.pcf@gmail.com">marcelo.pcf@gmail.com</a></span>
-    <span>COIR é gratuito, com licença MIT. <a href="https://github.com/MarceloPCF/COIR">Código-fonte no GitHub</a></span>
+    <span>COIR é gratuito e software livre (licença AGPL-3.0). <a href="https://github.com/MarceloPCF/COIR">Código-fonte</a> · <a href="./legacy/index.html">Versão 2 (planilha)</a></span>
+    <span>Não substitui a orientação de um contador.</span>
   </div>
 </footer>
 
@@ -361,19 +384,50 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
 
 <script>
 (function () {
-  // Botão "Baixar": aponta direto para o zip da última Release; sem JavaScript, abre a página da Release.
+
+  // Endereço do formulário de avisos (serviço externo que aceita POST com resposta JSON,
+  // como o Formspree: https://formspree.io/f/<código>). Vazio: o formulário fica "em breve".
+  // O mesmo endereço recebe os avisos e os pedidos de corretora (o assunto separa os dois).
+  var FORM_AVISOS = 'https://formspree.io/f/mdeeenqe';
+  function ligar(idForm, idSituacao, pronto) {
+    var form = document.getElementById(idForm);
+    var situacao = document.getElementById(idSituacao);
+    if (!form) return;
+    if (!FORM_AVISOS) {
+      Array.prototype.forEach.call(form.elements, function (e) { e.disabled = true; });
+      situacao.textContent = 'Em breve.';
+      return;
+    }
+    form.action = FORM_AVISOS;
+    form.addEventListener('submit', function (ev) {
+      if (!window.fetch) return;
+      ev.preventDefault();
+      situacao.textContent = 'Enviando...';
+      fetch(FORM_AVISOS, { method: 'POST', body: new FormData(form),
+                           headers: { 'Accept': 'application/json' } })
+        .then(function (r) {
+          if (!r.ok) throw new Error();
+          form.reset();
+          situacao.textContent = pronto;
+        })
+        .catch(function () { situacao.textContent = 'Não foi possível enviar agora. Tente mais tarde.'; });
+    });
+  }
+  ligar('form-avisos', 'avisos-situacao', 'Pronto: você vai receber um aviso quando sair versão nova.');
+  ligar('form-pedido', 'pedido-situacao', 'Pedido recebido. Obrigado!');
+  // Botão "Baixar": aponta direto para o zip da última versão (sem passar pela página do GitHub).
   var botao = document.getElementById('baixar');
   var versao = document.getElementById('versao');
   if (window.fetch) {
     fetch('https://api.github.com/repos/MarceloPCF/COIR/releases/latest', { headers: { 'Accept': 'application/vnd.github+json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
       .then(function (rel) {
-        var zip = (rel.assets || []).filter(function (a) { return /\.zip$/i.test(a.name); })[0];
+        var zip = (rel.assets || []).filter(function (a) { return /^COIR-.*-windows\.zip$/i.test(a.name); })[0];
         if (!zip) { return; }
         botao.href = zip.browser_download_url;
-        var mb = (zip.size / 1048576).toFixed(1).replace('.', ',');
+        var mb = (zip.size / 1048576).toFixed(0);
         var num = (rel.tag_name || '').replace(/^v/i, '');
-        versao.textContent = 'Versão ' + num + ', arquivo zip de ' + mb + ' MB. Gratuito, código aberto (licença MIT).';
+        versao.textContent = 'Versão ' + num + ', arquivo .zip de ' + mb + ' MB. Gratuito, para Windows 10 ou 11.';
       })
       .catch(function () {});
   }

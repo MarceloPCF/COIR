@@ -1,0 +1,5 @@
+# BTG Pactual (antiga Necton): valor antes do rótulo no cabeçalho
+corretora: BTG
+prioridade: 10
+ancoras: ["BTG Pactual CTVM", "43.815.158/0001-22"]
+gramaticas: {bovespa: btg, bmf: btg}

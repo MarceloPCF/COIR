@@ -1,0 +1,35 @@
+# Hooks locais: rodam offline, com as versões fixadas no uv.lock.
+# Instalar (pre-commit e pre-push): uv run pre-commit install
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+repos:
+  - repo: local
+    hooks:
+      - id: dados-pessoais
+        name: bloquear dados pessoais (CPF, conta, termos locais, PDF/planilha/.db, binários)
+        entry: uv run python tools/verificar_dados_pessoais.py
+        language: system
+        types: [file]
+      - id: dados-pessoais-historico
+        name: bloquear dados pessoais no histórico enviado
+        entry: uv run python tools/verificar_dados_pessoais.py --pre-push
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix --force-exclude
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+      - id: pyright
+        name: pyright
+        entry: uv run pyright
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false

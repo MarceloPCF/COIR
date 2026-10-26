@@ -1,0 +1,156 @@
+{
+  "id": "xp_2024_01_bmf_novo",
+  "corretora": "XP",
+  "segmento": "bmf",
+  "layout": "XP BM&F 2024+ (milho CCM): AJUPOS + DAY TRADE; 'NOTA DE NEGOCIAÇÃO Nr. nota' na mesma linha; 1 nota por página",
+  "data_pregao": "2024-01-04",
+  "numero_nota": "1000008",
+  "folha": "1",
+  "conta": null,
+  "numero_nota_no_texto": "1.000.008",
+  "operacoes": [
+    {
+      "cv": "C",
+      "mercado": "CCM H24",
+      "vencimento": "2024-03-15",
+      "observacao": "",
+      "quantidade": "4",
+      "preco": "76.67",
+      "tipo_negocio": "AJUPOS",
+      "valor": "756.00",
+      "dc": "C",
+      "taxa_operacional": "0.00"
+    },
+    {
+      "cv": "C",
+      "mercado": "CCM H24",
+      "vencimento": "2024-03-15",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "76.78",
+      "tipo_negocio": "DAY TRADE",
+      "valor": "49.50",
+      "dc": "D",
+      "taxa_operacional": "4.00"
+    },
+    {
+      "cv": "C",
+      "mercado": "CCM H24",
+      "vencimento": "2024-03-15",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "76.78",
+      "tipo_negocio": "DAY TRADE",
+      "valor": "49.50",
+      "dc": "D",
+      "taxa_operacional": "4.00"
+    },
+    {
+      "cv": "C",
+      "mercado": "CCM H24",
+      "vencimento": "2024-03-15",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "76.78",
+      "tipo_negocio": "DAY TRADE",
+      "valor": "49.50",
+      "dc": "D",
+      "taxa_operacional": "4.00"
+    },
+    {
+      "cv": "C",
+      "mercado": "CCM H24",
+      "vencimento": "2024-03-15",
+      "observacao": "@",
+      "quantidade": "1",
+      "preco": "76.79",
+      "tipo_negocio": "DAY TRADE",
+      "valor": "54.00",
+      "dc": "D",
+      "taxa_operacional": "4.00"
+    },
+    {
+      "cv": "V",
+      "mercado": "CCM H24",
+      "vencimento": "2024-03-15",
+      "observacao": "@",
+      "quantidade": "4",
+      "preco": "76.00",
+      "tipo_negocio": "DAY TRADE",
+      "valor": "1206.00",
+      "dc": "D",
+      "taxa_operacional": "16.00"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_dos_negocios": {
+      "valor": "652.50",
+      "dc": "D"
+    },
+    "venda_disponivel": "0.00",
+    "compra_disponivel": "0.00",
+    "venda_opcoes": "0.00",
+    "compra_opcoes": "0.00",
+    "custos": {
+      "Taxa operacional": {
+        "valor": "32.00",
+        "dc": "D"
+      },
+      "Taxa registro BM&F": {
+        "valor": "1.84",
+        "dc": "D"
+      },
+      "Taxas BM&F (emol+f.gar)": {
+        "valor": "1.04",
+        "dc": "D"
+      },
+      "+Outros Custos": {
+        "valor": "0.00"
+      }
+    },
+    "subtotais": {
+      "Total de custos operacionais": {
+        "valor": "34.88",
+        "dc": "D"
+      }
+    },
+    "impostos": {
+      "valor": "3.38"
+    },
+    "ajuste_de_posicao": {
+      "valor": "756.00",
+      "dc": "C"
+    },
+    "ajuste_day_trade": {
+      "valor": "1408.50",
+      "dc": "D"
+    },
+    "irrf": {
+      "IRRF": "0.00",
+      "IRRF Day Trade (proj.)": "0.00",
+      "Outros": "0.00",
+      "IRRF operacional": "0.00"
+    },
+    "totais": {
+      "Total Conta Investimento": {
+        "valor": "0.00"
+      },
+      "Total Conta Normal": {
+        "valor": "687.38",
+        "dc": "D"
+      },
+      "Total liquido (#)": {
+        "valor": "0.00"
+      },
+      "Total líquido da nota": {
+        "valor": "690.76",
+        "dc": "D"
+      }
+    },
+    "liquido": {
+      "data": "2024-01-04",
+      "valor": "690.76",
+      "dc": "D"
+    }
+  }
+}

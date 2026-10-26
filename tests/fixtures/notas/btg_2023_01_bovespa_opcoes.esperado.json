@@ -1,0 +1,161 @@
+{
+  "id": "btg_2023_01_bovespa_opcoes",
+  "corretora": "BTG",
+  "segmento": "bovespa",
+  "layout": "BTG/Necton 2023: rótulos e valores do resumo saem separados no texto extraído",
+  "data_pregao": "2023-01-16",
+  "numero_nota": "1000003",
+  "folha": "1",
+  "conta": "85-0 000000000",
+  "operacoes": [
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "OPCAO DE VENDA",
+      "prazo": "02/23",
+      "papel": "BBASN380 ON",
+      "observacao": "",
+      "quantidade": "300",
+      "preco": "0.72",
+      "valor": "216.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "OPCAO DE VENDA",
+      "prazo": "02/23",
+      "papel": "BBDCN128 PN",
+      "observacao": "",
+      "quantidade": "400",
+      "preco": "0.29",
+      "valor": "116.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "OPCAO DE VENDA",
+      "prazo": "02/23",
+      "papel": "BBSEN319 ON",
+      "observacao": "",
+      "quantidade": "300",
+      "preco": "0.38",
+      "valor": "114.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "C",
+      "mercado": "OPCAO DE COMPRA",
+      "prazo": "05/24",
+      "papel": "IRBRE35 ON",
+      "observacao": "",
+      "quantidade": "600",
+      "preco": "0.12",
+      "valor": "72.00",
+      "dc": "D"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "C",
+      "mercado": "OPCAO DE COMPRA",
+      "prazo": "09/24",
+      "papel": "IRBRI258 ON",
+      "observacao": "",
+      "quantidade": "300",
+      "preco": "0.21",
+      "valor": "63.00",
+      "dc": "D"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "OPCAO DE VENDA",
+      "prazo": "02/23",
+      "papel": "TAEEN356 UNT",
+      "observacao": "",
+      "quantidade": "200",
+      "preco": "0.40",
+      "valor": "80.00",
+      "dc": "C"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_das_operacoes": "661.00",
+    "resumo_dos_negocios": {
+      "Debêntures": "0.00",
+      "Vendas à vista": "0.00",
+      "Compras à vista": "0.00",
+      "Opções - compras": "135.00",
+      "Opções - vendas": "526.00",
+      "Operações à termo": "0.00",
+      "Valor das oper. c/ títulos públ. (v. nom.)": "0.00"
+    },
+    "valor_liquido_das_operacoes": {
+      "valor": "391.00",
+      "dc": "C"
+    },
+    "custos": {
+      "Taxa de liquidação": {
+        "valor": "0.18",
+        "dc": "D"
+      },
+      "Taxa de Registro": {
+        "valor": "0.45",
+        "dc": "D"
+      },
+      "Taxa de termo/opções": {
+        "valor": "0.00"
+      },
+      "Taxa A.N.A.": {
+        "valor": "0.00"
+      },
+      "Emolumentos": {
+        "valor": "0.24",
+        "dc": "D"
+      },
+      "Clearing": {
+        "valor": "0.00"
+      },
+      "Execução": {
+        "valor": "0.00"
+      },
+      "Execução casa": {
+        "valor": "0.00"
+      },
+      "ISS* (SÃO PAULO - SP)": {
+        "valor": "0.00"
+      },
+      "Outras Bovespa": {
+        "valor": "0.00"
+      }
+    },
+    "subtotais": {
+      "Total CBLC": {
+        "valor": "390.37",
+        "dc": "C"
+      },
+      "Total Bovespa / Soma": {
+        "valor": "0.24",
+        "dc": "D"
+      },
+      "Total corretagem / Despesas": {
+        "valor": "0.00"
+      }
+    },
+    "irrf": {
+      "rotulo": "I.R.R.F. s/ operações",
+      "base": "391.00",
+      "valor": "0.01",
+      "dc": null,
+      "incluido_em_total_custos_despesas": false,
+      "obs": "IRRF <= R$ 1,00 não é debitado no líquido da nota"
+    },
+    "liquido": {
+      "data": "2023-01-17",
+      "valor": "390.13",
+      "dc": "C"
+    }
+  }
+}

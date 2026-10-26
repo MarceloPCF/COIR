@@ -1,0 +1,251 @@
+{
+  "id": "xp_2026_08_bovespa",
+  "corretora": "XP",
+  "segmento": "bovespa",
+  "layout": "XP novo (2026): rótulos e valores do resumo saem separados no texto extraído",
+  "data_pregao": "2026-08-14",
+  "numero_nota": "1000002",
+  "folha": "1",
+  "conta": "3-5 000000",
+  "operacoes": [
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "COPASA ON NM",
+      "observacao": "@",
+      "quantidade": "100",
+      "preco": "55.47",
+      "valor": "5547.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "COPASA ON NM",
+      "observacao": "@",
+      "quantidade": "100",
+      "preco": "55.02",
+      "valor": "5502.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "COPASA ON NM",
+      "observacao": "@#",
+      "quantidade": "300",
+      "preco": "55.06",
+      "valor": "16518.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "COPASA ON NM",
+      "observacao": "@",
+      "quantidade": "100",
+      "preco": "55.44",
+      "valor": "5544.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "COPASA ON NM",
+      "observacao": "@#",
+      "quantidade": "100",
+      "preco": "55.50",
+      "valor": "5550.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "COPASA ON NM",
+      "observacao": "@",
+      "quantidade": "100",
+      "preco": "55.46",
+      "valor": "5546.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "COPASA ON NM",
+      "observacao": "@",
+      "quantidade": "100",
+      "preco": "55.01",
+      "valor": "5501.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "COPASA ON NM",
+      "observacao": "@",
+      "quantidade": "100",
+      "preco": "55.00",
+      "valor": "5500.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "OCEANPACT ON NM",
+      "observacao": "@",
+      "quantidade": "500",
+      "preco": "9.62",
+      "valor": "4810.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "OCEANPACT ON NM",
+      "observacao": "@",
+      "quantidade": "500",
+      "preco": "9.62",
+      "valor": "4810.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "OCEANPACT ON NM",
+      "observacao": "@",
+      "quantidade": "700",
+      "preco": "9.62",
+      "valor": "6734.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "OCEANPACT ON NM",
+      "observacao": "@",
+      "quantidade": "300",
+      "preco": "9.62",
+      "valor": "2886.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "OCEANPACT ON NM",
+      "observacao": "@",
+      "quantidade": "1000",
+      "preco": "9.62",
+      "valor": "9620.00",
+      "dc": "C"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_das_operacoes": "84068.00",
+    "resumo_dos_negocios": {
+      "Vendas à vista": "84068.00",
+      "Compras à vista": "0.00",
+      "Opções - compras": "0.00",
+      "Opções - vendas": "0.00",
+      "Operações à termo": "0.00",
+      "Debêntures": "0.00",
+      "Valor das oper. c/ títulos públ. (v. nom.)": "0.00"
+    },
+    "valor_liquido_das_operacoes": {
+      "valor": "84068.00",
+      "dc": "C"
+    },
+    "custos": {
+      "Taxa de liquidação": {
+        "valor": "18.83",
+        "dc": "D"
+      },
+      "Taxa de Registro": {
+        "valor": "0.00"
+      },
+      "Taxa de termo/opções": {
+        "valor": "0.00"
+      },
+      "Taxa A.N.A.": {
+        "valor": "0.00"
+      },
+      "Emolumentos": {
+        "valor": "4.20",
+        "dc": "D"
+      },
+      "Taxa de Transf. de Ativos": {
+        "valor": "2.18",
+        "dc": "D"
+      },
+      "Taxa Operacional": {
+        "valor": "8.00",
+        "dc": "D"
+      },
+      "Execução": {
+        "valor": "0.00"
+      },
+      "Taxa de Custódia": {
+        "valor": "0.00"
+      },
+      "Impostos": {
+        "valor": "0.85",
+        "dc": "D"
+      },
+      "Outros": {
+        "valor": "1.96",
+        "dc": "D"
+      }
+    },
+    "subtotais": {
+      "Total CBLC": {
+        "valor": "84049.17",
+        "dc": "C"
+      },
+      "Total Bovespa / Soma": {
+        "valor": "6.38",
+        "dc": "D"
+      },
+      "Total Custos / Despesas": {
+        "valor": "15.01",
+        "dc": "D"
+      }
+    },
+    "irrf": {
+      "rotulo": "I.R.R.F. s/ operações",
+      "base": "84068.00",
+      "valor": "4.20",
+      "dc": "D",
+      "incluido_em_total_custos_despesas": true
+    },
+    "liquido": {
+      "data": "2026-08-18",
+      "valor": "84027.78",
+      "dc": "C"
+    }
+  }
+}

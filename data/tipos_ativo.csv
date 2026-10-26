@@ -1,0 +1,12 @@
+ticker,tipo,observacao
+BIDI11,UNIT,Banco Inter
+BPAC11,UNIT,BTG Pactual
+KLBN11,UNIT,Klabin
+SANB11,UNIT,Santander Brasil
+SAPR11,UNIT,Sanepar
+TAEE11,UNIT,Taesa
+UBBR11,UNIT,Unibanco
+PPLA11,BDR,PPLA Participations (BDR em units)
+BOVA11,ETF,iShares Ibovespa
+SMAL11,ETF,iShares Small Cap
+B5P211,ETF_RF,ETF de renda fixa (Lei 13.043/2014)

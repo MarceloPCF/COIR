@@ -1,145 +1,93 @@
-<head>
-<meta name="google-site-verification" content="vDjlNKkJJRVfJJTE-ybAxmtGzT-z72kWETuAConlxOg" />
-</head>
+# COIR — Controle de Operações e Imposto de Renda da bolsa
 
-## Controle de Operações e Imposto de Renda - COIR
-O COIR é um sistema de extração de dados de notas de corretagens no padrão SINACOR (Sistema Integrado de Administração de Corretoras) para planilhas do Microsoft Excel. Tem como objetivo o controle de operações nos mercados À Vista (Normal e DayTrade), Futuros, Commodities e Derivativos (Opções), na bolsa de valores da B3 (Brasil, Bolsa e Balcão).
+Programa gratuito para Windows que lê as suas **notas de corretagem** e as **planilhas da Área do
+Investidor da B3**, calcula o **preço médio**, apura o **imposto de renda mensal** de renda variável,
+mostra a **DARF** a pagar e prepara as **fichas da declaração anual** (IRPF).
 
-Site do projeto: <https://marcelopcf.github.io/COIR/>. Guias: [como extrair notas de corretagem SINACOR para Excel](https://marcelopcf.github.io/COIR/guias/extrair-notas-de-corretagem-sinacor-para-excel/), [planilhas para DARF, IRRF e IRPF](https://marcelopcf.github.io/COIR/guias/planilhas-darf-irrf-irpf/) e [corretoras e mercados compatíveis](https://marcelopcf.github.io/COIR/guias/corretoras-e-mercados-compativeis/).
+**Seus dados ficam com você.** O COIR roda só no seu computador. Notas, planilhas e o banco ficam
+numa pasta sua; nada da sua carteira é enviado para lugar nenhum.
 
-![Telas do COIR](./docs/imagens/coir-demo.gif)
+![Painel do COIR com o banco de demonstração](docs/manual/imagens/painel.png)
 
-***
-## História
-Esse controle de operações começou em 2017, inicialmente apenas em planilhas excel com operações do mercado À Vista. Em 2021 nasceu a necessidade de automatização da extração de dados das notas de corretagens, até então todo esse trabalho era realizado de forma manual. Para essa automatização é utilizada a linguagem de programação Python. Em 2022 foram acrescentados os controles de operações dos mercados de Futuros, Commodities e Derivativos (Opções).
+## Baixar e abrir
 
-Desde o início, o objetivo desse controle foi a simplicidade e correção dos dados extraídos e contabilizados. Algumas das principais características do COIR são:
-* Controle separado por CPF
-* Possibilidade de contabilizar notas de corretagens de corretoras diferentes para um mesmo CPF
-* Contabilizar operações para cada tipo de mercado (À Vista, Futuros, Commodities e Derivativos)
-* Apuração mensal da DARF
-* Cálculo do Imposto de Renda Retido na Fonte (IRRF)
-* Auxílio na Declaração anual de Imposto de Renda Pessoa Física (DIRPF)
+1. Baixe o `COIR-<versão>-windows.zip` na [página de versões](../../releases/latest).
+2. Extraia o `.zip` numa pasta (por exemplo, `Documentos\COIR`).
+3. Dê dois cliques em `COIR.exe`. Na primeira vez, o assistente pede a pasta dos seus dados e o
+   titular.
 
-Atualmente o sistema consegue manipular notas de corretagens das corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, abra uma issue aqui no GitHub para que ela seja adicionada ao sistema.
+Requisitos: Windows 10 ou 11 com o WebView2 (já vem no Windows 11 e no Edge; sem ele, o COIR abre
+no navegador). Não é preciso instalar Python, Java nem Excel.
 
-***
-## Plataforma
-Para ter acesso a todas as funcionalidades do sistema será necessário o Microsoft Excel instalado, em um Windows de 64 bits. O Python e o Java já vêm dentro do pacote: **não é preciso instalar mais nada**.
-* Baixe o `.zip` da última [Release](https://github.com/MarceloPCF/COIR/releases/latest) e **extraia todo o conteúdo** para uma pasta de seu interesse (não execute de dentro do zip).
-* Baixe suas notas de corretagem no padrão SINACOR direto do portal de sua corretora.
-   * O sistema foi testado para as corretoras XP, Clear, Rico, Necton e BTG. Se você opera em outra corretora, abra uma issue aqui no GitHub para que ela seja adicionada.
-* Copie as notas de corretagens baixadas para a pasta `Entrada`.
-* Dê dois cliques em **`COIR.bat`**. O programa extrai as notas da pasta `Entrada` automaticamente.
-* As notas de corretagem processadas serão movidas da pasta `Entrada` para a pasta `Saida`.
-* O resultado da extração das notas de corretagens será inserido no arquivo `Resultado\CPF.xlsb`, onde CPF é o número do CPF do investidor. Ele contém os dados extraídos das notas de corretagem em várias planilhas (Normais, Daytrade, Contabilidade, DARF, isentos, entre outras).
-* Se o Windows alertar sobre o `python.exe` (SmartScreen ou antivírus), é um aviso comum para programas baixados da internet; ele faz parte do pacote.
+O programa não tem assinatura digital: o Windows pode mostrar o aviso do SmartScreen ("O Windows
+protegeu o computador"). Clique em "Mais informações" e "Executar assim mesmo". Para conferir que o
+arquivo é o publicado, compare o SHA-256 do `.zip` com o `.sha256` da página de versões
+(`certutil -hashfile COIR-<versão>-windows.zip SHA256`).
 
-### Instalação manual (avançado)
-Para rodar a partir do código-fonte, instale o Python 3.12 ou superior (testado com o 3.15) e o Java 8 ou superior (o Java é usado pela biblioteca tabula-py para ler os PDFs). Na pasta do projeto:
+## O que o COIR faz
 
-`$ python -m pip install -r requirements.txt`
+- Lê notas SINACOR (Bovespa e BM&F) da Ágora, BTG/Necton, Clear, Rico e XP e confere cada nota ao
+  centavo antes de aceitá-la.
+- Ações, FII, opções (com exercício e opção que vira pó), termo, futuros, day trade, isenção de
+  R$ 20 mil, compensação de prejuízo, IRRF, proventos e eventos corporativos.
+- DARF com código, vencimento, multa e juros de mora; registro do pagamento e do comprovante.
+- Declaração anual: Bens e Direitos, rendimentos isentos e exclusivos, renda variável mês a mês.
+- Relatórios em Excel, CSV e PDF, sem precisar do Excel instalado.
 
-`$ python COIR.py`
+Manual com o primeiro uso e uma página por tela: [`docs/manual/`](docs/manual/README.md). O que muda ao trocar de
+versão: [`docs/manual/atualizacao.md`](docs/manual/atualizacao.md). O que ficou para depois da 3.0:
+[`docs/roteiro-pos-3.0.md`](docs/roteiro-pos-3.0.md).
 
-As versões das bibliotecas em `requirements.txt` estão fixadas nas que foram testadas (pandas 3, numpy 2.5, tabula-py 2.10, xlwings 0.37, openpyxl 3.1). O numpy 2.5 exige o Python 3.12 ou superior.
+A sua corretora não foi lida? Veja [como pedir ou adicionar uma corretora](docs/como-adicionar-corretora.md).
 
-**Contribuições são muito bem-vindas!**
+> O COIR ajuda a calcular e a conferir; ele não substitui a orientação de um contador.
 
-***
-## Estrutura do repositório
+## Versão anterior
+
+A v2 (baseada em Excel) está na tag [`v2.1.1`](../../tree/v2.1.1) e em [`legacy/`](legacy/). As
+diferenças de cálculo entre a v2 e a v3 estão no [CHANGELOG](CHANGELOG.md).
+
+## Desenvolvimento
+
+Requer [uv](https://docs.astral.sh/uv/) (ele instala o Python 3.13).
+
+```bash
+uv sync
+uv run pre-commit install
+uv run pytest
+uv run coir --help
+uv run coir ui            # a interface
 ```
-COIR/
-├── COIR.py                  programa principal (é este arquivo que você executa)
-├── coir/                    código-fonte: funções e extratores de cada corretora
-├── modelos/COIR.xlsb        planilha-modelo vazia, copiada para Resultado\<CPF>.xlsb
-├── dados/                   tabelas auxiliares (ações, opções, corretoras cadastradas)
-├── docs/imagens/            capturas de tela usadas neste README e no site
-├── Entrada/ Saida/ Resultado/   pastas de trabalho (ficam vazias no repositório)
-├── tools/                   ferramentas de manutenção (verificação de dados pessoais, montagem do pacote)
-├── CHANGELOG.md  VERSION    histórico de mudanças e número da versão atual
-└── requirements.txt         bibliotecas Python necessárias
+
+Os dados reais (notas em PDF, planilhas, banco) ficam **fora** do repositório, na pasta indicada
+pela variável de ambiente `COIR_DADOS` (ou escolhida no assistente). Nunca versione PDFs, planilhas,
+`.db` ou CPFs: o hook do pre-commit e o CI bloqueiam.
+
+- Banco de demonstração (notas fictícias): `uv run python -m tools.banco_demo <pasta>`.
+- Capturas de tela do manual: `uv run python -m tools.capturas`.
+- Pacote para Windows: `uv run python tools/empacotar.py`.
+
+Regras fiscais: [`docs/regras-fiscais.md`](docs/regras-fiscais.md) e
+[`docs/fontes-fiscais.md`](docs/fontes-fiscais.md). Decisões de arquitetura: [`docs/adr/`](docs/adr/).
+
+### Linha de comando
+
+```bash
+uv run coir titular adicionar <CPF> --nome "Nome" # titular (as notas também o criam)
+uv run coir importar                              # notas em PDF da pasta de dados
+uv run coir apurar 2025-03                        # mês com a memória de cálculo
+uv run coir carteira 2025-12-31                   # posições e PM fiscal
+uv run coir exportar --ano 2025                   # relatórios em xlsx, csv e pdf
 ```
-O arquivo `index.html` na raiz é a página do projeto no GitHub Pages.
 
-***
-## Versões
-O COIR usa [Versionamento Semântico](https://semver.org/lang/pt-BR/) (`MAIOR.MENOR.CORREÇÃO`). Cada versão tem uma tag `vX.Y.Z` e um pacote `.zip` na página de [Releases](https://github.com/MarceloPCF/COIR/releases): baixe sempre o `.zip` da última Release. O histórico de mudanças está no [CHANGELOG](CHANGELOG.md).
+No pacote para Windows, os mesmos comandos estão em `coir-cli.exe`.
 
-***
-## Privacidade e contribuições
-As notas de corretagem e as planilhas geradas contêm dados pessoais (CPF, operações, contas). **Nunca as envie ao GitHub, em commits, issues ou pull requests.** As pastas `Entrada`, `Saida` e `Resultado` e todas as planilhas e PDFs já são ignorados pelo `.gitignore`, e o repositório traz uma verificação automática antes de cada commit. Para ativá-la, uma única vez, dentro da pasta do projeto:
+## Licença
 
-`git config core.hooksPath .githooks`
+A v3 é distribuída sob a **GNU Affero General Public License v3.0 ou posterior** (AGPL-3.0-or-later) —
+ver [LICENSE](LICENSE). Em resumo: qualquer pessoa pode usar, estudar, modificar e redistribuir o COIR de
+graça; quem distribuir uma versão modificada, ou oferecê-la como serviço pela internet, precisa publicar o
+código-fonte dessas modificações sob a mesma licença.
 
-***
-## Aviso importante
-O COIR é uma ferramenta de apoio ao controle de operações e à apuração do imposto. Ele não substitui a orientação de um contador nem a conferência dos valores pelo próprio investidor, que continua responsável por suas declarações e recolhimentos.
-
-***
-## Recursos
-A seguir são apresentadas, de forma resumida, as funcionalidades das planilhas do COIR:
-
-1. Indice - Acesso, habilitação e descrição de cada uma das planilhas do COIR.
-1. Normais_Op - Operações Normais importadas automaticamente das notas de corretagens no padrão SINACOR.
-1. Normais_Cont - Resultado das operações Normais, separado por mês e por ano no padrão do IRPF.
-1. Normais_Dados - Dados importados das notas de corretagens que serão utilizados na aba "Normais_Op".
-1. DayTrade_Op - Operações DayTrade importadas automaticamente das notas de corretagens no padrão SINACOR.
-1. DayTrade_Cont - Resultado das operações DayTrade separado por mês e por ano no padrão do IRPF
-1. DayTrade_Dados - Dados importados das notas de corretagens que serão utilizados na aba "DayTrade_Op"
-1. Eventos B3 - São eventos da B3, tais como; Bonificação, Desdobramento, Grupamento, Subscrição, que alteram o preço médio do ativo em carteira e que não constam das notas de corretagens.
-1. Isentos - Apresenta os Rendimentos Isentos e Não Tributáveis auferidos no mercado financeiro e que devem ser declarados na DIRPF
-1. DARF - Disponibiliza os dados para a apuração do DARF mensal.
-1. Custodia inicial - Dados de custódia para pessoas que já possuem resultados apurados com a Receita.
-1. Alocação - Saldo da Alocação por ativos com porcentagem da alocação atual e a porcentagem "desejada" para cada ativo.
-1. Balanceamento - Apresenta uma forma de balanceamento de carteira, com os aportes mensais ou por variação de cada ativo da carteira.
-1. Patrimônio - É o total do patrimônio investido em todas as classes de ativo.
-1. Rendimento - Mostra a rentabilidade da carteira ao longo do tempo.
-1. ManejoRisco - Destinado à configuração do Manejo de Risco por operação de renda variável.
-1. ManejoPosicao - Destinado à estimativa do Tamanho de Posição para cada operação que será aberta em renda variável.
-1. Reservado0 - Planilha reservada para implementação futura.
-1. Reservado1 - Planilha reservada para implementação futura.
-1. Reservado2 - Planilha reservada para implementação futura.
-1. Reservado3 - Planilha reservada para implementação futura.
-
-***
-## Capturas de telas
-Tela principal
-![Tela principal](docs/imagens/tela-programa.JPG)
-
-Índice
-![indice](docs/imagens/indice.JPG)
-
-Controle das operações realizadas
-![operacoes](docs/imagens/operacoes.JPG)
-
-Contabilidade das operações realizadas
-![contabilidade](docs/imagens/contabilidade.JPG)
-
-Alocação por classe de ativo
-![alocacao](docs/imagens/alocacao.JPG)
-
-Controle de operações isentas de IR
-![isentos](docs/imagens/isentos.JPG)
-
-Controle de DARF mensal
-![darf.JPG](docs/imagens/darf.JPG)
-
-Eventos da B3
-![eventos](docs/imagens/eventos.JPG)
-
-Custódia inicial
-![custodia inicial](docs/imagens/custodia-inicial.JPG)
-
-Balanceamento da carteira
-![balanceamento](docs/imagens/balanceamento.JPG)
-
-Manejo de risco antimartingale com porcentagem fixa por tipo de operação
-![manejo risco](docs/imagens/manejo-risco.JPG)
-
-***
-## Implementações futuras
-* Armazenamento e disponibilização das informações em uma base de dados
-* Implementação de uma interface web para:
-     * importar as notas de corretagens
-     * visualizar os dados armazenados por usuário com um sistema de autenticação
+O código da v2 em [`legacy/`](legacy/) continua sob a licença MIT ([legacy/LICENSE](legacy/LICENSE)).
+Decisão registrada em [docs/adr/0002-licenca-agpl.md](docs/adr/0002-licenca-agpl.md).

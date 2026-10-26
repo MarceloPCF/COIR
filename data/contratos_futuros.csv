@@ -1,0 +1,9 @@
+raiz,mercado,multiplicador,moeda,liquidacao,grupo,inicio,fim
+WIN,INDICE,0.2,BRL,FINANCEIRA,indice,,
+IND,INDICE,1,BRL,FINANCEIRA,indice,,
+WDO,DOLAR,10,BRL,FINANCEIRA,dolar,,
+DOL,DOLAR,50,BRL,FINANCEIRA,dolar,,
+CCM,MILHO,450,BRL,FINANCEIRA,commodity,,
+BGI,BOI,330,BRL,FINANCEIRA,commodity,,
+ICF,CAFE,100,USD,FISICA,commodity,,
+SJC,SOJA,450,USD,FINANCEIRA,commodity,,

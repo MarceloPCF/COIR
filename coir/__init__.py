@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-"""COIR - Controle de Operacoes e Imposto de Renda."""
+"""COIR v3 — Controle de Operações e Imposto de Renda (B3)."""
 
-# Mantenha este numero igual ao do arquivo VERSION (Versionamento Semantico: MAIOR.MENOR.CORRECAO)
-__version__ = "2.2.0"
+__version__ = "3.0.0"

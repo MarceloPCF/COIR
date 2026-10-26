@@ -1,0 +1,330 @@
+{
+  "id": "xp_2016_11_bovespa_antigo_multipagina",
+  "corretora": "XP",
+  "segmento": "bovespa",
+  "layout": "XP antigo (2016-2023): nota de 2 folhas (folha 1 'CONTINUA...' só com negócios e rótulos; resumo financeiro na folha 2), palavras coladas",
+  "data_pregao": "2016-11-16",
+  "numero_nota": "1000006",
+  "folha": "1",
+  "folhas": 2,
+  "operacoes_por_folha": [
+    18,
+    1
+  ],
+  "conta": "3-5 000000",
+  "operacoes": [
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "C",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "2600",
+      "preco": "4.03",
+      "valor": "10478.00",
+      "dc": "D"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "C",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "500",
+      "preco": "4.03",
+      "valor": "2015.00",
+      "dc": "D"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "C",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "6400",
+      "preco": "4.03",
+      "valor": "25792.00",
+      "dc": "D"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "C",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D#",
+      "quantidade": "500",
+      "preco": "4.03",
+      "valor": "2015.00",
+      "dc": "D"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "200",
+      "preco": "3.90",
+      "valor": "780.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "1000",
+      "preco": "3.90",
+      "valor": "3900.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "2000",
+      "preco": "3.90",
+      "valor": "7800.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "3800",
+      "preco": "3.90",
+      "valor": "14820.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "100",
+      "preco": "3.90",
+      "valor": "390.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "1300",
+      "preco": "3.90",
+      "valor": "5070.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "USIMINAS PNAN1",
+      "observacao": "D",
+      "quantidade": "1600",
+      "preco": "3.90",
+      "valor": "6240.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "VALE PNAN1",
+      "observacao": "",
+      "quantidade": "300",
+      "preco": "23.48",
+      "valor": "7044.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "VALE PNAN1",
+      "observacao": "",
+      "quantidade": "800",
+      "preco": "23.48",
+      "valor": "18784.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "VALE PNAN1",
+      "observacao": "",
+      "quantidade": "100",
+      "preco": "23.48",
+      "valor": "2348.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "VALE PNAN1",
+      "observacao": "",
+      "quantidade": "100",
+      "preco": "23.48",
+      "valor": "2348.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "VALE PNAN1",
+      "observacao": "",
+      "quantidade": "100",
+      "preco": "23.47",
+      "valor": "2347.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "VALE PNAN1",
+      "observacao": "",
+      "quantidade": "100",
+      "preco": "23.48",
+      "valor": "2348.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "VALE PNAN1",
+      "observacao": "#",
+      "quantidade": "300",
+      "preco": "23.48",
+      "valor": "7044.00",
+      "dc": "C"
+    },
+    {
+      "negociacao": "1-BOVESPA",
+      "cv": "V",
+      "mercado": "VISTA",
+      "prazo": "",
+      "papel": "VALE PNAN1",
+      "observacao": "",
+      "quantidade": "100",
+      "preco": "23.47",
+      "valor": "2347.00",
+      "dc": "C"
+    }
+  ],
+  "resumo_financeiro": {
+    "valor_das_operacoes": "123910.00",
+    "resumo_dos_negocios": {
+      "Debêntures": "0.00",
+      "Vendas à vista": "83610.00",
+      "Compras à vista": "40300.00",
+      "Opções - compras": "0.00",
+      "Opções - vendas": "0.00",
+      "Operações à termo": "0.00",
+      "Valor das oper. c/ títulos públ. (v. nom.)": "0.00"
+    },
+    "valor_liquido_das_operacoes": {
+      "valor": "43310.00",
+      "dc": "C"
+    },
+    "custos": {
+      "Taxa de liquidação": {
+        "valor": "28.12",
+        "dc": "D"
+      },
+      "Taxa de Registro": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Taxa de termo/opções": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Taxa A.N.A.": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Emolumentos": {
+        "valor": "6.19",
+        "dc": "D"
+      },
+      "Taxa Operacional": {
+        "valor": "0.00",
+        "dc": "D"
+      },
+      "Execução": {
+        "valor": "0.00"
+      },
+      "Taxa de Custódia": {
+        "valor": "0.00"
+      },
+      "Impostos": {
+        "valor": "0.00"
+      },
+      "Outros": {
+        "valor": "0.00",
+        "dc": "C"
+      }
+    },
+    "subtotais": {
+      "Total CBLC": {
+        "valor": "43281.88",
+        "dc": "C"
+      },
+      "Total Bovespa / Soma": {
+        "valor": "6.19",
+        "dc": "D"
+      },
+      "Total Custos / Despesas": {
+        "valor": "2.23",
+        "dc": "D"
+      }
+    },
+    "irrf": {
+      "rotulo": "I.R.R.F. s/ operações",
+      "base": "44610.00",
+      "valor": "2.23",
+      "dc": "D",
+      "incluido_em_total_custos_despesas": true
+    },
+    "irrf_day_trade": {
+      "base": "1319.82",
+      "projecao": "0.00"
+    },
+    "liquido": {
+      "data": "2016-11-21",
+      "valor": "43273.46",
+      "dc": "C"
+    }
+  }
+}
