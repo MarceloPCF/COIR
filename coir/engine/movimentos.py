@@ -253,8 +253,10 @@ def _executar(
             livro.tipos[op.ativo] = op.tipo
             if op.tipo is TipoAtivo.OPCAO:
                 livro.grupos[op.ativo] = _grupo_opcao(op, parametros, nota.data)
-                aviso = (f"opção {op.ticker}: ativo-objeto não identificado pela raiz "
-                         "(data/opcoes_raiz*.csv); no IRPF, linha \"opções - ações\"")  # fmt: skip
+                aviso = (f"Opção {op.ticker}: o COIR não identificou o ativo-objeto pelo código. "
+                         "No IRPF ela entra na linha \"Mercado de opções - ações\", o certo para "
+                         "opção de ação; só se for opção de ETF ou índice é outra linha (avise "
+                         "pelo formulário do site para corrigirmos a tabela).")  # fmt: skip
                 if (op.objeto_tipo is None and livro.visao is Visao.TITULAR
                         and aviso not in livro.avisos):  # fmt: skip
                     livro.avisos.append(aviso)

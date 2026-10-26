@@ -150,6 +150,10 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     async def recarregar() -> None:
         try:
             lancados = await run.io_bound(eventos.listar, estado.banco, titular)
+            # a custódia inicial fica em Cadastros > Saldos iniciais
+            lancados = [
+                e for e in lancados or [] if e.dados.tipo is not TipoEvento.CUSTODIA_INICIAL
+            ]
             propostas = await run.io_bound(estado.propostas)
         except CoirError as erro:
             lista.clear()
@@ -354,7 +358,11 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             if form.proposta is not None:
                 ui.label(form.proposta.nota).classes("coir-carimbo text-sm")
             ui.select(
-                {t.value: r for t, r in TIPOS.items()},
+                {
+                    t.value: r
+                    for t, r in TIPOS.items()
+                    if t is not TipoEvento.CUSTODIA_INICIAL or d.tipo is t
+                },
                 value=d.tipo.value,
                 label="Tipo",
                 on_change=lambda e: mudar_tipo(e.value),

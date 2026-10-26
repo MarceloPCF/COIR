@@ -94,15 +94,18 @@ def _vencimento(prazo: str, serie: str, refs: ReferenciasFiscais) -> date:
 
 
 def _objeto_tipo(serie: str, publicas: Referencias, refs: ReferenciasFiscais) -> TipoAtivo | None:
-    """Tipo do ativo-objeto de uma série, pela raiz de 4 letras (opcoes_raiz*.csv); None se a raiz
-    não está nas tabelas (o motor a mantém na linha "opções - ações")."""
+    """Tipo do ativo-objeto de uma série, pela raiz de 4 letras (opcoes_raiz*.csv); sem a raiz
+    nessa tabela, pelos tickers da lista pública com a mesma raiz, se todos forem do mesmo tipo
+    (ex.: LIGTA50 -> LIGT3, ação). None se nada identifica (linha "opções - ações")."""
     objeto = publicas.opcoes_raiz.get(serie[:4])
-    if objeto is None:
-        return None
-    try:
-        return refs.tipos.tipo(objeto)
-    except ReferenciaError:
-        return None
+    candidatos = {objeto} if objeto else {t for t in publicas.ativos.values() if t[:4] == serie[:4]}
+    tipos: set[TipoAtivo] = set()
+    for ticker in candidatos:
+        try:
+            tipos.add(refs.tipos.tipo(ticker))
+        except ReferenciaError:
+            return None
+    return tipos.pop() if len(tipos) == 1 else None
 
 
 def _nota_bovespa(

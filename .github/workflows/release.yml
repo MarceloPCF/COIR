@@ -82,6 +82,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSAO: ${{ needs.pacote.outputs.versao }}
         run: |
+          # nome fixo: o botão do site baixa direto releases/latest/download/COIR-windows.zip
+          cp "dist/COIR-$VERSAO-windows.zip" dist/COIR-windows.zip
           if gh release view "v$VERSAO" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release upload "v$VERSAO" dist/* --clobber --repo "$GITHUB_REPOSITORY"
           else

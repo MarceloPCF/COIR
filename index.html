@@ -154,17 +154,16 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
   .botao{width:100%;text-align:center}
   .passos li{padding-left:54px}
 }
-.topo{padding:14px 0 36px}
+.topo{padding:10px 0 26px}
 .topo .wrap{gap:22px}
 .barra{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .marca{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:800;font-size:22px;letter-spacing:.02em}
 .simbolo{width:34px;height:34px;flex:none}
-.apresentacao{margin-top:0;max-width:none;display:grid;gap:36px;align-items:center}
-@media (min-width:980px){.apresentacao{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr)}}
+.apresentacao{margin-top:0;max-width:52em}
 .apresentacao h1 .sigla{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.apresentacao h1 .nome{margin:0;font-size:clamp(28px,4vw,42px);color:#fff;line-height:1.15;font-weight:800}
-.vitrine{margin:0}
-.vitrine img{display:block;width:100%;height:auto;border-radius:8px;box-shadow:0 18px 40px #0007,0 0 0 1px #ffffff22}
+.apresentacao h1 .nome{margin:0;font-size:clamp(24px,3.2vw,34px);color:#fff;line-height:1.15;font-weight:800}
+.apresentacao .resumo{font-size:17px;margin-top:10px}
+.acoes{margin-top:16px}
 .privacidade{margin-top:34px;padding:16px 20px;background:#e8f5ec;border-left:5px solid var(--verde);border-radius:0 6px 6px 0;max-width:46em}
 .pequeno{font-size:15px;color:var(--suave)}
 .botao.claro{color:var(--marinho);border-color:var(--linha)}
@@ -196,12 +195,11 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
         <h1><span class="sigla">COIR</span> <span class="nome">Controle de Operações e Imposto de Renda da bolsa</span></h1>
         <p class="resumo">O imposto de renda da bolsa calculado no seu computador: importa as notas de corretagem e as planilhas da B3, calcula o preço médio, apura o IR de cada mês, prepara o DARF e as fichas da declaração anual. Gratuito, e seus dados não saem do computador.</p>
         <div class="acoes">
-          <a class="botao principal" id="baixar" href="https://github.com/MarceloPCF/COIR/releases/latest">Baixar para Windows</a>
+          <a class="botao principal" id="baixar" href="https://github.com/MarceloPCF/COIR/releases/latest/download/COIR-windows.zip">Baixar para Windows</a>
           <a class="botao secundario" href="./docs/manual/index.html">Ler o manual</a>
         </div>
         <p class="versao" id="versao">Gratuito, para Windows 10 ou 11. Não precisa instalar nada.</p>
       </div>
-      <figure class="vitrine"><img src="./docs/site/imagens/tela-passeio.webp" width="1280" height="800" alt="As telas do COIR em sequência: painel, notas, apuração, DARF, carteira e declaração (banco de demonstração)"></figure>
     </div>
   </div>
 </header>

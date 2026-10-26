@@ -240,23 +240,20 @@ def inicial(raiz: str, exemplo: bool) -> str:
     css = css.replace(
         "</style>",
         (
-            ".topo{padding:14px 0 36px}\n"
+            ".topo{padding:10px 0 26px}\n"
             ".topo .wrap{gap:22px}\n"
             ".barra{display:flex;align-items:center;justify-content:space-between;gap:16px;"
             "flex-wrap:wrap}\n"
             ".marca{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;"
             "font-weight:800;font-size:22px;letter-spacing:.02em}\n"
             ".simbolo{width:34px;height:34px;flex:none}\n"
-            ".apresentacao{margin-top:0;max-width:none;display:grid;gap:36px;align-items:center}\n"
-            "@media (min-width:980px){.apresentacao{grid-template-columns:minmax(0,1fr) "
-            "minmax(0,1.05fr)}}\n"
+            ".apresentacao{margin-top:0;max-width:52em}\n"
             ".apresentacao h1 .sigla{position:absolute;width:1px;height:1px;overflow:hidden;"
             "clip:rect(0 0 0 0)}\n"  # a marca da barra já diz COIR; o h1 continua com o nome
-            ".apresentacao h1 .nome{margin:0;font-size:clamp(28px,4vw,42px);color:#fff;"
+            ".apresentacao h1 .nome{margin:0;font-size:clamp(24px,3.2vw,34px);color:#fff;"
             "line-height:1.15;font-weight:800}\n"
-            ".vitrine{margin:0}\n"
-            ".vitrine img{display:block;width:100%;height:auto;border-radius:8px;"
-            "box-shadow:0 18px 40px #0007,0 0 0 1px #ffffff22}\n"
+            ".apresentacao .resumo{font-size:17px;margin-top:10px}\n"
+            ".acoes{margin-top:16px}\n"
             ".privacidade{margin-top:34px;padding:16px 20px;background:#e8f5ec;border-left:5px solid "
             "var(--verde);border-radius:0 6px 6px 0;max-width:46em}\n"
             ".pequeno{font-size:15px;color:var(--suave)}\n"
@@ -320,12 +317,11 @@ def inicial(raiz: str, exemplo: bool) -> str:
         <h1><span class="sigla">COIR</span> <span class="nome">Controle de Operações e Imposto de Renda da bolsa</span></h1>
         <p class="resumo">{RESUMO}</p>
         <div class="acoes">
-          <a class="botao principal" id="baixar" href="{GH}/releases/latest">Baixar para Windows</a>
+          <a class="botao principal" id="baixar" href="{GH}/releases/latest/download/COIR-windows.zip">Baixar para Windows</a>
           <a class="botao secundario" href="{raiz}docs/manual/index.html">Ler o manual</a>
         </div>
         <p class="versao" id="versao">Gratuito, para Windows 10 ou 11. Não precisa instalar nada.</p>
       </div>
-      <figure class="vitrine"><img src="{raiz}docs/site/imagens/tela-passeio.webp" width="1280" height="800" alt="As telas do COIR em sequência: painel, notas, apuração, DARF, carteira e declaração (banco de demonstração)"></figure>
     </div>
   </div>
 </header>
