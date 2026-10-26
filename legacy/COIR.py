@@ -9,12 +9,17 @@
 
 # Importações padrão de bibliotecas Python
 import sys
+import logging
 import platform
 import subprocess
 from os.path import isfile, join, basename, exists
 from os import listdir
 from datetime import datetime
 import pandas as pd
+
+# O tabula-py avisa que não achou o jpype e usa o Java em linha de comando (comportamento esperado
+# no COIR); o aviso só confunde o usuário.
+logging.getLogger('tabula').setLevel(logging.ERROR)
 
 # Importação das funções definidas
 from coir.funcoes import print_atencao, valida_corretora
@@ -32,11 +37,11 @@ import coir.corretoras.nao_validada
 # =================================================================================================
 # Verifica se está rodando a versão correta do Python
 # =================================================================================================
-VERSAO_MINIMA = (3, 9, 2)
+VERSAO_MINIMA = (3, 12, 0)
 if sys.version_info < VERSAO_MINIMA:
     VERSAO_PYTHON = str(platform.python_version())
     MENSAGEM1 = f"Versao do interpretador python ({VERSAO_PYTHON}) inadequada.\n"
-    MENSAGEM2 = "Este programa requer Python 3.9.2 ou superior.\n"
+    MENSAGEM2 = "Este programa requer Python 3.12 ou superior.\n"
 
     sys.stdout.write(MENSAGEM1)
     sys.stdout.write(MENSAGEM2)
@@ -79,7 +84,7 @@ MODULO = ''
 #    print(str(e))
 #    instalar_modulo(MODULO)    
 try:
-    MODULO = 'openpyxl==3.0.9'
+    MODULO = 'openpyxl==3.1.5'
     import openpyxl
 except ImportError as e:
     print("-" * 100)
@@ -87,7 +92,7 @@ except ImportError as e:
     instalar_modulo(MODULO)
 
 try:
-    MODULO = 'xlwings==0.24.9'
+    MODULO = 'xlwings==0.37.7'
     import xlwings
 except ImportError as e:
     print("-" * 100)
@@ -95,14 +100,14 @@ except ImportError as e:
     instalar_modulo(MODULO)
 
 try:
-    MODULO = 'tabula-py==2.3.0'
+    MODULO = 'tabula-py==2.10.0'
     import tabula
 except ImportError as e:
     print("-" * 100)
     print(str(e))
     instalar_modulo(MODULO)
 
-# numpy==1.21.5
+# numpy: versão fixada em requirements.txt
 
 # try:
 #     MODULO="pyxlsb==1.0.10"
@@ -257,7 +262,7 @@ PROCESSADORES = {
 }
 
 # =================================================================================================
-#                  Módulo principal - SISTEMA DE CONTROLE DE OPERAÇÕES E IRPF
+#                  Módulo principal - SISTEMA DE CONTROLE DE OPERAÇÕES E IMPOSTO DE RENDA
 #    Leitura, análise, extração, formatação e conversão das Notas de Corretagem no padrão SINANCOR
 # =================================================================================================
 def extracao_nota_corretagem(path_origem='./Entrada/', ext='pdf'):
@@ -355,7 +360,7 @@ def _pergunta_sim_nao(mensagem):
 def principal():
     print()
     print('-=' * 50)
-    print(f'{"SISTEMA DE CONTROLE DE OPERAÇÕES E IRPF - COIR":^100}')
+    print(f'{"SISTEMA DE CONTROLE DE OPERAÇÕES E IMPOSTO DE RENDA - COIR":^100}')
     print(f'{"Versão " + __version__:^100}')
     print(f'{"Leitura, Extração e Formatação das Notas de Corretagem no padrão SINACOR":^100}')
     print('-=' * 50)
@@ -368,7 +373,7 @@ def principal():
 
     if excel_fechado == 'S':
         result = subprocess.run(["taskkill", "/f", "/im", "excel.exe"],
-                                 capture_output=True, text=True)
+                                 capture_output=True, text=True, errors='replace')
         if result.returncode == 0:
             print("Confirmado: programa Excel foi encerrado.")
         else:

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Como extrair notas de corretagem SINACOR para Excel | COIR</title>
+<meta name="description" content="Passo a passo para transformar notas de corretagem no padrão SINACOR (PDF) em planilhas do Excel com o COIR, programa gratuito e de código aberto.">
+<link rel="canonical" href="https://marcelopcf.github.io/COIR/guias/extrair-notas-de-corretagem-sinacor-para-excel/">
+<meta property="og:title" content="Como extrair notas de corretagem SINACOR para Excel">
+<meta property="og:description" content="Passo a passo para transformar notas de corretagem no padrão SINACOR (PDF) em planilhas do Excel com o COIR.">
+<meta property="og:url" content="https://marcelopcf.github.io/COIR/guias/extrair-notas-de-corretagem-sinacor-para-excel/">
+<meta property="og:site_name" content="COIR">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#102a43">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link rel="stylesheet" href="../guias.css">
+<script type="application/ld+json">
+{
+	"@context":"https://schema.org",
+	"@type":"HowTo",
+	"name":"Como extrair notas de corretagem SINACOR para Excel com o COIR",
+	"description":"Passo a passo para transformar notas de corretagem no padrão SINACOR (PDF) em planilhas do Excel com o COIR.",
+	"inLanguage":"pt-BR",
+	"tool":[{"@type":"HowToTool","name":"Microsoft Excel (Windows 64 bits)"},{"@type":"HowToTool","name":"COIR"}],
+	"step":[
+		{"@type":"HowToStep","name":"Baixe e descompacte","text":"Baixe o .zip da última Release do COIR e extraia todo o conteúdo para uma pasta. Não execute de dentro do zip."},
+		{"@type":"HowToStep","name":"Coloque as notas na pasta Entrada","text":"Baixe as notas de corretagem no padrão SINACOR no portal da corretora e copie os arquivos para a pasta Entrada."},
+		{"@type":"HowToStep","name":"Execute o COIR.bat","text":"Dê dois cliques em COIR.bat. O programa extrai automaticamente as notas da pasta Entrada."},
+		{"@type":"HowToStep","name":"Abra o resultado","text":"Abra o arquivo Resultado\\CPF.xlsb, onde CPF é o número do CPF do investidor."}
+	]
+}
+</script>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav aria-label="Navegação">
+      <a href="../../">COIR</a>
+      <a href="../planilhas-darf-irrf-irpf/">Planilhas</a>
+      <a href="../corretoras-e-mercados-compativeis/">Corretoras e mercados</a>
+      <a href="https://github.com/MarceloPCF/COIR">GitHub</a>
+    </nav>
+    <h1>Como extrair notas de corretagem SINACOR para Excel</h1>
+    <p class="sub">Do PDF da corretora a uma planilha organizada, em quatro passos e sem instalar nada além do Excel.</p>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <h2>O que é a nota de corretagem no padrão SINACOR</h2>
+    <p>SINACOR é a sigla de Sistema Integrado de Administração de Corretoras. As notas de corretagem emitidas nesse padrão são os documentos, geralmente em PDF, que a corretora disponibiliza com as operações feitas na B3 (Brasil, Bolsa e Balcão). Os dados dessas notas são a base para controlar operações, apurar a DARF mensal e preparar a declaração anual do Imposto de Renda.</p>
+    <p>Transcrever esses dados à mão, nota por nota, dá trabalho e abre espaço para erro. O <a href="../../">COIR</a> automatiza essa etapa: ele lê as notas e grava os dados em planilhas do Excel.</p>
+
+    <h2>O que você precisa</h2>
+    <ul>
+      <li>Microsoft Excel, em um Windows de 64 bits.</li>
+      <li>As notas de corretagem no padrão SINACOR, baixadas do portal da sua corretora.</li>
+      <li>O pacote <code>.zip</code> do COIR. O Python e o Java já vêm dentro dele: não é preciso instalar mais nada.</li>
+    </ul>
+
+    <h2>Passo a passo</h2>
+
+    <h3>1. Baixe e descompacte</h3>
+    <p>Baixe o <code>.zip</code> da <a href="https://github.com/MarceloPCF/COIR/releases/latest">última Release</a> e extraia <strong>todo o conteúdo</strong> para uma pasta de sua escolha. Não execute o programa de dentro do zip.</p>
+
+    <h3>2. Coloque as notas na pasta Entrada</h3>
+    <p>Baixe suas notas de corretagem no padrão SINACOR direto do portal da corretora e copie os arquivos para a pasta <code>Entrada</code>. Notas de corretoras diferentes podem ser colocadas juntas para o mesmo CPF.</p>
+
+    <h3>3. Dê dois cliques em COIR.bat</h3>
+    <p>O arquivo fica na pasta principal. Ao rodar, o COIR extrai automaticamente as notas que estiverem na pasta <code>Entrada</code>.</p>
+
+    <h3>4. Abra o resultado</h3>
+    <p>As notas processadas são movidas de <code>Entrada</code> para <code>Saida</code>. O resultado fica no arquivo <code>Resultado\CPF.xlsb</code>, onde CPF é o número do CPF do investidor. Ele reúne os dados em várias planilhas, como Normais, DayTrade, Contabilidade, DARF e Isentos. A função de cada uma está no guia <a href="../planilhas-darf-irrf-irpf/">planilhas do COIR para DARF, IRRF e IRPF</a>.</p>
+
+    <figure>
+      <span class="moldura"><img src="../../docs/imagens/tela-programa.JPG" width="1014" height="354" loading="lazy" alt="Tela principal do COIR"></span>
+      <figcaption>Tela principal do COIR.</figcaption>
+    </figure>
+
+    <h2>Cuidados</h2>
+    <div class="aviso">
+      <p><strong>Privacidade.</strong> As notas de corretagem e as planilhas geradas contêm dados pessoais, como CPF, operações e contas. Nunca as envie ao GitHub, em commits, issues ou pull requests. Se for relatar um problema, descreva o caso sem anexar as notas.</p>
+    </div>
+    <ul>
+      <li>Se o Windows alertar sobre o <code>python.exe</code> (SmartScreen ou antivírus), é um aviso comum para programas baixados da internet; o arquivo faz parte do pacote.</li>
+      <li>Se a sua corretora não aparece entre as testadas, veja a lista em <a href="../corretoras-e-mercados-compativeis/">corretoras e mercados compatíveis</a> e abra uma <a href="https://github.com/MarceloPCF/COIR/issues">issue</a> para que ela seja adicionada.</li>
+      <li>O COIR organiza e calcula as informações das suas operações, mas não substitui a análise nem a responsabilidade de um profissional contábil.</li>
+    </ul>
+
+    <p><a class="cta" href="https://github.com/MarceloPCF/COIR/releases/latest">Baixar o COIR</a></p>
+
+    <nav class="relacionados" aria-label="Guias relacionados">
+      <h2>Veja também</h2>
+      <ul>
+        <li><a href="../planilhas-darf-irrf-irpf/">Planilhas do COIR para DARF, IRRF e declaração do IRPF</a></li>
+        <li><a href="../corretoras-e-mercados-compativeis/">Corretoras e mercados compatíveis com o COIR</a></li>
+        <li><a href="../../">Página inicial do COIR</a></li>
+      </ul>
+    </nav>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Dúvidas e pedidos: <a href="https://github.com/MarceloPCF/COIR/issues">issues no GitHub</a></span>
+    <span>COIR é gratuito, com licença MIT. <a href="https://github.com/MarceloPCF/COIR">Código-fonte no GitHub</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -51,7 +51,11 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
     df = pd.concat(data,axis=0,ignore_index=True)
     
     if 'Obs. (*) Quantidade' in df.columns:
-        df[['Obs. (*)', 'Quantidade']] = df['Obs. (*) Quantidade'].str.split(" ", expand=True)
+        # A coluna traz "<obs> <quantidade>"; linhas sem marca de observação (*) trazem
+        # somente a quantidade (a última parte é sempre a quantidade).
+        partes = df['Obs. (*) Quantidade'].str.split(" ")
+        df['Obs. (*)'] = partes.str[0].where(partes.str.len() > 1)
+        df['Quantidade'] = partes.str[-1]
         df = df.drop(columns=['Obs. (*) Quantidade'])
 
     if 'C/V Tipo mercado' in df.columns:
@@ -71,7 +75,7 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
     df['Nr. nota'] = df['Nr. nota'].apply(coir.funcoes.sanitiza_moeda).astype('float')
     df['Tipo mercado'] = coir.funcoes.sanitiza_especificacao_titulo(df['Tipo mercado'])
     df['Prazo'] = coir.funcoes.sanitiza_especificacao_titulo(df['Prazo'])
-    df['Prazo'].fillna("", inplace=True)
+    df['Prazo'] = df['Prazo'].fillna("")
     df['Especificação do título'] = coir.funcoes.sanitiza_especificacao_titulo(
     df['Especificação do título'])
     df['Obs. (*)'] = coir.funcoes.sanitiza_observacao(df['Obs. (*)'])
@@ -110,11 +114,11 @@ def xp_rico_clear(corretora,filename,item,log,page,pagebmf=0,control=0):
     if 'Unnamed: 0' in df_gastos.columns:
         df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].apply(
         coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 0'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].fillna(0)
     if 'Unnamed: 1' in df_gastos.columns:
         df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].apply(
         coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 1'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].fillna(0)
     lista = list(
     df_gastos[df_gastos['Resumo dos Negócios'].str.contains("Valor das operações",na=False)].index)
     note_taxa = []
@@ -478,7 +482,7 @@ def xp_rico_clear_old(corretora,filename,item,log,page,pagebmf=0,control=0):
     df['Nr. nota'] = df['Nr. nota'].apply(coir.funcoes.sanitiza_moeda).astype('float')
     df['Tipo mercado'] = coir.funcoes.sanitiza_especificacao_titulo(df['Tipo mercado'])
     df['Prazo'] = coir.funcoes.sanitiza_especificacao_titulo(df['Prazo'])
-    df['Prazo'].fillna("", inplace=True)
+    df['Prazo'] = df['Prazo'].fillna("")
     df['Especificação do título'] = coir.funcoes.sanitiza_especificacao_titulo(
     df['Especificação do título'])
     df['Obs. (*)'] = coir.funcoes.sanitiza_observacao(df['Obs. (*)'])
@@ -517,11 +521,11 @@ def xp_rico_clear_old(corretora,filename,item,log,page,pagebmf=0,control=0):
     if 'Unnamed: 0' in df_gastos.columns:
         df_gastos['Unnamed: 0'] = df_gastos[
         'Unnamed: 0'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 0'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 0'] = df_gastos['Unnamed: 0'].fillna(0)
     if 'Unnamed: 1' in df_gastos.columns:
         df_gastos['Unnamed: 1'] = df_gastos[
         'Unnamed: 1'].apply(coir.funcoes.sanitiza_moeda).astype('float')
-        df_gastos['Unnamed: 1'].fillna(0, inplace=True)
+        df_gastos['Unnamed: 1'] = df_gastos['Unnamed: 1'].fillna(0)
     lista = list(
     df_gastos[df_gastos['Resumo dos Negócios'].str.contains("Valor das operações",na=False)].index)
     note_taxa = []
