@@ -7,12 +7,14 @@ precisa também de ajuste na gramática.
 
 ## Se você só usa o COIR
 
-A nota não foi lida? Abra uma **issue** no GitHub ("Pedido de corretora") com:
+A nota não foi lida? Use o **Pedido de corretora** no site
+(https://marcelopcf.github.io/COIR/#corretora) ou abra uma issue no GitHub, com:
 
 - o nome da corretora, o segmento (Bovespa ou BM&F) e o ano da nota;
 - a mensagem que o COIR mostrou na importação (tela Importar ou registro de atividades);
-- o **texto da nota sem dados pessoais**: troque nome, CPF, endereço, conta e número da nota por
-  valores genéricos (veja "Anonimização" abaixo). Nunca envie o PDF original nem o CPF.
+- nunca envie o PDF original, o nome, o CPF ou a conta. Se for preciso ver o layout, a resposta
+  explica como mandar só o texto da nota com esses dados trocados por valores genéricos (veja
+  "Fixture anonimizada" abaixo).
 
 Um anonimizador dentro do programa está previsto para depois da 3.0
 ([roteiro](roteiro-pos-3.0.md)).

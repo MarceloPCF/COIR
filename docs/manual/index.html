@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual do COIR · COIR</title>
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<style>
+:root{--marinho:#102a43;--verde:#2ea043;--azul-claro:#a8d4ff;--fundo:#f4f7fa;--tinta:#243b53;--linha:#d9e2ec}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.6 "Segoe UI",system-ui,sans-serif;color:var(--tinta);background:var(--fundo)}
+.topo{background:var(--marinho);border-left:16px solid var(--verde)}
+.topo div{max-width:980px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.topo a{color:var(--azul-claro);text-decoration:none}
+.topo .marca{color:#fff;font-weight:800;font-size:22px}
+main{max-width:980px;margin:0 auto;padding:24px 20px 64px}
+h1{color:var(--marinho);line-height:1.2}
+h2{color:var(--marinho);margin-top:2em}
+a{color:#0b5cad}
+img{max-width:100%;height:auto;border:1px solid var(--linha);border-radius:6px}
+table{border-collapse:collapse;width:100%;margin:1em 0;background:#fff;font-size:15px;display:block;overflow-x:auto}
+th,td{border:1px solid var(--linha);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:#e9eff5}
+code{background:#e9eff5;padding:1px 5px;border-radius:4px;font-size:.92em}
+pre{background:#fff;border:1px solid var(--linha);padding:12px;overflow-x:auto;border-radius:6px}
+pre code{background:none;padding:0}
+blockquote{margin:1em 0;padding:8px 16px;border-left:5px solid var(--verde);background:#e8f5ec}
+footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#627d98}
+</style>
+</head>
+<body>
+<header class="topo"><div><a class="marca" href="../../index.html">COIR</a>
+<nav><a href="../../index.html">Início</a> · <a href="../../docs/manual/index.html">Manual</a> · <a href="../../novidades.html">Novidades</a> · <a href="../../fontes.html">Fontes fiscais</a></nav></div></header>
+<main>
+<h1 id="manual-do-coir">Manual do COIR</h1>
+
+<p>O COIR lê as suas notas de corretagem e as planilhas da B3 e calcula, no seu computador, o preço
+médio, o imposto de renda mensal, a DARF e as fichas da declaração anual. As imagens deste manual
+usam o <strong>banco de demonstração</strong>: um ano (2025) de um investidor fictício, gerado por
+<code>tools/notas_ficticias.py</code>. Nenhum dado real.</p>
+
+<h2 id="comece-por-aqui">Comece por aqui</h2>
+
+<ul>
+<li><a href="primeiro-uso.html">Primeiro uso</a>: baixar, abrir, escolher a pasta de dados, cadastrar o titular e
+importar as primeiras notas.</li>
+<li><a href="atualizacao.html">Atualizar para uma versão nova</a>: onde ficam os dados, backup e migração.</li>
+</ul>
+
+<h2 id="telas">Telas</h2>
+
+<p>O menu à esquerda agrupa as telas. O topo traz o titular e o ano em uso (valem para todas as
+telas), o tema claro/escuro e o botão de recolher o menu.</p>
+
+<table>
+<thead>
+<tr>
+  <th>Grupo</th>
+  <th>Tela</th>
+  <th>Para quê</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td></td>
+  <td><a href="telas/painel.html">Painel</a></td>
+  <td>resumo do ano: imposto, DARFs, pendências</td>
+</tr>
+<tr>
+  <td>Lançamentos</td>
+  <td><a href="telas/importar.html">Importar</a></td>
+  <td>notas em PDF e planilhas da B3</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/notas.html">Notas</a></td>
+  <td>cada nota lida, com o PDF ao lado</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/operacoes.html">Operações</a></td>
+  <td>o livro de operações, com filtros</td>
+</tr>
+<tr>
+  <td>Imposto</td>
+  <td><a href="telas/apuracao.html">Apuração mensal</a></td>
+  <td>o imposto mês a mês, com a memória de cálculo</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/darf.html">DARF</a></td>
+  <td>o que pagar, quando, multa e juros; pagamento e comprovante</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/proventos.html">Proventos</a></td>
+  <td>dividendos, JCP e rendimentos de FII</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/outros-custos.html">Outros custos</a></td>
+  <td>custos dedutíveis fora das notas</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/declaracao.html">Declaração anual</a></td>
+  <td>as fichas do programa IRPF, prontas para copiar</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/relatorios.html">Relatórios</a></td>
+  <td>relatórios do ano em Excel, CSV e PDF</td>
+</tr>
+<tr>
+  <td>Carteira</td>
+  <td><a href="telas/carteira.html">Carteira e preço médio</a></td>
+  <td>posições e a trilha do preço médio</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/eventos.html">Eventos</a></td>
+  <td>desdobramentos, bonificações, incorporações</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/opcoes.html">Opções</a></td>
+  <td>ciclos de cada série: abertura, exercício, pó</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/futuros.html">Futuros</a></td>
+  <td>resultado de futuros por dia e posições</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/conciliacao.html">Conciliação com a B3</a></td>
+  <td>a custódia do COIR contra a da B3</td>
+</tr>
+<tr>
+  <td>Sistema</td>
+  <td><a href="telas/cadastros.html">Cadastros</a></td>
+  <td>titulares, contas, ativos, parâmetros e saldos iniciais</td>
+</tr>
+<tr>
+  <td></td>
+  <td><a href="telas/configuracoes.html">Configurações</a></td>
+  <td>pasta de dados, tema, backups, tabelas, registro</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>
+  <p>O COIR ajuda a calcular e a conferir; ele não substitui a orientação de um contador.</p>
+</blockquote>
+
+</main>
+<footer>COIR é gratuito e software livre (AGPL-3.0). Não substitui a orientação de um contador.</footer>
+</body>
+</html>

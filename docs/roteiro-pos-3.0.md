@@ -13,6 +13,8 @@ ao menos provável na 3.1.
 | Envio de notas e sugestões de dentro do programa | exige um servidor; na 3.0 os pedidos de corretora vão pela página de pedidos (issues) do GitHub | planejamento da F9 |
 | Assinatura digital do `COIR.exe` (o Windows deixa de mostrar o aviso do SmartScreen) | sem assinatura; o manual explica o aviso e como conferir o SHA-256 | planejamento da F9 |
 | Troca do nome do programa | continua COIR | decisão do mantenedor |
+| Importar a planilha de resultado da v2 (`.xlsb`) como ponto de partida | a v3 refaz tudo a partir dos PDFs (os mesmos da pasta `Entrada` da v2); quem não tem as notas antigas informa a custódia e o prejuízo em 31/12 em Cadastros › Saldos iniciais | rodada do beta (26/10/2026) |
+| Vídeo narrado do programa no site | o topo do site mostra as telas em sequência (imagem animada) | rodada do beta (26/10/2026) |
 | Formulário de mensagens no site e espaço para publicar elogios e depoimentos | o site só tem o formulário de aviso de versão nova por e-mail | rodada de uso (25/10/2026) |
 
 ## Pendências fiscais e do motor

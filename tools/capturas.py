@@ -7,7 +7,7 @@ navegador num processo à parte e fotografa cada tela com o Playwright, no tema 
 Usa o Edge (ou o Chrome) instalado no Windows: não baixa navegador. As PNG vão para
 docs/manual/imagens/; as telas do carrossel do site saem também em JPEG em docs/site/imagens/.
 
-Uso: uv run python -m tools.capturas [tela ...]   (sem argumentos, todas)
+Uso: uv run python -m tools.capturas [tela ... | passeio]   (sem argumentos, todas e a animação)
 """
 
 import os
@@ -133,11 +133,37 @@ def _fotografar(pagina: object, porta: int, rota: str, feitas: list[Path]) -> No
     print(f"  {destino.relative_to(RAIZ)}")
 
 
+# o passeio animado do topo do site: capturas mostradas em sequência (WebP animado, sem vídeo)
+PASSEIO = ("painel", "notas", "apuracao", "darf", "carteira", "declaracao")
+SEGUNDOS = 3
+ANIMACAO = SITE / "tela-passeio.webp"
+
+
+def montar_passeio() -> Path:
+    """O WebP animado a partir das PNG já capturadas (1280 px de largura, 3 s por tela)."""
+    from PIL import Image
+
+    quadros = []
+    for tela in PASSEIO:
+        with Image.open(MANUAL / f"{tela}.png") as imagem:
+            largura = 1280
+            altura = round(imagem.height * largura / imagem.width)
+            quadro = imagem.convert("RGB").resize((largura, altura), Image.Resampling.LANCZOS)
+            quadros.append(quadro)
+    quadros[0].save(ANIMACAO, save_all=True, append_images=quadros[1:], duration=SEGUNDOS * 1000,
+                    loop=0, quality=80, method=6)  # fmt: skip
+    print(f"  {ANIMACAO.relative_to(RAIZ)}")
+    return ANIMACAO
+
+
 def main(pedidas: list[str]) -> None:
     from coir.ui.app import INICIO, TELAS
     from tools import banco_demo, notas_ficticias
 
     rotas = [t.rota for t in (*TELAS, INICIO)]
+    if pedidas == ["passeio"]:  # só refaz a animação com as PNG que já existem
+        montar_passeio()
+        return
     if pedidas:
         rotas = [r for r in rotas if nome(r) in pedidas]
     if PASTA.exists():
@@ -161,6 +187,8 @@ def main(pedidas: list[str]) -> None:
         try:
             _esperar(porta)
             fotografar(porta, rotas)
+            if not pedidas:
+                montar_passeio()
         finally:  # a árvore inteira: o servidor pode ter filhos que seguram o banco
             subprocess.run(["taskkill", "/T", "/F", "/PID", str(processo.pid)], capture_output=True)
             try:

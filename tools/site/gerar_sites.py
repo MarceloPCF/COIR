@@ -1,19 +1,12 @@
 # ruff: noqa: E501  (modelos HTML em linhas longas)
-"""Gera os dois exemplos do site da v3 com o mesmo conteúdo:
-
-- inicial: o HTML/CSS do site atual (main, marcelopcf.github.io/COIR), texto da v3;
-- escuro-v3: o rascunho de site que estava na v3, com a paleta escura fixa.
-
-Saídas: <repo>/index.html (= inicial), <repo>/exemplos-site/inicial/index.html e
-<repo>/exemplos-site/escuro-v3/index.html. Uso: uv run python tools/site/gerar_sites.py . tools/site/site-v2.html
-tools/site/site-v3-rascunho.html
+"""Gera o index.html do site (o visual do site da v2, marinho e verde, com o texto da v3; escolha
+do usuário de 26/10/2026). Uso: uv run python tools/site/gerar_sites.py . tools/site/site-v2.html
 """
 
-import re
 import sys
 from pathlib import Path
 
-REPO, V2, V3 = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
+REPO, V2 = Path(sys.argv[1]), Path(sys.argv[2])
 GH = "https://github.com/MarceloPCF/COIR"
 
 # ------------------------------------------------------------------ conteúdo comum (v3)
@@ -44,7 +37,7 @@ PASSOS = [
         "SINACOR) e as planilhas da Área do Investidor da B3. Cada nota é conferida com o resumo dela; "
         "divergência é avisada, nunca ignorada.",
         "Testado com XP, Clear, Rico, BTG, Necton e Ágora. Se a sua corretora não for lida, use o "
-        '<a href="https://github.com/MarceloPCF/COIR/issues">página de pedidos</a> para pedir a inclusão (sem mandar a nota com dados pessoais).',
+        '<a href="{R}#corretora">pedido de corretora</a> (sem mandar a nota nem dados pessoais).',
     ),
     (
         "Confira e pague",
@@ -126,13 +119,13 @@ DUVIDAS = [
         "A versão 3 corrige pontos da "
         "versão 2: isenção pela soma das vendas, saldo de IRRF transportado entre os meses, DARF com "
         "mínimo de R$ 10 e vencimento em dia útil, FII separado e eventos corporativos no preço médio. "
-        'As <a href="{R}CHANGELOG.md">notas da versão</a> explicam cada caso.',
+        'As <a href="{R}novidades.html">notas da versão</a> explicam cada caso.',
     ),
     (
         "O COIR substitui um contador?",
         "Não. Ele faz as contas e mostra de onde vem cada valor, mas "
         "confira sempre antes de pagar um DARF ou entregar a declaração. As "
-        '<a href="{R}docs/fontes-fiscais.md">fontes fiscais</a> usadas estão listadas.',
+        '<a href="{R}fontes.html">fontes fiscais</a> usadas estão listadas.',
     ),
 ]
 
@@ -142,21 +135,30 @@ CONTATO_TEXTO = (
     "nova."
 )
 LGPD = (
-    "O e-mail é usado só para avisar de versões novas, nunca é repassado, e você pode pedir a "
-    "remoção a qualquer momento (LGPD). O formulário é de um serviço externo e só recebe o "
-    "e-mail digitado."
+    "Ao enviar, você aceita receber e-mails só sobre versões novas do COIR. O e-mail nunca é "
+    "repassado, e você pode pedir a remoção a qualquer momento (LGPD). O formulário é de um "
+    "serviço externo e só recebe o que foi digitado."
+)
+PEDIDO_TEXTO = (
+    "A sua corretora não foi lida? Conte qual é e o que o COIR mostrou. Não mande a nota nem "
+    "dados pessoais (nome, CPF, conta): se for preciso ver o layout, a resposta explica como "
+    "mandar um texto da nota sem esses dados."
 )
 
 SCRIPT_FORMS = """
   // Endereço do formulário de avisos (serviço externo que aceita POST com resposta JSON,
   // como o Formspree: https://formspree.io/f/<código>). Vazio: o formulário fica "em breve".
+  // O mesmo endereço recebe os avisos e os pedidos de corretora (o assunto separa os dois).
   var FORM_AVISOS = 'https://formspree.io/f/mdeeenqe';
-  var form = document.getElementById('form-avisos');
-  var situacao = document.getElementById('avisos-situacao');
-  if (!FORM_AVISOS) {
-    Array.prototype.forEach.call(form.elements, function (e) { e.disabled = true; });
-    situacao.textContent = 'Em breve.';
-  } else {
+  function ligar(idForm, idSituacao, pronto) {
+    var form = document.getElementById(idForm);
+    var situacao = document.getElementById(idSituacao);
+    if (!form) return;
+    if (!FORM_AVISOS) {
+      Array.prototype.forEach.call(form.elements, function (e) { e.disabled = true; });
+      situacao.textContent = 'Em breve.';
+      return;
+    }
     form.action = FORM_AVISOS;
     form.addEventListener('submit', function (ev) {
       if (!window.fetch) return;
@@ -167,11 +169,13 @@ SCRIPT_FORMS = """
         .then(function (r) {
           if (!r.ok) throw new Error();
           form.reset();
-          situacao.textContent = 'Pronto: você vai receber um aviso quando sair versão nova.';
+          situacao.textContent = pronto;
         })
         .catch(function () { situacao.textContent = 'Não foi possível enviar agora. Tente mais tarde.'; });
     });
   }
+  ligar('form-avisos', 'avisos-situacao', 'Pronto: você vai receber um aviso quando sair versão nova.');
+  ligar('form-pedido', 'pedido-situacao', 'Pedido recebido. Obrigado!');
   // Botão "Baixar": aponta direto para o zip da última versão (sem passar pela página do GitHub).
   var botao = document.getElementById('baixar');
   var versao = document.getElementById('versao');
@@ -229,15 +233,30 @@ def head(raiz: str, tema: str, exemplo: bool) -> str:
     return HEAD_META.replace("{ROBOTS}", robots).replace("{R}", raiz).replace("{TEMA}", tema)
 
 
-# ------------------------------------------------------------------ exemplo 1: inicial
+# ------------------------------------------------------------------ página
 def inicial(raiz: str, exemplo: bool) -> str:
     v2 = V2.read_text(encoding="utf-8")
     css = v2[v2.index("<style>") : v2.index("</style>") + len("</style>")]
     css = css.replace(
         "</style>",
         (
-            ".simbolo{width:76px;height:76px;flex:none}\n"
-            ".marca{display:flex;align-items:center;gap:18px}\n"
+            ".topo{padding:14px 0 36px}\n"
+            ".topo .wrap{gap:22px}\n"
+            ".barra{display:flex;align-items:center;justify-content:space-between;gap:16px;"
+            "flex-wrap:wrap}\n"
+            ".marca{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;"
+            "font-weight:800;font-size:22px;letter-spacing:.02em}\n"
+            ".simbolo{width:34px;height:34px;flex:none}\n"
+            ".apresentacao{margin-top:0;max-width:none;display:grid;gap:36px;align-items:center}\n"
+            "@media (min-width:980px){.apresentacao{grid-template-columns:minmax(0,1fr) "
+            "minmax(0,1.05fr)}}\n"
+            ".apresentacao h1 .sigla{position:absolute;width:1px;height:1px;overflow:hidden;"
+            "clip:rect(0 0 0 0)}\n"  # a marca da barra já diz COIR; o h1 continua com o nome
+            ".apresentacao h1 .nome{margin:0;font-size:clamp(28px,4vw,42px);color:#fff;"
+            "line-height:1.15;font-weight:800}\n"
+            ".vitrine{margin:0}\n"
+            ".vitrine img{display:block;width:100%;height:auto;border-radius:8px;"
+            "box-shadow:0 18px 40px #0007,0 0 0 1px #ffffff22}\n"
             ".privacidade{margin-top:34px;padding:16px 20px;background:#e8f5ec;border-left:5px solid "
             "var(--verde);border-radius:0 6px 6px 0;max-width:46em}\n"
             ".pequeno{font-size:15px;color:var(--suave)}\n"
@@ -245,7 +264,7 @@ def inicial(raiz: str, exemplo: bool) -> str:
             ".avisos{display:grid;gap:8px;max-width:560px;margin-top:12px}\n"
             ".avisos .linha-form{display:flex;gap:8px;flex-wrap:wrap}\n"
             ".avisos input[type=email]{flex:1 1 240px;padding:10px 12px;border-radius:8px;border:1px solid var(--linha,#999);font:inherit;background:transparent;color:inherit}\n"
-            ".avisos .consentimento{display:flex;gap:8px;align-items:flex-start;font-size:.95em}\n"
+            ".avisos textarea,.avisos input[type=text]{padding:10px 12px;border-radius:8px;border:1px solid var(--linha,#999);font:inherit;background:transparent;color:inherit}\n"
             ".avisos :disabled{opacity:.6;cursor:not-allowed}\n"
             ".botao.claro:hover{border-color:var(--marinho)}\n"
             "</style>"
@@ -285,24 +304,28 @@ def inicial(raiz: str, exemplo: bool) -> str:
 
 <header class="topo">
   <div class="wrap">
-    <nav aria-label="Atalhos">
-      <a href="#como-usar">Como usar</a>
-      <a href="#controle">O que faz</a>
-      <a href="#telas-lista">Telas</a>
-      <a href="#duvidas">Dúvidas</a>
-      <a href="#contato">Avisos</a>
-    </nav>
+    <div class="barra">
+      <a class="marca" href="#" aria-label="COIR, início">{SIMBOLO}<span>COIR</span></a>
+      <nav aria-label="Atalhos">
+        <a href="#como-usar">Como usar</a>
+        <a href="#controle">O que faz</a>
+        <a href="#telas-lista">Telas</a>
+        <a href="#duvidas">Dúvidas</a>
+        <a href="#contato">Avisos</a>
+        <a href="#corretora">Corretora</a>
+      </nav>
+    </div>
     <div class="apresentacao">
-      <div>
-        <div class="marca">{SIMBOLO}
-        <h1><span class="sigla">COIR</span> <span class="nome">Controle de Operações e Imposto de Renda da bolsa</span></h1></div>
+      <div class="texto">
+        <h1><span class="sigla">COIR</span> <span class="nome">Controle de Operações e Imposto de Renda da bolsa</span></h1>
         <p class="resumo">{RESUMO}</p>
         <div class="acoes">
           <a class="botao principal" id="baixar" href="{GH}/releases/latest">Baixar para Windows</a>
-          <a class="botao secundario" href="{raiz}docs/manual/">Ler o manual</a>
+          <a class="botao secundario" href="{raiz}docs/manual/index.html">Ler o manual</a>
         </div>
         <p class="versao" id="versao">Gratuito, para Windows 10 ou 11. Não precisa instalar nada.</p>
       </div>
+      <figure class="vitrine"><img src="{raiz}docs/site/imagens/tela-passeio.webp" width="1280" height="800" alt="As telas do COIR em sequência: painel, notas, apuração, DARF, carteira e declaração (banco de demonstração)"></figure>
     </div>
   </div>
 </header>
@@ -345,7 +368,7 @@ def inicial(raiz: str, exemplo: bool) -> str:
 <section id="telas-lista">
   <div class="wrap">
     <h2>As telas do COIR</h2>
-    <p class="intro">O que cada tela do programa faz. O <a href="{raiz}docs/manual/">manual</a> tem o passo a passo de cada uma.</p>
+    <p class="intro">O que cada tela do programa faz. O <a href="{raiz}docs/manual/index.html">manual</a> tem o passo a passo de cada uma.</p>
     <dl class="planilhas">
 {telas}
     </dl>
@@ -385,11 +408,32 @@ def inicial(raiz: str, exemplo: bool) -> str:
         <input id="avisos-email" type="email" name="email" required autocomplete="email" placeholder="voce@exemplo.com">
         <button type="submit" class="botao principal">Quero ser avisado</button>
       </div>
-      <label class="consentimento"><input type="checkbox" name="consentimento" value="sim" required> Aceito receber e-mails só sobre versões novas do COIR.</label>
       <input type="hidden" name="_subject" value="COIR: aviso de versão nova">
       <p id="avisos-situacao" class="pequeno" role="status"></p>
     </form>
     <p class="pequeno">{LGPD}</p>
+  </div>
+</section>
+
+<section id="corretora">
+  <div class="wrap">
+    <h2>Pedido de corretora</h2>
+    <p class="intro">{PEDIDO_TEXTO}</p>
+    <form id="form-pedido" class="avisos" method="post">
+      <label for="pedido-corretora">Corretora</label>
+      <input id="pedido-corretora" type="text" name="corretora" required placeholder="Ex.: Nova Corretora">
+      <label for="pedido-segmento">Segmento e ano das notas</label>
+      <input id="pedido-segmento" type="text" name="segmento" placeholder="Ex.: Bovespa, 2024 e 2025">
+      <label for="pedido-mensagem">O que o COIR mostrou (a mensagem da importação)</label>
+      <textarea id="pedido-mensagem" name="mensagem" rows="4"></textarea>
+      <label for="pedido-email">Seu e-mail, se quiser resposta (opcional)</label>
+      <div class="linha-form">
+        <input id="pedido-email" type="email" name="email" autocomplete="email" placeholder="voce@exemplo.com">
+        <button type="submit" class="botao principal">Enviar pedido</button>
+      </div>
+      <input type="hidden" name="_subject" value="COIR: pedido de corretora">
+      <p id="pedido-situacao" class="pequeno" role="status"></p>
+    </form>
   </div>
 </section>
 
@@ -418,158 +462,6 @@ def inicial(raiz: str, exemplo: bool) -> str:
 """
 
 
-# ------------------------------------------------------------------ exemplo 2: escuro (v3)
-ESCURO_ROOT = """    :root {
-      color-scheme: dark;
-      --fundo: #111614; --papel: #18201d; --tinta: #e6ebe8; --suave: #9aa6a1; --linha: #2a3531;
-      --destaque: #4cc3a3; --destaque-suave: #16302a; --alerta: #f0c060; --alerta-suave: #2e2614;
-      --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
-    }"""
-
-
-def escuro(raiz: str) -> str:
-    v3 = V3.read_text(encoding="utf-8")
-    css = v3[v3.index("<style>") : v3.index("</style>") + len("</style>")]
-    css = re.sub(
-        r"    :root \{.*?\n    \}\n    @media \(prefers-color-scheme: dark\) \{.*?\n    \}\n",
-        ESCURO_ROOT + "\n",
-        css,
-        count=1,
-        flags=re.S,
-    )
-    css = css.replace(
-        "  </style>",
-        (
-            "    .simbolo { width: 56px; height: 56px; }\n"
-            "    .marca { display: flex; align-items: center; gap: 12px; }\n"
-            "    .acoes { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }\n"
-            "    .botao { display: inline-block; padding: 11px 22px; border-radius: 8px; font-weight: 700; "
-            "text-decoration: none; border: 1px solid var(--destaque); }\n"
-            "    .botao.principal { background: var(--destaque); color: #0b1210; }\n"
-            ".avisos{display:grid;gap:8px;max-width:560px;margin-top:12px}\n"
-            ".avisos .linha-form{display:flex;gap:8px;flex-wrap:wrap}\n"
-            ".avisos input[type=email]{flex:1 1 240px;padding:10px 12px;border-radius:8px;border:1px solid var(--linha,#999);font:inherit;background:transparent;color:inherit}\n"
-            ".avisos .consentimento{display:flex;gap:8px;align-items:flex-start;font-size:.95em}\n"
-            ".avisos :disabled{opacity:.6;cursor:not-allowed}\n"
-            "    .botao.secundario { color: var(--destaque); }\n"
-            "    .versao { color: var(--suave); font-size: 14px; margin: 10px 0 0; }\n"
-            "    .passos { padding-left: 22px; } .passos li { margin: 0 0 14px; }\n"
-            "    .passos strong { display: block; }\n"
-            "    .privacidade { margin-top: 28px; padding: 14px 16px; border-radius: 8px; "
-            "background: var(--destaque-suave); }\n"
-            "    details { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; "
-            "padding: 12px 16px; margin: 0 0 10px; }\n"
-            "    summary { cursor: pointer; font-weight: 600; }\n"
-            "    details p { margin: 8px 0 0; color: var(--suave); }\n"
-            "    .pequeno { font-size: 14px; color: var(--suave); }\n"
-            "    .galeria { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; "
-            "padding-bottom: 8px; }\n"
-            "    .galeria figure { flex: 0 0 min(86%, 720px); scroll-snap-align: start; margin: 0; }\n"
-            "    .galeria img { width: 100%; height: auto; border-radius: 10px; "
-            "border: 1px solid var(--linha); }\n"
-            "    .galeria figcaption { color: var(--suave); font-size: 14px; margin-top: 6px; }\n"
-            "  </style>"
-        ),
-    )
-    cartoes = "\n".join(
-        f'    <div class="cartao"><h3>{t}</h3><p>{d}</p></div>' for t, d in TELAS[:6]
-    )
-    passos = "\n".join(f"    <li><strong>{t}</strong>{p}</li>" for t, p, _ in PASSOS)
-    galeria = "\n".join(
-        f'    <figure><img src="{raiz}docs/site/imagens/{a}" loading="lazy" width="1440" '
-        f'height="900" alt="{alt}"><figcaption>{leg}</figcaption></figure>'
-        for a, alt, leg in IMAGENS
-    )
-    mercados = "\n".join(f"    <li>{t} — {s.lower()}</li>" for t, s in MERCADOS)
-    duvidas = "\n".join(
-        f"  <details><summary>{q}</summary><p>{r.replace('{R}', raiz)}</p></details>"
-        for q, r in DUVIDAS
-    )
-    return f"""<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<!-- Exemplo 2 do site da v3: o rascunho escuro que já estava na v3, texto da v3. -->
-{head(raiz, "#111614", True)}
-{css}
-</head>
-<body>
-<main>
-  <header>
-    <div class="marca">{SIMBOLO}<div class="marca-texto">CO<span>IR</span></div></div>
-    <nav>
-      <a href="#como-usar">Como usar</a>
-      <a href="#duvidas">Dúvidas</a>
-      <a href="{raiz}docs/manual/">Manual</a>
-      <a href="#contato">Avisos</a>
-    </nav>
-  </header>
-
-  <h1>Imposto de renda da bolsa, calculado no seu computador.</h1>
-  <p class="lead">{RESUMO.split(": ", 1)[1][0].upper() + RESUMO.split(": ", 1)[1][1:]}</p>
-  <div class="acoes">
-    <a class="botao principal" id="baixar" href="{GH}/releases/latest">Baixar para Windows</a>
-    <a class="botao secundario" href="{raiz}docs/manual/">Ler o manual</a>
-  </div>
-  <p class="versao" id="versao">Gratuito, para Windows 10 ou 11. Não precisa instalar nada.</p>
-  <div class="privacidade"><strong>Seus dados ficam com você.</strong> O COIR roda só no seu computador; nada da sua carteira é enviado para lugar nenhum.</div>
-
-  <div class="fluxo" aria-label="Fluxo do COIR">
-    <b>Notas PDF</b><i>+</i><b>Planilhas B3</b><i>→</i><b>Preço médio</b><i>→</i>
-    <b>Apuração mensal</b><i>→</i><b>DARF</b><i>→</i><b>IRPF</b>
-  </div>
-
-  <h2 id="como-usar">Como usar</h2>
-  <ol class="passos">
-{passos}
-  </ol>
-
-  <h2>O que o COIR faz</h2>
-  <div class="grade">
-{cartoes}
-  </div>
-
-  <h2 id="telas">Telas</h2>
-  <div class="galeria" aria-label="Telas do COIR (banco de demonstração)">
-{galeria}
-  </div>
-
-  <h2>Mercados</h2>
-  <ul>
-{mercados}
-  </ul>
-
-  <h2 id="duvidas">Dúvidas</h2>
-{duvidas}
-
-  <h2 id="contato">Avisos de versão nova</h2>
-  <p>{CONTATO_TEXTO}</p>
-  <form id="form-avisos" class="avisos" method="post">
-      <label for="avisos-email">Seu e-mail</label>
-      <div class="linha-form">
-        <input id="avisos-email" type="email" name="email" required autocomplete="email" placeholder="voce@exemplo.com">
-        <button type="submit" class="botao principal">Quero ser avisado</button>
-      </div>
-      <label class="consentimento"><input type="checkbox" name="consentimento" value="sim" required> Aceito receber e-mails só sobre versões novas do COIR.</label>
-      <input type="hidden" name="_subject" value="COIR: aviso de versão nova">
-      <p id="avisos-situacao" class="pequeno" role="status"></p>
-    </form>
-  <p class="pequeno">{LGPD}</p>
-
-  <footer>
-    COIR é gratuito e software livre (licença AGPL-3.0). <a href="{GH}">Código-fonte</a> ·
-    <a href="{raiz}legacy/index.html">Versão 2 (planilha)</a>. Não substitui a orientação de um contador.
-  </footer>
-</main>
-<script>
-(function () {{
-{SCRIPT_FORMS}
-}})();
-</script>
-</body>
-</html>
-"""
-
-
 def gravar(caminho: Path, texto: str) -> None:
     caminho.parent.mkdir(parents=True, exist_ok=True)
     caminho.write_text(texto, encoding="utf-8", newline="\n")
@@ -577,5 +469,3 @@ def gravar(caminho: Path, texto: str) -> None:
 
 
 gravar(REPO / "index.html", inicial("./", exemplo=False))
-gravar(REPO / "exemplos-site" / "inicial" / "index.html", inicial("../../", exemplo=True))
-gravar(REPO / "exemplos-site" / "escuro-v3" / "index.html", escuro("../../"))
