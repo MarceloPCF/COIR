@@ -3,16 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Planilhas do COIR para DARF, IRRF e declaração do IRPF</title>
-<meta name="description" content="Para que serve cada planilha do COIR: operações normais e day trade, contabilidade por mês e ano, DARF mensal, IRRF, rendimentos isentos, eventos da B3 e custódia inicial.">
+<title>DARF, IRRF e declaração do IRPF no COIR: telas e relatórios</title>
+<meta name="description" content="Onde o COIR mostra a apuração mensal, a DARF, o IRRF, os proventos e as fichas da declaração do IRPF, e quais relatórios em Excel, CSV e PDF ele exporta. Inclui a correspondência com as planilhas da versão 2.">
 <link rel="canonical" href="https://marcelopcf.github.io/COIR/guias/planilhas-darf-irrf-irpf/">
-<meta property="og:title" content="Planilhas do COIR para DARF, IRRF e declaração do IRPF">
-<meta property="og:description" content="Para que serve cada planilha do COIR: operações, contabilidade, DARF mensal, IRRF, rendimentos isentos, eventos da B3 e custódia inicial.">
+<meta property="og:title" content="DARF, IRRF e declaração do IRPF no COIR">
+<meta property="og:description" content="Apuração mensal, DARF, IRRF, proventos e fichas da declaração do IRPF nas telas e relatórios do COIR.">
 <meta property="og:url" content="https://marcelopcf.github.io/COIR/guias/planilhas-darf-irrf-irpf/">
 <meta property="og:site_name" content="COIR">
 <meta property="og:locale" content="pt_BR">
 <meta property="og:type" content="article">
-<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview-v3.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="COIR versão 3: o Painel do programa com a DARF da vez e o resultado mês a mês">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#102a43">
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
@@ -21,11 +24,11 @@
 {
 	"@context":"https://schema.org",
 	"@type":"TechArticle",
-	"headline":"Planilhas do COIR para DARF, IRRF e declaração do IRPF",
-	"description":"Para que serve cada planilha do COIR: operações, contabilidade, DARF mensal, IRRF, rendimentos isentos, eventos da B3 e custódia inicial.",
+	"headline":"DARF, IRRF e declaração do IRPF no COIR: telas e relatórios",
+	"description":"Apuração mensal, DARF, IRRF, proventos e fichas da declaração do IRPF nas telas e relatórios do COIR.",
 	"inLanguage":"pt-BR",
 	"mainEntityOfPage":"https://marcelopcf.github.io/COIR/guias/planilhas-darf-irrf-irpf/",
-	"dateModified":"2026-10-13",
+	"dateModified":"2026-10-26",
 	"isPartOf":{"@type":"WebSite","name":"COIR","url":"https://marcelopcf.github.io/COIR/"}
 }
 </script>
@@ -38,78 +41,87 @@
       <a href="../../">COIR</a>
       <a href="../extrair-notas-de-corretagem-sinacor-para-excel/">Como extrair as notas</a>
       <a href="../corretoras-e-mercados-compativeis/">Corretoras e mercados</a>
-      <a href="https://github.com/MarceloPCF/COIR">GitHub</a>
+      <a href="../../docs/manual/index.html">Manual</a>
     </nav>
-    <h1>Planilhas do COIR para DARF, IRRF e declaração do IRPF</h1>
-    <p class="sub">O que cada planilha do arquivo de resultado faz e como elas se encaixam no controle das suas operações na B3.</p>
+    <h1>DARF, IRRF e declaração do IRPF no COIR</h1>
+    <p class="sub">Onde ficam a apuração de cada mês, a DARF, o IRRF e as fichas da declaração anual, e o que cada relatório exportado traz.</p>
   </div>
 </header>
 
 <main>
   <div class="wrap">
 
-    <h2>Onde ficam as planilhas</h2>
-    <p>Depois de <a href="../extrair-notas-de-corretagem-sinacor-para-excel/">extrair as notas de corretagem</a>, o COIR grava tudo em um único arquivo por investidor: <code>Resultado\CPF.xlsb</code>, onde CPF é o número do CPF. O controle é separado por CPF e cada mercado (À Vista, Futuros, Commodities e Derivativos/Opções) é contabilizado à parte.</p>
+    <h2>De onde vêm os números</h2>
+    <p>Depois de <a href="../extrair-notas-de-corretagem-sinacor-para-excel/">importar as notas de corretagem</a> (e, de preferência, a movimentação da Área do Investidor da B3), o COIR calcula tudo no seu computador, por titular: o preço médio somando todas as corretoras e contas, o resultado de cada mês separado em operações comuns, day trade e FII, e o imposto. O titular e o ano escolhidos no topo valem para todas as telas.</p>
     <div class="aviso">
-      <p>O COIR organiza e calcula as informações das suas operações, mas não substitui a análise nem a responsabilidade de um profissional contábil. Confira sempre as regras tributárias vigentes com a Receita Federal ou com o seu contador.</p>
+      <p>Cada valor mostra as operações e a regra aplicada, com a norma da Receita. Ainda assim, o COIR não substitui a orientação de um contador: confira antes de pagar uma DARF ou entregar a declaração. As <a href="../../fontes.html">fontes fiscais</a> usadas estão listadas.</p>
     </div>
 
-    <h2>Operações e contabilidade</h2>
-    <p>Para as operações do mercado à vista, o COIR separa as operações comuns (chamadas de Normais) das operações de day trade. Cada tipo tem três planilhas:</p>
-    <dl class="dl-planilhas">
-      <div><dt>Normais_Op</dt><dd>Operações comuns importadas automaticamente das notas de corretagem no padrão SINACOR.</dd></div>
-      <div><dt>Normais_Cont</dt><dd>Resultado das operações comuns, separado por mês e por ano no padrão do IRPF.</dd></div>
-      <div><dt>Normais_Dados</dt><dd>Dados importados das notas de corretagem que alimentam a aba Normais_Op.</dd></div>
-      <div><dt>DayTrade_Op</dt><dd>Operações de day trade importadas automaticamente das notas.</dd></div>
-      <div><dt>DayTrade_Cont</dt><dd>Resultado das operações de day trade, separado por mês e por ano no padrão do IRPF.</dd></div>
-      <div><dt>DayTrade_Dados</dt><dd>Dados importados das notas que alimentam a aba DayTrade_Op.</dd></div>
-    </dl>
+    <h2>Apuração mensal</h2>
+    <p>A tela <strong>Imposto › Apuração mensal</strong> mostra o imposto mês a mês por categoria (comum, day trade, FII): vendas de ações no mês (limite de R$ 20 mil), ganho isento, resultado, prejuízo anterior, base de cálculo, imposto, IRRF deduzido e DARF. Ao escolher um mês, aparece a <strong>memória de cálculo</strong>, com cada movimento e a regra aplicada; um clique no movimento abre a nota.</p>
     <figure>
-      <span class="moldura"><img src="../../docs/imagens/contabilidade.JPG" width="1149" height="733" loading="lazy" alt="Contabilidade das operações por mês e por ano"></span>
-      <figcaption>Contabilidade das operações realizadas, por mês e por ano.</figcaption>
+      <span class="moldura"><img src="../../docs/manual/imagens/apuracao.png" width="1440" height="900" loading="lazy" alt="Apuração mensal por categoria com a memória de cálculo"></span>
+      <figcaption>Apuração mensal (banco de demonstração, sem dados reais).</figcaption>
     </figure>
 
-    <h2>DARF mensal e IRRF</h2>
-    <p>A planilha <code>DARF</code> disponibiliza os dados para a apuração da DARF mensal. O COIR também calcula o Imposto de Renda Retido na Fonte (IRRF) a partir das operações extraídas das notas.</p>
+    <h2>DARF mensal</h2>
+    <p>A tela <strong>Imposto › DARF</strong> lista as DARFs do ano (código 6015) com vencimento no último dia útil do mês seguinte, principal, multa, total e situação: a pagar, em atraso, paga, acumulada abaixo de R$ 10 ou em apuração. Ao escolher uma, os campos aparecem como no próprio DARF, com a explicação da multa e dos juros de mora. Em <strong>Registrar o pagamento</strong> você informa a data e o valor pagos e pode anexar o comprovante em PDF. O <strong>Painel</strong> mostra sempre a DARF da vez e as pendências.</p>
     <figure>
-      <span class="moldura"><img src="../../docs/imagens/darf.JPG" width="1015" height="847" loading="lazy" alt="Controle da DARF mensal"></span>
-      <figcaption>Controle da DARF mensal.</figcaption>
+      <span class="moldura"><img src="../../docs/manual/imagens/darf.png" width="1440" height="900" loading="lazy" alt="DARFs do ano com vencimento, multa, juros e situação"></span>
+      <figcaption>DARF.</figcaption>
     </figure>
+
+    <h2>IRRF</h2>
+    <p>O imposto retido na fonte que aparece nas notas é deduzido na apuração do mês, e o saldo que sobra é transportado para os meses seguintes. O relatório <em>IRRF e exclusiva</em> reúne esses valores no ano, e a ficha de imposto pago aparece na declaração anual.</p>
+
+    <h2>Proventos</h2>
+    <p>A tela <strong>Imposto › Proventos</strong> traz dividendos, JCP, rendimentos de FII, reembolsos de aluguel de ações (BTC) e atualizações pela Selic, lidos da movimentação da B3 e separados como no IRPF: rendimentos isentos e tributação exclusiva.</p>
 
     <h2>Declaração anual (DIRPF)</h2>
-    <dl class="dl-planilhas">
-      <div><dt>Isentos</dt><dd>Apresenta os Rendimentos Isentos e Não Tributáveis auferidos no mercado financeiro e que devem ser declarados na DIRPF.</dd></div>
-      <div><dt>Eventos B3</dt><dd>Eventos da B3, como Bonificação, Desdobramento, Grupamento e Subscrição, que alteram o preço médio do ativo em carteira e que não constam das notas de corretagem.</dd></div>
-      <div><dt>Custodia inicial</dt><dd>Dados de custódia para quem já possui resultados apurados com a Receita.</dd></div>
-    </dl>
+    <p>A tela <strong>Imposto › Declaração anual</strong> apresenta as fichas de renda variável do ano na ordem do programa da Receita: Bens e Direitos (um item por ativo, com código, CNPJ, situação em 31/12 dos dois anos e discriminação pronta), Dívidas e ônus reais, Rendimentos isentos, Tributação exclusiva, Renda variável (mês a mês) e Imposto pago. Cada valor tem botão de copiar, e você marca o que já foi lançado. <strong>Conferir com a DIRPF</strong> lê o PDF da declaração entregue e aponta as diferenças.</p>
     <figure>
-      <span class="moldura"><img src="../../docs/imagens/isentos.JPG" width="1871" height="547" loading="lazy" alt="Controle de operações isentas de IR"></span>
-      <figcaption>Controle de operações isentas de IR.</figcaption>
-    </figure>
-    <figure>
-      <span class="moldura"><img src="../../docs/imagens/eventos.JPG" width="1727" height="835" loading="lazy" alt="Eventos da B3: bonificação, desdobramento e subscrição"></span>
-      <figcaption>Eventos da B3, que alteram o preço médio mas não aparecem nas notas.</figcaption>
+      <span class="moldura"><img src="../../docs/manual/imagens/declaracao.png" width="1440" height="900" loading="lazy" alt="Fichas da declaração anual prontas para copiar"></span>
+      <figcaption>Declaração anual.</figcaption>
     </figure>
 
-    <h2>Gestão da carteira</h2>
-    <p>Além do controle fiscal, o arquivo traz planilhas para acompanhar a carteira:</p>
+    <h2>Relatórios em Excel, CSV e PDF</h2>
+    <p>A tela <strong>Imposto › Relatórios</strong> exporta, sem precisar do Excel instalado, para a pasta <code>relatorios\&lt;ano&gt;</code> dentro da pasta de dados:</p>
     <dl class="dl-planilhas">
-      <div><dt>Alocação</dt><dd>Saldo da alocação por ativo, com a porcentagem atual e a porcentagem desejada para cada ativo.</dd></div>
-      <div><dt>Balanceamento</dt><dd>Uma forma de balancear a carteira, com aportes mensais ou por variação de cada ativo.</dd></div>
-      <div><dt>Patrimônio</dt><dd>Total do patrimônio investido em todas as classes de ativo.</dd></div>
-      <div><dt>Rendimento</dt><dd>Rentabilidade da carteira ao longo do tempo.</dd></div>
-      <div><dt>ManejoRisco</dt><dd>Configuração do manejo de risco por operação de renda variável.</dd></div>
-      <div><dt>ManejoPosicao</dt><dd>Estimativa do tamanho de posição para cada operação que será aberta em renda variável.</dd></div>
+      <div><dt>Resumo fiscal</dt><dd>O ano inteiro: resultado por categoria e o imposto, o IRRF e a DARF de cada mês.</dd></div>
+      <div><dt>DARFs</dt><dd>As DARFs do ano e os meses operados.</dd></div>
+      <div><dt>IRPF mês a mês</dt><dd>A ficha de renda variável, mês a mês.</dd></div>
+      <div><dt>IRRF e exclusiva</dt><dd>O IRRF das notas e os rendimentos de tributação exclusiva.</dd></div>
+      <div><dt>Operações finalizadas</dt><dd>Cada venda (ou recompra) com o custo pelo preço médio e o resultado.</dd></div>
+      <div><dt>Evolução e Prejuízos</dt><dd>O resultado ao longo do ano e o prejuízo a compensar por categoria.</dd></div>
+      <div><dt>Conferência do PM e Carteira</dt><dd>A trilha do preço médio e a posição em 31/12.</dd></div>
+      <div><dt>Bens e Direitos e Declaração IRPF</dt><dd>As fichas da declaração anual.</dd></div>
+      <div><dt>Livro de notas e Proventos</dt><dd>As notas importadas e os proventos do ano.</dd></div>
     </dl>
-    <p>A planilha <code>Indice</code> reúne o acesso, a habilitação e a descrição de cada uma delas.</p>
 
-    <p><a class="cta" href="https://github.com/MarceloPCF/COIR/releases/latest">Baixar o COIR</a></p>
+    <h2>Vindo da versão 2 (planilha)</h2>
+    <p>Até a versão 2, o COIR gravava o resultado num arquivo <code>CPF.xlsb</code> com várias planilhas. Na versão 3 elas viraram telas do programa:</p>
+    <table>
+      <thead><tr><th scope="col">Planilha da v2</th><th scope="col">Onde fica na v3</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Normais_Op, DayTrade_Op e _Dados</th><td>Lançamentos › Notas e Operações</td></tr>
+        <tr><th scope="row">Normais_Cont e DayTrade_Cont</th><td>Imposto › Apuração mensal</td></tr>
+        <tr><th scope="row">DARF</th><td>Imposto › DARF</td></tr>
+        <tr><th scope="row">Isentos</th><td>Imposto › Proventos e Declaração anual</td></tr>
+        <tr><th scope="row">Eventos B3</th><td>Carteira › Eventos (propostos a partir das tabelas públicas da B3)</td></tr>
+        <tr><th scope="row">Custodia inicial</th><td>Sistema › Cadastros › Saldos iniciais</td></tr>
+        <tr><th scope="row">Alocação, Balanceamento, Patrimônio, Rendimento e Manejo</th><td>Fora da versão 3, previstos para uma fase futura</td></tr>
+      </tbody>
+    </table>
+    <p>A versão 3 não lê o arquivo da v2: ela refaz tudo a partir dos PDFs das notas. Alguns números podem mudar, porque a versão 3 corrige pontos da versão 2; as <a href="../../novidades.html">notas da versão</a> explicam cada caso. A <a href="../../legacy/index.html">versão 2</a> continua disponível.</p>
+
+    <p><a class="cta" href="https://github.com/MarceloPCF/COIR/releases/latest/download/COIR-windows.zip">Baixar o COIR para Windows</a></p>
 
     <nav class="relacionados" aria-label="Guias relacionados">
       <h2>Veja também</h2>
       <ul>
         <li><a href="../extrair-notas-de-corretagem-sinacor-para-excel/">Como extrair notas de corretagem SINACOR para Excel</a></li>
         <li><a href="../corretoras-e-mercados-compativeis/">Corretoras e mercados compatíveis com o COIR</a></li>
+        <li><a href="../../docs/manual/index.html">Manual do COIR</a></li>
         <li><a href="../../">Página inicial do COIR</a></li>
       </ul>
     </nav>
@@ -119,8 +131,8 @@
 
 <footer>
   <div class="wrap">
-    <span>Dúvidas e pedidos: <a href="https://github.com/MarceloPCF/COIR/issues">issues no GitHub</a></span>
-    <span>COIR é gratuito, com licença MIT. <a href="https://github.com/MarceloPCF/COIR">Código-fonte no GitHub</a></span>
+    <span>Corretora não lida? <a href="../../#corretora">Pedido de corretora</a></span>
+    <span>COIR é gratuito e software livre (licença AGPL-3.0). <a href="https://github.com/MarceloPCF/COIR">Código-fonte no GitHub</a></span>
   </div>
 </footer>
 

@@ -12,7 +12,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 Nova versão escrita do zero, sem dependência do Excel. É um programa para Windows que se baixa,
 extrai e abre (`COIR.exe`), sem instalar Python nem Java. Os dados ficam numa pasta sua
-(`COIR_DADOS`); nada sai do computador. O código da 2.1.1 fica em `legacy/` como referência.
+(`COIR_DADOS`); nada sai do computador. O código da v2 (2.2.0) fica em `legacy/` como referência.
 
 ### Em resumo
 - **Telas**: painel do ano, importação de notas e planilhas da B3, notas com o PDF ao lado,
