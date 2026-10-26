@@ -44,7 +44,7 @@ A sua corretora não foi lida? Veja [como pedir ou adicionar uma corretora](docs
 
 ## Versão anterior
 
-A v2 (baseada em Excel) está na tag [`v2.1.1`](../../tree/v2.1.1) e em [`legacy/`](legacy/). As
+A v2 (baseada em Excel) está na tag [`v2.2.0`](../../tree/v2.2.0) e em [`legacy/`](legacy/). As
 diferenças de cálculo entre a v2 e a v3 estão no [CHANGELOG](CHANGELOG.md).
 
 ## Desenvolvimento
