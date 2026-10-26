@@ -21,6 +21,7 @@ import tomllib
 import urllib.error
 import urllib.request
 import zipfile
+from contextlib import closing
 from datetime import datetime
 from importlib import metadata
 from pathlib import Path
@@ -146,7 +147,7 @@ def fumaca(pasta: Path) -> None:
         banco = dados / "coir.db"
         _banco_antigo(banco)
         subprocess.run([cli, "banco", "migrar"], env=env, check=True, timeout=300)
-        with sqlite3.connect(banco) as c:
+        with closing(sqlite3.connect(banco)) as c:  # o "with" do sqlite3 não fecha a conexão
             [(revisao,)] = c.execute("SELECT version_num FROM alembic_version").fetchall()
         backups = list((dados / "backups").glob("coir-*.db"))
         if revisao != revisao_final() or len(backups) != 1:
@@ -156,8 +157,8 @@ def fumaca(pasta: Path) -> None:
                                str(PORTA_FUMACA)], env=env)  # fmt: skip
         try:
             _esperar_http(f"http://127.0.0.1:{PORTA_FUMACA}/", 90)
-        finally:
-            ui.kill()
+        finally:  # a árvore inteira: o servidor da interface pode ter processos filhos
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(ui.pid)], capture_output=True)
             ui.wait(30)
         print("fumaça: interface respondeu")
 
