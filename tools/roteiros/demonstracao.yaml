@@ -5,7 +5,8 @@
 # Negócio Bovespa: "C|V [MERCADO] ESPECIFICAÇÃO QUANTIDADE PREÇO [D]". MERCADO: VISTA (padrão),
 # CALL, PUT, EXERC_CALL, EXERC_PUT; D no fim marca day trade. Ação e FII pelo ticker (a nota imprime
 # o nome de pregão); opção pela série seguida da classe do objeto ("PETRC380 PN"; exercício com o
-# sufixo E). Negócio BM&F (segmento: bmf): "C|V CONTRATO QUANTIDADE PREÇO", sempre day trade.
+# sufixo E). Negócio BM&F (segmento: bmf): "C|V CONTRATO QUANTIDADE PREÇO", sempre day trade; o
+# preço de ajuste do dia é o do último negócio da nota. Preços sempre com vírgula ("36,20").
 #
 # O que o ano mostra: compras à vista, venda isenta (abaixo de R$ 20 mil), venda coberta de CALL
 # com exercício (venda tributável), day trade de ações e de mini-índice, PUT que vira pó, prejuízo

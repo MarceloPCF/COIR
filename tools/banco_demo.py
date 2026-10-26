@@ -90,7 +90,11 @@ def _do_roteiro(banco: Path, roteiro: notas_ficticias.Roteiro) -> Path:
                 titular = repo.adicionar_titular(s, roteiro.cpf, roteiro.titular)
             id_titular = titular.id
         with fabrica() as s:
-            importar_arquivos(s, arquivos, referencias.carregar(), AGORA)
+            rel = importar_arquivos(s, arquivos, referencias.carregar(), AGORA)
+    if rel.rejeitadas:  # o roteiro gerou nota que não fecha: banco e capturas sairiam incompletos
+        raise RuntimeError(
+            "notas fictícias rejeitadas: " + "; ".join(r.motivo for r in rel.rejeitadas)
+        )
     if planilha is not None:
         destino = pasta / "planilhas-b3"
         destino.mkdir(exist_ok=True)

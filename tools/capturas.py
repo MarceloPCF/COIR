@@ -78,18 +78,17 @@ def _navegador(p: object) -> object:
     from playwright.sync_api import Playwright
 
     assert isinstance(p, Playwright)
-    for canal in ("msedge", "chrome"):
+    falhas: list[str] = []
+    for canal in ("msedge", "chrome", None):  # None: o do Playwright, se instalado
         try:
-            return p.chromium.launch(channel=canal)
-        except Exception:  # noqa: BLE001 - tenta o próximo navegador instalado
-            continue
-    return p.chromium.launch()  # navegador do Playwright, se instalado (playwright install)
+            return p.chromium.launch(channel=canal) if canal else p.chromium.launch()
+        except Exception as erro:  # noqa: BLE001 - tenta o próximo navegador instalado
+            falhas.append(f"{canal or 'playwright'}: {str(erro).splitlines()[0]}")
+    raise SystemExit("nenhum navegador abriu (instale o Edge ou o Chrome): " + "; ".join(falhas))
 
 
 def fotografar(porta: int, rotas: list[str]) -> list[Path]:
-    from PIL import Image
     from playwright.sync_api import Browser, sync_playwright
-    from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
     MANUAL.mkdir(parents=True, exist_ok=True)
     SITE.mkdir(parents=True, exist_ok=True)
@@ -99,28 +98,39 @@ def fotografar(porta: int, rotas: list[str]) -> list[Path]:
         assert isinstance(navegador, Browser)
         pagina = navegador.new_page(viewport={"width": LARGURA, "height": ALTURA},
                                     locale="pt-BR", color_scheme="light")  # fmt: skip
-        for rota in rotas:
-            pagina.goto(f"http://127.0.0.1:{porta}{rota}", wait_until="networkidle")
-            # telas que calculam em segundo plano mostram um indicador visível até terminar
-            try:
-                pagina.wait_for_function(ESPERA, timeout=90_000)
-            except PlaywrightTimeout:
-                print(f"  aviso: {rota} ainda mostrava um indicador de carregamento")
-            if nome(rota) in DETALHE:
-                linhas = pagina.locator(".ag-center-cols-container .ag-row")
-                linhas.filter(has_text=DETALHE[nome(rota)]).first.click()
-                pagina.wait_for_load_state("networkidle")
-            pagina.wait_for_timeout(800)  # gráficos (ECharts) terminam a animação
-            destino = MANUAL / f"{nome(rota)}.png"
-            pagina.screenshot(path=destino)
-            feitas.append(destino)
-            if nome(rota) in SITE_TELAS:
-                Image.open(destino).convert("RGB").save(
-                    SITE / SITE_TELAS[nome(rota)], quality=85, optimize=True
-                )
-            print(f"  {destino.relative_to(RAIZ)}")
-        navegador.close()
+        try:
+            for rota in rotas:
+                _fotografar(pagina, porta, rota, feitas)
+        finally:
+            navegador.close()
     return feitas
+
+
+def _fotografar(pagina: object, porta: int, rota: str, feitas: list[Path]) -> None:
+    from PIL import Image
+    from playwright.sync_api import Page
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
+    assert isinstance(pagina, Page)
+    pagina.goto(f"http://127.0.0.1:{porta}{rota}", wait_until="networkidle")
+    # telas que calculam em segundo plano mostram um indicador visível até terminar
+    try:
+        pagina.wait_for_function(ESPERA, timeout=90_000)
+    except PlaywrightTimeout:
+        print(f"  aviso: {rota} ainda mostrava um indicador de carregamento")
+    if nome(rota) in DETALHE:
+        linhas = pagina.locator(".ag-center-cols-container .ag-row")
+        linhas.filter(has_text=DETALHE[nome(rota)]).first.click()
+        pagina.wait_for_load_state("networkidle")
+    pagina.wait_for_timeout(800)  # gráficos (ECharts) terminam a animação
+    destino = MANUAL / f"{nome(rota)}.png"
+    pagina.screenshot(path=destino)
+    feitas.append(destino)
+    if nome(rota) in SITE_TELAS:
+        with Image.open(destino) as imagem:
+            imagem.convert("RGB").save(SITE / SITE_TELAS[nome(rota)], quality=85,
+                                       optimize=True)  # fmt: skip
+    print(f"  {destino.relative_to(RAIZ)}")
 
 
 def main(pedidas: list[str]) -> None:
@@ -151,11 +161,14 @@ def main(pedidas: list[str]) -> None:
         try:
             _esperar(porta)
             fotografar(porta, rotas)
-        finally:
-            processo.terminate()
-            processo.wait(timeout=30)
+        finally:  # a árvore inteira: o servidor pode ter filhos que seguram o banco
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(processo.pid)], capture_output=True)
+            try:
+                processo.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                processo.kill()
     finally:
-        shutil.rmtree(PASTA, ignore_errors=True)
+        shutil.rmtree(PASTA, onexc=lambda _f, caminho, _e: print(f"  aviso: não apagou {caminho}"))
 
 
 if __name__ in {"__main__", "__mp_main__"}:

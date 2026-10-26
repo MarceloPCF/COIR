@@ -159,6 +159,7 @@ def fumaca(pasta: Path) -> None:
             _esperar_http(f"http://127.0.0.1:{PORTA_FUMACA}/", 90)
         finally:  # a árvore inteira: o servidor da interface pode ter processos filhos
             subprocess.run(["taskkill", "/T", "/F", "/PID", str(ui.pid)], capture_output=True)
+            ui.kill()  # reserva, se o taskkill falhar
             ui.wait(30)
         print("fumaça: interface respondeu")
 

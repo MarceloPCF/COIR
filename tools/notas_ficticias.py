@@ -327,8 +327,13 @@ def texto_bmf(nota: Nota, roteiro: Roteiro) -> str:
     contratos = 0
     for n in nota.negocios:
         raiz, serie = n.papel[:3], n.papel[3:]
-        multiplicador = next(c.multiplicador for c in contratos_ref
-                             if c.raiz == raiz and c.vigente(nota.data))  # fmt: skip
+        contrato = next((k for k in contratos_ref if k.raiz == raiz and k.vigente(nota.data)),
+                        None)  # fmt: skip
+        if contrato is None:
+            raise ValueError(f"contrato {raiz} sem cadastro vigente em {nota.data:%d/%m/%Y}")
+        if n.papel not in roteiro.vencimentos_futuros:
+            raise ValueError(f"{n.papel}: falta o vencimento em vencimentos_futuros do roteiro")
+        multiplicador = contrato.multiplicador
         sinal = 1 if n.cv == "C" else -1
         valor = (sinal * (ajuste - n.preco) * n.quantidade * multiplicador).quantize(CENTAVO)
         ajuste_dt += valor

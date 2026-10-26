@@ -2,7 +2,7 @@ name: Release (rascunho)
 
 # Tag vX.Y.Z (ou execução manual): varredura de dados pessoais, testes, pacote para Windows com o
 # teste de fumaça (executáveis rodando com o PATH sem Python) e um release RASCUNHO com o zip e o
-# .sha256. O mantenedor revisa as notas e publica à mão.
+# .sha256, apontando para o commit construído. O mantenedor revisa as notas e publica à mão.
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -23,6 +23,8 @@ jobs:
   pacote:
     runs-on: windows-latest
     timeout-minutes: 40
+    outputs:
+      versao: ${{ steps.versao.outputs.versao }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
@@ -43,24 +45,47 @@ jobs:
       - name: Testes
         run: uv run pytest -q -m "not golden"
 
-      - name: Versão da tag = versão do programa
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Versão do programa (= tag, quando houver)
+        id: versao
         shell: bash
         run: |
-          esperada="${GITHUB_REF_NAME#v}"
           atual="$(uv run python -c 'import coir; print(coir.__version__)')"
-          test "$esperada" = "$atual" || { echo "tag $GITHUB_REF_NAME x versão $atual"; exit 1; }
+          if [[ "$GITHUB_REF" == refs/tags/v* ]] && [[ "${GITHUB_REF_NAME#v}" != "$atual" ]]; then
+            echo "tag $GITHUB_REF_NAME x versão $atual"; exit 1
+          fi
+          echo "versao=$atual" >> "$GITHUB_OUTPUT"
 
       # o teste de fumaça do empacotar roda os .exe com um PATH sem Python
       - name: Pacote e teste de fumaça
         run: uv run python -m tools.empacotar --saida dist
 
+      - uses: actions/upload-artifact@v4  # fixar o SHA, como as outras ações, antes do primeiro uso
+        with:
+          name: pacote
+          path: dist/COIR-*-windows.zip*
+          if-no-files-found: error
+
+  rascunho:
+    needs: pacote
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4  # fixar o SHA antes do primeiro uso
+        with:
+          name: pacote
+          path: dist
+
       - name: Release rascunho
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSAO: ${{ needs.pacote.outputs.versao }}
         run: |
-          versao="$(uv run python -c 'import coir; print(coir.__version__)')"
-          gh release create "v$versao" dist/COIR-*-windows.zip dist/COIR-*-windows.zip.sha256 \
-            --draft --title "COIR $versao" \
-            --notes "Rascunho criado pelo workflow. Antes de publicar, cole aqui a seção $versao do CHANGELOG."
+          if gh release view "v$VERSAO" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "v$VERSAO" dist/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "v$VERSAO" dist/* --repo "$GITHUB_REPOSITORY" --draft \
+              --target "$GITHUB_SHA" --title "COIR $VERSAO" \
+              --notes "Rascunho criado pelo workflow. Antes de publicar, cole aqui a seção $VERSAO do CHANGELOG."
+          fi
