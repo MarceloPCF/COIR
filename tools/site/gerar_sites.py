@@ -218,7 +218,10 @@ HEAD_META = """<meta charset="utf-8">
 <meta property="og:url" content="https://marcelopcf.github.io/COIR/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview.png">
+<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview-v3.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="COIR versão 3: o Painel do programa com a DARF da vez e o resultado mês a mês">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"COIR","applicationCategory":"FinanceApplication",
