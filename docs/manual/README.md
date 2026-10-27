@@ -9,6 +9,7 @@ usam o **banco de demonstração**: um ano (2025) de um investidor fictício, ge
 - [Primeiro uso](primeiro-uso.md): baixar, abrir, escolher a pasta de dados, cadastrar o titular e
   importar as primeiras notas.
 - [Atualizar para uma versão nova](atualizacao.md): onde ficam os dados, backup e migração.
+- [Se o COIR não abrir](se-nao-abrir.md): aviso do Windows, antivírus e o que fazer.
 
 ## Telas
 O menu à esquerda agrupa as telas. O topo traz o titular e o ano em uso (valem para todas as

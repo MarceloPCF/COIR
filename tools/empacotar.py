@@ -83,6 +83,9 @@ Na primeira vez, o COIR pergunta onde guardar os seus dados (notas, banco, backu
 Escolha uma pasta FORA desta pasta do programa: assim, para atualizar, basta trocar esta pasta
 pela da versão nova; os dados continuam onde estão e o banco é migrado com backup.
 
+Se não abrir (aviso do Windows, antivírus), veja:
+https://marcelopcf.github.io/COIR/docs/manual/se-nao-abrir.html
+
 Linha de comando: coir-cli.exe --help
 
 Manual, novidades e versões novas: {REPOSITORIO}/releases

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Se o COIR não abrir · COIR</title>
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<style>
+:root{--marinho:#102a43;--verde:#2ea043;--azul-claro:#a8d4ff;--fundo:#f4f7fa;--tinta:#243b53;--linha:#d9e2ec}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.6 "Segoe UI",system-ui,sans-serif;color:var(--tinta);background:var(--fundo)}
+.topo{background:var(--marinho);border-left:16px solid var(--verde)}
+.topo div{max-width:980px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.topo a{color:var(--azul-claro);text-decoration:none}
+.topo .marca{color:#fff;font-weight:800;font-size:22px}
+main{max-width:980px;margin:0 auto;padding:24px 20px 64px}
+h1{color:var(--marinho);line-height:1.2}
+h2{color:var(--marinho);margin-top:2em}
+a{color:#0b5cad}
+img{max-width:100%;height:auto;border:1px solid var(--linha);border-radius:6px}
+table{border-collapse:collapse;width:100%;margin:1em 0;background:#fff;font-size:15px;display:block;overflow-x:auto}
+th,td{border:1px solid var(--linha);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:#e9eff5}
+code{background:#e9eff5;padding:1px 5px;border-radius:4px;font-size:.92em}
+pre{background:#fff;border:1px solid var(--linha);padding:12px;overflow-x:auto;border-radius:6px}
+pre code{background:none;padding:0}
+blockquote{margin:1em 0;padding:8px 16px;border-left:5px solid var(--verde);background:#e8f5ec}
+footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#627d98}
+</style>
+</head>
+<body>
+<header class="topo"><div><a class="marca" href="../../index.html">COIR</a>
+<nav><a href="../../index.html">Início</a> · <a href="../../docs/manual/index.html">Manual</a> · <a href="../../novidades.html">Novidades</a> · <a href="../../fontes.html">Fontes fiscais</a></nav></div></header>
+<main>
+<h1 id="se-o-coir-nao-abrir">Se o COIR não abrir</h1>
+
+<p>O COIR não tem assinatura digital. Por isso o Windows e alguns antivírus desconfiam de um programa
+novo. Os casos abaixo cobrem quase
+tudo. Os seus dados não correm risco em nenhum deles.</p>
+
+<h2 id="1-aviso-azul-o-windows-protegeu-o-computador">1. Aviso azul "O Windows protegeu o computador"</h2>
+
+<p>É o SmartScreen. Clique em <strong>Mais informações</strong> e depois em <strong>Executar assim mesmo</strong>. O aviso
+aparece só na primeira vez.</p>
+
+<h2 id="2-nada-acontece-depois-dos-dois-cliques-versao-300">2. Nada acontece depois dos dois cliques (versão 3.0.0)</h2>
+
+<p>Na 3.0.0, a janela não abria quando o <code>.zip</code> era extraído direto do download: o Windows marca os
+arquivos como "baixados da internet" e essa marca impedia a janela de carregar. A partir da 3.0.1
+o COIR resolve isso sozinho. Na 3.0.0:</p>
+
+<ol>
+<li>Feche o COIR no Gerenciador de Tarefas (Ctrl+Shift+Esc), se ele aparecer lá.</li>
+<li>Apague a pasta extraída.</li>
+<li>Clique com o botão direito no <code>.zip</code> › <strong>Propriedades</strong> › marque <strong>Desbloquear</strong> › <strong>OK</strong>.</li>
+<li>Extraia de novo e abra o <code>COIR.exe</code>.</li>
+</ol>
+
+<h2 id="3-o-windows-nao-pode-acessar-o-dispositivo-caminho-ou-arquivo-especificado">3. "O Windows não pode acessar o dispositivo, caminho ou arquivo especificado"</h2>
+
+<p>Quase sempre é o antivírus, que pôs o <code>COIR.exe</code> em quarentena. Programas feitos em Python e sem
+assinatura são confundidos com ameaça com alguma frequência (falso positivo).</p>
+
+<ol>
+<li>Veja se o <code>COIR.exe</code> ainda está na pasta. Se sumiu, foi o antivírus.</li>
+<li>Abra <strong>Segurança do Windows</strong> › <strong>Proteção contra vírus e ameaças</strong> › <strong>Histórico de
+proteção</strong>. Se houver um item com o COIR, abra-o e escolha <strong>Permitir no dispositivo</strong> (ou
+<strong>Restaurar</strong>).</li>
+<li>Com outro antivírus instalado, procure a quarentena dele e restaure o arquivo, ou crie uma
+exceção para a pasta do COIR.</li>
+<li>Extraia o <code>.zip</code> de novo, se o arquivo tiver sido apagado.</li>
+</ol>
+
+<p>Antes de permitir, se quiser, confira que o <code>.zip</code> é o original: o arquivo <code>.sha256</code> publicado
+na mesma página de versões tem o código do <code>.zip</code>. No PowerShell:</p>
+
+<pre><code>Get-FileHash .\COIR-windows.zip -Algorithm SHA256
+</code></pre>
+
+<h2 id="4-controle-inteligente-de-aplicativos-bloqueou">4. "Controle Inteligente de Aplicativos bloqueou"</h2>
+
+<p>O Windows 11 pode vir com o <strong>Controle Inteligente de Aplicativos</strong> ligado. Ele bloqueia qualquer
+programa sem assinatura e não tem a opção "executar assim mesmo". A configuração fica em
+<strong>Segurança do Windows</strong> › <strong>Controle de aplicativos e do navegador</strong> › <strong>Configurações do
+Controle Inteligente de Aplicativos</strong>. Desligá-lo vale para o computador inteiro e, depois de
+desligado, o Windows não deixa ligar de novo sem reinstalar. Decida com calma: com ele ligado, o
+COIR não abre.</p>
+
+<h2 id="ainda-nao-abriu">Ainda não abriu?</h2>
+
+<p>Abra o <strong>Prompt de Comando</strong> na pasta do COIR e rode <code>coir-cli.exe ui</code>. A janela preta mostra o
+erro. Copie a mensagem (sem CPF, contas ou valores) e envie pelo
+<a href="https://github.com/MarceloPCF/COIR/issues">pedido de ajuda</a>.</p>
+
+<p><a href="index.html">Voltar ao índice do manual</a></p>
+
+</main>
+<footer>COIR é gratuito e software livre (AGPL-3.0). Não substitui a orientação de um contador.</footer>
+</body>
+</html>

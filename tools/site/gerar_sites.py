@@ -441,7 +441,7 @@ def inicial(raiz: str, exemplo: bool) -> str:
 
 <footer>
   <div class="wrap">
-    <span>COIR é gratuito e software livre (licença AGPL-3.0). <a href="{GH}">Código-fonte</a> · <a href="{raiz}legacy/index.html">Versão 2 (planilha)</a></span>
+    <span>COIR é gratuito e software livre (licença AGPL-3.0). <a href="{GH}">Código-fonte</a> · <a href="{raiz}legacy/index.html">Versão 2 (planilha)</a> · <a href="{raiz}docs/manual/se-nao-abrir.html">Se não abrir</a></span>
     <span>Não substitui a orientação de um contador.</span>
   </div>
 </footer>

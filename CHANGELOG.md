@@ -17,6 +17,10 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
   DLLs ao abrir. Na 3.0.0, o contorno é desbloquear o `.zip` (Propriedades › Desbloquear) antes
   de extrair.
 
+### Adicionado
+- Página do manual **Se o COIR não abrir**: aviso do Windows, antivírus que põe o programa em
+  quarentena e Controle Inteligente de Aplicativos. Link no LEIA-ME e no rodapé do site.
+
 ## [3.0.0] - 2026-10-26
 
 Nova versão escrita do zero, sem dependência do Excel. É um programa para Windows que se baixa,
