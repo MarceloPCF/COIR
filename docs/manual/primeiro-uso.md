@@ -2,10 +2,11 @@
 
 ![Assistente de primeiros passos](imagens/inicio.png)
 
-1. **Baixe e extraia** o `COIR-<versão>-windows.zip` (página de versões do GitHub) numa pasta sua,
+1. **Baixe e extraia** o `COIR-windows.zip` (página de versões do GitHub) numa pasta sua,
    por exemplo `Documentos\COIR`. Dê dois cliques em `COIR.exe`. Se o Windows mostrar o aviso do
    SmartScreen, clique em "Mais informações" e "Executar assim mesmo" (o programa não tem
-   assinatura digital; confira o SHA-256 se quiser).
+   assinatura digital; confira o SHA-256 se quiser). Se não abrir, veja
+   [Se o COIR não abrir](se-nao-abrir.md).
 2. **Pasta de dados**: o assistente pergunta onde ficam os seus dados (banco, backups, relatórios
    e, por padrão, as notas em PDF). Escolha uma pasta fora da pasta do programa, por exemplo
    `Documentos\COIR-dados`. Ela fica registrada em `%APPDATA%\COIR\config.json`.

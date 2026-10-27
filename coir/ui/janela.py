@@ -4,8 +4,10 @@ Só escuta em 127.0.0.1: nada da carteira sai do computador.
 """
 
 import logging
+import os
 import sys
 from datetime import datetime
+from pathlib import Path
 
 from nicegui import native, ui
 
@@ -41,10 +43,27 @@ def tem_webview2() -> bool:
     return False
 
 
+def desbloquear_dlls(pasta: Path) -> int:
+    """Tira a marca "baixado da internet" (Zone.Identifier) das DLLs do programa. O Windows a
+    copia do .zip para cada arquivo extraído, e com ela o .NET recusa carregar Python.Runtime.dll:
+    a janela (pywebview) morre sem aviso e só o servidor fica rodando. Devolve quantas tirou."""
+    tiradas = 0
+    for dll in pasta.rglob("*.dll"):
+        try:
+            os.remove(f"{dll}:Zone.Identifier")
+            tiradas += 1
+        except OSError:  # sem a marca, ou pasta sem permissão de escrita
+            continue
+    return tiradas
+
+
 def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None,
             abrir: bool = True) -> None:  # fmt: skip
     configurar_registro(estado.dados)
     log.info("COIR %s aberto (pasta de dados: %s)", VERSAO, estado.dados)
+    if sys.platform == "win32" and getattr(sys, "frozen", False):
+        if tiradas := desbloquear_dlls(Path(sys.executable).parent):
+            log.info("marca de arquivo baixado tirada de %d DLL(s) do programa", tiradas)
     erro: str | None = None
     if estado.existe:  # banco de versão anterior: migra (com backup) antes de abrir as telas
         try:

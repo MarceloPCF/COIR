@@ -1,17 +1,20 @@
 """Notas extraídas (F2) -> candidato no formato do gabarito, para `validar-gabarito`.
 
-Custos e IRRF da nota são distribuídos pelas operações na proporção do valor só para que a
-comparação no nível "notas" (somas por nota) funcione; não é o rateio fiscal (F4). No nível
+Custos da nota são distribuídos pelas operações na proporção do valor, e o IRRF só pelas vendas
+(compra não tem IRRF), para que a comparação no nível "notas" (somas por nota) funcione; não é o
+rateio fiscal (F4). O 0,005% vai para as vendas comuns sem exercício nem PME (como a base do motor;
+a PME aqui só pela data da venda, sem o lote) e o 1% para as vendas de day trade. No nível
 "negocios" só quantidade e valor de cada (nota, papel, C/V) são comparados.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from decimal import Decimal
 from pathlib import Path
 
 from pydantic import BaseModel
 
 from coir.domain.nota import NotaExtraida, OperacaoExtraida
+from coir.domain.parametros import IsencaoPME
 from coir.gabarito.exportar import (
     ARQUIVOS,
     exigir_fora_do_repositorio,
@@ -22,6 +25,7 @@ from coir.gabarito.modelo import Categoria, Gabarito, OperacaoGabarito
 from coir.gabarito.pseudonimos import MapaPseudonimos
 
 OITO_CASAS = Decimal("0.00000001")
+EXERCICIO = frozenset({"EXERC CALL", "EXERC PUT"})  # como MERCADOS_EXERCICIO do motor
 
 
 def _distribuir(valor: Decimal, pesos: Sequence[Decimal]) -> list[Decimal]:
@@ -35,16 +39,40 @@ def _distribuir(valor: Decimal, pesos: Sequence[Decimal]) -> list[Decimal]:
     return [*partes, valor - sum(partes, Decimal(0))]
 
 
+def _irrf(
+    nota: NotaExtraida, ops: list[OperacaoExtraida], pesos: list[Decimal],
+    pme: Mapping[str, IsencaoPME],
+) -> list[Decimal]:  # fmt: skip
+    """IRRF da nota por operação: o 0,005% nas vendas comuns tributáveis, o 1% nas de day trade."""
+    resumo = nota.resumo_bovespa or nota.resumo_bmf
+    assert resumo is not None
+
+    def isenta(o: OperacaoExtraida) -> bool:
+        p = pme.get(o.papel)
+        return o.mercado in EXERCICIO or (p is not None and o.data <= p.vendas_ate)
+
+    zero = Decimal(0)
+    vendas = [p if o.cv == "V" else zero for o, p in zip(ops, pesos, strict=True)]
+    dt = [p if o.categoria == "DAY_TRADE" else zero for o, p in zip(ops, vendas, strict=True)]
+    comuns = [zero if d or isenta(o) else p for o, p, d in zip(ops, vendas, dt, strict=True)]
+    partes: list[list[Decimal]] = []
+    for valor, base in ((resumo.irrf, comuns), (resumo.irrf_day_trade, dt)):
+        usada = next((b for b in (base, vendas, pesos) if any(b)), pesos)
+        partes.append(_distribuir(valor, usada) if valor else [zero] * len(ops))
+    return [a + b for a, b in zip(*partes, strict=True)]
+
+
 def montar(
     notas: Sequence[tuple[NotaExtraida, list[OperacaoExtraida]]],
     mapa: MapaPseudonimos,
     titular: str = "TITULAR-1",
+    pme: Mapping[str, IsencaoPME] | None = None,
 ) -> Gabarito:
     linhas: list[OperacaoGabarito] = []
     for nota, ops in notas:
         pesos = [abs(o.total) for o in ops]
         custos = _distribuir(nota.custos_total, pesos)
-        irrf = _distribuir(nota.irrf_total, pesos)
+        irrf = _irrf(nota, ops, pesos, pme or {})
         for o, c, i in zip(ops, custos, irrf, strict=True):
             linhas.append(
                 OperacaoGabarito(

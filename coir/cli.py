@@ -429,7 +429,7 @@ def notas_extrair(
                 Rejeitada(nota.arquivo, nota.paginas, motivo, nota.numero, nota.data_pregao)
             )
     mapa = MapaPseudonimos.carregar(_destino(gabarito) / PASTA_PRIVADA / ARQUIVO_MAPA)
-    candidato = cand.montar(normalizadas, mapa)
+    candidato = cand.montar(normalizadas, mapa, pme=_fiscais().pme)
     cand.gravar(candidato, mapa, saida)
     md = [
         "# Extração das notas",
