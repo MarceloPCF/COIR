@@ -8,6 +8,15 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [3.0.1] - 2026-10-27
+
+### Corrigido
+- **A janela não abria** depois de extrair o `.zip` baixado: o Windows marca cada arquivo
+  extraído como "baixado da internet", e com essa marca a DLL da janela não carregava. O
+  programa ficava rodando sem janela e sem nenhum aviso. Agora o COIR tira essa marca das próprias
+  DLLs ao abrir. Na 3.0.0, o contorno é desbloquear o `.zip` (Propriedades › Desbloquear) antes
+  de extrair.
+
 ## [3.0.0] - 2026-10-26
 
 Nova versão escrita do zero, sem dependência do Excel. É um programa para Windows que se baixa,
@@ -137,6 +146,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.0.1]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.1
 [3.0.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.0
 [2.2.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.2.0
 [2.1.1]: https://github.com/MarceloPCF/COIR/releases/tag/v2.1.1
