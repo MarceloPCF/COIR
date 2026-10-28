@@ -170,11 +170,12 @@ def _conta_bmf(texto: str, variante: str) -> str:
     raise ExtracaoError("conta do cliente (BM&F BTG) não encontrada")
 
 
-def extrair_pasta(pasta: Path) -> ResultadoExtracao:
-    """Todos os PDFs de nota da pasta, em ordem; outros arquivos e subpastas geram aviso."""
+def extrair_pasta(pasta: Path, sufixo: str = ".pdf") -> ResultadoExtracao:
+    """Todos os PDFs de nota da pasta, em ordem; outros arquivos e subpastas geram aviso.
+    ``sufixo=".txt"``: os textos de nota (base anonimizada de desenvolvimento)."""
     total = ResultadoExtracao()
     for caminho in sorted(pasta.iterdir()):
-        if not (caminho.is_file() and caminho.suffix.lower() == ".pdf"):
+        if not (caminho.is_file() and caminho.suffix.lower() == sufixo):
             total.avisos.append(f"ignorado (não é PDF de nota): {caminho.name}")
             continue
         total.juntar(extrair_pdf(caminho))

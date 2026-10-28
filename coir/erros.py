@@ -54,6 +54,11 @@ class MotorError(CoirError):
         self.data = data
 
 
+class AnonimizacaoError(CoirError):
+    """Nota cuja cópia anonimizada não passou num dos portões (fidelidade ou privacidade): a
+    cópia não é gravada."""
+
+
 class ExportacaoError(CoirError):
     """Relatório inconsistente (linha com colunas a mais ou a menos) ou destino inválido."""
 

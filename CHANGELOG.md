@@ -10,6 +10,13 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ## [Não lançado]
 
+### Adicionado
+- **Enviar notas para suporte** (Configurações): para uma nota que o COIR não lê ou lê errado,
+  grava um `.zip` com o texto das notas sem nome, CPF, conta, endereço, telefone, assessor e
+  dados bancários. Esses dados viram fictícios do mesmo tamanho, no mesmo lugar. A cópia só sai
+  se o COIR ler nela exatamente o que lê no original e não sobrar nenhum dado pessoal. Pela
+  linha de comando: `coir notas anonimizar`.
+
 ### Corrigido
 - **Conta das notas BM&F da BTG**: o COIR lia como conta o último número da página, que nas
   notas BTG/Necton pode ser o telefone da ouvidoria. Com isso criava contas que não existem. Nas

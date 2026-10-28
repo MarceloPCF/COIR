@@ -16,7 +16,7 @@ from coir.db.sessao import abrir, migrar
 from coir.servicos.eventos import importar_eventos, ler_csv
 from coir.servicos.importacao import RelatorioImportacao, arquivos_da_pasta, importar_arquivos
 from coir.servicos.relatorios import dados_banco, exportar
-from tests.apoio import cpf_de_teste
+from tests.golden.conftest import NOTAS_ANONIMIZADAS, SUFIXO_NOTAS, cpf_da_base
 
 pytestmark = pytest.mark.golden
 DADOS = dados_dir()
@@ -25,17 +25,19 @@ AGORA = datetime(2026, 10, 16, 12, 0, 0)
 
 @pytest.fixture(scope="module")
 def banco(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    notas, eventos = DADOS / "_notas-corretagens", DADOS / "eventos.csv"
+    notas, eventos = NOTAS_ANONIMIZADAS, DADOS / "eventos.csv"
     if not (notas.is_dir() and eventos.is_file()):
         pytest.skip("notas ou eventos.csv ausentes")
     caminho = tmp_path_factory.mktemp("banco") / "coir.db"
     migrar(caminho, AGORA)
     fabrica = abrir(caminho)
     with fabrica.begin() as s:
-        repo.adicionar_titular(s, cpf_de_teste(), "Titular de Teste")
+        repo.adicionar_titular(s, cpf_da_base(), "Titular de Teste")
     refs = referencias.carregar()
     with fabrica() as s:
-        importar_arquivos(s, arquivos_da_pasta(notas, RelatorioImportacao()), refs, AGORA)
+        importar_arquivos(
+            s, arquivos_da_pasta(notas, RelatorioImportacao(), SUFIXO_NOTAS), refs, AGORA
+        )
     with fabrica() as s:
         importar_eventos(s, ler_csv(eventos))
     fabrica.kw["bind"].dispose()  # type: ignore[union-attr]

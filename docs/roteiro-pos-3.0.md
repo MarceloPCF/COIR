@@ -8,7 +8,7 @@ ao menos provável na 3.1.
 
 | Item | Situação na 3.0 | Origem |
 |---|---|---|
-| Anonimizador de notas dentro do programa (texto no formato das fixtures e imagens das páginas com tarjas), para mandar notas de corretoras novas ou de erros | não existe; a nota é enviada à mão, sem dados pessoais | planejamento da F9 |
+| Imagens das páginas com tarjas junto do texto anonimizado (só para ver o layout; o COIR nunca as lê) | o texto anonimizado já sai pelo programa (ver "Anonimizador de notas" no fim) | planejamento da F9 |
 | Registro de auditoria (uma linha por importação, pagamento, evento e restauração, com tela própria) | o registro de atividades mostra importações, backups, migrações e erros | planejamento da F9 |
 | Envio de notas e sugestões de dentro do programa | exige um servidor; na 3.0 os pedidos de corretora vão pela página de pedidos (issues) do GitHub | planejamento da F9 |
 | Assinatura digital do `COIR.exe` (o Windows deixa de mostrar o aviso do SmartScreen) | sem assinatura, por decisão: volta à pauta se muitos usuários tiverem problema para abrir. A opção gratuita para projeto de código aberto é a SignPath Foundation; o manual ([Se o COIR não abrir](manual/se-nao-abrir.md)) explica o aviso e como conferir o SHA-256 | planejamento da F9; revisto na 3.0.1 |
@@ -53,3 +53,74 @@ PME isentas); sobraram estas diferenças, que não são erros do cálculo:
 - Renda fixa e Tesouro Direto.
 - Carteira: alocação, balanceamento, rentabilidade e manejo de risco (fase futura, F10).
 - Senha para abrir o programa.
+
+## Anonimizador de notas (fidelidade comprovada)
+
+Feito depois da 3.0.1 (28/10/2026), para sair junto com as outras correções.
+
+**Por que.** As cópias anonimizadas de desenvolvimento foram feitas mexendo no PDF, e isso mudou a
+ordem do texto: nas notas BM&F da BTG a conta foi parar na última linha. O leitor foi ajustado às
+cópias e errou nas notas reais. A regra agora é anonimizar o texto que o COIR lê, não o PDF.
+
+**Como funciona** (`coir/parsing/anonimizar.py`):
+
+- Cada dado pessoal é trocado no próprio lugar por outro do mesmo formato e comprimento: dígito por
+  dígito, letra por letra, caixa e pontuação mantidas. Nenhuma linha muda de lugar.
+- CPF vira um CPF fictício com dígitos verificadores válidos. A conta vira a conta fictícia do
+  mapa, em todas as ocorrências, com ou sem zeros à esquerda. O nome é trocado onde aparecer,
+  inclusive com as palavras coladas do layout antigo da XP.
+- Também são trocados o bloco de endereço que segue o nome (rua, bairro, CEP, cidade, telefone,
+  e-mail), o código do assessor, o CEP solto sob "Cliente" (BTG BM&F) e banco, agência e conta
+  corrente.
+- O mapa (segredo e contas/CPFs fictícios) fica em `<dados>/_privado/mapa-anonimizacao.json`,
+  fora do repositório. A mesma conta real vira sempre a mesma fictícia.
+
+**Três portões.** Qualquer achado recusa a cópia, com a nota e o campo, nunca o valor:
+
+- Forma: mesmo comprimento e, posição a posição, o mesmo caractere ou outro da mesma classe.
+- Fidelidade: `extrair_textos` do original e da cópia dão o mesmo resultado (notas, recusas e
+  avisos). Só a conta muda, e só pela do mapa.
+- Privacidade: cada termo trocado no original (palavras e números de 4 ou mais caracteres) e os
+  termos da lista local (`termos-sensiveis.txt`, a mesma do `tools/verificar_dados_pessoais.py`)
+  são procurados na cópia. A parte pública (dados da corretora) só vale de páginas em que o bloco
+  do cliente foi achado. Assim, uma página em que o nome não foi localizado não esconde um
+  endereço esquecido.
+
+**Saída.** É texto no formato das fixtures (páginas separadas por `\f`, fins de linha `\r\n`
+preservados). O leitor aceita esse texto como entrada: `texto_pdf.paginas` lê `.txt`, e
+`extrair_pasta`/`arquivos_da_pasta` aceitam `sufixo=".txt"`. Assim os testes de desenvolvimento
+rodam sobre o mesmo texto que os PDFs originais dariam. Sem pedido, as pastas continuam lendo só
+PDF. As imagens com tarja ficaram para depois (tabela acima).
+
+**Onde usar:**
+
+- No programa: Configurações › "Enviar notas para suporte". O usuário escolhe os PDFs e o
+  programa grava um `.zip` em `<dados>/suporte` com as cópias aceitas, com nomes neutros
+  (`nota-01.txt`...).
+- Na CLI: `coir notas anonimizar <PDFs ou pastas> [--saida] [--mapa]`, que sai com código 1 se
+  alguma nota for recusada.
+
+**Base de desenvolvimento refeita.**
+
+- Origem: as 273 notas reais (2.034 notas). Destino: `COIR_DADOS/_notas-anonimizadas` (`.txt`).
+  Todas passaram nos portões.
+- Os testes golden passaram a ler dessa pasta. `tests/golden/test_notas_reais_x_anonimizadas.py`
+  compara as reais com a base nova e confere a conta pelo mapa.
+- O mapa foi semeado com as contas fictícias que o gabarito já usava, para o gabarito continuar
+  fechando sem mudança. A segunda conta da XP (BM&F), que não tinha sido anonimizada nas cópias
+  antigas, ganhou uma fictícia nova. Ela foi acrescentada com o mesmo pseudônimo no mapa privado
+  do gabarito, e o arquivo anterior ficou como `.antes-anonimizador`.
+- A pasta antiga `_notas-corretagens` ficou como estava; nenhum teste a lê mais.
+
+**Pendências deste item:**
+
+- A nota de opção flexível da BTG estava só na base antiga: o original não está entre as notas
+  reais. Para voltar a cobrir o aviso de opção flexível com nota real, ponha o PDF original na
+  pasta das reais e rode `coir notas anonimizar` de novo.
+- As fixtures de `tests/fixtures/notas` vieram das cópias antigas. A ordem do texto delas pode não
+  ser a do PDF original (a `btg_2023_11_bmf` certamente não é) e precisa ser refeita a partir da
+  base nova.
+- `coir.parsing.cliente` devolve "Cliente" como nome do cliente nas notas Bovespa da XP e da Rico
+  (e "Corretora" numa BM&F da XP), porque pega a linha seguinte ao rodapé de atendimento. O
+  anonimizador tem detecção própria e não depende disso, mas o nome do titular criado na
+  importação pode sair errado.

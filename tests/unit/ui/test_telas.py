@@ -16,6 +16,7 @@ from coir.servicos.estado import Estado
 from coir.servicos.notas import listar
 from coir.ui.app import montar
 from tests.apoio import cpf_de_teste
+from tools import notas_ficticias
 from tools.banco_demo import criar, extrator, notas
 
 AGORA = datetime(2026, 10, 16, 12, 0, 0)
@@ -416,6 +417,25 @@ async def test_configuracoes_backup_restaurar_e_tema(
     assert [t.nome for t in estado.titulares()] == ["Antes"]
     assert len(list((tmp_path / "backups").glob("coir-*.db"))) == 2  # o de antes da restauração
     assert json.loads(configuracao_temporaria.read_text(encoding="utf-8"))["tema"] == "escuro"
+
+
+@pytest.mark.asyncio
+async def test_configuracoes_envia_notas_para_suporte(tmp_path: Path) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    nome, texto = notas_ficticias.textos(notas_ficticias.carregar())[0]
+    nota = notas_ficticias.pdf(texto, tmp_path / f"{nome}.pdf")
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/configuracoes")
+        await user.should_see("Enviar notas para suporte")
+        [envio] = user.find(marker="suporte-pdfs").elements
+        assert isinstance(envio, ui.upload)
+        await envio.handle_uploads(
+            [SmallFileUpload(f"{nota.stem}.pdf", "application/pdf", nota.read_bytes())]
+        )
+        await user.should_see("pronto (nota-01.txt)", retries=ESPERA)
+        await user.should_see("Gravado:")
+    assert len(list((estado.dados / "suporte").glob("notas-anonimizadas-*.zip"))) == 1
 
 
 @pytest.mark.asyncio

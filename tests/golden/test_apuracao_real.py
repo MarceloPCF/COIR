@@ -19,7 +19,7 @@ from coir.domain.fiscal import Apuracao
 from coir.servicos.apuracao import apurar_banco
 from coir.servicos.eventos import importar_eventos, ler_csv
 from coir.servicos.importacao import RelatorioImportacao, arquivos_da_pasta, importar_arquivos
-from tests.apoio import cpf_de_teste
+from tests.golden.conftest import NOTAS_ANONIMIZADAS, SUFIXO_NOTAS, cpf_da_base
 
 pytestmark = pytest.mark.golden
 DADOS = dados_dir()
@@ -31,17 +31,19 @@ EXPLICADOS = DADOS / "gabarito" / "darf-explicados.csv"
 
 @pytest.fixture(scope="module")
 def apuracao(tmp_path_factory: pytest.TempPathFactory) -> Apuracao:
-    notas, eventos = DADOS / "_notas-corretagens", DADOS / "eventos.csv"
+    notas, eventos = NOTAS_ANONIMIZADAS, DADOS / "eventos.csv"
     if not (notas.is_dir() and eventos.is_file()):
         pytest.skip("notas ou eventos.csv ausentes")
     banco = tmp_path_factory.mktemp("banco") / "coir.db"
     migrar(banco, AGORA)
     fabrica = abrir(banco)
     with fabrica.begin() as s:
-        repo.adicionar_titular(s, cpf_de_teste(), "Titular de Teste")
+        repo.adicionar_titular(s, cpf_da_base(), "Titular de Teste")
     refs = referencias.carregar()
     with fabrica() as s:
-        rel = importar_arquivos(s, arquivos_da_pasta(notas, RelatorioImportacao()), refs, AGORA)
+        rel = importar_arquivos(
+            s, arquivos_da_pasta(notas, RelatorioImportacao(), SUFIXO_NOTAS), refs, AGORA
+        )
     assert rel.rejeitadas == []
     with fabrica() as s:
         importar_eventos(s, ler_csv(eventos))
