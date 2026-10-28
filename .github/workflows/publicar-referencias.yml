@@ -1,13 +1,13 @@
 name: Referências públicas (publicar o pacote)
 
-# Merge na v3 que muda data/: monta o zip de data/ com o manifesto (SHA-256 de cada arquivo) e cria o
+# Merge na main que muda data/: monta o zip de data/ com o manifesto (SHA-256 de cada arquivo) e cria o
 # release referencias-AAAA.MM.DD (a data vem de data/pacote.json). O app baixa esse zip em
 # Configurações > Tabelas de referência. Release já existente não é sobrescrito: quem já baixou o
 # pacote daquela data continua com o mesmo conteúdo.
 
 on:
   push:
-    branches: [v3]
+    branches: [main]
     paths: ["data/**"]
   workflow_dispatch:
 

@@ -1,7 +1,7 @@
 name: Referências públicas (coleta semanal)
 
 # Coleta as fontes públicas (Cadastro de Instrumentos e eventos das companhias da B3, Selic do
-# BCB), regrava as tabelas geradas de data/ e, se algo mudou, abre um PR contra a v3 com o resumo.
+# BCB), regrava as tabelas geradas de data/ e, se algo mudou, abre um PR contra a main com o resumo.
 # O mantenedor revisa; o merge publica o pacote (publicar-referencias.yml).
 # Pré-requisito: Settings > Actions > General > "Allow GitHub Actions to create and approve pull
 # requests".
@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          ref: v3
+          ref: main
 
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         with:
@@ -73,6 +73,6 @@ jobs:
           git add data
           git commit -m "chore(referencias): coleta de $dia"
           git push -u origin "$ramo"
-          gh pr create --base v3 --head "$ramo" \
+          gh pr create --base main --head "$ramo" \
             --title "Referências públicas: coleta de $dia" \
             --body-file "$RUNNER_TEMP/resumo.md"
