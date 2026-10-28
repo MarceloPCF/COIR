@@ -409,6 +409,7 @@ def inicial(raiz: str, exemplo: bool) -> str:
         <button type="submit" class="botao principal">Quero ser avisado</button>
       </div>
       <input type="hidden" name="_subject" value="COIR: aviso de versão nova">
+      <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
       <p id="avisos-situacao" class="pequeno" role="status"></p>
     </form>
     <p class="pequeno">{LGPD}</p>
@@ -432,6 +433,7 @@ def inicial(raiz: str, exemplo: bool) -> str:
         <button type="submit" class="botao principal">Enviar pedido</button>
       </div>
       <input type="hidden" name="_subject" value="COIR: pedido de corretora">
+      <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
       <p id="pedido-situacao" class="pequeno" role="status"></p>
     </form>
   </div>
