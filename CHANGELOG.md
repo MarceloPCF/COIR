@@ -8,6 +8,22 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [Não lançado]
+
+### Corrigido
+- **Conta das notas BM&F da BTG**: o COIR lia como conta o último número da página, que nas
+  notas BTG/Necton pode ser o telefone da ouvidoria. Com isso criava contas que não existem. Nas
+  notas de 2025 em diante a última linha é o endereço do banco, e a nota era rejeitada ("conta
+  do cliente não encontrada"). Agora a conta é lida depois de "Código cliente". Se em
+  Cadastros aparecer uma conta BTG estranha (4 dígitos, como o fim de um telefone), importe as
+  notas de novo numa pasta de dados nova. As notas já gravadas não são relidas.
+- **Telas travadas por um evento que faltava**: exercício de opção com a quantidade ajustada por
+  uma bonificação não lançada (ex.: 1.000 opções vendidas e 1.050 exercidas) parava todas as
+  telas. Também impedia lançar o próprio evento que resolveria o problema. Agora a tela de
+  eventos propõe os eventos até a data em que o livro parou. Dá para lançar os eventos um por
+  vez: um evento só é recusado se criar pendência nova.
+- Erro no registro ao sair da tela de opções ou de eventos durante o cálculo.
+
 ## [3.0.1] - 2026-10-27
 
 ### Corrigido

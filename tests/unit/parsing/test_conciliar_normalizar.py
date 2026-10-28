@@ -84,6 +84,24 @@ def test_conta_bmf_nao_impressa_rejeita_sem_palpite() -> None:
     assert res.notas == [] and "não impressa" in res.rejeitadas[0].motivo
 
 
+@pytest.mark.parametrize(
+    "rodape",
+    [
+        "Atendimento: 0800 000 0000 Ouvidoria: 0800 000 1443",  # telefone no fim (até 2024)
+        "Grupo Financeiro Banco Exemplo S/A, Rua Exemplo 0, Cidade, UF",  # sem número (2025+)
+    ],
+)
+def test_conta_bmf_btg_vem_depois_de_codigo_cliente(rodape: str) -> None:
+    """Na BTG a conta fica no fim da linha seguinte a "... Código cliente" (depois do endereço);
+    a última linha da página é o rodapé, que não é a conta."""
+    texto = (PASTA / "btg_2023_11_bmf.txt").read_text(encoding="utf-8").rstrip()
+    texto = texto.replace(
+        "Código cliente\n", "RUA EXEMPLO, 1 - APTO 2 Código cliente\nCIDADE - UF 1234567\n", 1
+    )
+    res = extrair_textos("x.pdf", [f"{texto}\n{rodape}"])
+    assert res.rejeitadas == [] and [n.conta for n in res.notas] == ["1234567"]
+
+
 def test_cabecalho_corrompido_vira_rejeitada() -> None:
     texto = (PASTA / "xp_2026_08_bovespa.txt").read_text(encoding="utf-8")
     res = extrair_textos("x.pdf", [texto.replace("Folha\n1", "Folha\nX")])

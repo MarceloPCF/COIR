@@ -178,8 +178,9 @@ def test_t5_exercicio_sem_a_opcao_em_carteira_falha_alto() -> None:
     livro = Livro()
     livro.nota(date(2024, 2, 16), livro.op("C", "AAAA3", 1000, "30", mercado="EXERC CALL",
                                            opcao="AAAAX30"))  # fmt: skip
-    with pytest.raises(MotorError, match="posição comprada"):
+    with pytest.raises(MotorError, match="posição comprada") as erro:
         livro.movimentos(date(2024, 2, 29))
+    assert erro.value.data == date(2024, 2, 16)  # onde o livro parou (a tela de eventos usa)
 
 
 # ------------------------------------------------------------------------------------ T6 (R10)

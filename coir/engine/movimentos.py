@@ -289,7 +289,11 @@ def _executar(
         if venc <= ate:
             dias.setdefault(venc, _Dia())  # o pó acontece mesmo sem negócio no dia
     for dia in sorted(dias):
-        _processar_dia(livro, dia, dias[dia], parametros)
+        try:
+            _processar_dia(livro, dia, dias[dia], parametros)
+        except MotorError as erro:
+            erro.data = erro.data or dia
+            raise
     return livro
 
 

@@ -3,6 +3,8 @@
 Toda falha de domínio usa uma classe própria (CLAUDE.md, regra 5).
 """
 
+from datetime import date
+
 
 class CoirError(Exception):
     """Base de todos os erros do COIR."""
@@ -42,7 +44,14 @@ class ImportacaoError(CoirError):
 
 class MotorError(CoirError):
     """Livro que o motor fiscal não consegue apurar sem palpite (ex.: exercício sem a opção em
-    carteira, venda a termo, custo negativo)."""
+    carteira, venda a termo, custo negativo).
+
+    ``data``: dia do livro em que o motor parou (None quando falha antes de percorrer os dias).
+    Antes dela o livro fechou; quem só precisa das posições até ali segue sem o erro."""
+
+    def __init__(self, mensagem: str, data: date | None = None) -> None:
+        super().__init__(mensagem)
+        self.data = data
 
 
 class ExportacaoError(CoirError):

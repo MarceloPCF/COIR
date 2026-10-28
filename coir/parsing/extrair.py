@@ -23,6 +23,8 @@ from coir.parsing.texto_pdf import PdfError
 from coir.parsing.texto_pdf import paginas as ler_paginas
 
 RE_CONTA_BMF_XP = re.compile(r"^\s*(?P<conta>\d+)\s*$")
+# BTG: número inteiro no fim da linha do endereço (não o "0,00" de um negócio)
+RE_CONTA_BMF_BTG = re.compile(r"(?:^|\s)(\d{3,})\s*$")
 
 
 @dataclass
@@ -155,6 +157,13 @@ def _conta_bmf(texto: str, variante: str) -> str:
         if m:
             return str(int(m["conta"]))
         raise ExtracaoError("conta do cliente (BM&F XP) não impressa")
+    # BTG: no fim da linha seguinte a "... Código cliente" (depois do endereço); sem ela, na
+    # última linha. A última linha pode ser o rodapé (telefone da ouvidoria, endereço da BTG)
+    for i, linha in enumerate(linhas[:-1]):
+        if compactar(linha).endswith("codigocliente"):
+            m = RE_CONTA_BMF_BTG.search(linhas[i + 1])
+            if m:
+                return str(int(m.group(1)))
     m = re.search(r"(\d+)\s*$", linhas[-1])
     if m:
         return str(int(m.group(1)))
