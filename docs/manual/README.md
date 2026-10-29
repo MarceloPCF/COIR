@@ -34,5 +34,6 @@ telas), o tema claro/escuro e o botão de recolher o menu.
 | | [Conciliação com a B3](telas/conciliacao.md) | a custódia do COIR contra a da B3 |
 | Sistema | [Cadastros](telas/cadastros.md) | titulares, contas, ativos, parâmetros e saldos iniciais |
 | | [Configurações](telas/configuracoes.md) | pasta de dados, tema, backups, tabelas, registro |
+| | [Suporte](telas/suporte.md) | enviar uma nota que o COIR não lê, sem os seus dados |
 
 > O COIR ajuda a calcular e a conferir; ele não substitui a orientação de um contador.

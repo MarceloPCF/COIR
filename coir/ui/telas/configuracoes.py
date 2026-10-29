@@ -1,18 +1,17 @@
 """Tela 18 — Configurações, em seções: pasta de dados, aparência, backups (fazer agora e
-restaurar, com cópia do banco atual antes), notas para o suporte (texto anonimizado) e o registro
-de atividades (sem CPF nem nome)."""
+restaurar, com cópia do banco atual antes) e o registro de atividades (sem CPF nem nome)."""
 
 import os
 import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from nicegui import events, run, ui
+from nicegui import run, ui
 
 from coir.config import ARQUIVO_REGISTRO, VERSAO
 from coir.erros import CoirError
 from coir.reports.modelo import Coluna
-from coir.servicos import atualizacao, manutencao, suporte, versao
+from coir.servicos import atualizacao, manutencao, versao
 from coir.servicos.estado import Estado
 from coir.ui import preferencias, tabela
 
@@ -105,60 +104,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     mostrar_backups()
 
-    _suporte(estado)
     _registro(estado)
-
-
-def _suporte(estado: Estado) -> None:
-    with _secao(
-        "Enviar notas para suporte",
-        "Para uma nota que o COIR não lê ou lê errado: escolha os PDFs e o COIR grava um .zip com "
-        "o texto delas sem nome, CPF, conta, endereço, telefone, assessor nem dados bancários "
-        "(trocados por fictícios do mesmo tamanho). A cópia só sai se o COIR ler nela exatamente "
-        "o que lê no original e não sobrar nenhum dado pessoal. Mande o .zip pelo contato do "
-        "site; os PDFs não são guardados.",
-    ):
-        with ui.row().classes("items-center gap-3"):
-            envio = (
-                ui.upload(
-                    multiple=True,
-                    auto_upload=True,
-                    on_multi_upload=lambda e: gerar(e),
-                    label="Escolher os PDFs das notas",
-                )
-                .props('accept=".pdf,application/pdf" flat')
-                .classes("coir-envio min-w-[300px]")
-                .mark("suporte-pdfs")
-            )
-            ui.button("Abrir a pasta", icon="folder_open",
-                      on_click=lambda: _abrir_pasta(estado.dados / suporte.PASTA_SUPORTE),
-                      ).props("flat dense")  # fmt: skip
-        resultado = ui.column().classes("w-full gap-1").mark("suporte-resultado")
-
-    async def gerar(e: events.MultiUploadEventArguments) -> None:
-        recebidos = [(f.name, await f.read()) for f in e.files]
-        envio.reset()
-        resultado.clear()
-        try:
-            pacote = await run.io_bound(
-                suporte.pacote_suporte, estado.dados, recebidos, estado.agora()
-            )
-        except CoirError as erro:
-            ui.notify(str(erro), type="negative", multi_line=True)
-            return
-        if pacote is None:  # run.io_bound devolve None se a página fechou
-            return
-        with resultado:
-            if pacote.arquivo is not None:
-                ui.label(f"Gravado: {pacote.arquivo}").classes("coir-positivo text-sm")
-            for r in pacote.resultados:
-                if r.destino is not None:
-                    ui.label(f"{r.origem}: pronto ({r.destino.name})").classes("text-sm")
-                    continue
-                ui.label(f"{r.origem}: não anonimizada, não vai no .zip").classes(
-                    "coir-negativo text-sm")  # fmt: skip
-                for motivo in r.recusas:
-                    ui.label(f"· {motivo}").classes("coir-subtitulo text-xs")
 
 
 def _registro(estado: Estado) -> None:

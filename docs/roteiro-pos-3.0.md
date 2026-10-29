@@ -8,7 +8,6 @@ ao menos provável na 3.1.
 
 | Item | Situação na 3.0 | Origem |
 |---|---|---|
-| Imagens das páginas com tarjas junto do texto anonimizado (só para ver o layout; o COIR nunca as lê) | o texto anonimizado já sai pelo programa (ver "Anonimizador de notas" no fim) | planejamento da F9 |
 | Registro de auditoria (uma linha por importação, pagamento, evento e restauração, com tela própria) | o registro de atividades mostra importações, backups, migrações e erros | planejamento da F9 |
 | Envio de notas e sugestões de dentro do programa | exige um servidor; na 3.0 os pedidos de corretora vão pela página de pedidos (issues) do GitHub | planejamento da F9 |
 | Assinatura digital do `COIR.exe` (o Windows deixa de mostrar o aviso do SmartScreen) | sem assinatura, por decisão: volta à pauta se muitos usuários tiverem problema para abrir. A opção gratuita para projeto de código aberto é a SignPath Foundation; o manual ([Se o COIR não abrir](manual/se-nao-abrir.md)) explica o aviso e como conferir o SHA-256 | planejamento da F9; revisto na 3.0.1 |
@@ -90,15 +89,40 @@ cópias e errou nas notas reais. A regra agora é anonimizar o texto que o COIR 
 preservados). O leitor aceita esse texto como entrada: `texto_pdf.paginas` lê `.txt`, e
 `extrair_pasta`/`arquivos_da_pasta` aceitam `sufixo=".txt"`. Assim os testes de desenvolvimento
 rodam sobre o mesmo texto que os PDFs originais dariam. Sem pedido, as pastas continuam lendo só
-PDF. As imagens com tarja ficaram para depois (tabela acima).
+PDF.
+
+**Corretora desconhecida e dados informados (29/10/2026).** O primeiro desenho só achava os dados
+pessoais nos layouts conhecidos: numa corretora nova (o motivo principal do envio) o nome, o
+endereço e a conta passavam para a cópia, e o portão aceitava. Agora:
+
+- Cada titular informa, na tela Suporte, os dados para ocultar (`DadosPessoais`: nome, CPF e
+  contas do cadastro, mais endereço, bairro, cidade, CEP, telefones, e-mail, assessor, dados
+  bancários e outros termos). Ficam em `<dados>/_privado/dados-para-ocultar.json`.
+- Os valores inteiros (nome, CPF, conta, e-mail, número de 6 ou mais dígitos, frase de várias
+  palavras) são trocados em qualquer lugar e em qualquer layout. A palavra solta ou o número
+  curto, só nas linhas pessoais (as que já tiveram troca e, na corretora desconhecida, as três
+  depois da do nome). Fora delas, na corretora desconhecida, vira alerta: contorno laranja na
+  imagem, para o usuário conferir (o bairro "Vale" e a ação VALE ON).
+- Na corretora desconhecida também é trocado o que tem formato de e-mail, CEP ou telefone, e o
+  bloco de endereço não é procurado (o layout é desconhecido). A cópia é recusada se o CPF
+  impresso não tiver dados informados ou se o nome informado não aparecer na nota.
+- Nome, CPF, conta e e-mail informados nunca podem sobrar na cópia, sem a exceção do texto da
+  corretora.
+- A imagem de cada página sai com tarja preta sobre cada caractere trocado
+  (`coir/parsing/imagens.py`). A posição vem do próprio PDF, na mesma ordem do texto que o COIR
+  lê; se o texto não casar, a imagem não é gerada e a nota é recusada.
 
 **Onde usar:**
 
-- No programa: Configurações › "Enviar notas para suporte". O usuário escolhe os PDFs e o
-  programa grava um `.zip` em `<dados>/suporte` com as cópias aceitas, com nomes neutros
-  (`nota-01.txt`...).
-- Na CLI: `coir notas anonimizar <PDFs ou pastas> [--saida] [--mapa]`, que sai com código 1 se
-  alguma nota for recusada.
+- No programa: tela Suporte. O usuário escolhe os PDFs; o programa grava numa pasta nova em
+  `<dados>/suporte/<data-hora>` o texto e as imagens de cada nota aceita, com nomes neutros
+  (`nota-01.txt`, `nota-01-pagina-1.png`...), e lista de quem é cada nota (pelo CPF), quantos
+  trechos foram ocultados e as recusas. O `.zip` só é gravado depois que o usuário marca que
+  conferiu as imagens; o botão "Escrever e-mail" abre o programa de e-mail com a mensagem para
+  suporte.coir@gmail.com (só a versão e o nome do `.zip` vão no endereço). O usuário anexa e
+  envia. Envio direto pelo programa exige servidor e continua fora.
+- Na CLI: `coir notas anonimizar <PDFs ou pastas> [--saida] [--mapa] [--imagens]`, com os dados
+  para ocultar da pasta de dados; sai com código 1 se alguma nota for recusada.
 
 **Base de desenvolvimento refeita.**
 

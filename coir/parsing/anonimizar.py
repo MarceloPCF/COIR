@@ -11,7 +11,14 @@ O que é trocado:
   mapa: a mesma conta real vira sempre a mesma fictícia;
 - nome do cliente, onde aparecer (também com as palavras coladas do layout antigo da XP);
 - o bloco de endereço que segue o nome (rua, número, bairro, CEP, cidade, telefone, e-mail);
-- código do assessor, CEP solto sob "Cliente" (BTG BM&F) e banco, agência e conta corrente.
+- código do assessor, CEP solto sob "Cliente" (BTG BM&F) e banco, agência e conta corrente;
+- os dados que o titular informou (``DadosPessoais``: nome, CPF, contas, endereço, telefones,
+  e-mail...), em qualquer layout: o valor inteiro onde aparecer; cada palavra ou número curto, só
+  nas linhas pessoais (as que já tiveram troca e, na corretora desconhecida, as três depois da do
+  nome);
+- numa corretora que nenhum perfil reconhece, também o que tem formato de e-mail, CEP ou
+  telefone. O bloco de endereço não é procurado nela (o layout é desconhecido): o titular tem de
+  ter informado os dados dele, e o nome tem de aparecer na nota, ou a cópia é recusada.
 
 Dois portões decidem se a cópia vale (``conferir``): o de fidelidade extrai o original e a cópia e
 exige o mesmo resultado, fora a conta (trocada pela do mapa); o de privacidade procura na cópia
@@ -61,6 +68,22 @@ VALOR_NA_LINHA_ANTERIOR = ("banco", "agencia", "contacorrente")
 VOGAIS = "AEIOU"
 CONSOANTES = "BCDFGHJKLMNPQRSTVXZ"
 MINIMO_TERMO = 4  # termos menores (DA, 60, PE) não identificam ninguém e colidem com o texto
+MINIMO_NUMERO_SOLTO = 6  # número informado com menos dígitos só é trocado nas linhas pessoais
+LINHAS_DEPOIS_DO_NOME = 3  # linhas pessoais depois da do nome (corretora desconhecida)
+# palavras de endereço que não identificam ninguém (não são procuradas sozinhas)
+PALAVRAS_GENERICAS = frozenset({
+    "rua", "avenida", "alameda", "travessa", "praca", "rodovia", "estrada", "largo", "apto",
+    "apartamento", "bloco", "casa", "sala", "andar", "conjunto", "edificio", "torre",
+    "condominio", "lote", "quadra", "fundos", "loja", "numero", "bairro", "centro", "jardim",
+    "vila", "parque", "cidade", "estado", "brasil", "telefone", "celular", "email", "agencia",
+    "conta", "corrente", "banco", "assessor",
+})  # fmt: skip
+CAMPOS_LIVRES = (
+    "endereco", "bairro", "cidade", "cep", "telefones", "email", "assessor", "banco", "outros",
+)  # fmt: skip
+RE_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+RE_CEP = re.compile(r"(?<![\d.,/-])(?:\d{5}|\d{2}\.\d{3})-\d{3}(?![\d-])(?![.,]\d)")
+RE_TELEFONE = re.compile(r"(?<![\d.,/-])(?:\(\d{2,3}\)\s?)?\d{4,5}-\d{4}(?![\d-])(?![.,]\d)")
 
 
 class MapaAnonimizacao(BaseModel):
@@ -150,6 +173,42 @@ class MapaAnonimizacao(BaseModel):
             tentativa += 1
 
 
+class DadosPessoais(BaseModel):
+    """O que o titular informa para ocultar (tela Suporte), além do que o COIR acha sozinho.
+
+    Fica só na pasta de dados (``_privado``) e nunca aparece em repr/log. Os campos livres aceitam
+    vários valores separados por ``;`` ou por linha (dois telefones, dois endereços...)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cpf: str = Field(repr=False)  # só dígitos
+    nome: str = Field(default="", repr=False)
+    contas: list[str] = Field(default_factory=list, repr=False)
+    endereco: str = Field(default="", repr=False)
+    bairro: str = Field(default="", repr=False)
+    cidade: str = Field(default="", repr=False)
+    cep: str = Field(default="", repr=False)
+    telefones: str = Field(default="", repr=False)
+    email: str = Field(default="", repr=False)
+    assessor: str = Field(default="", repr=False)
+    banco: str = Field(default="", repr=False)  # banco, agência e conta corrente
+    outros: str = Field(default="", repr=False)
+
+    def __repr__(self) -> str:
+        return "DadosPessoais(...)"
+
+    __str__ = __repr__
+
+    def valores(self) -> list[str]:
+        """Cada valor dos campos livres, sem os vazios."""
+        return [
+            v.strip()
+            for campo in CAMPOS_LIVRES
+            for v in re.split(r"[;\r\n]+", getattr(self, campo))
+            if v.strip()
+        ]
+
+
 def _dv_cpf(base: str) -> str:
     nums = [int(c) for c in base]
     for pos in (9, 10):
@@ -173,6 +232,7 @@ class _Pagina:
     trocado: bytearray = field(default_factory=bytearray)
     termos: set[str] = field(default_factory=set)
     com_bloco: bool = False  # achou o nome e trocou o bloco do cliente
+    alertas: list[tuple[int, int]] = field(default_factory=list)  # dado informado à mostra
 
     def __post_init__(self) -> None:
         self.chars = list(self.original)
@@ -208,25 +268,53 @@ class Anonimizada:
     textos: list[str]
     termos: frozenset[str]  # tudo o que foi trocado no original (para o portão de privacidade)
     publico: str  # o original sem os trechos trocados, de todas as páginas
+    trocados: list[bytes]  # por página, 1 em cada caractere trocado (tarjas das imagens)
+    alertas: list[list[tuple[int, int]]]  # por página, trechos informados que ficaram à mostra
+    desconhecidas: list[int]  # páginas (1...) que nenhum perfil reconhece
+    nome_informado: bool  # algum nome informado apareceu numa dessas páginas
 
 
-def anonimizar(textos: Sequence[str], mapa: MapaAnonimizacao) -> Anonimizada:
+def anonimizar(
+    textos: Sequence[str], mapa: MapaAnonimizacao, informados: Sequence[DadosPessoais] = ()
+) -> Anonimizada:
     """Troca os dados pessoais de cada página; o mapa ganha as contas e CPFs novos."""
+    paginas = [_Pagina(t, _corretora(t)) for t in textos]
     contas = _contas(textos)
     cpfs = {so_digitos(m.group(0)) for t in textos for m in RE_CPF.finditer(t)}
-    achados = {n for t in textos if (n := _nome(_linhas(t))) is not None}
-    nomes: list[str] = sorted(achados, key=len, reverse=True)
+    cpfs |= {c for d in informados if len(c := so_digitos(d.cpf)) == 11}
+    achados = {n for p in paginas if p.corretora != SEM_CORRETORA
+               and (n := _nome(_linhas(p.original))) is not None}  # fmt: skip
+    # nome de uma palavra só não é procurado: pode ser um rótulo ("Cliente", lido errado antes)
+    nomes_informados = {" ".join(d.nome.split()) for d in informados
+                        if len(RE_LETRAS.findall(d.nome)) >= 2
+                        and len("".join(RE_LETRAS.findall(d.nome))) >= MINIMO_TERMO}  # fmt: skip
+    nomes: list[str] = sorted(achados | nomes_informados, key=len, reverse=True)
     padroes = [_padrao_do_nome(n) for n in nomes]
-    paginas = [_Pagina(t, _corretora(t)) for t in textos]
+    dos_informados = [_padrao_do_nome(n) for n in nomes_informados]
+    fortes, fracos = _padroes_informados(informados)
     for p in paginas:
         _trocar_cpfs(p, cpfs, mapa)
         _trocar_contas(p, contas, mapa)
         for nome, padrao in zip(nomes, padroes, strict=True):
             _trocar_nome(p, nome, padrao, mapa)
-        p.com_bloco = _trocar_bloco_do_cliente(p, padroes, mapa)
-        _trocar_valores_rotulados(p, mapa)
+        if p.corretora == SEM_CORRETORA:
+            _trocar_formatos(p, mapa)
+            p.com_bloco = any(x.search(p.original) for x in dos_informados)
+        else:
+            p.com_bloco = _trocar_bloco_do_cliente(p, padroes, mapa)
+            _trocar_valores_rotulados(p, mapa)
+        _trocar_informados(p, fortes, fracos, padroes, mapa)
     termos = frozenset(t for p in paginas for t in p.termos) | frozenset(nomes)
-    return Anonimizada([p.texto for p in paginas], termos, "\n".join(p.publico() for p in paginas))
+    desconhecidas = [n for n, p in enumerate(paginas, start=1) if p.corretora == SEM_CORRETORA]
+    return Anonimizada(
+        [p.texto for p in paginas],
+        termos,
+        "\n".join(p.publico() for p in paginas),
+        [bytes(p.trocado) for p in paginas],
+        [p.alertas for p in paginas],
+        desconhecidas,
+        any(paginas[n - 1].com_bloco for n in desconhecidas),
+    )
 
 
 def _linhas(texto: str) -> list[re.Match[str]]:
@@ -371,11 +459,117 @@ def _trocar_bloco_do_cliente(
     return True
 
 
-def _trocar_palavras(p: _Pagina, inicio: int, fim: int, mapa: MapaAnonimizacao) -> None:
+def _trocar_palavras(
+    p: _Pagina, inicio: int, fim: int, mapa: MapaAnonimizacao, tipo: str = "bloco"
+) -> None:
     for w in RE_PALAVRA.finditer(p.original, inicio, fim):
         if compactar(w.group(0)) in ROTULOS_DO_BLOCO or not p.livre(w.start(), w.end()):
             continue
-        p.trocar(w.start(), w.end(), mapa.trocar("bloco", w.group(0)))
+        p.trocar(w.start(), w.end(), mapa.trocar(tipo, w.group(0)))
+
+
+def _trocar_formatos(p: _Pagina, mapa: MapaAnonimizacao) -> None:
+    """Corretora desconhecida: o que tem formato de e-mail, CEP ou telefone (o da corretora
+    também: não muda a leitura da nota, e não se sabe de quem é)."""
+    for tipo, padrao in (("email", RE_EMAIL), ("cep", RE_CEP), ("telefone", RE_TELEFONE)):
+        for m in padrao.finditer(p.original):
+            antes = set(p.termos)
+            _trocar_palavras(p, m.start(), m.end(), mapa, tipo)
+            if tipo == "email":  # pedaços do e-mail da corretora estão no nome dela: não é
+                p.termos = antes  # vazamento (o e-mail informado é conferido à parte)
+
+
+def _padroes_informados(
+    informados: Sequence[DadosPessoais],
+) -> tuple[list[tuple[str, re.Pattern[str]]], list[re.Pattern[str]]]:
+    """Padrões dos dados informados. Os fortes valem em qualquer lugar (conta, e-mail, número
+    longo, valor inteiro de várias palavras); os fracos (palavra ou número curto), só nas linhas
+    pessoais: sozinhos podem ser de outra coisa (o bairro "Vale" e a ação VALE ON)."""
+    fortes: list[tuple[str, re.Pattern[str]]] = []
+    fracos: dict[str, re.Pattern[str]] = {}
+    for d in informados:
+        for conta in d.contas:
+            digitos = so_digitos(conta).lstrip("0")
+            if len(digitos) >= MINIMO_TERMO:
+                fortes.append(("conta", _padrao_da_conta(digitos)))
+        for valor in d.valores():
+            if RE_EMAIL.fullmatch(valor):
+                fortes.append(("email", re.compile(re.escape(valor), re.IGNORECASE)))
+                continue
+            if len(RE_LETRAS.findall(valor)) >= 2 and not re.search(r"\d", valor):
+                fortes.append(("informado", _padrao_do_nome(valor)))
+            for w in RE_PALAVRA.findall(valor):
+                if len(w) < MINIMO_TERMO:
+                    continue
+                if w.isdigit():
+                    fracos.setdefault(w, _padrao_do_numero(w))
+                elif compactar(w) not in PALAVRAS_GENERICAS:
+                    fracos.setdefault(compactar(w), _padrao_do_nome(w))
+            digitos = so_digitos(valor)
+            if len(digitos) >= MINIMO_NUMERO_SOLTO and re.fullmatch(r"[\d.\-/() +]+", valor):
+                # telefone, CEP, agência e conta corrente: inteiro; telefone também sem o DDD
+                for n in {digitos, digitos[-8:], digitos[-9:]}:
+                    if len(n) >= MINIMO_NUMERO_SOLTO:
+                        fortes.append(("informado", _padrao_do_numero(n)))
+    return fortes, list(fracos.values())
+
+
+def _padrao_da_conta(digitos: str) -> re.Pattern[str]:
+    """Conta com ou sem zeros à esquerda e com ou sem o traço do dígito; nunca dentro de um
+    valor (1.234,56) nem de outro número."""
+    return re.compile(rf"(?<![\d.,/])0*{digitos[:-1]}-?{digitos[-1]}(?!\d)(?![.,]\d)")
+
+
+def _padrao_do_numero(digitos: str) -> re.Pattern[str]:
+    """Número com ou sem separadores entre os dígitos (11 98765-4321, 12.345-678); nunca dentro
+    de um valor nem de outro número."""
+    meio = r"[\-\s().]{0,2}".join(digitos)
+    return re.compile(rf"(?<![\d,])(?<!\d\.)0*{meio}(?!\d)(?![.,]\d)")
+
+
+def _trocar_informados(
+    p: _Pagina,
+    fortes: Sequence[tuple[str, re.Pattern[str]]],
+    fracos: Sequence[re.Pattern[str]],
+    nomes: Sequence[re.Pattern[str]],
+    mapa: MapaAnonimizacao,
+) -> None:
+    for tipo, padrao in fortes:
+        for m in padrao.finditer(p.original):
+            if tipo == "conta":
+                _trocar_conta_informada(p, m, mapa)
+            else:
+                _trocar_palavras(p, m.start(), m.end(), mapa, tipo)
+    pessoais = _linhas_pessoais(p, nomes)
+    for padrao in fracos:
+        for m in padrao.finditer(p.original):
+            if any(ini <= m.start() < fim for ini, fim in pessoais):
+                _trocar_palavras(p, m.start(), m.end(), mapa, "informado")
+            elif p.corretora == SEM_CORRETORA and p.livre(m.start(), m.end()):
+                p.alertas.append((m.start(), m.end()))
+
+
+def _trocar_conta_informada(p: _Pagina, m: re.Match[str], mapa: MapaAnonimizacao) -> None:
+    if not p.livre(m.start(), m.end()):  # já trocada (a conta que o leitor achou)
+        return
+    impressa = m.group(0)
+    digitos = so_digitos(impressa)
+    ficticia = mapa.conta(p.corretora, digitos)
+    if len(ficticia) > len(digitos):
+        raise AnonimizacaoError("conta fictícia com mais dígitos que a impressa")
+    p.trocar(m.start(), m.end(), _formatado(impressa, ficticia.zfill(len(digitos))))
+
+
+def _linhas_pessoais(p: _Pagina, nomes: Sequence[re.Pattern[str]]) -> list[tuple[int, int]]:
+    """Linhas que já tiveram troca e, na corretora desconhecida, as que seguem a do nome."""
+    linhas = _linhas(p.original)
+    pessoais: set[int] = set()
+    for i, m in enumerate(linhas):
+        if not p.livre(m.start(), m.end()):
+            pessoais.add(i)
+        if p.corretora == SEM_CORRETORA and any(x.search(m.group(0)) for x in nomes):
+            pessoais |= set(range(i, min(i + 1 + LINHAS_DEPOIS_DO_NOME, len(linhas))))
+    return [(linhas[i].start(), linhas[i].end()) for i in sorted(pessoais)]
 
 
 def _trocar_valores_rotulados(p: _Pagina, mapa: MapaAnonimizacao) -> None:
@@ -492,10 +686,47 @@ def _partes(termo: str) -> list[str]:
     return [p for p in partes if len(p) >= MINIMO_TERMO]
 
 
+def informados_na_copia(
+    copia: Sequence[str],
+    informados: Sequence[DadosPessoais],
+    trocados: Sequence[bytes] = (),
+) -> list[str]:
+    """Nome, CPF, conta e e-mail informados que ainda aparecem na cópia. Ao contrário dos termos
+    achados, não há exceção para o texto da corretora: esses dados nunca são dela. Só não conta
+    o que o próprio anonimizador escreveu (``trocados``): a conta fictícia pode coincidir com uma
+    informada (de outra corretora, ou numa base já anonimizada)."""
+    achados: list[str] = []
+    for n, texto in enumerate(copia, start=1):
+        mascara = trocados[n - 1] if n - 1 < len(trocados) else bytes(len(texto))
+
+        def sobrou(padrao: re.Pattern[str], texto: str = texto, mascara: bytes = mascara) -> bool:
+            return any(not all(mascara[m.start() : m.end()]) for m in padrao.finditer(texto))
+
+        compacto = compactar(re.sub(r"[^\w]", "", texto))
+        for d in informados:
+            nome = compactar("".join(RE_LETRAS.findall(d.nome)))
+            if len(nome) >= MINIMO_TERMO and nome in compacto:
+                achados.append(f"página {n}: o nome informado ficou na cópia")
+            cpf = so_digitos(d.cpf)
+            if len(cpf) == 11 and sobrou(re.compile(r"[.\-\s]?".join(cpf))):
+                achados.append(f"página {n}: o CPF informado ficou na cópia")
+            for conta in d.contas:
+                digitos = so_digitos(conta).lstrip("0")
+                if len(digitos) >= MINIMO_TERMO and sobrou(_padrao_da_conta(digitos)):
+                    achados.append(f"página {n}: uma conta informada ficou na cópia")
+            emails = [v for v in d.valores() if RE_EMAIL.fullmatch(v)]
+            if any(e.casefold() in texto.casefold() for e in emails):
+                achados.append(f"página {n}: o e-mail informado ficou na cópia")
+    return list(dict.fromkeys(achados))
+
+
 @dataclass(frozen=True)
 class Conferida:
     textos: list[str]
     recusas: list[str]  # vazio: a cópia pode ser enviada
+    trocados: list[bytes] = field(default_factory=list)  # por página (tarjas das imagens)
+    alertas: list[list[tuple[int, int]]] = field(default_factory=list)  # por página
+    cpfs: frozenset[str] = frozenset()  # CPFs impressos (de quem é a nota)
 
     @property
     def aceita(self) -> bool:
@@ -503,20 +734,41 @@ class Conferida:
 
 
 def conferir(
-    arquivo: str, textos: Sequence[str], mapa: MapaAnonimizacao, sensiveis: Sequence[str] = ()
+    arquivo: str,
+    textos: Sequence[str],
+    mapa: MapaAnonimizacao,
+    sensiveis: Sequence[str] = (),
+    informados: Sequence[DadosPessoais] = (),
 ) -> Conferida:
-    """Anonimiza e passa pelos três portões (forma, fidelidade e privacidade)."""
-    anon = anonimizar(textos, mapa)
-    recusas = divergencias_de_forma(textos, anon.textos)
+    """Anonimiza e passa pelos três portões (forma, fidelidade e privacidade). Numa corretora
+    que nenhum perfil reconhece, o titular tem de ter informado os dados dele (pelo CPF impresso)
+    e o nome informado tem de aparecer: sem isso não se sabe onde estão os dados pessoais."""
+    anon = anonimizar(textos, mapa, informados)
+    cpfs = frozenset(so_digitos(m.group(0)) for t in textos for m in RE_CPF.finditer(t))
+    recusas: list[str] = []
+    if anon.desconhecidas:
+        com_dados = {so_digitos(d.cpf) for d in informados if d.nome.strip()}
+        if cpfs - com_dados:
+            recusas.append(
+                "corretora não reconhecida: o CPF impresso na nota não tem dados para ocultar "
+                "cadastrados (Suporte > Dados para ocultar)"
+            )
+        elif not anon.nome_informado:
+            recusas.append(
+                "corretora não reconhecida: o nome informado nos dados para ocultar não aparece "
+                "na nota (confira como ele está escrito)"
+            )
+    recusas += divergencias_de_forma(textos, anon.textos)
     if SEPARADOR_PAGINAS in "".join(textos):
         recusas.append("o texto tem o separador de páginas (\\f) dentro de uma página")
     recusas += divergencias_de_fidelidade(
         extrair_textos(arquivo, textos), extrair_textos(arquivo, anon.textos), mapa
     )
     recusas += vazamentos(anon.textos, anon.termos, anon.publico, sensiveis)
+    recusas += informados_na_copia(anon.textos, informados, anon.trocados)
     partes = [p for t in anon.termos for p in _partes(t)]
     if any(compactar(p) in compactar(arquivo) for p in partes if not p.isdigit()) or any(
         p in so_digitos(arquivo) for p in partes if p.isdigit() and len(p) >= 6
     ):
         recusas.append("o nome do arquivo tem dado pessoal")
-    return Conferida(anon.textos, recusas)
+    return Conferida(anon.textos, recusas, anon.trocados, anon.alertas, cpfs)

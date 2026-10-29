@@ -1,25 +1,32 @@
-"""Notas para o suporte (coir.servicos.suporte), o texto de nota como entrada do leitor e o
-comando ``coir notas anonimizar``. Só dados fictícios."""
+"""Notas para o suporte (coir.servicos.suporte): dados para ocultar, envio (texto e imagens
+tarjadas), .zip e e-mail; o texto de nota como entrada do leitor e o comando
+``coir notas anonimizar``. Só dados fictícios."""
 
 import zipfile
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import unquote
 
 import pytest
 from typer.testing import CliRunner
 
 from coir.cli import app
 from coir.config import VAR_DADOS
+from coir.db.sessao import migrar
 from coir.erros import AnonimizacaoError
+from coir.parsing.anonimizar import DadosPessoais
 from coir.parsing.extrair import extrair_pasta, extrair_pdf
 from coir.parsing.texto_pdf import PdfError, gravar_texto, ler_texto, paginas
 from coir.servicos import suporte
+from coir.servicos.cadastros import adicionar_titular
 from tests.apoio import cpf_de_teste
 from tools import notas_ficticias
 from tools.verificar_dados_pessoais import carregar_termos
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "notas"
 AGORA = datetime(2026, 10, 28, 12, 0, 0)
+AGORA_2 = datetime(2026, 10, 28, 12, 0, 1)
+CPF_JOANA = cpf_de_teste("271828182")
 
 
 @pytest.fixture(scope="module")
@@ -84,30 +91,97 @@ def test_mapa_ilegivel(tmp_path: Path) -> None:
         suporte.carregar_mapa(tmp_path / "mapa.json")
 
 
-def test_pacote_do_suporte_tem_so_texto_com_nome_neutro(tmp_path: Path, pdf_ficticio: Path) -> None:
-    pacote = suporte.pacote_suporte(
-        tmp_path, [("Nota de Fulano.pdf", pdf_ficticio.read_bytes())], AGORA
+def test_preparar_envio_grava_texto_e_imagens_com_nome_neutro(
+    tmp_path: Path, pdf_ficticio: Path
+) -> None:
+    envio = suporte.preparar_envio(
+        tmp_path, tmp_path / "coir.db", [("Nota de Fulano.pdf", pdf_ficticio.read_bytes())], AGORA
     )
-    assert pacote.arquivo == tmp_path / "suporte" / "notas-anonimizadas-20261028-120000.zip"
-    assert pacote.arquivo is not None
-    assert [(r.origem, r.destino) for r in pacote.resultados] == [
-        ("Nota de Fulano.pdf", Path("nota-01.txt"))
-    ]
-    with zipfile.ZipFile(pacote.arquivo) as z:
-        assert z.namelist() == ["nota-01.txt"]
-        texto = z.read("nota-01.txt").decode("utf-8")
+    assert envio.pasta == tmp_path / "suporte" / "20261028-120000"
+    [nota] = envio.notas
+    assert (nota.origem, nota.destino) == ("Nota de Fulano.pdf", envio.pasta / "nota-01.txt")
+    assert nota.imagens == (envio.pasta / "nota-01-pagina-1.png",) and nota.imagens[0].is_file()
+    assert nota.paginas == 1 and nota.ocultados > 0 and nota.alertas == 0
+    assert envio.titular(nota) == "CPF sem dados para ocultar"  # layout conhecido: não precisa
+    texto = nota.destino.read_text(encoding="utf-8") if nota.destino else ""
     roteiro = notas_ficticias.carregar()
     assert cpf_de_teste()[:9] not in texto.replace(".", "")
     assert roteiro.titular.upper() not in texto.upper() and f" {roteiro.conta}" not in texto
-    assert (tmp_path / suporte.ARQUIVO_MAPA).is_file()  # o mapa fica, fora do .zip
+    assert (tmp_path / suporte.ARQUIVO_MAPA).is_file()  # o mapa fica, fora do envio
+    zip_ = suporte.gerar_zip(envio)
+    assert zip_ == envio.pasta / "notas-para-suporte-20261028-120000.zip"
+    with zipfile.ZipFile(zip_) as z:
+        assert sorted(z.namelist()) == ["nota-01-pagina-1.png", "nota-01.txt"]
+    url = suporte.endereco_email(zip_, "3.0.2")
+    assert url.startswith("mailto:suporte.coir@gmail.com?subject=COIR%203.0.2")
+    assert zip_.name in unquote(url) and str(tmp_path) not in unquote(url)
     with pytest.raises(AnonimizacaoError, match="não é PDF"):
-        suporte.pacote_suporte(tmp_path, [("nota.txt", b"x")], AGORA)
+        suporte.preparar_envio(tmp_path, tmp_path / "coir.db", [("n.txt", b"x")], AGORA_2)
 
 
-def test_pacote_sem_nenhuma_nota_aceita_nao_grava_zip(tmp_path: Path) -> None:
-    pacote = suporte.pacote_suporte(tmp_path, [("ruim.pdf", b"%PDF-quebrado")], AGORA)
-    assert pacote.arquivo is None and pacote.resultados[0].destino is None
-    assert not (tmp_path / "suporte").exists()
+def test_envio_sem_nenhuma_nota_aceita_nao_gera_zip(tmp_path: Path) -> None:
+    envio = suporte.preparar_envio(
+        tmp_path, tmp_path / "coir.db", [("ruim.pdf", b"%PDF-quebrado")], AGORA
+    )
+    assert envio.aceitas == [] and envio.notas[0].recusas
+    with pytest.raises(AnonimizacaoError, match="nenhuma nota"):
+        suporte.gerar_zip(envio)
+
+
+def _pdf_desconhecida(pasta: Path) -> Path:
+    texto = (
+        "CORRETORA EXEMPLO S.A.\n"
+        "Nota de corretagem 123   Pregão 05/03/2026\n"
+        f"Titular: Joana Pereira dos Santos   CPF {CPF_JOANA[:3]}.{CPF_JOANA[3:6]}."
+        f"{CPF_JOANA[6:9]}-{CPF_JOANA[9:]}\n"
+        "Endereco: RUA DAS ACACIAS 98765 - SETOR BUENO\n"
+        "Conta: 731942-1\n"
+        "C ABCD3 100 10,00 1.000,00\n"
+    )
+    pasta.mkdir()
+    return notas_ficticias.pdf(texto, pasta / "desconhecida.pdf")
+
+
+def test_envio_de_corretora_desconhecida_usa_os_dados_informados(tmp_path: Path) -> None:
+    pdf = _pdf_desconhecida(tmp_path / "pdf")
+    recebidos = [("nota.pdf", pdf.read_bytes())]
+    [recusada] = suporte.preparar_envio(tmp_path, tmp_path / "coir.db", recebidos, AGORA).notas
+    assert recusada.destino is None and "não tem dados para ocultar" in recusada.recusas[0]
+    suporte.salvar_titular(tmp_path, DadosPessoais(
+        cpf=CPF_JOANA, nome="Joana Pereira dos Santos", contas=["7319421"],
+        endereco="Rua das Acácias, 98765", bairro="Setor Bueno",
+    ))  # fmt: skip
+    envio = suporte.preparar_envio(tmp_path, tmp_path / "coir.db", recebidos, AGORA_2)
+    [nota] = envio.notas
+    assert nota.recusas == () and nota.destino is not None and len(nota.imagens) == 1
+    assert envio.titular(nota) == "Joana Pereira dos Santos"
+    texto = nota.destino.read_text(encoding="utf-8").upper()
+    assert not any(t in texto for t in ("JOANA", "ACACIAS", "BUENO", "98765", "731942"))
+    assert "C ABCD3 100 10,00 1.000,00" in texto
+
+
+def test_dados_para_ocultar_juntam_o_banco_e_o_informado(tmp_path: Path) -> None:
+    banco = tmp_path / "coir.db"
+    migrar(banco, AGORA)
+    adicionar_titular(banco, CPF_JOANA, "Joana do Banco")
+    [d] = suporte.dados_para_ocultar(tmp_path, banco)
+    assert (d.nome, d.cpf, d.contas, d.endereco) == ("Joana do Banco", CPF_JOANA, [], "")
+    suporte.salvar_titular(
+        tmp_path,
+        DadosPessoais(
+            cpf=CPF_JOANA, nome="JOANA P SANTOS", contas=["1234 ", ""], endereco="Rua A, 1"
+        ),
+    )
+    [d] = suporte.dados_para_ocultar(tmp_path, banco)
+    assert (d.nome, d.contas, d.endereco) == ("JOANA P SANTOS", ["1234"], "Rua A, 1")
+    assert (tmp_path / suporte.ARQUIVO_DADOS).is_file()
+    with pytest.raises(AnonimizacaoError, match="CPF inválido"):
+        suporte.salvar_titular(tmp_path, DadosPessoais(cpf="123", nome="x"))
+    with pytest.raises(AnonimizacaoError, match="nome"):
+        suporte.salvar_titular(tmp_path, DadosPessoais(cpf=CPF_JOANA))
+    (tmp_path / suporte.ARQUIVO_DADOS).write_text("{", encoding="utf-8")
+    with pytest.raises(AnonimizacaoError, match="ilegíveis"):
+        suporte.carregar_dados(tmp_path)
 
 
 # ----------------------------------------------------------------------------- CLI

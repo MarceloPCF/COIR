@@ -11,11 +11,17 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 ## [Não lançado]
 
 ### Adicionado
-- **Enviar notas para suporte** (Configurações): para uma nota que o COIR não lê ou lê errado,
-  grava um `.zip` com o texto das notas sem nome, CPF, conta, endereço, telefone, assessor e
-  dados bancários. Esses dados viram fictícios do mesmo tamanho, no mesmo lugar. A cópia só sai
-  se o COIR ler nela exatamente o que lê no original e não sobrar nenhum dado pessoal. Pela
-  linha de comando: `coir notas anonimizar`.
+- **Tela Suporte**, para mandar uma nota que o COIR não lê ou lê errado (uma corretora nova,
+  por exemplo) sem os seus dados pessoais:
+  - **Dados para ocultar**, por titular: nome, CPF e contas vêm do cadastro; você completa com
+    endereço, telefones, e-mail, assessor e dados bancários, como saem nas notas. Ficam só no seu
+    computador. O COIR procura esses dados em qualquer corretora.
+  - **Enviar notas para suporte**: o COIR grava numa pasta o texto de cada nota, com os dados
+    pessoais trocados por fictícios do mesmo tamanho, e a imagem de cada página com tarja preta
+    sobre eles. A cópia só sai se o COIR ler nela o mesmo que no original e não sobrar nenhum
+    dado pessoal. Você confere as imagens, grava o `.zip` e o botão abre o seu e-mail com a
+    mensagem para o suporte; você anexa e envia.
+  - Pela linha de comando: `coir notas anonimizar [--imagens]`.
 
 ### Corrigido
 - **Nome do titular nas notas da XP e da Rico**: nas notas Bovespa o COIR lia o rótulo

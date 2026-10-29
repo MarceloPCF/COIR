@@ -475,13 +475,18 @@ def notas_anonimizar(
     mapa: Path | None = typer.Option(
         None, help="Mapa de anonimização (padrão: _privado/mapa-anonimizacao.json nos dados)."
     ),
+    imagens: bool = typer.Option(
+        False, "--imagens", help="Grava também a imagem de cada página, com tarja."
+    ),
 ) -> None:
     """Grava o texto anonimizado de cada nota (formato das fixtures, páginas separadas por \\f).
 
-    Cada cópia passa por dois portões: a extração dela tem de ser igual à do original (só a conta
+    Usa os dados para ocultar de cada titular (tela Suporte; nome, CPF e contas do banco). Cada
+    cópia passa por dois portões: a extração dela tem de ser igual à do original (só a conta
     muda, sempre pela mesma fictícia) e nenhum dado pessoal do original pode sobrar. Sai com
     código 1 se alguma nota for recusada (a recusa diz a nota e o campo, nunca o valor).
     """
+    from coir.db.sessao import NOME_BANCO
     from coir.servicos import suporte
 
     dados = dados_dir(exigir=True)
@@ -493,6 +498,8 @@ def notas_anonimizar(
         saida or dados / suporte.PASTA_SUPORTE / "notas-anonimizadas",
         mapa or dados / suporte.ARQUIVO_MAPA,
         suporte.termos_sensiveis(dados),
+        informados=suporte.dados_para_ocultar(dados, dados / NOME_BANCO),
+        imagens=imagens,
     )
     recusados = [r for r in resultados if r.destino is None]
     for r in recusados:
