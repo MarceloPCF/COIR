@@ -32,6 +32,7 @@ from coir.ui.telas import (
     painel,
     proventos,
     relatorios,
+    suporte,
 )
 
 Avisar = Callable[[], object]  # a tela mudou o banco: o topo (titulares, anos) se refaz
@@ -73,6 +74,7 @@ GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
         Tela("/cadastros", "Cadastros", "badge", cadastros.montar, exige_dados=False),
         Tela("/configuracoes", "Configurações", "settings", configuracoes.montar,
              exige_dados=False),
+        Tela("/suporte", "Suporte", "support_agent", suporte.montar, exige_dados=False),
     )),
 )  # fmt: skip
 TELAS = tuple(t for _, telas in GRUPOS for t in telas)
@@ -126,7 +128,6 @@ def _itens(telas: tuple[Tela, ...]) -> None:
 
 def _marca() -> None:
     with ui.row().classes("items-center gap-3 no-wrap").mark("marca"):
-        ui.html(tema.simbolo_svg(), sanitize=False).classes("coir-simbolo")  # arquivo nosso
         ui.label("COIR").classes("coir-marca")
         ui.label("Controle de Operações e Imposto de Renda").classes("coir-marca-nome gt-sm")
 

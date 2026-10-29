@@ -22,9 +22,10 @@ from coir.gabarito.exportar import ARQUIVO_MAPA, PASTA_PRIVADA, carregar
 from coir.gabarito.pseudonimos import MapaPseudonimos
 from coir.parsing.extrair import ResultadoExtracao, extrair_pasta
 from coir.parsing.normalizar import classes_das_series, operacoes
+from tests.golden.conftest import NOTAS_ANONIMIZADAS, SUFIXO_NOTAS
 
 pytestmark = pytest.mark.golden
-NOTAS = dados_dir() / "_notas-corretagens"
+NOTAS = NOTAS_ANONIMIZADAS
 GABARITO = dados_dir() / "gabarito"
 CONHECIDAS = GABARITO / "divergencias-conhecidas.csv"  # na pasta de dados, nunca no repositório
 
@@ -34,7 +35,7 @@ def extracao() -> tuple[ResultadoExtracao, float]:
     if not NOTAS.is_dir():
         pytest.skip("pasta de notas ausente")
     inicio = time.perf_counter()
-    res = extrair_pasta(NOTAS)
+    res = extrair_pasta(NOTAS, SUFIXO_NOTAS)
     return res, time.perf_counter() - inicio
 
 
@@ -52,10 +53,11 @@ def test_todas_as_notas_extraidas_e_conciliadas(extracao: tuple[ResultadoExtraca
     res, segundos = extracao
     assert len(res.notas) == 2034
     assert res.rejeitadas == []
-    # o XP_NC_2024_11.pdf baixado de novo em 2026 traz também a página BM&F do mês
+    # o XP_NC_2024_11 baixado de novo em 2026 traz também a página BM&F do mês; a nota de opção
+    # flexível da BTG estava só na base antiga (o original não está entre as notas reais)
     esperados = ("opção flexível", "repetida (idêntica)")
     assert [a for a in res.avisos if not any(e in a for e in esperados)] == []
-    assert len(res.avisos) == 2
+    assert sum("repetida (idêntica)" in a for a in res.avisos) == 1
     assert segundos < 60
     if not CONHECIDAS.is_file():
         pytest.skip("divergencias-conhecidas.csv ausente na pasta do gabarito")

@@ -12,17 +12,16 @@ import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
 from coir import referencias
-from coir.config import dados_dir
 from coir.db import repositorio as repo
 from coir.db.sessao import abrir, migrar
 from coir.domain.nota import NotaExtraida, OperacaoExtraida
 from coir.parsing.extrair import extrair_pdf
 from coir.parsing.normalizar import classes_das_series, operacoes
 from coir.servicos.importacao import RelatorioImportacao, arquivos_da_pasta, importar_arquivos
-from tests.apoio import cpf_de_teste
+from tests.golden.conftest import NOTAS_ANONIMIZADAS, SUFIXO_NOTAS, cpf_da_base
 
 pytestmark = pytest.mark.golden
-NOTAS = dados_dir() / "_notas-corretagens"
+NOTAS = NOTAS_ANONIMIZADAS
 AGORA = datetime(2026, 10, 14, 12, 0, 0)
 
 
@@ -34,13 +33,13 @@ def fabrica(tmp_path_factory: pytest.TempPathFactory) -> sessionmaker[Session]:
     migrar(banco, AGORA)
     f = abrir(banco)
     with f.begin() as s:
-        repo.adicionar_titular(s, cpf_de_teste(), "Titular de Teste")
+        repo.adicionar_titular(s, cpf_da_base(), "Titular de Teste")
     return f
 
 
 @pytest.fixture(scope="module")
 def arquivos() -> list[Path]:
-    return arquivos_da_pasta(NOTAS, RelatorioImportacao())
+    return arquivos_da_pasta(NOTAS, RelatorioImportacao(), SUFIXO_NOTAS)
 
 
 @pytest.fixture(scope="module")
@@ -103,7 +102,7 @@ def test_gravar_500_notas_ja_extraidas_em_segundos(tmp_path: Path, arquivos: lis
     migrar(banco, AGORA)
     f = abrir(banco)
     with f.begin() as s:
-        repo.adicionar_titular(s, cpf_de_teste(), "Titular de Teste")
+        repo.adicionar_titular(s, cpf_da_base(), "Titular de Teste")
     inicio = time.perf_counter()
     with f() as s:
         rel = importar_arquivos(s, escolhidos, refs, AGORA, extrator=lambda p: extraidas[p.name])  # type: ignore[arg-type, return-value]

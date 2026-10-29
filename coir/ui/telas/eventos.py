@@ -155,6 +155,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 e for e in lancados or [] if e.dados.tipo is not TipoEvento.CUSTODIA_INICIAL
             ]
             propostas = await run.io_bound(estado.propostas)
+            if lista.is_deleted:
+                return  # o usuário saiu da tela durante a leitura
         except CoirError as erro:
             lista.clear()
             with lista:

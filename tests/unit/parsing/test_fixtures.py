@@ -98,3 +98,36 @@ def test_cliente_impresso_na_nota(nome: str) -> None:
 
 def test_pagina_sem_cpf_nao_tem_cliente() -> None:
     assert cliente("Cliente\nFULANO DE TAL\nRua Exemplo, 0\n") is None
+
+
+def test_nome_depois_do_rotulo_cliente_xp_rico_bovespa() -> None:
+    """XP/Rico Bovespa: o rótulo "Cliente" fica sozinho entre a ouvidoria e o nome."""
+    texto = (
+        "Ouvidoria: Tel. 0800 000 0000 e-mail ouvidoria:\n"
+        "Cliente\n"
+        "0012345 FULANO DE TAL\n"
+        "RUA EXEMPLO, 0\n"
+        "Participante destino do repasse\n"
+        "000.000.000-00\n"
+    )
+    c = cliente(texto)
+    assert c is not None and c.nome == "FULANO DE TAL"
+
+
+def test_nome_antes_da_ouvidoria_xp_bmf_novo() -> None:
+    """XP BM&F novo: nome logo depois da linha do site; depois da ouvidoria só há rótulos."""
+    texto = (
+        "Internet: https://www.exemplo.com.br/ SAC: 0800-000-0000 e-mail:\n"
+        "FULANO DE TAL\n"
+        "Rua Exemplo, 0 - apto 1\n"
+        "Ouvidoria: 0800 000 0000 e-mail ouvidoria:\n"
+        "Corretora\n"
+        "Cliente\n"
+        "C.N.P.J.\n"
+        "00.000.000/0001-00\n"
+        "Numero da Corretora\n"
+        "C.N.P.J/C.P.F\n"
+        "000.000.000-00\n"
+    )
+    c = cliente(texto)
+    assert c is not None and c.nome == "FULANO DE TAL"

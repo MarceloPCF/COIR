@@ -8,6 +8,39 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+- **Tela Suporte**, para mandar uma nota que o COIR não lê ou lê errado (uma corretora nova,
+  por exemplo) sem os seus dados pessoais:
+  - **Dados para ocultar**, por titular: nome, CPF e contas vêm do cadastro; você completa com
+    endereço, telefones, e-mail, assessor e dados bancários, como saem nas notas. Ficam só no seu
+    computador. O COIR procura esses dados em qualquer corretora.
+  - **Enviar notas para suporte**: o COIR grava numa pasta o texto de cada nota, com os dados
+    pessoais trocados por fictícios do mesmo tamanho, e a imagem de cada página com tarja preta
+    sobre eles, mostrando o progresso nota a nota. A cópia só sai se o COIR ler nela o mesmo que
+    no original e não sobrar nenhum dado pessoal. Você confere as imagens, grava o `.zip` e o
+    botão abre o seu e-mail com a mensagem para o suporte; você anexa e envia.
+  - Pela linha de comando: `coir notas anonimizar [--imagens]`.
+
+### Corrigido
+- **Ícone da janela**: a barra de título e a barra de tarefas mostram o símbolo do COIR.
+- **Nome do titular nas notas da XP e da Rico**: nas notas Bovespa o COIR lia o rótulo
+  "Cliente" como nome do cliente (e "Corretora" nas BM&F novas da XP); o titular criado na
+  importação ficava com esse nome. Agora lê o nome impresso.
+- **Conta das notas BM&F da BTG**: o COIR lia como conta o último número da página, que nas
+  notas BTG/Necton pode ser o telefone da ouvidoria. Com isso criava contas que não existem. Nas
+  notas de 2025 em diante a última linha é o endereço do banco, e a nota era rejeitada ("conta
+  do cliente não encontrada"). Agora a conta é lida depois de "Código cliente". Se em
+  Cadastros aparecer uma conta BTG estranha (4 dígitos, como o fim de um telefone), importe as
+  notas de novo numa pasta de dados nova. As notas já gravadas não são relidas.
+- **Telas travadas por um evento que faltava**: exercício de opção com a quantidade ajustada por
+  uma bonificação não lançada (ex.: 1.000 opções vendidas e 1.050 exercidas) parava todas as
+  telas. Também impedia lançar o próprio evento que resolveria o problema. Agora a tela de
+  eventos propõe os eventos até a data em que o livro parou. Dá para lançar os eventos um por
+  vez: um evento só é recusado se criar pendência nova.
+- Erro no registro ao sair da tela de opções ou de eventos durante o cálculo.
+
 ## [3.0.1] - 2026-10-27
 
 ### Corrigido

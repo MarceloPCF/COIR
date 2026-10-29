@@ -16,6 +16,7 @@ from coir.servicos.estado import Estado
 from coir.servicos.notas import listar
 from coir.ui.app import montar
 from tests.apoio import cpf_de_teste
+from tools import notas_ficticias
 from tools.banco_demo import criar, extrator, notas
 
 AGORA = datetime(2026, 10, 16, 12, 0, 0)
@@ -416,6 +417,49 @@ async def test_configuracoes_backup_restaurar_e_tema(
     assert [t.nome for t in estado.titulares()] == ["Antes"]
     assert len(list((tmp_path / "backups").glob("coir-*.db"))) == 2  # o de antes da restauração
     assert json.loads(configuracao_temporaria.read_text(encoding="utf-8"))["tema"] == "escuro"
+
+
+@pytest.mark.asyncio
+async def test_suporte_prepara_confere_e_grava_o_zip(tmp_path: Path) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    nome, texto = notas_ficticias.textos(notas_ficticias.carregar())[0]
+    nota = notas_ficticias.pdf(texto, tmp_path / f"{nome}.pdf")
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/suporte")
+        await user.should_see("Enviar notas para suporte")
+        await user.should_see("Dados para ocultar")
+        [envio] = user.find(marker="suporte-pdfs").elements
+        assert isinstance(envio, ui.upload)
+        await envio.handle_uploads(
+            [SmallFileUpload(f"{nome}.pdf", "application/pdf", nota.read_bytes())]
+        )
+        await user.should_see("nota-01: 1 página(s)", retries=ESPERA)
+        [zip_] = user.find(marker="suporte-zip").elements
+        assert isinstance(zip_, ui.button) and not zip_.enabled  # só depois de conferir
+        user.find(marker="suporte-conferi").click()
+        assert zip_.enabled
+        user.find(marker="suporte-zip").click()
+        await user.should_see("Gravado:")
+        await user.should_see("suporte.coir@gmail.com")
+    assert len(list((estado.dados / "suporte").glob("*/notas-para-suporte-*.zip"))) == 1
+
+
+@pytest.mark.asyncio
+async def test_suporte_grava_os_dados_para_ocultar(tmp_path: Path) -> None:
+    from coir.servicos import suporte
+
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/suporte")
+        user.find(marker="ocultar-nome").type("Fulana de Tal")
+        user.find(marker="ocultar-cpf").type(cpf_de_teste())
+        user.find(marker="ocultar-cidade").type("Cidade Exemplo")
+        user.find(marker="ocultar-gravar").click()
+        await user.should_see("Dados para ocultar gravados.")
+    [d] = suporte.carregar_dados(estado.dados)
+    assert (d.nome, d.cpf, d.cidade) == ("Fulana de Tal", cpf_de_teste(), "Cidade Exemplo")
 
 
 @pytest.mark.asyncio

@@ -11,8 +11,22 @@ from coir.config import dados_dir
 from coir.db.sessao import NOME_BANCO
 from coir.servicos.b3 import importar_planilhas
 from coir.servicos.estado import Estado
+from coir.servicos.suporte import ARQUIVO_MAPA, carregar_mapa
 
 REAL = dados_dir() / NOME_BANCO
+# base de desenvolvimento: texto anonimizado das notas reais (coir notas anonimizar), fora do
+# repositório; o mesmo texto que os PDFs originais dão, com os dados pessoais trocados no lugar
+NOTAS_ANONIMIZADAS = dados_dir() / "_notas-anonimizadas"
+SUFIXO_NOTAS = ".txt"
+
+
+def cpf_da_base() -> str:
+    """O CPF (fictício, válido) impresso nas notas da base anonimizada: o titular dos golden que
+    importam a base (com outro CPF, a importação criaria um segundo titular)."""
+    [cpf] = set(carregar_mapa(dados_dir() / ARQUIVO_MAPA).cpfs.values())
+    return cpf
+
+
 PLANILHAS_B3 = dados_dir() / "_relatorios-b3"
 AGORA = datetime(2026, 10, 17, 12, 0, 0)
 

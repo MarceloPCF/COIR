@@ -83,6 +83,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         try:
             ciclos = await run.io_bound(estado.opcoes)
             mapa = await run.io_bound(estado.notas_das_operacoes)
+            if corpo.is_deleted:
+                return  # o usuário saiu da tela durante o cálculo
         except CoirError as erro:
             corpo.clear()
             with corpo:

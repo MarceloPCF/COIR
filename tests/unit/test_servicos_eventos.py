@@ -10,7 +10,7 @@ import pytest
 
 from coir import referencias
 from coir.domain.fiscal import NaturezaEvento, TipoAtivo, TipoEvento, Visao
-from coir.erros import ImportacaoError
+from coir.erros import ImportacaoError, MotorError
 from coir.servicos import eventos
 from coir.servicos.apuracao import carteira_banco
 from coir.servicos.b3 import importar_planilhas
@@ -319,3 +319,71 @@ def test_custodia_inicial_de_ativo_sem_nota_cadastra_o_ativo(demo: Path) -> None
     assert _carteira(demo, date(2024, 1, 31))["ITUB4"] == (D(100), D(3000))
     with pytest.raises(ImportacaoError, match="código de negociação inválido"):
         eventos.salvar(demo, 1, replace(d, ticker="ITAU"), REFS, FISCAIS)
+
+
+# ----------------------------------------------- pendência no livro (teste com notas reais, 3.0.1)
+def _pendencias(monkeypatch: pytest.MonkeyPatch, *erros: MotorError | None) -> None:
+    """O motor para em `erros[0]` antes de gravar e em `erros[1]` depois."""
+    fila = list(erros)
+    monkeypatch.setattr(eventos, "_erro_do_livro", lambda *_: fila.pop(0))
+
+
+ITSA = MotorError("exercício de 1050 ITSAL921 em 2023-12-15", date(2023, 12, 15))
+
+
+@pytest.mark.parametrize(
+    "depois",
+    [
+        MotorError(str(ITSA), ITSA.data),  # a pendência de antes continua (outro ativo)
+        MotorError("exercício de 220 LRENL14 em 2024-12-20", date(2024, 12, 20)),  # resolveu ela
+        None,
+    ],
+)
+def test_pendencia_de_antes_nao_impede_gravar_outro_evento(
+    demo: Path, monkeypatch: pytest.MonkeyPatch, depois: MotorError | None
+) -> None:
+    """Uma bonificação que falta trava o livro; o usuário lança os eventos um por vez."""
+    _pendencias(monkeypatch, ITSA, depois)
+    eventos.salvar(demo, 1, _desdobro(), REFS, FISCAIS)
+    assert len(eventos.listar(demo, 1)) == 1
+
+
+@pytest.mark.parametrize(
+    ("antes", "depois"),
+    [
+        (None, ITSA),  # o livro fechava
+        (ITSA, MotorError("outra pendência", date(2023, 3, 1))),  # mais cedo que a de antes
+        (ITSA, MotorError("outra pendência", ITSA.data)),  # mesmo dia, outra pendência
+    ],
+)
+def test_evento_que_cria_pendencia_nao_e_gravado(
+    demo: Path, monkeypatch: pytest.MonkeyPatch, antes: MotorError | None, depois: MotorError
+) -> None:
+    _pendencias(monkeypatch, antes, depois)
+    with pytest.raises(ImportacaoError, match="não fecha com as operações"):
+        eventos.salvar(demo, 1, _desdobro(), REFS, FISCAIS)
+    assert eventos.listar(demo, 1) == []
+
+
+def test_propostas_do_pacote_com_o_livro_parado(
+    demo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """O livro para em 15/03/2023: os eventos até ali são propostos pela posição da véspera (é
+    assim que se destrava o livro); os de depois esperam a pendência ser resolvida."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+    ])  # fmt: skip
+    real = eventos.movimentar
+
+    def parado(*args: object, **kwargs: object) -> object:
+        if args[3] == date.max:
+            raise MotorError("exercício sem a opção", date(2023, 3, 15))
+        return real(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(eventos, "movimentar", parado)
+    do_pacote = [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                 if "eventos da B3" in p.movimentacao and p.codigo == "GGBR4"]  # fmt: skip
+    assert [(p.dados.tipo, p.dados.quantidade) for p in do_pacote] == [
+        (TipoEvento.DESDOBRAMENTO, 300)
+    ]

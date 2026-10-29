@@ -384,9 +384,10 @@ def salvar_lote(
     a cisão de uma posição em várias contas só fecha com os eventos de todas."""
     feitos: list[int] = []
     with conectar(banco) as fabrica, fabrica.begin() as s:
+        antes = _pendencia_antes(s, titular, refs, fiscais)
         for d, evento_id in lote:
             feitos.append(_gravar(s, titular, d, evento_id))
-        _conferir_no_motor(s, titular, refs, fiscais)
+        _conferir_no_motor(s, titular, refs, fiscais, antes)
     return feitos
 
 
@@ -448,17 +449,51 @@ def _preencher(
     registro.observacao, registro.origem = d.observacao, d.origem
 
 
-def _conferir_no_motor(
+def _erro_do_livro(
     s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais
-) -> None:  # fmt: skip
+) -> MotorError | None:  # fmt: skip
+    """Onde o motor para com o banco como está na sessão (None: o livro fecha)."""
     notas, eventos = entradas(s, refs, fiscais)
     notas = [n for n in notas if n.titular == titular]
     eventos = [e for e in eventos if e.titular == titular]
     try:
         for visao in (Visao.TITULAR, Visao.CONTA):
             movimentar(notas, eventos, fiscais.parametros, date.max, visao)
-    except (MotorError, ReferenciaError) as erro:
+    except MotorError as erro:
+        return erro
+    return None
+
+
+def _pendencia_antes(
+    s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais
+) -> MotorError | None:  # fmt: skip
+    try:
+        return _erro_do_livro(s, titular, refs, fiscais)
+    except ReferenciaError:
+        return None  # o motor recusa de novo depois da mudança, com a mensagem
+
+
+def _conferir_no_motor(
+    s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais,
+    antes: MotorError | None,
+) -> None:  # fmt: skip
+    """A mudança não pode criar pendência no livro. Com uma pendência de antes (ex.: bonificação
+    que falta noutro ativo), o livro pode continuar parando nela ou passar dela e parar numa data
+    posterior (a mudança resolveu aquela, a próxima é outra); assim o usuário corrige uma por vez,
+    sem a interface travar na primeira."""
+    try:
+        depois = _erro_do_livro(s, titular, refs, fiscais)
+    except ReferenciaError as erro:
         raise ImportacaoError(f"o evento não fecha com as operações: {erro}") from erro
+    if depois is None or (
+        antes is not None
+        and (
+            str(depois) == str(antes)
+            or (antes.data is not None and depois.data is not None and depois.data > antes.data)
+        )
+    ):
+        return  # fmt: skip
+    raise ImportacaoError(f"o evento não fecha com as operações: {depois}") from depois
 
 
 def excluir(
@@ -470,10 +505,11 @@ def excluir(
         registro = s.get(EventoCorporativo, evento_id)
         if registro is None or registro.conta.titular_id != titular:
             raise ImportacaoError(f"evento {evento_id} não encontrado")
+        antes = _pendencia_antes(s, titular, refs, fiscais)
         s.delete(registro)
         s.flush()
         try:
-            _conferir_no_motor(s, titular, refs, fiscais)
+            _conferir_no_motor(s, titular, refs, fiscais, antes)
         except ImportacaoError as erro:
             raise ImportacaoError(f"sem este evento o livro não fecha: {erro.__cause__}") from erro
 
@@ -620,9 +656,18 @@ def _do_pacote(
         return []
     por_isin = referencias.tickers_por_isin(pasta)
     notas, evs = entradas(s, refs, fiscais)
-    movs = movimentar([n for n in notas if n.titular == titular],
-                      [e for e in evs if e.titular == titular], fiscais.parametros, date.max,
-                      Visao.CONTA)  # fmt: skip
+    notas = [n for n in notas if n.titular == titular]
+    evs = [e for e in evs if e.titular == titular]
+    limite = date.max
+    try:
+        movs = movimentar(notas, evs, fiscais.parametros, limite, Visao.CONTA)
+    except MotorError as erro:
+        if erro.data is None:
+            raise
+        # o livro parou (ex.: exercício com a quantidade já ajustada por uma bonificação que falta):
+        # as posições até a véspera bastam para propor o evento que destrava o livro
+        limite = erro.data
+        movs = movimentar(notas, evs, fiscais.parametros, limite - timedelta(days=1), Visao.CONTA)
     historico = _posicoes(movs)
     inicio = min((m.data for m in movs), default=date.max)
     tickers_serie = {m.ativo: m.ticker for m in movs if m.tipo is TipoAtivo.OPCAO and m.ativo}
@@ -647,6 +692,8 @@ def _do_pacote(
             data_ex = proximo_pregao(data_com, cal)
         except ReferenciaError:
             continue  # data ex depois do fim do calendário de feriados
+        if data_ex > limite:
+            continue  # depois de onde o livro parou: a posição na data com não é conhecida
         # a B3 escreve o grupamento como razão (0,1 = 10 viram 1) e os demais em % (200 = +200%)
         fator = Decimal(ev["fator"]) / (1 if tipo is TipoEvento.GRUPAMENTO else 100)
         ativos = _ativos_do_ticker(s, ticker)
