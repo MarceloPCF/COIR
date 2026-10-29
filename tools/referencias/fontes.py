@@ -14,9 +14,18 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterable, Mapping
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Any, cast
 
-from tools.referencias.gerar import Coleta, GeracaoError, ler_instrumentos, nomes_de_pregao
+from tools.referencias import historico as hist
+from tools.referencias.gerar import (
+    Coleta,
+    EventoB3,
+    GeracaoError,
+    ler_instrumentos,
+    nomes_de_pregao,
+)
+from tools.referencias.historico import Revisao
 
 log = logging.getLogger(__name__)
 AGENTE = "COIR/3.0 (tabelas de referencia publicas; github.com/MarceloPCF/COIR)"
@@ -25,6 +34,9 @@ B3_EMPRESAS = "https://sistemaswebb3-listados.b3.com.br/listedCompaniesProxy/Com
 B3_FUNDOS = "https://sistemaswebb3-listados.b3.com.br/fundsListedProxy/Search"
 TIPOS_FUNDO = ("FII", "FIAGRO", "ETF", "ETF-RF", "ETF-FII")  # os que viram ativo no COIR
 BCB_SELIC = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json"
+CVM_FRE = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FRE/DADOS/fre_cia_aberta_{ano}.zip"
+B3_COTAHIST = "https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_A{ano}.ZIP"
+ANOS_FRE = range(2010, 2024)  # o FRE de 2024 em diante não tem mais a tabela de desdobramentos
 Baixar = Callable[[str], bytes]
 
 
@@ -240,3 +252,33 @@ def coletar(dia: date, obter: Baixar = baixar, pausa: float = 0.2) -> Coleta:
     return Coleta(data=dia, instrumentos=bruto, empresas=companhias, eventos=por_emissor,
                   selic=selic(obter), sem_resposta=tuple(falhas + falhas_historico + falhas_fundos),
                   fundos=lista_fundos, historico=por_historico)  # fmt: skip
+
+
+def _em_cache(url: str, cache: Path | None, obter: Baixar) -> bytes:
+    """Arquivo anual grande (FRE, COTAHIST): baixa uma vez para ``cache`` e reaproveita."""
+    if cache is None:
+        return obter(url)
+    destino = cache / url.rsplit("/", 1)[1]
+    if not destino.is_file():
+        cache.mkdir(parents=True, exist_ok=True)
+        destino.write_bytes(obter(url))
+    return destino.read_bytes()
+
+
+def historico_eventos(emissor_por_cnpj: Mapping[str, str], ate: date, cache: Path | None = None,
+                      obter: Baixar = baixar,
+                      ) -> tuple[list[EventoB3], list[Revisao]]:  # fmt: skip
+    """Desdobramentos, grupamentos e bonificações desde 2008: FRE da CVM (2010 a 2023, cada um com
+    os três exercícios anteriores) com a data com conferida no COTAHIST da B3 (2007 até ``ate``)."""
+    linhas = [x for ano in ANOS_FRE
+              for x in hist.ler_fre(_em_cache(CVM_FRE.format(ano=ano), cache, obter))]  # fmt: skip
+    emissores = set(emissor_por_cnpj.values())
+    series: hist.Series = {}
+    pregoes: set[str] = set()
+    for ano in range(2007, ate.year + 1):
+        hist.ler_cotahist(_em_cache(B3_COTAHIST.format(ano=ano), cache, obter), series,
+                               pregoes, emissores)  # fmt: skip
+        log.info("COTAHIST %d: %d ISIN", ano, len(series))
+    for serie in series.values():
+        serie.sort(key=lambda p: p.dia)
+    return hist.eventos_fre(linhas, emissor_por_cnpj, series, pregoes)

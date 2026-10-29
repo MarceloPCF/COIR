@@ -10,7 +10,9 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
 - ``tipos_ativo_b3.csv``: UNIT, BDR, ETF e FII pela categoria da B3 (fundo só com "imobiliário" ou
   "Fiagro" no nome; FIP, FIDC e outros ficam de fora: sem palpite);
 - ``opcoes_raiz_b3.csv``: raiz de 4 letras -> ativo-objeto (só raiz com um objeto só);
-- ``eventos_b3.csv``: desdobramentos, grupamentos, bonificações, cisões e subscrições (nunca apaga);
+- ``eventos_b3.csv``: desdobramentos, grupamentos, bonificações, cisões e subscrições (nunca apaga),
+  com a origem de cada linha (``b3``, ``cvm_fre``, ``cvm_ipe``; ``b3+cvm_fre`` quando as duas
+  concordam); divergência entre fontes não entra e vai para o resumo do PR (``historico.py``);
 - ``selic_mensal.csv``: série 4390 do BCB, só meses encerrados;
 - ``proventos_b3.csv``: proventos em dinheiro (dividendo, JCP, rendimento) com data de aprovação,
   data com, pagamento e valor por ação (o crédito do JCP; a B3 só lista os últimos meses, nunca
@@ -33,8 +35,9 @@ import unicodedata
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -67,7 +70,10 @@ COLUNAS_HISTORICO = ("emissor", "classe", "tipo", "valor", "aprovado_em", "data_
 JCP = "JRS CAP PROPRIO"
 HISTORICO_DESDE = "2016-01-01"  # data com mais antiga guardada (dez anos antes da F8)
 COLUNAS_EVENTOS = ("emissor", "isin", "tipo", "fator", "data_com", "aprovado_em", "isin_emitido",
-                   "preco", "periodo", "data_subscricao")  # fmt: skip
+                   "preco", "periodo", "data_subscricao", "origem", "referencia",
+                   "custo_atribuido")  # fmt: skip
+TIPOS_COM_FATOR = ("DESDOBRAMENTO", "GRUPAMENTO", "BONIFICACAO")  # comparáveis entre fontes
+MESMO_EVENTO = timedelta(days=30)  # mesma espécie, tipo e fator, data com tão perto: mesmo evento
 
 
 class GeracaoError(Exception):
@@ -219,6 +225,9 @@ class EventoB3:
     preco: str = ""
     periodo: str = ""
     data_subscricao: str = ""
+    origem: str = "b3"  # b3 (consulta de empresas), cvm_fre (FRE + COTAHIST), cvm_ipe (aviso)
+    referencia: str = ""  # documento da CVM (FRE ou protocolo do aviso aos acionistas)
+    custo_atribuido: str = ""  # R$ por ação bonificada, quando o aviso informa
 
     def linha(self) -> dict[str, str]:
         return {c: getattr(self, c) for c in COLUNAS_EVENTOS}
@@ -362,6 +371,8 @@ class Resumo:
     cnpj_mudou: list[str] = field(default_factory=list[str])
     proventos_novos: list[str] = field(default_factory=list[str])
     historico_novos: list[str] = field(default_factory=list[str])
+    divergencias: list[str] = field(default_factory=list[str])
+    revisao: list[str] = field(default_factory=list[str])
     conflitos: list[str] = field(default_factory=list[str])
     sem_resposta: list[str] = field(default_factory=list[str])
 
@@ -382,6 +393,11 @@ class Resumo:
                 self.proventos_novos,
             ),
             ("JCP novos no histórico (data com, emissor, classe)", self.historico_novos),
+            (
+                "Eventos com fontes divergentes (revise; nada foi alterado no pacote)",
+                self.divergencias,
+            ),
+            ("Eventos da CVM sem data com ou fator conferível (revise)", self.revisao),
             ("Ignorados por conflito (revise)", self.conflitos),
             (
                 "Companhias sem resposta da B3 nesta coleta (eventos delas não atualizados)",
@@ -395,7 +411,8 @@ class Resumo:
     def vazio(self) -> bool:
         return not (self.ativos_novos or self.trocas_candidatas or self.eventos_novos
                     or self.selic_nova or self.emissores_novos or self.cnpj_mudou
-                    or self.proventos_novos or self.historico_novos)  # fmt: skip
+                    or self.proventos_novos or self.historico_novos
+                    or self.divergencias)  # fmt: skip
 
 
 def atualizar_instrumentos(
@@ -483,22 +500,75 @@ def opcoes_raiz(opcoes: Iterable[Opcao], resumo: Resumo) -> list[dict[str, str]]
     return saida
 
 
+def multiplicador(tipo: str, fator: str) -> Fraction:
+    """Fator como a B3 escreve -> multiplicador da quantidade (grupamento 0,1 -> 1/10; os demais
+    em %: desdobramento 200 -> 3)."""
+    f = Fraction(Decimal(fator))
+    return f if tipo == "GRUPAMENTO" else 1 + f / 100
+
+
+def _equivalentes(a: Mapping[str, str], b: Mapping[str, str]) -> bool:
+    """Mesmo fator a menos do arredondamento da dízima (33,333333333 x 33,333333334)."""
+    fa, fb = multiplicador(a["tipo"], a["fator"]), multiplicador(b["tipo"], b["fator"])
+    return abs(fa / fb - 1) < Fraction(1, 10**6)
+
+
+def _familia(tipo: str) -> str:
+    """Bonificação e desdobramento mexem na quantidade do mesmo jeito (uma fonte chama de um o que
+    a outra chama de outro): no mesmo ISIN e data com, os dois juntos dobrariam a posição."""
+    return "AUMENTO" if tipo in ("DESDOBRAMENTO", "BONIFICACAO") else tipo
+
+
+def _somar_origem(linha: dict[str, str], nova: Mapping[str, str]) -> None:
+    origens = set(linha["origem"].split("+")) | set(nova["origem"].split("+"))
+    linha["origem"] = "+".join(sorted(origens))
+    refs = [r for r in (linha.get("referencia", ""), nova["referencia"]) if r]
+    linha["referencia"] = "; ".join(dict.fromkeys(refs))
+    linha["custo_atribuido"] = linha.get("custo_atribuido") or nova["custo_atribuido"]
+
+
+def _texto_evento(r: Mapping[str, str]) -> str:
+    return f"{r['data_com']} {r['emissor']} {r['isin']} {r['tipo']} {r['fator']} ({r['origem']})"
+
+
 def juntar_eventos(anteriores: list[dict[str, str]], novos: Iterable[EventoB3],
                    resumo: Resumo) -> list[dict[str, str]]:  # fmt: skip
-    """União com o histórico (a B3 tira da lista eventos de companhias deslistadas)."""
+    """União com o histórico (a B3 tira da lista eventos de companhias deslistadas e só guarda o
+    último de cada tipo por ISIN). Nunca apaga. O mesmo evento vindo de outra fonte soma a origem;
+    se a outra fonte traz outro fator na mesma data com, ou o mesmo fator em data com próxima, é
+    divergência: fica como estava e vai para o resumo (revisão humana, sem palpite)."""
 
     def chave(r: Mapping[str, str]) -> tuple[str, ...]:
         return tuple(r[c] for c in ("isin", "tipo", "data_com", "isin_emitido", "fator"))
 
-    todos = {chave(r): dict(r) for r in anteriores}
+    todos = {chave(r): {**r, "origem": r.get("origem") or "b3"} for r in anteriores}
     for e in novos:
         linha = e.linha()
         if not e.data_com or not e.isin or Decimal(e.fator) <= 0:
             resumo.conflitos.append(f"evento sem data com, ISIN ou fator: {e.emissor} {e.tipo}")
             continue
-        if chave(linha) not in todos:
-            resumo.eventos_novos.append(f"{e.data_com} {e.emissor} {e.tipo} {e.fator}%")
-            todos[chave(linha)] = linha
+        if chave(linha) in todos:
+            _somar_origem(todos[chave(linha)], linha)
+            continue
+        if e.tipo in TIPOS_COM_FATOR:
+            dia = date.fromisoformat(e.data_com)
+            alvo = (e.isin, _familia(e.tipo), e.isin_emitido)
+            vizinhos = [r for r in todos.values()
+                        if (r["isin"], _familia(r["tipo"]), r["isin_emitido"]) == alvo
+                        and set(r["origem"].split("+")) - {e.origem}
+                        and abs(date.fromisoformat(r["data_com"]) - dia) <= MESMO_EVENTO
+                        ]  # fmt: skip
+            iguais = [r for r in vizinhos if r["tipo"] == e.tipo
+                      and r["data_com"] == e.data_com and _equivalentes(r, linha)]  # fmt: skip
+            if iguais:
+                _somar_origem(iguais[0], linha)
+                continue
+            if any(r["data_com"] == e.data_com or _equivalentes(r, linha) for r in vizinhos):
+                outras = ", ".join(_texto_evento(r) for r in vizinhos)
+                resumo.divergencias.append(f"{_texto_evento(linha)} x {outras}")
+                continue
+        resumo.eventos_novos.append(f"{e.data_com} {e.emissor} {e.tipo} {e.fator}% ({e.origem})")
+        todos[chave(linha)] = linha
     return [todos[k] for k in sorted(todos, key=lambda k: (k[2], k[0], k[1], k[3], k[4]))]
 
 
@@ -601,7 +671,7 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
                                        coleta.data, resumo)  # fmt: skip
     nomes = nomes_de_pregao(coleta.empresas)
     eventos = [e for emissor, resp in sorted(coleta.eventos.items())
-               for e in ler_eventos(emissor, resp)]  # fmt: skip
+               for e in ler_eventos(emissor, resp)] + eventos_curados()  # fmt: skip
     arquivos = {
         "instrumentos_b3.csv": texto_csv(COLUNAS_INSTRUMENTOS, historico),
         "ativos_b3.csv": texto_csv(("nome_pregao", "ticker"), ativos(historico, nomes, resumo)),
@@ -625,6 +695,30 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
     }  # fmt: skip
     arquivos["pacote.json"] = json.dumps({"formato": FORMATO, "data": coleta.data.isoformat()},
                                          indent=1) + "\n"  # fmt: skip
+    return arquivos, resumo
+
+
+CURADOS = Path(__file__).with_name("eventos_cvm_ipe.csv")
+
+
+def eventos_curados(caminho: Path = CURADOS) -> list[EventoB3]:
+    """Eventos transcritos à mão dos avisos aos acionistas e fatos relevantes da CVM (IPE), cada um
+    com o protocolo do documento: o que nenhuma fonte estruturada traz (2023 em diante)."""
+    if not caminho.is_file():
+        return []
+    return [EventoB3(**{c: r.get(c, "") for c in COLUNAS_EVENTOS}) for r in ler_csv(caminho)]
+
+
+def incorporar_eventos(pasta: Path, novos: Iterable[EventoB3],
+                       data: date) -> tuple[dict[str, str], Resumo]:  # fmt: skip
+    """``eventos_b3.csv`` com os eventos do histórico (FRE + COTAHIST) e os curados, e o resumo
+    (novos e divergências). O ``pacote.json`` leva a data, se o arquivo mudou."""
+    resumo = Resumo()
+    texto = texto_csv(COLUNAS_EVENTOS, juntar_eventos(
+        ler_csv(pasta / "eventos_b3.csv"), [*novos, *eventos_curados()], resumo))  # fmt: skip
+    arquivos = {"eventos_b3.csv": texto,
+                "pacote.json": json.dumps({"formato": FORMATO, "data": data.isoformat()},
+                                          indent=1) + "\n"}  # fmt: skip
     return arquivos, resumo
 
 

@@ -177,6 +177,87 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 </tbody>
 </table>
 
+<h2 id="fontes-dos-dados-publicos-pacote-de-referencias">Fontes dos dados públicos (pacote de referências)</h2>
+
+<p>As tabelas geradas em <code>data/</code> (o pacote que vai no zip do programa e no release
+<code>referencias-AAAA.MM.DD</code>) vêm só de fontes públicas, sem login. Cada linha de
+<code>data/eventos_b3.csv</code> diz de onde veio (coluna <code>origem</code>, e <code>referencia</code> com o documento).</p>
+
+<table>
+<thead>
+<tr>
+  <th>Fonte</th>
+  <th>URL</th>
+  <th>O que cobre</th>
+  <th>Onde entra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>B3, consulta de empresas listadas (<code>GetListedSupplementCompany</code>)</td>
+  <td><code>https://sistemaswebb3-listados.b3.com.br/listedCompaniesProxy/CompanyCall/GetListedSupplementCompany/</code></td>
+  <td>Desdobramento, grupamento, bonificação, cisão, resgate e subscrição com data com e fator exatos; proventos em dinheiro recentes. <strong>Só o último evento de cada tipo por ISIN</strong>: o histórico se perde quando a companhia repete o tipo de evento.</td>
+  <td>coleta semanal; <code>origem</code> = <code>b3</code></td>
+</tr>
+<tr>
+  <td>B3, proventos em dinheiro (<code>GetListedCashDividends</code>)</td>
+  <td>mesmo endereço, método <code>GetListedCashDividends</code></td>
+  <td>JCP desde 2016, com data de aprovação e data com.</td>
+  <td><code>proventos_historico_b3.csv</code></td>
+</tr>
+<tr>
+  <td>B3, cadastro de instrumentos</td>
+  <td><code>https://arquivos.b3.com.br/api/download/requestname?fileName=InstrumentsConsolidatedFile</code></td>
+  <td>Tickers, ISIN, espécie e emissor do dia (o portal guarda só o último mês).</td>
+  <td><code>instrumentos_b3.csv</code> e derivados</td>
+</tr>
+<tr>
+  <td>CVM, Formulário de Referência (dados abertos), tabela <code>capital_social_desdobramento</code> (e <code>..._classe_acao</code>)</td>
+  <td><code>https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FRE/DADOS/fre_cia_aberta_AAAA.zip</code> (2010 a 2023)</td>
+  <td>Desdobramentos, grupamentos e bonificações aprovados de 2007 a 2022 (cada FRE traz os três exercícios anteriores): data de aprovação e quantidade de ações antes e depois, por espécie (ON, PN, PNA, PNB). O FRE de 2024 em diante não tem mais a tabela.</td>
+  <td><code>python -m tools.referencias historico</code>; <code>origem</code> = <code>cvm_fre</code></td>
+</tr>
+<tr>
+  <td>B3, série histórica de cotações (COTAHIST)</td>
+  <td><code>https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_AAAA.ZIP</code></td>
+  <td>Por pregão e ISIN: preço e número de distribuição (muda no pregão seguinte à data com de todo evento). Confirma a data com dos eventos do FRE e dos avisos.</td>
+  <td>idem (não é publicado: só confere)</td>
+</tr>
+<tr>
+  <td>CVM, documentos IPE (dados abertos)</td>
+  <td><code>https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/IPE/DADOS/ipe_cia_aberta_AAAA.zip</code> e o documento em <code>https://www.rad.cvm.gov.br/ENET/frmDownloadDocumento.aspx</code></td>
+  <td>Fatos relevantes e avisos aos acionistas: proporção, data-base, data ex e custo atribuído da bonificação. Usados para 2023 em diante, quando o FRE parou e a B3 já tinha substituído o evento.</td>
+  <td><code>tools/referencias/eventos_cvm_ipe.csv</code> (transcrito, com o protocolo); <code>origem</code> = <code>cvm_ipe</code></td>
+</tr>
+<tr>
+  <td>Banco Central, série 4390 (Selic mensal)</td>
+  <td><code>https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json</code></td>
+  <td>Taxa Selic de cada mês encerrado.</td>
+  <td><code>selic_mensal.csv</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>Regras da combinação (<code>tools/referencias/gerar.py</code>, <code>historico.py</code>):</p>
+
+<ul>
+<li>nada é apagado: a linha que uma fonte deixou de mostrar continua no pacote;</li>
+<li>o mesmo evento vindo de duas fontes soma a origem (<code>b3+cvm_fre</code>); fator diferente na mesma
+data com, ou o mesmo fator em data com próxima, é <strong>divergência</strong>: o pacote fica como estava e
+o caso vai para o PR semanal, para revisão humana;</li>
+<li>do FRE só entra fator que é fração simples (p/q com q até 20, 1/n ou n) e data com confirmada
+pela cotação (a única mudança de distribuição, depois da aprovação, em que o preço andou como o
+fator manda; ou a data com já confirmada de outra espécie do mesmo ato). Ambíguo, sem negócio
+no pregão ou com fator ruidoso vai para revisão, nunca para o pacote;</li>
+<li>bonificação e desdobramento mexem na quantidade do mesmo jeito: o mesmo ato chamado de um numa
+fonte (ou versão do FRE) e de outro noutra não entra duas vezes (dobraria a posição); vai para
+revisão e o tipo certo sai do aviso aos acionistas;</li>
+<li>grupamento e desdobramento simultâneos ficam como duas linhas na mesma data com, como a B3
+publica; quando a B3 só guardou uma delas, a outra vem do documento (ITUB 2011, BEES 2012);</li>
+<li>a unit entra com o fator das ações só quando todas as espécies tiveram o mesmo fator e a mesma
+data com e a cotação da unit confirma.</li>
+</ul>
+
 <h2 id="lc-2242025">LC 224/2025</h2>
 
 <ul>
