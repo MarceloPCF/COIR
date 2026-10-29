@@ -33,6 +33,8 @@ def abrir(caminho: Path) -> None:
 
 
 def _trazer_para_frente(titulo: str) -> None:
+    if sys.platform != "win32":  # o pyright de outros sistemas não conhece o ctypes do Windows
+        return
     import ctypes
     from ctypes import wintypes
 
