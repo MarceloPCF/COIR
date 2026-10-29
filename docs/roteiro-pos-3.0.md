@@ -120,7 +120,7 @@ PDF. As imagens com tarja ficaram para depois (tabela acima).
 - As fixtures de `tests/fixtures/notas` vieram das cópias antigas. A ordem do texto delas pode não
   ser a do PDF original (a `btg_2023_11_bmf` certamente não é) e precisa ser refeita a partir da
   base nova.
-- `coir.parsing.cliente` devolve "Cliente" como nome do cliente nas notas Bovespa da XP e da Rico
-  (e "Corretora" numa BM&F da XP), porque pega a linha seguinte ao rodapé de atendimento. O
-  anonimizador tem detecção própria e não depende disso, mas o nome do titular criado na
-  importação pode sair errado.
+- ~~`coir.parsing.cliente` devolve "Cliente" como nome do cliente nas notas Bovespa da XP e da
+  Rico (e "Corretora" numa BM&F da XP).~~ Corrigido: pula os rótulos soltos depois da ouvidoria
+  e, no layout BM&F novo da XP, pega o nome depois da linha do site. Na base nova todas as
+  páginas com CPF trazem o nome.

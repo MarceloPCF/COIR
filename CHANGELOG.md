@@ -18,6 +18,9 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
   linha de comando: `coir notas anonimizar`.
 
 ### Corrigido
+- **Nome do titular nas notas da XP e da Rico**: nas notas Bovespa o COIR lia o rótulo
+  "Cliente" como nome do cliente (e "Corretora" nas BM&F novas da XP); o titular criado na
+  importação ficava com esse nome. Agora lê o nome impresso.
 - **Conta das notas BM&F da BTG**: o COIR lia como conta o último número da página, que nas
   notas BTG/Necton pode ser o telefone da ouvidoria. Com isso criava contas que não existem. Nas
   notas de 2025 em diante a última linha é o endereço do banco, e a nota era rejeitada ("conta
