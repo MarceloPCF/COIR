@@ -63,7 +63,9 @@ def main(argv: list[str] | None = None) -> int:
         companhias = {r["cnpj"]: r["emissor"]
                       for r in gerar.ler_csv(args.pasta / "emissores_b3.csv")
                       if r["tipo"] == "COMPANHIA"}  # fmt: skip
-        eventos, revisao = fontes.historico_eventos(companhias, args.data, args.cache)
+        pares = historico.pares_de_troca(gerar.ler_csv(args.pasta / "trocas_ticker.csv"))
+        eventos, revisao = fontes.historico_eventos(companhias, args.data, args.cache,
+                                                    pares=pares)  # fmt: skip
         arquivos, resumo = gerar.incorporar_eventos(args.pasta, eventos, args.data)
         juntos = list(csv.DictReader(io.StringIO(arquivos["eventos_b3.csv"])))
         resumo.revisao = [r.texto() for r in historico.cobertas(revisao, juntos)]

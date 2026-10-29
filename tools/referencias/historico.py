@@ -95,6 +95,47 @@ def ler_fre(bruto: bytes) -> list[LinhaFre]:
     return saida
 
 
+def ler_fca_codigos(bruto: bytes) -> dict[str, set[str]]:
+    """Zip anual do FCA (Formulário Cadastral, dados.cvm.gov.br) -> CNPJ -> códigos de emissor (4
+    primeiras letras dos códigos de negociação de ações e units). O FCA só traz o código de 2018 em
+    diante; é o elo da companhia que saiu da bolsa (sem linha em emissores_b3.csv) com o FRE."""
+    with zipfile.ZipFile(io.BytesIO(bruto)) as z:
+        nome = next((n for n in z.namelist() if "valor_mobiliario" in n), None)
+        if nome is None:
+            return {}
+        saida: dict[str, set[str]] = defaultdict(set)
+        for r in csv.DictReader(z.read(nome).decode("latin-1").splitlines(), delimiter=";"):
+            codigo = (r.get("Codigo_Negociacao") or "").strip().upper()
+            if re.fullmatch(r"[A-Z0-9]{4}([3-8]|11)", codigo):
+                saida[re.sub(r"\D", "", r["CNPJ_Companhia"])].add(codigo[:4])
+    return dict(saida)
+
+
+def deslistadas(codigos: Iterable[Mapping[str, set[str]]], listadas: Mapping[str, str],
+                series: Series) -> dict[str, str]:  # fmt: skip
+    """CNPJ -> código de emissor das companhias do FCA que não estão no cadastro de hoje (saíram da
+    bolsa): o código com negócio mais recente no COTAHIST. CNPJ com mais de um código ainda
+    negociado no mesmo último pregão fica de fora (ambíguo)."""
+    ultimo: dict[str, str] = {}
+    for isin, serie in series.items():
+        if serie:
+            ultimo[isin[2:6]] = max(ultimo.get(isin[2:6], ""), serie[-1].dia)
+    juntos: dict[str, set[str]] = defaultdict(set)
+    for ano in codigos:
+        for cnpj, cods in ano.items():
+            juntos[cnpj] |= cods
+    saida: dict[str, str] = {}
+    usados = set(listadas.values())
+    for cnpj, cods in sorted(juntos.items()):
+        vistos = sorted((ultimo[c], c) for c in cods if c in ultimo and c not in usados)
+        if cnpj in listadas or not vistos:
+            continue
+        if len(vistos) > 1 and vistos[-1][0] == vistos[-2][0]:
+            continue
+        saida[cnpj] = vistos[-1][1]
+    return saida
+
+
 def fator_simples(antes: int, depois: int) -> Fraction | None:
     """depois/antes como fração simples (p/q com q <= 20, 1/n ou n) ou percentual em meio ponto
     (4% = 26/25, com tolerância bem menor: a grade é fina), ou None (ruído)."""
@@ -127,9 +168,50 @@ class Pregao:
     dia: str  # AAAAMMDD
     distribuicao: str
     preco: float  # último preço por ação (já dividido pelo fator de cotação)
+    isin: str = ""  # ISIN negociado no pregão, se não for o da série (código anterior a uma troca)
 
 
 Series = dict[str, list[Pregao]]  # ISIN -> pregões em que houve negócio (lote padrão, à vista)
+
+
+def pares_de_troca(trocas: Iterable[Mapping[str, str]]) -> list[tuple[str, str]]:
+    """``trocas_ticker.csv`` -> (ISIN antigo, ISIN novo) das trocas de código que mudaram o ISIN
+    (a troca tratada como incorporação, sem ISIN antigo, fica de fora)."""
+    return [(t["isin_antigo"], t["isin_novo"]) for t in trocas
+            if t.get("isin_antigo") and t.get("isin_novo")
+            and t["isin_antigo"] != t["isin_novo"]]  # fmt: skip
+
+
+def encadear(series: Series, pares: Iterable[tuple[str, str]]) -> Series:
+    """Troca de código (KROT3 -> COGN3, GLOB3 -> VVAR3 -> VIIA3 -> BHIA3): o ISIN muda junto, mas
+    o papel é o mesmo. A série do ISIN mais novo passa a começar pelos pregões dos antigos (cada um
+    marcado com o ISIN em que foi negociado), e os antigos saem como chave: o evento de antes da
+    troca deixa de se perder porque o código atual não bate, e o que tem a data ex no dia da troca
+    (grupamento 8:1 de LLIS3/VSTE3, data ex 09/02/2023) aparece como a variação entre os dois.
+    O par cujo ISIN antigo ainda negocia depois do primeiro pregão do novo (o código voltou, como
+    CTAX3 -> LIQO3 -> CTAX3) não é encadeado: as séries se misturariam."""
+    seguinte = {a: n for a, n in pares
+                if not (series.get(a) and series.get(n) and series[a][-1].dia >= series[n][0].dia)
+                }  # fmt: skip
+    anterior = {n: a for a, n in seguinte.items()}
+    saida = dict(series)
+    for novo in sorted(n for n in anterior if n not in seguinte):
+        cadeia = [novo]
+        while cadeia[-1] in anterior and len(cadeia) <= len(anterior):
+            cadeia.append(anterior[cadeia[-1]])
+        pregoes: list[Pregao] = []
+        for isin in reversed(cadeia[1:]):
+            pregoes += [replace(p, isin=isin) for p in saida.pop(isin, [])]
+        if pregoes:
+            saida[novo] = sorted(pregoes + saida.get(novo, []), key=lambda p: p.dia)
+    return saida
+
+
+def negociado(serie: list[Pregao], com: str, chave: str) -> str:
+    """ISIN negociado no pregão seguinte à data com (a data ex): quem tinha o papel na data com
+    recebe o evento no código que vale na data ex."""
+    j = bisect.bisect_right([p.dia for p in serie], com.replace("-", ""))
+    return (serie[j].isin or chave) if j < len(serie) else chave
 
 
 def ler_cotahist(bruto: bytes, series: Series, pregoes: set[str],
@@ -276,9 +358,10 @@ def eventos_fre(linhas: Iterable[LinhaFre], emissor_por_cnpj: Mapping[str, str],
                                                     documento, razao)))  # fmt: skip
                 continue
             confirmadas[(cnpj, tipo, aprovado, str(f))] = com
+            ex = negociado(series[isin], com, isin)
             eventos.append(EventoB3(
-                emissor=emissor, isin=isin, tipo=tipo, fator=fator_b3(tipo, f), data_com=com,
-                aprovado_em=aprovado, isin_emitido=isin, origem="cvm_fre",
+                emissor=emissor, isin=ex, tipo=tipo, fator=fator_b3(tipo, f), data_com=com,
+                aprovado_em=aprovado, isin_emitido=ex, origem="cvm_fre",
                 referencia=f"FRE {documento}",
             ))  # fmt: skip
     for cnpj, r in pendentes:
@@ -288,11 +371,15 @@ def eventos_fre(linhas: Iterable[LinhaFre], emissor_por_cnpj: Mapping[str, str],
         if com_irma is None or not mudou:
             revisao.append(r)
             continue
+        ex = negociado(series[r.isin], com_irma, r.isin)
         eventos.append(EventoB3(
-            emissor=r.emissor, isin=r.isin, tipo=r.tipo, fator=fator_b3(r.tipo, Fraction(r.fator)),
-            data_com=com_irma, aprovado_em=r.aprovado_em, isin_emitido=r.isin, origem="cvm_fre",
+            emissor=r.emissor, isin=ex, tipo=r.tipo, fator=fator_b3(r.tipo, Fraction(r.fator)),
+            data_com=com_irma, aprovado_em=r.aprovado_em, isin_emitido=ex, origem="cvm_fre",
             referencia=f"FRE {r.documento} (data com da outra espécie)",
         ))  # fmt: skip
+    # na revisão, o ISIN que valia na aprovação (KROT, não COGN, para o ato de 2012)
+    revisao = [replace(r, isin=negociado(series[r.isin], r.aprovado_em, r.isin))
+               if r.isin in series else r for r in revisao]  # fmt: skip
     eventos, ambiguos = _sem_tipo_ambiguo(eventos)
     revisao += ambiguos
     eventos += _units(eventos, series, calendario)
@@ -339,7 +426,8 @@ def _units(eventos: list[EventoB3], series: Series, calendario: list[str]) -> li
             variacao = muda_no_pregao_seguinte(series[unit], calendario, e.data_com)
             if variacao is not None and abs(variacao - esperado) < abs(esperado) / 2:
                 referencia = e.referencia + " (unit: o fator das ações)"
-                saida.append(replace(e, isin=unit, isin_emitido=unit, referencia=referencia))
+                ex = negociado(series[unit], e.data_com, unit)
+                saida.append(replace(e, isin=ex, isin_emitido=ex, referencia=referencia))
     return saida
 
 

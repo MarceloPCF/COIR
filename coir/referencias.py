@@ -153,14 +153,23 @@ def validar_tabelas_b3(pasta: Path) -> None:
 
 
 def tickers_por_isin(pasta: Path) -> dict[str, str]:
-    """ISIN -> ticker de ação ou unit (o mais recente visto no cadastro de instrumentos)."""
+    """ISIN -> ticker de ação ou unit (o mais recente visto no cadastro de instrumentos). O ISIN de
+    antes de uma troca de código (``trocas_ticker.csv``: KROT3 era BRKROTACNOR9) leva ao ticker
+    da época, que o cadastro de hoje não tem: o evento daquele ISIN acha a posição do ativo."""
     caminho = pasta / "instrumentos_b3.csv"
     saida: dict[str, tuple[str, str]] = {}
     for r in _linhas(caminho) if caminho.is_file() else []:
         if RE_TICKER_PADRAO.match(r["ticker"]) and r["visto_ate"] >= saida.get(
             r["isin"], ("", ""))[0]:  # fmt: skip
             saida[r["isin"]] = (r["visto_ate"], r["ticker"])
-    return {isin: t for isin, (_, t) in saida.items()}
+    por_isin = {isin: t for isin, (_, t) in saida.items()}
+    trocas = pasta / "trocas_ticker.csv"
+    for t in _linhas(trocas) if trocas.is_file() else []:
+        for isin, ticker in ((t.get("isin_antigo", ""), t["ticker_impresso"]),
+                             (t.get("isin_novo", ""), t["ticker"])):  # fmt: skip
+            if isin and RE_TICKER_PADRAO.match(ticker):
+                por_isin.setdefault(isin, ticker)
+    return por_isin
 
 
 def emissores(pasta: Path) -> dict[str, tuple[str, str, str]]:

@@ -244,10 +244,12 @@ def test_troca_em_cadeia_e_vigencia_anterior(fabrica: sessionmaker[Session]) -> 
         a = ativos.ativo_id("AAAA3", date(2009, 1, 5))
         assert ativos.ativo_id("BBBB3", date(2012, 1, 5)) == a
         assert ativos.ativo_id("CCCC3", date(2020, 1, 6)) == a
-        # ticker usado antes da vigência conhecida: outro ativo, sem sobrepor
+        # código novo usado antes da troca (a nota de 2008 com "ITAUBANCO PN" lida como ITUB4, que
+        # até 19/05/2009 era ITAU4): é o ativo do código antigo, sem sobrepor as vigências
         ativos.sincronizar_trocas([_troca("DDDD3", "EEEE3", date(2018, 1, 2))])
         antes = ativos.ativo_id("EEEE3", date(2016, 1, 4))
-        assert antes != ativos.ativo_id("EEEE3", date(2019, 1, 2))
+        assert antes == ativos.ativo_id("EEEE3", date(2019, 1, 2))
+        assert antes == ativos.ativo_id("DDDD3", date(2016, 1, 4))
         assert ativos.ativo_id("EEEE3", date(2017, 1, 2)) == antes
 
 

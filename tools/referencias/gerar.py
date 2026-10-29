@@ -522,7 +522,9 @@ def _familia(tipo: str) -> str:
 def _somar_origem(linha: dict[str, str], nova: Mapping[str, str]) -> None:
     origens = set(linha["origem"].split("+")) | set(nova["origem"].split("+"))
     linha["origem"] = "+".join(sorted(origens))
-    refs = [r for r in (linha.get("referencia", ""), nova["referencia"]) if r]
+    # por documento: rodar o histórico de novo não repete a referência que a linha já tem
+    refs = [r for texto in (linha.get("referencia", ""), nova["referencia"])
+            for r in texto.split("; ") if r]  # fmt: skip
     linha["referencia"] = "; ".join(dict.fromkeys(refs))
     linha["custo_atribuido"] = linha.get("custo_atribuido") or nova["custo_atribuido"]
 

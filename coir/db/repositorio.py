@@ -191,9 +191,30 @@ class Ativos:
         linha = self._cobrindo(ticker, dia)
         if linha is not None:
             return linha.ativo_id
+        inicio, fim = self._lacuna(ticker, dia)
+        anterior = self._da_troca(ticker, dia, fim)
+        if anterior is not None:
+            self._adicionar_id(anterior, ticker, inicio, fim)
+            return anterior
         ativo = self._novo_ativo()
-        self._adicionar(ativo, ticker, *self._lacuna(ticker, dia))
+        self._adicionar(ativo, ticker, inicio, fim)
         return ativo.id
+
+    def _da_troca(self, ticker: str, dia: date, fim: date | None) -> int | None:
+        """Código novo usado antes da troca (a nota de 2008 com "ITAUBANCO PN" foi lida como ITUB4,
+        mas até 19/05/2009 o código era ITAU4): se a vigência seguinte do ticker começa numa troca
+        (outro código do mesmo ativo termina na véspera) e esse código cobre a data, é esse ativo,
+        não um novo."""
+        if fim is None:
+            return None
+        seguinte = self._cobrindo(ticker, fim + UM_DIA)
+        if seguinte is None or seguinte.inicio is None:
+            return None
+        outros = (x for linhas in self._por_ticker.values() for x in linhas
+                  if x.ativo_id == seguinte.ativo_id and x.ticker != ticker
+                  and x.fim == seguinte.inicio - UM_DIA
+                  and (x.inicio is None or x.inicio <= dia))  # fmt: skip
+        return seguinte.ativo_id if any(outros) else None
 
     def sincronizar_trocas(self, trocas: Iterable[TrocaTicker]) -> bool:
         """Troca de código (data/trocas_ticker.csv): o ticker antigo até ``ate`` e o novo a partir

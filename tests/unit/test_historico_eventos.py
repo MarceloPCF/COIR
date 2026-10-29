@@ -4,13 +4,14 @@ resolvida por palpite, e o arquivo curado dos avisos da CVM."""
 
 import io
 import zipfile
+from dataclasses import replace
 from datetime import date, timedelta
 from fractions import Fraction
 from pathlib import Path
 
 import pytest
 
-from coir.referencias import evento_b3_valido
+from coir.referencias import evento_b3_valido, tickers_por_isin
 from tools.referencias import gerar, historico
 from tools.referencias.gerar import EventoB3, Resumo
 from tools.referencias.historico import LinhaFre, Pregao
@@ -273,3 +274,143 @@ def test_historico_soma_curados_e_grava_data_do_pacote(tmp_path: Path) -> None:
     assert len(resumo.eventos_novos) == len(gerar.eventos_curados()) + 1
     assert gerar.gravar(tmp_path, arquivos) == ["eventos_b3.csv"]
     assert timedelta(days=270) == historico.JANELA
+
+
+KROT, COGN = "BRKROTACNOR9", "BRCOGNACNOR2"  # KROT3 até a troca, COGN3 depois
+
+
+def _troca(antigo: list[tuple[str, float]],
+           novo: list[tuple[str, float]]) -> tuple[historico.Series, list[str]]:  # fmt: skip
+    """Pregões de DIAS: o código antigo nos primeiros, o novo nos demais ('' = sem negócio)."""
+    linhas = [_linha_cotahist(d, isin, dist, p)
+              for isin, valores in ((KROT, antigo), (COGN, novo))
+              for d, (dist, p) in zip(DIAS, valores, strict=True) if dist]  # fmt: skip
+    series: historico.Series = {}
+    pregoes: set[str] = set()
+    historico.ler_cotahist(_cotahist(linhas), series, pregoes, {"KROT", "COGN"})
+    return series, sorted(pregoes)
+
+
+SEM = ("", 0.0)
+
+
+def test_evento_de_antes_da_troca_de_codigo_fica_no_isin_antigo() -> None:
+    # bonificação de 10% em 2016 quando o papel ainda era KROT3; o FRE é do CNPJ, que hoje é COGN
+    series, pregoes = _troca([("100", 10.0), ("101", 9.1), ("101", 9.1), ("101", 9.2),
+                              ("101", 9.2), SEM, SEM, SEM],
+                             [SEM] * 5 + [("1", 9.2)] * 3)  # fmt: skip
+    fre = [_fre("NOR", 1000, 1100)]
+    # sem encadear (como era): o ISIN antigo não tem o código do emissor atual e o evento se perde
+    assert historico.eventos_fre(fre, {CNPJ: "COGN"}, series, pregoes) == ([], [])
+    encadeadas = historico.encadear(series, [(KROT, COGN)])
+    assert set(encadeadas) == {COGN} and encadeadas[COGN][0].isin == KROT
+    eventos, revisao = historico.eventos_fre(fre, {CNPJ: "COGN"}, encadeadas, pregoes)
+    assert revisao == []
+    assert [(e.isin, e.isin_emitido, e.fator, e.data_com) for e in eventos] == [
+        (KROT, KROT, "10", "2016-04-27")
+    ]
+
+
+def test_evento_com_data_ex_no_dia_da_troca_fica_no_isin_novo() -> None:
+    # LLIS3 -> VSTE3: grupamento 8:1 com a data ex no primeiro pregão do código novo
+    series, pregoes = _troca([("100", 1.0)] * 5 + [SEM] * 3,
+                             [SEM] * 5 + [("1", 8.1)] * 3)  # fmt: skip
+    eventos, revisao = historico.eventos_fre(
+        [_fre("NOR", 800, 100, "GRUPAMENTO")], {CNPJ: "COGN"},
+        historico.encadear(series, [(KROT, COGN)]), pregoes)  # fmt: skip
+    assert revisao == []
+    assert [(e.isin, e.tipo, e.fator, e.data_com) for e in eventos] == [
+        (COGN, "GRUPAMENTO", "0.125", "2016-05-03")  # data com: último pregão de KROT3
+    ]
+
+
+def test_encadear_troca_em_cadeia_e_revisao_no_isin_da_epoca() -> None:
+    a, b, c = "BRGLOBACNOR8", "BRVVARACNOR1", "BRBHIAACNOR1"
+    series = {a: [Pregao("20120102", "1", 10.0)], b: [Pregao("20150102", "1", 9.0)],
+              c: [Pregao("20240102", "1", 1.0)]}  # fmt: skip
+    juntas = historico.encadear(series, [(b, c), (a, b)])
+    assert list(juntas) == [c]
+    assert [(p.dia, p.isin) for p in juntas[c]] == [("20120102", a), ("20150102", b),
+                                                     ("20240102", "")]  # fmt: skip
+    assert historico.negociado(juntas[c], "2014-12-31", c) == b
+    assert historico.negociado(juntas[c], "2024-01-02", c) == c  # sem pregão depois: a chave
+    # revisão (fator não é fração simples) mostra o ISIN que valia na aprovação
+    series, pregoes = _troca([("100", 10.0)] * 5 + [SEM] * 3, [SEM] * 5 + [("1", 10.0)] * 3)
+    _, revisao = historico.eventos_fre([_fre("NOR", 5000000, 5491000)], {CNPJ: "COGN"},
+                                       historico.encadear(series, [(KROT, COGN)]),
+                                       pregoes)  # fmt: skip
+    assert [r.isin for r in revisao] == [KROT]
+
+
+def test_pares_de_troca_so_com_os_dois_isins() -> None:
+    assert historico.pares_de_troca([
+        {"ticker_impresso": "KROT3", "ticker": "COGN3", "isin_antigo": KROT, "isin_novo": COGN},
+        {"ticker_impresso": "JSLG3", "ticker": "SIMH3", "isin_antigo": "", "isin_novo": "X"},
+        {"ticker_impresso": "AAAA3", "ticker": "BBBB3"},  # tabela antiga, sem as colunas
+    ]) == [(KROT, COGN)]  # fmt: skip
+
+
+def test_tabela_de_trocas_completa_e_com_fonte() -> None:
+    linhas = gerar.ler_csv(Path(__file__).resolve().parents[2] / "data" / "trocas_ticker.csv")
+    assert len(linhas) >= 80
+    vistos: set[str] = set()
+    for t in linhas:
+        date.fromisoformat(t["ate"])
+        assert t["fonte"] and t["ticker_impresso"] not in vistos, t
+        vistos.add(t["ticker_impresso"])
+        if t["isin_antigo"]:  # ISIN do código antigo: o emissor do ISIN é o do ticker
+            assert t["isin_antigo"][2:6] == t["ticker_impresso"][:4], t
+            assert t["isin_novo"][2:6] == t["ticker"][:4], t
+            assert "COTAHIST" in t["fonte"] and "CVM" in t["fonte"], t
+    por_antigo = {t["ticker_impresso"]: t["ticker"] for t in linhas}
+    cadeia, ticker = [], "GLOB3"
+    while ticker in por_antigo:
+        ticker = por_antigo[ticker]
+        cadeia.append(ticker)
+    assert cadeia == ["VVAR3", "VIIA3", "BHIA3"]
+    assert por_antigo["KROT3"] == "COGN3" and por_antigo["FJTA4"] == "TASA4"
+
+
+def test_ticker_do_isin_antigo_pela_tabela_de_trocas(tmp_path: Path) -> None:
+    (tmp_path / "instrumentos_b3.csv").write_text(
+        "ticker,isin,categoria,especificacao,emissor,nome,visto_desde,visto_ate\n"
+        f"COGN3,{COGN},SHARES,ON NM,COGN,COGNA,2026-10-20,2026-10-21\n", "utf-8")  # fmt: skip
+    (tmp_path / "trocas_ticker.csv").write_text(
+        "ticker_impresso,ticker,ate,isin_antigo,isin_novo,fonte\n"
+        f"KROT3,COGN3,2019-10-10,{KROT},{COGN},B3 COTAHIST; CVM FCA\n"
+        "JSLG3,SIMH3,2020-09-18,,BRSIMHACNOR0,curada\n", "utf-8")  # fmt: skip
+    assert tickers_por_isin(tmp_path) == {
+        COGN: "COGN3", KROT: "KROT3", "BRSIMHACNOR0": "SIMH3"}  # fmt: skip
+
+
+def test_codigo_que_voltou_nao_encadeia() -> None:
+    # CTAX3 -> LIQO3 (2018) -> CTAX3 de novo no ISIN antigo (2020): as séries não se misturam
+    ctax, liqo = "BRCTAXACNOR3", "BRLIQOACNOR2"
+    series = {ctax: [Pregao("20180302", "1", 4.5), Pregao("20200324", "2", 4.0)],
+              liqo: [Pregao("20180305", "1", 4.3)]}  # fmt: skip
+    assert historico.encadear(series, [(ctax, liqo)]) == series
+
+
+def test_juntar_de_novo_nao_repete_a_referencia() -> None:
+    anterior = {**_ev("10", "2016-04-29").linha(), "origem": "cvm_fre+cvm_ipe",
+                "referencia": "FRE 65000; IPE RAD 1"}  # fmt: skip
+    curado = replace(_ev("10", "2016-04-29", "cvm_ipe"), referencia="IPE RAD 1")
+    linhas = gerar.juntar_eventos([anterior], [_ev("10", "2016-04-29"), curado], Resumo())
+    assert [r["referencia"] for r in linhas] == ["FRE 65000; IPE RAD 1"]
+
+
+def test_deslistada_entra_pelo_codigo_do_fca() -> None:
+    cab = ("CNPJ_Companhia;Data_Referencia;Versao;ID_Documento;Nome_Empresarial;Valor_Mobiliario;"
+           "Sigla_Classe_Acao_Preferencial;Classe_Acao_Preferencial;Codigo_Negociacao")  # fmt: skip
+    fca = historico.ler_fca_codigos(_zip({"fca_cia_aberta_valor_mobiliario_2019.csv": (
+        f"{cab}\n76.535.764/0001-43;2019-01-01;1;1;OI;Ações Ordinárias;;;OIBR3\n"
+        "76.535.764/0001-43;2019-01-01;1;1;OI;Ações Preferenciais;;;oibr4\n"
+        "76.535.764/0001-43;2019-01-01;1;1;OI;Debêntures;;;OIBR15\n"
+        f"{CNPJ};2019-01-01;1;1;ITAUSA;Ações Ordinárias;;;ITSA3\n")}))  # fmt: skip
+    oi = "76535764000143"
+    assert fca == {oi: {"OIBR"}, CNPJ: {"ITSA"}}
+    series = {"BROIBRACNOR1": [Pregao("20250102", "1", 1.0)],
+              ON: [Pregao("20260102", "1", 10.0)]}  # fmt: skip
+    # listada (ITSA) continua pelo cadastro; a Oi, fora dele, entra pelo FCA
+    assert historico.deslistadas([fca], {CNPJ: "ITSA"}, series) == {oi: "OIBR"}
+    assert historico.deslistadas([fca], {CNPJ: "ITSA"}, {ON: series[ON]}) == {}  # sem negócio

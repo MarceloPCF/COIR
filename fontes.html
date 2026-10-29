@@ -226,8 +226,14 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 <tr>
   <td>CVM, documentos IPE (dados abertos)</td>
   <td><code>https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/IPE/DADOS/ipe_cia_aberta_AAAA.zip</code> e o documento em <code>https://www.rad.cvm.gov.br/ENET/frmDownloadDocumento.aspx</code></td>
-  <td>Fatos relevantes e avisos aos acionistas: proporção, data-base, data ex e custo atribuído da bonificação. Usados para 2023 em diante, quando o FRE parou e a B3 já tinha substituído o evento.</td>
+  <td>Fatos relevantes e avisos aos acionistas: proporção, data-base, data ex e custo atribuído da bonificação. Usados para 2023 em diante, quando o FRE parou e a B3 já tinha substituído o evento, e para o que o FRE não resolve (fator ruidoso, papel sem negócio para conferir).</td>
   <td><code>tools/referencias/eventos_cvm_ipe.csv</code> (transcrito, com o protocolo); <code>origem</code> = <code>cvm_ipe</code></td>
+</tr>
+<tr>
+  <td>CVM, Formulário Cadastral (FCA, dados abertos), tabelas <code>geral</code> e <code>valor_mobiliario</code></td>
+  <td><code>https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FCA/DADOS/fca_cia_aberta_AAAA.zip</code> (2010 em diante)</td>
+  <td>Por CNPJ: nome empresarial com o nome anterior e a data da mudança; códigos de negociação (só de 2018 em diante). Confirma que o código antigo e o novo de uma troca são a mesma companhia, e liga ao FRE a companhia que saiu da bolsa.</td>
+  <td><code>trocas_ticker.csv</code> (coluna <code>fonte</code>; curada) e <code>python -m tools.referencias historico</code></td>
 </tr>
 <tr>
   <td>Banco Central, série 4390 (Selic mensal)</td>
@@ -256,6 +262,43 @@ revisão e o tipo certo sai do aviso aos acionistas;</li>
 publica; quando a B3 só guardou uma delas, a outra vem do documento (ITUB 2011, BEES 2012);</li>
 <li>a unit entra com o fator das ações só quando todas as espécies tiveram o mesmo fator e a mesma
 data com e a cotação da unit confirma.</li>
+</ul>
+
+<p>Trocas de código (<code>data/trocas_ticker.csv</code>, curada à mão, uma linha por espécie):</p>
+
+<ul>
+<li>a troca de código quase sempre troca o ISIN junto (KROT3 era <code>BRKROTACNOR9</code>, COGN3 é
+<code>BRCOGNACNOR2</code>): a tabela guarda os dois (<code>isin_antigo</code>, <code>isin_novo</code>) e a <code>fonte</code> de cada linha;</li>
+<li>só é troca o que é a mesma companhia (mesmo CNPJ no FCA: os dois códigos no mesmo CNPJ, ou o
+nome anterior no histórico do CNPJ) com o preço contínuo de um código para o outro (1 para 1,
+último negócio do antigo e primeiro do novo no COTAHIST). Incorporação com relação de troca ou
+com CNPJ diferente (TIMP3 -> TIMS3, SMLE3 -> SMLS3, JPSA3 -> IGTI3, IGTA3 -> IGTI3) não é
+troca: é evento corporativo, e fica para revisão humana;</li>
+<li><code>ate</code> é o pregão anterior ao primeiro negócio do código novo (o mesmo dia para todas as espécies
+da companhia, mesmo a que ficou sem negócio);</li>
+<li>código que voltou (CTAX3 -> LIQO3 em 2018, de novo CTAX3 no ISIN antigo em 2020) não entra: a
+tabela não representa a volta, e as séries de cotação se misturariam;</li>
+<li>o histórico (<code>python -m tools.referencias historico</code>) encadeia as séries do ISIN antigo e do
+novo: o evento do FRE (que é por CNPJ) de antes da troca entra no ISIN antigo, e o que tem a data
+ex no dia da troca (LLIS3 -> VSTE3 com grupamento 8:1 em 09/02/2023) entra no ISIN que vale na
+data ex. Sem isso o evento se perdia, porque o ISIN antigo não tem o código do emissor atual;</li>
+<li>o app (<code>coir/referencias.tickers_por_isin</code>) leva o ISIN antigo ao ticker da época
+(<code>BRKROTACNOR9</code> -> KROT3), que o cadastro de instrumentos de hoje não tem, e a troca liga os dois
+tickers ao mesmo ativo.</li>
+</ul>
+
+<p>Companhias que saíram da bolsa:</p>
+
+<ul>
+<li>a consulta de empresas da B3 e o cadastro de emissores (<code>emissores_b3.csv</code>) só trazem as
+listadas hoje: a companhia deslistada ficava sem nenhum evento no pacote;</li>
+<li>o histórico liga o CNPJ do FRE ao código de negociação pelo FCA (2018 em diante: o código com
+negócio mais recente no COTAHIST; CNPJ com dois códigos empatados fica de fora). Antes de 2018
+o FCA não traz código, e a companhia deslistada antes disso continua sem o FRE;</li>
+<li>de 2023 em diante (sem FRE), o evento vem do aviso aos acionistas transcrito em
+<code>eventos_cvm_ipe.csv</code>, conferido pela cotação; a varredura do COTAHIST (mudança de distribuição
+com o preço andando 8% ou mais, sem evento no pacote) acha os candidatos, e a queda com aviso de
+dividendo na mesma janela não entra (é provento em dinheiro, não evento em ações).</li>
 </ul>
 
 <h2 id="lc-2242025">LC 224/2025</h2>

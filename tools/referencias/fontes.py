@@ -37,6 +37,8 @@ BCB_SELIC = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=js
 CVM_FRE = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FRE/DADOS/fre_cia_aberta_{ano}.zip"
 B3_COTAHIST = "https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_A{ano}.ZIP"
 ANOS_FRE = range(2010, 2024)  # o FRE de 2024 em diante não tem mais a tabela de desdobramentos
+CVM_FCA = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FCA/DADOS/fca_cia_aberta_{ano}.zip"
+FCA_DESDE = 2018  # o FCA traz o código de negociação de 2018 em diante
 Baixar = Callable[[str], bytes]
 
 
@@ -266,13 +268,19 @@ def _em_cache(url: str, cache: Path | None, obter: Baixar) -> bytes:
 
 
 def historico_eventos(emissor_por_cnpj: Mapping[str, str], ate: date, cache: Path | None = None,
-                      obter: Baixar = baixar,
+                      obter: Baixar = baixar, pares: Iterable[tuple[str, str]] = (),
                       ) -> tuple[list[EventoB3], list[Revisao]]:  # fmt: skip
     """Desdobramentos, grupamentos e bonificações desde 2008: FRE da CVM (2010 a 2023, cada um com
-    os três exercícios anteriores) com a data com conferida no COTAHIST da B3 (2007 até ``ate``)."""
+    os três exercícios anteriores) com a data com conferida no COTAHIST da B3 (2007 até ``ate``).
+    ``pares`` (ISIN antigo, ISIN novo) das trocas de código encadeiam as séries. A companhia que
+    saiu da bolsa entra pelo código que o FCA dá ao CNPJ (``historico.deslistadas``)."""
     linhas = [x for ano in ANOS_FRE
               for x in hist.ler_fre(_em_cache(CVM_FRE.format(ano=ano), cache, obter))]  # fmt: skip
-    emissores = set(emissor_por_cnpj.values())
+    codigos = [hist.ler_fca_codigos(_em_cache(CVM_FCA.format(ano=ano), cache, obter))
+               for ano in range(FCA_DESDE, ate.year + 1)]  # fmt: skip
+    pares = list(pares)
+    emissores = (set(emissor_por_cnpj.values()) | {i[2:6] for par in pares for i in par}
+                 | {c for ano in codigos for cods in ano.values() for c in cods})  # fmt: skip
     series: hist.Series = {}
     pregoes: set[str] = set()
     for ano in range(2007, ate.year + 1):
@@ -281,4 +289,7 @@ def historico_eventos(emissor_por_cnpj: Mapping[str, str], ate: date, cache: Pat
         log.info("COTAHIST %d: %d ISIN", ano, len(series))
     for serie in series.values():
         serie.sort(key=lambda p: p.dia)
-    return hist.eventos_fre(linhas, emissor_por_cnpj, series, pregoes)
+    series = hist.encadear(series, pares)
+    fora = hist.deslistadas(codigos, emissor_por_cnpj, series)
+    log.info("companhias fora do cadastro de hoje, pelo FCA: %d", len(fora))
+    return hist.eventos_fre(linhas, {**emissor_por_cnpj, **fora}, series, pregoes)
