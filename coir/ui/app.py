@@ -128,7 +128,6 @@ def _itens(telas: tuple[Tela, ...]) -> None:
 
 def _marca() -> None:
     with ui.row().classes("items-center gap-3 no-wrap").mark("marca"):
-        ui.html(tema.simbolo_svg(), sanitize=False).classes("coir-simbolo")  # arquivo nosso
         ui.label("COIR").classes("coir-marca")
         ui.label("Controle de Operações e Imposto de Renda").classes("coir-marca-nome gt-sm")
 

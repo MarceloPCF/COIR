@@ -1,10 +1,7 @@
 """Tela 18 — Configurações, em seções: pasta de dados, aparência, backups (fazer agora e
 restaurar, com cópia do banco atual antes) e o registro de atividades (sem CPF nem nome)."""
 
-import os
-import sys
 from collections.abc import Callable
-from pathlib import Path
 
 from nicegui import run, ui
 
@@ -14,6 +11,7 @@ from coir.reports.modelo import Coluna
 from coir.servicos import atualizacao, manutencao, versao
 from coir.servicos.estado import Estado
 from coir.ui import preferencias, tabela
+from coir.ui.abrir import abrir
 
 COLUNAS_REGISTRO = (Coluna("Data e hora"), Coluna("Tipo"), Coluna("Área"), Coluna("O que houve"))
 
@@ -120,7 +118,7 @@ def _registro(estado: Estado) -> None:
                 "flat dense"
             ).tooltip("Mostra o que foi registrado depois que esta tela abriu")
             ui.button("Abrir a pasta", icon="folder_open",
-                      on_click=lambda: _abrir_pasta(estado.dados / ARQUIVO_REGISTRO.parent),
+                      on_click=lambda: abrir(estado.dados / ARQUIVO_REGISTRO.parent),
                       ).props("flat dense")  # fmt: skip
         entradas: list[manutencao.EntradaRegistro] = []
         grade = tabela.grade(COLUNAS_REGISTRO, [], larguras=(150, 100, 190, None),
@@ -154,13 +152,6 @@ def _registro(estado: Estado) -> None:
 
         problemas.on_value_change(lambda _: ler())
         ler()
-
-
-def _abrir_pasta(pasta: Path) -> None:
-    if sys.platform == "win32" and pasta.is_dir():
-        os.startfile(pasta)
-    else:
-        ui.notify(str(pasta))
 
 
 def _data(d: object) -> str:

@@ -1,11 +1,8 @@
 """Tela Suporte: os dados que cada titular quer ocultar e o envio de notas para quem desenvolve
 (texto anonimizado e imagens com tarja, conferidos pelo usuário antes de sair, por e-mail)."""
 
-import os
-import sys
 import webbrowser
 from collections.abc import Callable
-from pathlib import Path
 
 from nicegui import events, run, ui
 
@@ -15,6 +12,7 @@ from coir.erros import CoirError
 from coir.servicos import suporte
 from coir.servicos.estado import Estado
 from coir.servicos.suporte import CAMPOS_LIVRES, DadosPessoais
+from coir.ui.abrir import abrir
 
 NOVO = "novo"
 ROTULOS = {
@@ -130,7 +128,7 @@ def _envio(estado: Estado) -> None:
                 .mark("suporte-pdfs")
             )
             ui.button("Abrir a pasta", icon="folder_open",
-                      on_click=lambda: _abrir_pasta(estado.dados / suporte.PASTA_SUPORTE),
+                      on_click=lambda: abrir(estado.dados / suporte.PASTA_SUPORTE),
                       ).props("flat dense")  # fmt: skip
         resultado = ui.column().classes("w-full gap-2").mark("suporte-resultado")
 
@@ -176,7 +174,7 @@ def _conferencia(envio: suporte.Envio) -> None:
     with ui.row().classes("items-center gap-3"):
         ui.label(f"Preparado em {envio.pasta}").classes("coir-numero text-sm")
         ui.button("Abrir a pasta", icon="folder_open",
-                  on_click=lambda: _abrir_pasta(envio.pasta)).props("flat dense")  # fmt: skip
+                  on_click=lambda: abrir(envio.pasta)).props("flat dense")  # fmt: skip
     for nota in envio.notas:
         with ui.row().classes("coir-item-lista w-full items-center gap-4 py-1"):
             ui.label(nota.origem).classes("text-sm w-[260px] truncate")
@@ -224,7 +222,7 @@ def _conferencia(envio: suporte.Envio) -> None:
                           on_click=lambda: webbrowser.open(suporte.endereco_email(zip_, VERSAO)),
                           ).mark("suporte-email")  # fmt: skip
                 ui.button("Abrir a pasta", icon="folder_open",
-                          on_click=lambda: _abrir_pasta(envio.pasta)).props("flat")  # fmt: skip
+                          on_click=lambda: abrir(envio.pasta)).props("flat")  # fmt: skip
 
 
 def _ver(nota: suporte.ResultadoArquivo) -> Callable[[], None]:
@@ -238,10 +236,3 @@ def _ver(nota: suporte.ResultadoArquivo) -> Callable[[], None]:
         janela.open()
 
     return abrir
-
-
-def _abrir_pasta(pasta: Path) -> None:
-    if sys.platform == "win32" and pasta.is_dir():
-        os.startfile(pasta)
-    else:
-        ui.notify(str(pasta))

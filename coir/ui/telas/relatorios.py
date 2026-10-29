@@ -1,8 +1,6 @@
 """Tela 17 — Relatórios: os relatórios fiscais do ano na tela (cada seção numa grade) e a
 exportação em xlsx, csv e pdf para a pasta de dados (o nome dos arquivos não leva CPF)."""
 
-import os
-import sys
 from collections.abc import Awaitable, Callable
 from datetime import date
 from decimal import Decimal
@@ -17,17 +15,11 @@ from coir.reports.modelo import Coluna, Relatorio, Secao, TipoColuna, Valor
 from coir.servicos.estado import Estado
 from coir.servicos.relatorios import FORMATOS, exportar
 from coir.ui import tabela
+from coir.ui.abrir import abrir
 
 T = TipoColuna
 
 MAX_SECOES = 8  # acima disso, uma seção por vez
-
-
-def _abrir_pasta(pasta: Path) -> None:
-    if sys.platform == "win32" and pasta.is_dir():
-        os.startfile(pasta)
-    else:
-        ui.notify(str(pasta))
 
 
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
@@ -52,7 +44,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         ui.button(
             "Abrir a pasta",
             icon="folder_open",
-            on_click=lambda: _abrir_pasta(Path(pasta.value or ".")),
+            on_click=lambda: abrir(Path(pasta.value or ".")),
         ).props("flat")
 
     def ao_escolher(chave: str) -> Callable[[], Awaitable[None]]:
@@ -163,8 +155,7 @@ def _uma_por_vez(rel: Relatorio, secoes: list[Secao], pasta: Path) -> None:
         except OSError as erro:
             ui.notify(f"PDF não gravado: {erro}", type="negative")
             return
-        if sys.platform == "win32":
-            os.startfile(destino)
+        abrir(destino)
         ui.notify(f"PDF gravado: {destino}", type="positive")
 
     with ui.row().classes("items-center gap-4"):
