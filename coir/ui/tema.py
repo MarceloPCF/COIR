@@ -15,6 +15,7 @@ from nicegui import ui
 ESTATICOS = Path(__file__).parent / "estaticos"
 SIMBOLO = ESTATICOS / "coir-simbolo.svg"  # logomarca: o "C" com o arco azul
 ICONE = ESTATICOS / "coir-icone-256.png"
+ICONE_JANELA = ESTATICOS / "coir.ico"  # barra de título e barra de tarefas (Windows)
 
 
 @dataclass(frozen=True)

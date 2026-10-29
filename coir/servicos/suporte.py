@@ -222,6 +222,7 @@ class Envio:
     pasta: Path  # <dados>/suporte/<data-hora>: textos e imagens, para o usuário conferir
     notas: list[ResultadoArquivo] = field(default_factory=list)
     titulares: dict[str, str] = field(default_factory=dict)  # CPF -> nome (dos dados informados)
+    informados: list[DadosPessoais] = field(default_factory=list, repr=False)
 
     @property
     def aceitas(self) -> list[ResultadoArquivo]:
@@ -233,36 +234,47 @@ class Envio:
         return ", ".join(nomes) or "nenhum CPF na nota"
 
 
-def preparar_envio(
-    dados: Path, banco: Path, recebidos: Sequence[tuple[str, bytes]], agora: datetime
-) -> Envio:
-    """Opção "Enviar notas para suporte" (tela Suporte): os PDFs escolhidos viram, numa pasta
-    nova em ``<dados>/suporte``, o texto anonimizado e as imagens tarjadas de cada nota, com nomes
-    neutros (nota-01.txt, nota-01-pagina-1.png...): o nome do PDF pode ter o nome do cliente. Os
-    PDFs não ficam guardados. O .zip só sai depois que o usuário confere (``gerar_zip``)."""
-    informados = dados_para_ocultar(dados, banco)
+def novo_envio(dados: Path, banco: Path, agora: datetime) -> Envio:
+    """Opção "Enviar notas para suporte" (tela Suporte): uma pasta nova em ``<dados>/suporte``,
+    que recebe nota a nota (``preparar_nota``) o texto anonimizado e as imagens tarjadas. A tela
+    prepara uma nota por vez para mostrar o progresso."""
     pasta = dados / PASTA_SUPORTE / f"{agora:%Y%m%d-%H%M%S}"
     if pasta.exists():
         raise AnonimizacaoError("já existe um envio preparado neste segundo; tente de novo")
+    informados = dados_para_ocultar(dados, banco)
+    return Envio(pasta, [], {so_digitos(d.cpf): d.nome for d in informados}, informados)
+
+
+def preparar_nota(envio: Envio, dados: Path, nome: str, conteudo: bytes) -> ResultadoArquivo:
+    """Uma nota do envio, com nome neutro (nota-01.txt, nota-01-pagina-1.png...): o nome do PDF
+    pode ter o nome do cliente. O PDF não fica guardado."""
+    if Path(nome).suffix.lower() != ".pdf":
+        raise AnonimizacaoError(f"não é PDF: {Path(nome).name}")
+    neutro = f"nota-{len(envio.notas) + 1:02d}"
     with tempfile.TemporaryDirectory(prefix="coir-suporte-") as tmp:
-        origens: list[Path] = []
-        for i, (nome, conteudo) in enumerate(recebidos, start=1):
-            if Path(nome).suffix.lower() != ".pdf":
-                raise AnonimizacaoError(f"não é PDF: {Path(nome).name}")
-            origem = Path(tmp) / f"nota-{i:02d}.pdf"
-            origem.write_bytes(conteudo)
-            origens.append(origem)
-        nomes = [f"nota-{i:02d}.txt" for i in range(1, len(origens) + 1)]
-        resultados = anonimizar_arquivos(
-            origens, pasta, dados / ARQUIVO_MAPA, termos_sensiveis(dados), nomes,
-            informados, imagens=True,
+        origem = Path(tmp) / f"{neutro}.pdf"
+        origem.write_bytes(conteudo)
+        [r] = anonimizar_arquivos(
+            [origem], envio.pasta, dados / ARQUIVO_MAPA, termos_sensiveis(dados),
+            [f"{neutro}.txt"], envio.informados, imagens=True,
         )  # fmt: skip
-    notas = [
-        ResultadoArquivo(Path(nome).name, r.destino, r.recusas, r.imagens, r.paginas,
-                         r.ocultados, r.alertas, r.cpfs)
-        for (nome, _), r in zip(recebidos, resultados, strict=True)
-    ]  # fmt: skip
-    return Envio(pasta, notas, {so_digitos(d.cpf): d.nome for d in informados})
+    nota = ResultadoArquivo(Path(nome).name, r.destino, r.recusas, r.imagens, r.paginas,
+                            r.ocultados, r.alertas, r.cpfs)  # fmt: skip
+    envio.notas.append(nota)
+    return nota
+
+
+def preparar_envio(
+    dados: Path, banco: Path, recebidos: Sequence[tuple[str, bytes]], agora: datetime
+) -> Envio:
+    """Todas as notas de uma vez (``novo_envio`` e ``preparar_nota``). O .zip só sai depois que o
+    usuário confere as imagens (``gerar_zip``)."""
+    if fora := [n for n, _ in recebidos if Path(n).suffix.lower() != ".pdf"]:
+        raise AnonimizacaoError(f"não é PDF: {Path(fora[0]).name}")
+    envio = novo_envio(dados, banco, agora)
+    for nome, conteudo in recebidos:
+        preparar_nota(envio, dados, nome, conteudo)
+    return envio
 
 
 def gerar_zip(envio: Envio) -> Path:

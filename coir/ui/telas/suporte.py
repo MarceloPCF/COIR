@@ -135,18 +135,37 @@ def _envio(estado: Estado) -> None:
         resultado = ui.column().classes("w-full gap-2").mark("suporte-resultado")
 
     async def preparar(e: events.MultiUploadEventArguments) -> None:
-        recebidos = [(f.name, await f.read()) for f in e.files]
-        envio.reset()
+        """Uma nota por vez, com a janela de progresso aberta: ela mostra que o COIR está
+        trabalhando e impede outros cliques até terminar (imagens de várias notas levam um
+        tempo)."""
         resultado.clear()
+        with ui.dialog().props("persistent") as janela, ui.card().classes("w-[460px]"):
+            ui.label("Preparando as notas para o suporte").classes("coir-titulo text-base")
+            passo = ui.label("Recebendo os arquivos...").classes("text-sm").mark("suporte-passo")
+            barra = ui.linear_progress(value=0, show_value=False).props("rounded size=10px")
+            ui.label("Não feche esta janela; ela fecha sozinha ao terminar.").classes(
+                "coir-subtitulo text-xs")  # fmt: skip
+        janela.open()
         try:
+            recebidos = [(f.name, await f.read()) for f in e.files]
+            envio.reset()
             pronto = await run.io_bound(
-                suporte.preparar_envio, estado.dados, estado.banco, recebidos, estado.agora()
+                suporte.novo_envio, estado.dados, estado.banco, estado.agora()
             )
+            if pronto is None:  # run.io_bound devolve None se a página fechou
+                return
+            for i, (nome, conteudo) in enumerate(recebidos, start=1):
+                passo.text = f"Nota {i} de {len(recebidos)}: {nome}"
+                barra.value = (i - 1) / len(recebidos)
+                if await run.io_bound(suporte.preparar_nota, pronto, estado.dados, nome,
+                                      conteudo) is None:  # fmt: skip
+                    return
+            barra.value = 1
         except CoirError as erro:
             ui.notify(str(erro), type="negative", multi_line=True)
             return
-        if pronto is None:  # run.io_bound devolve None se a página fechou
-            return
+        finally:
+            janela.close()
         with resultado:
             _conferencia(pronto)
 

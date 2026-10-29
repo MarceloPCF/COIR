@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from nicegui import native, ui
+from nicegui import app, native, ui
 
 from coir.config import VERSAO, configurar_registro
 from coir.erros import CoirError
@@ -74,6 +74,9 @@ def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None
     nativo = not navegador and tem_webview2()
     if not navegador and not nativo:
         log.warning("WebView2 não encontrado: o COIR abre no navegador padrão")
+    # o símbolo do COIR na barra de título e na barra de tarefas; sem isso a janela usa o ícone
+    # do executável, que rodando pelo Python é o do Python
+    app.native.start_args["icon"] = str(tema.ICONE_JANELA)
     ui.run(
         (lambda: montar_erro(estado, erro)) if erro else (lambda: montar(estado)),
         title="COIR", favicon=tema.ICONE, host="127.0.0.1", port=porta or native.find_open_port(),

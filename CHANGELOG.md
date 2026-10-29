@@ -18,12 +18,13 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
     computador. O COIR procura esses dados em qualquer corretora.
   - **Enviar notas para suporte**: o COIR grava numa pasta o texto de cada nota, com os dados
     pessoais trocados por fictícios do mesmo tamanho, e a imagem de cada página com tarja preta
-    sobre eles. A cópia só sai se o COIR ler nela o mesmo que no original e não sobrar nenhum
-    dado pessoal. Você confere as imagens, grava o `.zip` e o botão abre o seu e-mail com a
-    mensagem para o suporte; você anexa e envia.
+    sobre eles, mostrando o progresso nota a nota. A cópia só sai se o COIR ler nela o mesmo que
+    no original e não sobrar nenhum dado pessoal. Você confere as imagens, grava o `.zip` e o
+    botão abre o seu e-mail com a mensagem para o suporte; você anexa e envia.
   - Pela linha de comando: `coir notas anonimizar [--imagens]`.
 
 ### Corrigido
+- **Ícone da janela**: a barra de título e a barra de tarefas mostram o símbolo do COIR.
 - **Nome do titular nas notas da XP e da Rico**: nas notas Bovespa o COIR lia o rótulo
   "Cliente" como nome do cliente (e "Corretora" nas BM&F novas da XP); o titular criado na
   importação ficava com esse nome. Agora lê o nome impresso.
