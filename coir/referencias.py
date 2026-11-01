@@ -117,9 +117,35 @@ def evento_b3_valido(r: dict[str, str]) -> bool:
 
 def eventos_b3(pasta: Path) -> list[dict[str, str]]:
     """Eventos corporativos do pacote público (``eventos_b3.csv``; vazio se não houver), só as
-    linhas utilizáveis."""
+    linhas utilizáveis e sem os pares que se anulam (``_neutros``)."""
     caminho = pasta / "eventos_b3.csv"
-    return [r for r in (_linhas(caminho) if caminho.is_file() else []) if evento_b3_valido(r)]
+    validas = [r for r in (_linhas(caminho) if caminho.is_file() else []) if evento_b3_valido(r)]
+    neutros = _neutros(validas)
+    return [r for i, r in enumerate(validas) if i not in neutros]
+
+
+def _multiplicador(r: dict[str, str]) -> Decimal:
+    fator = Decimal(r["fator"])
+    return fator if r["tipo"] == "GRUPAMENTO" else 1 + fator / 100
+
+
+def _neutros(linhas: list[dict[str, str]]) -> set[int]:
+    """Grupamento e desdobramento no mesmo ISIN e data com que se anulam (ITUB 2011: 100 para 1 e
+    1 para 100): a quantidade não muda, então não entram em controle nenhum. Ficam no pacote (que
+    nunca apaga): se a B3 voltar a listar só um dos lados, a coleta não o toma por evento novo."""
+    grupos: dict[tuple[str, str, str], list[int]] = {}
+    for i, r in enumerate(linhas):
+        if r["tipo"] in ("GRUPAMENTO", "DESDOBRAMENTO", "BONIFICACAO"):
+            grupos.setdefault((r["isin"], r["data_com"], r["isin_emitido"]), []).append(i)
+    neutros: set[int] = set()
+    for indices in grupos.values():
+        grupamento = {linhas[i]["tipo"] == "GRUPAMENTO" for i in indices}
+        produto = Decimal(1)
+        for i in indices:
+            produto *= _multiplicador(linhas[i])
+        if grupamento == {True, False} and produto == 1:
+            neutros.update(indices)
+    return neutros
 
 
 def validar_tabelas_b3(pasta: Path) -> None:

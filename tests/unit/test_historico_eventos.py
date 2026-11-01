@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from coir.referencias import evento_b3_valido, tickers_por_isin
+from coir.referencias import evento_b3_valido, eventos_b3, tickers_por_isin
 from tools.referencias import gerar, historico
 from tools.referencias.gerar import EventoB3, Resumo
 from tools.referencias.historico import LinhaFre, Pregao
@@ -369,6 +369,52 @@ def test_tabela_de_trocas_completa_e_com_fonte() -> None:
         cadeia.append(ticker)
     assert cadeia == ["VVAR3", "VIIA3", "BHIA3"]
     assert por_antigo["KROT3"] == "COGN3" and por_antigo["FJTA4"] == "TASA4"
+    # incorporações 1:1 que trocaram o código (confirmadas pelo usuário)
+    assert (por_antigo["TIMP3"], por_antigo["SMLE3"]) == ("TIMS3", "SMLS3")
+    assert (por_antigo["MLFT3"], por_antigo["JPSA3"]) == ("JPSA3", "IGTI3")
+
+
+def test_evento_excluido_nao_volta_mesmo_que_a_b3_o_devolva() -> None:
+    """GSHP 2019: a B3 lista como bonificação de 100% o dividendo pago em cotas do FII Top Center
+    (nenhuma ação emitida); a exclusão tem motivo e fonte, e a coleta seguinte não a reinsere."""
+    gshp = EventoB3("GSHP", "BRGSHPACNOR7", "BONIFICACAO", "100", "2019-03-26", "2019-03-26",
+                    "BRGSHPR01OR2")  # fmt: skip
+    excluidos = gerar.eventos_excluidos()
+    assert tuple(gshp.linha()[c] for c in gerar.COLUNAS_CHAVE) in excluidos
+    resumo = Resumo()
+    assert gerar.juntar_eventos([gshp.linha()], [gshp], resumo, excluidos) == []
+    assert resumo.eventos_novos == [] and resumo.divergencias == []
+    assert all(e.emissor != "ITUB" or e.data_com != "2011-10-31" for e in gerar.eventos_curados())
+    pacote = Path(__file__).resolve().parents[2] / "data" / "eventos_b3.csv"
+    assert not [r for r in gerar.ler_csv(pacote)
+                if tuple(r[c] for c in gerar.COLUNAS_CHAVE) in excluidos]  # fmt: skip
+
+
+def test_exclusao_sem_motivo_falha(tmp_path: Path) -> None:
+    caminho = tmp_path / "eventos_excluidos.csv"
+    caminho.write_text("emissor,isin,tipo,fator,data_com,isin_emitido,motivo,fonte\n"
+                       "X,BRX,BONIFICACAO,1,2020-01-02,BRX,,aviso\n", "utf-8")  # fmt: skip
+    with pytest.raises(gerar.GeracaoError, match="sem motivo"):
+        gerar.eventos_excluidos(caminho)
+
+
+def test_grupamento_e_desdobramento_que_se_anulam_nao_entram(tmp_path: Path) -> None:
+    """ITUB 2011: 100 para 1 e 1 para 100 na mesma data com; a quantidade não muda."""
+    itub, ngrd = "BRITUBACNPR1", "BRNGRDACNOR3"
+    linhas = [("ITUB", itub, "GRUPAMENTO", "0.01", "2011-10-31"),
+              ("ITUB", itub, "DESDOBRAMENTO", "9900", "2011-10-31"),
+              ("ITUB", itub, "BONIFICACAO", "10", "2013-05-20"),
+              ("NGRD", ngrd, "GRUPAMENTO", "0.01", "2024-10-07"),  # 100:1 e 1:4: muda
+              ("NGRD", ngrd, "DESDOBRAMENTO", "300", "2024-10-07")]  # fmt: skip
+    (tmp_path / "eventos_b3.csv").write_text(
+        ",".join(gerar.COLUNAS_EVENTOS)
+        + "\n"
+        + "".join(f"{e},{i},{t},{f},{d},,{i},,,,b3,,\n" for e, i, t, f, d in linhas),
+        "utf-8",
+    )
+    assert [(r["emissor"], r["tipo"], r["data_com"]) for r in eventos_b3(tmp_path)] == [
+        ("ITUB", "BONIFICACAO", "2013-05-20"), ("NGRD", "GRUPAMENTO", "2024-10-07"),
+        ("NGRD", "DESDOBRAMENTO", "2024-10-07")]  # fmt: skip
 
 
 def test_ticker_do_isin_antigo_pela_tabela_de_trocas(tmp_path: Path) -> None:

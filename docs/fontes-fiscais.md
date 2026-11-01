@@ -58,7 +58,16 @@ As tabelas geradas em `data/` (o pacote que vai no zip do programa e no release
 
 Regras da combinação (`tools/referencias/gerar.py`, `historico.py`):
 
-- nada é apagado: a linha que uma fonte deixou de mostrar continua no pacote;
+- nada é apagado sem registro: a linha que uma fonte deixou de mostrar continua no pacote. O que
+  sai vai para `tools/referencias/eventos_excluidos.csv`, com as colunas da chave do evento
+  (`isin`, `tipo`, `data_com`, `isin_emitido`, `fator`), o `motivo` e a `fonte`; a junção não
+  reinsere o que está na lista, mesmo que a B3 o devolva de novo, e exclusão sem motivo ou sem
+  fonte faz a geração falhar. Hoje: o par de ITUB 2011 (abaixo) e GSHP 26/03/2019, que a B3 lista
+  como bonificação de 100% e é dividendo pago em dinheiro e em cotas do FII Top Center (nenhuma
+  ação emitida; provento isento, Lei 9.249/95, art. 10). As cotas entram à mão como entrada, com
+  custo de R$ 9,2089623 por cota (R$ 621.716.835,00 / 67.512.149 ações; CVM, Reg. 1311/19, e
+  aviso aos acionistas de 26/03/2019). O COIR não modela dividendo pago em ativo de outra empresa
+  (pendência para versões futuras);
 - o mesmo evento vindo de duas fontes soma a origem (`b3+cvm_fre`); fator diferente na mesma
   data com, ou o mesmo fator em data com próxima, é **divergência**: o pacote fica como estava e
   o caso vai para o PR semanal, para revisão humana;
@@ -70,7 +79,11 @@ Regras da combinação (`tools/referencias/gerar.py`, `historico.py`):
   fonte (ou versão do FRE) e de outro noutra não entra duas vezes (dobraria a posição); vai para
   revisão e o tipo certo sai do aviso aos acionistas;
 - grupamento e desdobramento simultâneos ficam como duas linhas na mesma data com, como a B3
-  publica; quando a B3 só guardou uma delas, a outra vem do documento (ITUB 2011, BEES 2012);
+  publica; quando a B3 só guardou uma delas, a outra vem do documento (BEES 2012). O par que se
+  anula (100 para 1 e 1 para 100) não entra em proposta nem em controle nenhum, porque a quantidade
+  não muda: o de ITUB 2011 saiu do pacote pela lista de exclusões, e os demais (BBDC 2009, MERC
+  2023, TIMS 2025...) o COIR descarta ao ler o pacote (`coir/referencias.eventos_b3`), sem
+  depender da lista;
 - a unit entra com o fator das ações só quando todas as espécies tiveram o mesmo fator e a mesma
   data com e a cotação da unit confirma.
 
@@ -81,8 +94,10 @@ Trocas de código (`data/trocas_ticker.csv`, curada à mão, uma linha por espé
 - só é troca o que é a mesma companhia (mesmo CNPJ no FCA: os dois códigos no mesmo CNPJ, ou o
   nome anterior no histórico do CNPJ) com o preço contínuo de um código para o outro (1 para 1,
   último negócio do antigo e primeiro do novo no COTAHIST). Incorporação com relação de troca ou
-  com CNPJ diferente (TIMP3 -> TIMS3, SMLE3 -> SMLS3, JPSA3 -> IGTI3, IGTA3 -> IGTI3) não é
-  troca: é evento corporativo, e fica para revisão humana;
+  com CNPJ diferente (IGTA3 -> IGTI3) não é troca: é evento corporativo, e fica para revisão
+  humana. A exceção é a incorporação 1 para 1 em que o acionista só trocou de código, revista e
+  confirmada caso a caso (TIMP3 -> TIMS3, SMLE3 -> SMLS3, JPSA3 -> IGTI3: `fonte` "troca
+  curada");
 - `ate` é o pregão anterior ao primeiro negócio do código novo (o mesmo dia para todas as espécies
   da companhia, mesmo a que ficou sem negócio);
 - código que voltou (CTAX3 -> LIQO3 em 2018, de novo CTAX3 no ISIN antigo em 2020) não entra: a

@@ -33,7 +33,7 @@ import json
 import re
 import unicodedata
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
@@ -533,19 +533,25 @@ def _texto_evento(r: Mapping[str, str]) -> str:
     return f"{r['data_com']} {r['emissor']} {r['isin']} {r['tipo']} {r['fator']} ({r['origem']})"
 
 
-def juntar_eventos(anteriores: list[dict[str, str]], novos: Iterable[EventoB3],
-                   resumo: Resumo) -> list[dict[str, str]]:  # fmt: skip
+def juntar_eventos(anteriores: list[dict[str, str]], novos: Iterable[EventoB3], resumo: Resumo,
+                   excluidos: Collection[tuple[str, ...]] = ()
+                   ) -> list[dict[str, str]]:  # fmt: skip
     """União com o histórico (a B3 tira da lista eventos de companhias deslistadas e só guarda o
-    último de cada tipo por ISIN). Nunca apaga. O mesmo evento vindo de outra fonte soma a origem;
-    se a outra fonte traz outro fator na mesma data com, ou o mesmo fator em data com próxima, é
-    divergência: fica como estava e vai para o resumo (revisão humana, sem palpite)."""
+    último de cada tipo por ISIN). Nunca apaga sem registro. O mesmo evento vindo de outra fonte
+    soma a origem; se a outra fonte traz outro fator na mesma data com, ou o mesmo fator em data
+    com próxima, é divergência: fica como estava e vai para o resumo (revisão humana, sem
+    palpite). O que está em ``excluidos`` (``eventos_excluidos.csv``, com o motivo) sai e não
+    volta, mesmo que a B3 o devolva de novo."""
 
     def chave(r: Mapping[str, str]) -> tuple[str, ...]:
-        return tuple(r[c] for c in ("isin", "tipo", "data_com", "isin_emitido", "fator"))
+        return tuple(r[c] for c in COLUNAS_CHAVE)
 
-    todos = {chave(r): {**r, "origem": r.get("origem") or "b3"} for r in anteriores}
+    todos = {chave(r): {**r, "origem": r.get("origem") or "b3"} for r in anteriores
+             if chave(r) not in excluidos}  # fmt: skip
     for e in novos:
         linha = e.linha()
+        if chave(linha) in excluidos:
+            continue
         if not e.data_com or not e.isin or Decimal(e.fator) <= 0:
             resumo.conflitos.append(f"evento sem data com, ISIN ou fator: {e.emissor} {e.tipo}")
             continue
@@ -674,13 +680,14 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
     nomes = nomes_de_pregao(coleta.empresas)
     eventos = [e for emissor, resp in sorted(coleta.eventos.items())
                for e in ler_eventos(emissor, resp)] + eventos_curados()  # fmt: skip
+    excluidos = eventos_excluidos()
     arquivos = {
         "instrumentos_b3.csv": texto_csv(COLUNAS_INSTRUMENTOS, historico),
         "ativos_b3.csv": texto_csv(("nome_pregao", "ticker"), ativos(historico, nomes, resumo)),
         "tipos_ativo_b3.csv": texto_csv(("ticker", "tipo", "observacao"), tipos(historico)),
         "opcoes_raiz_b3.csv": texto_csv(("raiz", "ticker"), opcoes_raiz(opcoes, resumo)),
         "eventos_b3.csv": texto_csv(COLUNAS_EVENTOS, juntar_eventos(
-            ler_csv(pasta / "eventos_b3.csv"), eventos, resumo)),
+            ler_csv(pasta / "eventos_b3.csv"), eventos, resumo, excluidos)),
         "selic_mensal.csv": texto_csv(("mes", "taxa"), juntar_selic(
             ler_csv(pasta / "selic_mensal.csv"), ler_selic(coleta.selic, coleta.data), resumo)),
         "proventos_b3.csv": texto_csv(COLUNAS_PROVENTOS, juntar_proventos(
@@ -701,6 +708,8 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
 
 
 CURADOS = Path(__file__).with_name("eventos_cvm_ipe.csv")
+EXCLUIDOS = Path(__file__).with_name("eventos_excluidos.csv")
+COLUNAS_CHAVE = ("isin", "tipo", "data_com", "isin_emitido", "fator")  # chave do evento no pacote
 
 
 def eventos_curados(caminho: Path = CURADOS) -> list[EventoB3]:
@@ -708,7 +717,20 @@ def eventos_curados(caminho: Path = CURADOS) -> list[EventoB3]:
     com o protocolo do documento: o que nenhuma fonte estruturada traz (2023 em diante)."""
     if not caminho.is_file():
         return []
-    return [EventoB3(**{c: r.get(c, "") for c in COLUNAS_EVENTOS}) for r in ler_csv(caminho)]
+    excluidos = eventos_excluidos()
+    return [EventoB3(**{c: r.get(c, "") for c in COLUNAS_EVENTOS}) for r in ler_csv(caminho)
+            if tuple(r[c] for c in COLUNAS_CHAVE) not in excluidos]  # fmt: skip
+
+
+def eventos_excluidos(caminho: Path = EXCLUIDOS) -> set[tuple[str, ...]]:
+    """Eventos retirados do pacote, cada um com o motivo e a fonte (``eventos_excluidos.csv``):
+    nada sai sem registro, e o que saiu não volta na coleta seguinte."""
+    if not caminho.is_file():
+        return set()
+    linhas = ler_csv(caminho)
+    if any(not r["motivo"] or not r["fonte"] for r in linhas):
+        raise GeracaoError(f"{caminho.name}: exclusão sem motivo ou sem fonte")
+    return {tuple(r[c] for c in COLUNAS_CHAVE) for r in linhas}
 
 
 def incorporar_eventos(pasta: Path, novos: Iterable[EventoB3],
@@ -717,7 +739,8 @@ def incorporar_eventos(pasta: Path, novos: Iterable[EventoB3],
     (novos e divergências). O ``pacote.json`` leva a data, se o arquivo mudou."""
     resumo = Resumo()
     texto = texto_csv(COLUNAS_EVENTOS, juntar_eventos(
-        ler_csv(pasta / "eventos_b3.csv"), [*novos, *eventos_curados()], resumo))  # fmt: skip
+        ler_csv(pasta / "eventos_b3.csv"), [*novos, *eventos_curados()], resumo,
+        eventos_excluidos()))  # fmt: skip
     arquivos = {"eventos_b3.csv": texto,
                 "pacote.json": json.dumps({"formato": FORMATO, "data": data.isoformat()},
                                           indent=1) + "\n"}  # fmt: skip

@@ -1,6 +1,7 @@
 """F7b: "Atualizar tabelas" — o app só usa o pacote público se cada arquivo bater com o SHA-256 do
 manifesto, o formato for o desta versão e as tabelas carregarem; sem rede, nada muda."""
 
+import csv
 import json
 import shutil
 import zipfile
@@ -174,4 +175,9 @@ def test_tabelas_embutidas_integras() -> None:
     """O data/ que vai na instalação passa na mesma conferência de um pacote baixado."""
     referencias.validar_tabelas_b3(pasta_data())
     linhas = (pasta_data() / "eventos_b3.csv").read_text(encoding="utf-8").splitlines()
-    assert len(referencias.eventos_b3(pasta_data())) == len(linhas) - 1  # nenhuma descartada
+    # nenhuma descartada por inválida; só saem os pares grupamento + desdobramento que se anulam
+    lidos = referencias.eventos_b3(pasta_data())
+    sairam = {(r["isin"], r["data_com"]) for r in csv.DictReader(linhas)} - {
+        (r["isin"], r["data_com"]) for r in lidos}  # fmt: skip
+    assert ("BRBBDCACNOR1", "2009-06-08") in sairam and len(sairam) == 12
+    assert len(lidos) == len(linhas) - 1 - 2 * len(sairam)
