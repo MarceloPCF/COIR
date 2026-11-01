@@ -117,9 +117,35 @@ def evento_b3_valido(r: dict[str, str]) -> bool:
 
 def eventos_b3(pasta: Path) -> list[dict[str, str]]:
     """Eventos corporativos do pacote público (``eventos_b3.csv``; vazio se não houver), só as
-    linhas utilizáveis."""
+    linhas utilizáveis e sem os pares que se anulam (``_neutros``)."""
     caminho = pasta / "eventos_b3.csv"
-    return [r for r in (_linhas(caminho) if caminho.is_file() else []) if evento_b3_valido(r)]
+    validas = [r for r in (_linhas(caminho) if caminho.is_file() else []) if evento_b3_valido(r)]
+    neutros = _neutros(validas)
+    return [r for i, r in enumerate(validas) if i not in neutros]
+
+
+def _multiplicador(r: dict[str, str]) -> Decimal:
+    fator = Decimal(r["fator"])
+    return fator if r["tipo"] == "GRUPAMENTO" else 1 + fator / 100
+
+
+def _neutros(linhas: list[dict[str, str]]) -> set[int]:
+    """Grupamento e desdobramento no mesmo ISIN e data com que se anulam (ITUB 2011: 100 para 1 e
+    1 para 100): a quantidade não muda, então não entram em controle nenhum. Ficam no pacote (que
+    nunca apaga): se a B3 voltar a listar só um dos lados, a coleta não o toma por evento novo."""
+    grupos: dict[tuple[str, str, str], list[int]] = {}
+    for i, r in enumerate(linhas):
+        if r["tipo"] in ("GRUPAMENTO", "DESDOBRAMENTO", "BONIFICACAO"):
+            grupos.setdefault((r["isin"], r["data_com"], r["isin_emitido"]), []).append(i)
+    neutros: set[int] = set()
+    for indices in grupos.values():
+        grupamento = {linhas[i]["tipo"] == "GRUPAMENTO" for i in indices}
+        produto = Decimal(1)
+        for i in indices:
+            produto *= _multiplicador(linhas[i])
+        if grupamento == {True, False} and produto == 1:
+            neutros.update(indices)
+    return neutros
 
 
 def validar_tabelas_b3(pasta: Path) -> None:
@@ -153,14 +179,23 @@ def validar_tabelas_b3(pasta: Path) -> None:
 
 
 def tickers_por_isin(pasta: Path) -> dict[str, str]:
-    """ISIN -> ticker de ação ou unit (o mais recente visto no cadastro de instrumentos)."""
+    """ISIN -> ticker de ação ou unit (o mais recente visto no cadastro de instrumentos). O ISIN de
+    antes de uma troca de código (``trocas_ticker.csv``: KROT3 era BRKROTACNOR9) leva ao ticker
+    da época, que o cadastro de hoje não tem: o evento daquele ISIN acha a posição do ativo."""
     caminho = pasta / "instrumentos_b3.csv"
     saida: dict[str, tuple[str, str]] = {}
     for r in _linhas(caminho) if caminho.is_file() else []:
         if RE_TICKER_PADRAO.match(r["ticker"]) and r["visto_ate"] >= saida.get(
             r["isin"], ("", ""))[0]:  # fmt: skip
             saida[r["isin"]] = (r["visto_ate"], r["ticker"])
-    return {isin: t for isin, (_, t) in saida.items()}
+    por_isin = {isin: t for isin, (_, t) in saida.items()}
+    trocas = pasta / "trocas_ticker.csv"
+    for t in _linhas(trocas) if trocas.is_file() else []:
+        for isin, ticker in ((t.get("isin_antigo", ""), t["ticker_impresso"]),
+                             (t.get("isin_novo", ""), t["ticker"])):  # fmt: skip
+            if isin and RE_TICKER_PADRAO.match(ticker):
+                por_isin.setdefault(isin, ticker)
+    return por_isin
 
 
 def emissores(pasta: Path) -> dict[str, tuple[str, str, str]]:

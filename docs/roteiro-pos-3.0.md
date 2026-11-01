@@ -30,6 +30,7 @@ Registradas também em [`regras-fiscais.md`](regras-fiscais.md).
 | Venda a termo | o cálculo para com erro explícito (a compra a termo funciona) |
 | Feriados depois de 2027 | `data/feriados.csv` vai até 2027 e precisa ser estendido antes de apurar dezembro de 2027 |
 | Dividendos de BDR e de ETF, rendimentos pagos em ações | listados com aviso "fora da v3.0" |
+| Dividendo pago em ativo de outra empresa (GSHP 2019: cotas do FII Top Center) | fora do pacote de eventos (`tools/referencias/eventos_excluidos.csv`); as cotas são lançadas à mão como entrada, com o custo do aviso (R$ 9,2089623 por cota; ver [`fontes-dados.md`](fontes-dados.md)) |
 
 ## Conferência contra o gabarito
 

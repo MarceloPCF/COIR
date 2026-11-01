@@ -54,14 +54,15 @@ def test_instrumentos_tipos_e_nomes_de_pregao(tmp_path: Path) -> None:
 def test_eventos_da_b3_com_data_com_e_fator(tmp_path: Path) -> None:
     arquivos, _ = gerar.gerar(tmp_path, _coleta())
     eventos = _linhas(arquivos["eventos_b3.csv"])
-    assert "DIRR,BRDIRRACNOR0,DESDOBRAMENTO,200,2025-08-08,2025-08-08,BRDIRRACNOR0,,," in eventos
-    assert "MGLU,BRMGLUACNOR2,GRUPAMENTO,0.1,2024-05-24,2024-04-24,BRMGLUACNOR2,,," in eventos
+    dirr = "DIRR,BRDIRRACNOR0,DESDOBRAMENTO,200,2025-08-08,2025-08-08,BRDIRRACNOR0,,,,b3,,"
+    assert dirr in eventos
+    assert "MGLU,BRMGLUACNOR2,GRUPAMENTO,0.1,2024-05-24,2024-04-24,BRMGLUACNOR2,,,,b3,," in eventos
     cisao = [e for e in eventos if "CIS RED CAP" in e and "BRAMOBACNOR9" in e]
     assert cisao == [
-        "VAMO,BRVAMOACNOR7,CIS RED CAP,28.290555,2024-12-13,2024-11-22,BRAMOBACNOR9,,,"
+        "VAMO,BRVAMOACNOR7,CIS RED CAP,28.290555,2024-12-13,2024-11-22,BRAMOBACNOR9,,,,b3,,"
     ]
     subscricao = [e for e in eventos if e.startswith("VAMO") and "SUBSCRICAO" in e]
-    assert subscricao and ",3.85,11/03/2026 a 27/04/2026,2026-04-30" in subscricao[0]
+    assert subscricao and ",3.85,11/03/2026 a 27/04/2026,2026-04-30,b3,," in subscricao[0]
 
 
 def test_selic_so_meses_encerrados(tmp_path: Path) -> None:

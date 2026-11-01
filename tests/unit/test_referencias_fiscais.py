@@ -40,6 +40,10 @@ def test_serie_de_opcao_segue_a_troca_do_ativo_objeto() -> None:
     assert REFS.ticker_na_data("RRRP3", date(2024, 9, 6)) == "BRAV3"
     assert REFS.ticker_na_data("RRRP3", date(2024, 9, 9)) == "RRRP3"
     assert REFS.ticker_na_data("PETRA10", date(2023, 1, 2)) == "PETRA10"
+    # troca em cadeia: segue até o código atual (GLOB3 -> VVAR3 -> VIIA3 -> BHIA3)
+    assert REFS.ticker_na_data("GLOB3", date(2010, 1, 4)) == "BHIA3"
+    assert REFS.ticker_na_data("VVAR3", date(2019, 4, 18)) == "BHIA3"
+    assert REFS.ticker_na_data("VVAR3", date(2022, 1, 3)) == "VVAR3"  # depois da troca: outro
 
 
 def test_isencao_pme_por_vigencia_da_compra() -> None:

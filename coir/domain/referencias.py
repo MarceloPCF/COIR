@@ -72,6 +72,16 @@ class Referencias(BaseModel):
         return next((c for p, c in self.instituicoes_b3.items() if chave.startswith(p)), None)
 
     def ticker_na_data(self, ticker: str, dia: date) -> str:
+        """Código atual de ``ticker`` negociado em ``dia``, seguindo trocas em cadeia (VVAR3 em 2019
+        -> VIIA3 em 2021 -> BHIA3 em 2023)."""
+        for _ in range(len(self.trocas) + 1):
+            novo = self._um_passo(ticker, dia)
+            if novo == ticker:
+                break
+            ticker = novo
+        return ticker
+
+    def _um_passo(self, ticker: str, dia: date) -> str:
         for t in self.trocas:
             if t.ticker_impresso == ticker and dia <= t.ate:
                 return t.ticker

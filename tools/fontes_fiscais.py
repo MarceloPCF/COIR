@@ -8,7 +8,8 @@ Fontes lidas (as citações já estão nelas; nada é digitado à mão aqui):
 - ``data/*.csv`` com coluna ``fonte`` (parâmetros fiscais, isenção de PME, vencimentos);
 - ``data/irpf/*.yaml`` (mapeamento das fichas do IRPF por exercício), chave ``fonte``;
 - a tabela R1 a R18 e as seções de ``docs/regras-fiscais.md``;
-- as docstrings dos casos fiscais em ``tests/fiscal_cases`` e dos módulos de ``coir/engine``.
+- as docstrings dos casos fiscais em ``tests/fiscal_cases`` e dos módulos de ``coir/engine``;
+- ``docs/fontes-dados.md`` (as fontes públicas do pacote de referências), copiado como está.
 
 Determinístico: mesma entrada, mesmos bytes (o teste confere que o documento está em dia).
 """
@@ -28,6 +29,7 @@ import yaml
 
 RAIZ = Path(__file__).resolve().parents[1]
 DESTINO = RAIZ / "docs" / "fontes-fiscais.md"
+FONTES_DADOS = "docs/fontes-dados.md"  # fontes do pacote de referências (dados, não normas)
 
 # Citação -> nome normalizado da norma. A ordem importa: o primeiro padrão que casa num trecho
 # fica com ele (ex.: "Lei Complementar" antes de "Lei").
@@ -210,6 +212,9 @@ def gerar(raiz: Path = RAIZ) -> str:
         "|---|---|",
     ]
     partes += [f"| {n} | {len(usos[n])} |" for n in sorted(usos, key=_ordem)]
+    dados = raiz / FONTES_DADOS
+    if dados.is_file():  # copiado como está (edite lá)
+        partes += ["", *dados.read_text(encoding="utf-8").rstrip().splitlines()]
     for norma in sorted(usos, key=_ordem):
         partes += ["", f"## {norma}", ""]
         for u in sorted(usos[norma]):

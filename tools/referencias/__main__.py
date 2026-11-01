@@ -2,17 +2,25 @@
   uv run python -m tools.referencias atualizar [--data AAAA-MM-DD] [--pasta data] [--resumo r.md]
   uv run python -m tools.referencias pacote --saida dist/   (zip de data/ + manifesto, no release)
 
+  uv run python -m tools.referencias historico [--cache pasta] [--resumo r.md]
+
 ``atualizar`` coleta as fontes públicas, regrava em data/ os arquivos gerados que mudaram e escreve
 o resumo das mudanças (corpo do PR semanal). Sai com código 0 mesmo sem mudança.
+
+``historico`` completa ``eventos_b3.csv`` desde 2008 com o FRE da CVM e o COTAHIST da B3 (uns 1,5 GB
+de zips anuais; ``--cache`` guarda e reaproveita). O histórico não muda de uma semana para outra:
+roda à mão (ou pelo workflow, sob demanda), e o resumo lista divergências e revisões.
 """
 
 import argparse
+import csv
+import io
 import logging
 import sys
 from datetime import date
 from pathlib import Path
 
-from tools.referencias import fontes, gerar, pacote
+from tools.referencias import fontes, gerar, historico, pacote
 
 DATA = Path(__file__).resolve().parents[2] / "data"
 
@@ -26,6 +34,11 @@ def main(argv: list[str] | None = None) -> int:
     atualizar.add_argument("--resumo", type=Path, default=None)
     atualizar.add_argument("--bruto", type=Path, default=None, help="salva as respostas aqui")
     atualizar.add_argument("--de-bruto", type=Path, default=None, help="reprocessa sem rede")
+    hist = sub.add_parser("historico", help="eventos desde 2008 (FRE da CVM + COTAHIST da B3)")
+    hist.add_argument("--data", type=date.fromisoformat, default=date.today())
+    hist.add_argument("--pasta", type=Path, default=DATA)
+    hist.add_argument("--cache", type=Path, default=None, help="zips anuais baixados")
+    hist.add_argument("--resumo", type=Path, default=None)
     montar = sub.add_parser("pacote", help="zip de data/ com manifesto (SHA-256)")
     montar.add_argument("--pasta", type=Path, default=DATA)
     montar.add_argument("--saida", type=Path, required=True)
@@ -39,6 +52,23 @@ def main(argv: list[str] | None = None) -> int:
             if args.bruto is not None:
                 coleta.salvar(args.bruto)
         arquivos, resumo = gerar.gerar(args.pasta, coleta)
+        mudaram = gerar.gravar(args.pasta, arquivos)
+        texto = resumo.markdown(args.data)
+        if args.resumo is not None:
+            args.resumo.write_text(texto, encoding="utf-8")
+        print(texto)
+        print(f"arquivos alterados: {', '.join(mudaram) or 'nenhum'}")
+        return 0
+    if args.comando == "historico":
+        companhias = {r["cnpj"]: r["emissor"]
+                      for r in gerar.ler_csv(args.pasta / "emissores_b3.csv")
+                      if r["tipo"] == "COMPANHIA"}  # fmt: skip
+        pares = historico.pares_de_troca(gerar.ler_csv(args.pasta / "trocas_ticker.csv"))
+        eventos, revisao = fontes.historico_eventos(companhias, args.data, args.cache,
+                                                    pares=pares)  # fmt: skip
+        arquivos, resumo = gerar.incorporar_eventos(args.pasta, eventos, args.data)
+        juntos = list(csv.DictReader(io.StringIO(arquivos["eventos_b3.csv"])))
+        resumo.revisao = [r.texto() for r in historico.cobertas(revisao, juntos)]
         mudaram = gerar.gravar(args.pasta, arquivos)
         texto = resumo.markdown(args.data)
         if args.resumo is not None:
