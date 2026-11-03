@@ -1,5 +1,6 @@
 """Imagens das páginas com tarja sobre o que o anonimizador trocou. Só notas fictícias."""
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pypdfium2 as pdfium
@@ -59,3 +60,16 @@ def test_texto_que_nao_casa_com_o_pdf_nao_gera_imagem(pdf: Path) -> None:
         paginas_tarjadas(pdf, [textos[0] + "x"], [bytes(len(textos[0]) + 1)])
     with pytest.raises(AnonimizacaoError, match="número de páginas"):
         paginas_tarjadas(pdf, [*textos, "outra"], [b"", b""])
+
+
+def test_tarjar_e_ler_em_varias_threads(pdf: Path) -> None:
+    """O PDFium não é thread-safe: o suporte tarja numa thread enquanto a tela desenha ou lê
+    outra nota; a trava global serializa tudo (sem ela, o processo cai com heap corrompido)."""
+    textos = paginas(pdf)
+    c = conferir("nota.pdf", textos, MapaAnonimizacao(segredo="00" * 32))
+    esperado = paginas_tarjadas(pdf, textos, c.trocados)[0].tobytes()
+    with ThreadPoolExecutor(max_workers=6) as grupo:
+        imagens = list(grupo.map(lambda _: paginas_tarjadas(pdf, textos, c.trocados), range(12)))
+        lidos = list(grupo.map(lambda _: paginas(pdf), range(12)))
+    assert all(i[0].tobytes() == esperado for i in imagens)
+    assert all(t == textos for t in lidos)

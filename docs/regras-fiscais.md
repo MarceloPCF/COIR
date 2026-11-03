@@ -126,7 +126,10 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
     (possível evento faltando), sem mudar o cálculo. Venda a descoberto desde zero, sem aviso.
   - Isenção de PME (Lei 13.043/2014 art. 16; IN arts. 59 III e 66 a 69-A), `data/isencao_pme.csv`:
     PRIO3 (compras de 10/07/2014 a 29/01/2021) e AGRO3 (até 03/02/2021), vendas até 31/12/2023;
-    ganho isento, fora do limite, perdas não compensam; day trade dessas ações também isento
+    ganho isento, fora do limite, perdas não compensam (art. 67 §2º); as vendas de PME do mês se
+    somam e o líquido positivo é o lucro isento, o negativo fica só para consulta, sem abater
+    ganho isento de outro mês (critério do usuário de 03/11/2026, parecer do especialista: a
+    norma não decide entre somar por operação ou no mês); day trade dessas ações também isento
     (leitura literal: o art. 59 §2º I só afasta o inciso I). Lotes isento e tributado juntos
     falham alto (controle separado do art. 69-A §4º não implementado; não ocorre no livro). Depois
     de 31/12/2023 a isenção acabou e o lote antigo se junta às compras novas.
@@ -193,6 +196,22 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - dados do outro sistema: custos de uma nota de exercício e de uma venda de opção não lançados;
   - dados do COIR: séries de opção com custo na bonificação (só a quantidade muda) e custo
     atribuído de uma bonificação diferente do oficial, corrigidos no `eventos.csv`.
+
+- **Comparação mês a mês com o relatório mensal de outro sistema (`coir gabarito externo-mensal`,
+  03/11/2026):** um PDF por ano, na ordem da ficha de renda variável do programa IRPF, em
+  `COIR_DADOS/_relatorios-b3`. O motor parte do prejuízo que o outro sistema recebeu em janeiro do
+  primeiro ano (o da DIRPF do ano anterior; marco 01/01/2020), sem gravar nada no banco: o que vem
+  antes do marco fica com o gabarito antigo. Compara cada linha (mercados, resultado, prejuízo,
+  imposto, IR fonte e alienações); explicações em `COIR_DADOS/gabarito/externo-mensal-explicadas.csv`.
+  Além das diferenças de rateio e do exercício acima, as de método foram:
+  - total de alienações do limite de R$ 20 mil: o COIR tira as units (R4a) e soma a venda por
+    exercício de call (R4); o outro sistema faz o contrário;
+  - opção sobre ETF (ex.: BOVA11) vai para "opções - outros" no COIR (objeto não é ação);
+  - ativo em duas corretoras ao mesmo tempo: o COIR usa o PM único por titular (IN 1.585 art. 58)
+    e o outro sistema calcula por corretora; o resultado cai em outro mês, com a mesma soma;
+  - perda em ação de PME: o COIR mostrava a perda como lucro isento negativo e a somava no ano com
+    os ganhos (o rendimento isento da DIRPF saía menor); corrigido em 03/11/2026 (lucro isento 0 e
+    perda à parte, como no outro sistema).
 
 ## Relatórios (F5, 16/10/2026)
 `coir exportar` monta os relatórios de um titular e um ano só com os valores do motor e das notas

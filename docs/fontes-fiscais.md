@@ -32,7 +32,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | P&R IRPF | 5 |
 | P&R IRPF 2026 | 18 |
 | Manual MIR 2026 | 3 |
-| Programa IRPF | 7 |
+| Programa IRPF | 8 |
 | CTN | 1 |
 | Súmula STJ 360 | 1 |
 | REsp 1.149.022/SP | 1 |
@@ -442,6 +442,7 @@ Companhias que saíram da bolsa:
 - `coir/engine/apuracao.py` — módulo: …a declaração anual (IN RFB 1.585/2015; decisão do usuário). A DARF usa um saldo único; as fichas do programa IRPF recebem o IRRF que cada uma consumiu (`fichas.py`). - DARF 6015: abaixo de R$ 10 acumula, inclusive para…
 - `coir/engine/fichas.py` — módulo: IRRF por ficha do programa IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei…
 - `data/parametros_fiscais.csv` — opcoes_linha_acoes_tipos_objeto: programa IRPF, ficha Renda variável: "Mercado de opções - ações" para opção sobre ação; ETF, índice e outros em "Mercado de opções - outros" (P&R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, coerente com o Bens e Direitos do programa (código 03.01, ações inclusive units)
+- `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): 03/11/2026):** um PDF por ano, na ordem da ficha de renda variável do programa IRPF, em
 - `docs/regras-fiscais.md` — R17: R17 | Fichas/códigos da DIRPF mudam por ano | Mapeamento por ano em `data/irpf/<ano>.yaml` | programa IRPF do ano | revisar anualmente
 - `docs/regras-fiscais.md` — Relatórios (F5, 16/10/2026): conferir no programa IRPF do ano: a ficha FII sem linha de IR fonte de day trade; ordem de
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: Linha da ficha "Renda variável - operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (pareceres de 20 e 21/10/2026), conferidos à mão. Fontes: programa…

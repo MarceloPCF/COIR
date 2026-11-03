@@ -58,6 +58,9 @@ def resumo_mes(ap: Apuracao, ano: int, mes: int, codigo_darf: str) -> str:
         )
         if m.isento_pme:
             linhas.append(f"Isento (ações de PME, Lei 13.043/2014): {_r(m.isento_pme)}")
+        if m.perda_pme:
+            linhas.append(f"Perda em ações de PME (não compensa; IN RFB 1.585/2015 art. 67 §2º): "
+                          f"{_r(m.perda_pme)}")  # fmt: skip
         linhas.append("Memória de cálculo (movimentos com resultado):")
         movs = [x for x in ap.movimentos if x.titular == m.titular and (x.data.year, x.data.month)
                 == (ano, mes) and (x.resultado or x.venda_acao_a_vista)]  # fmt: skip

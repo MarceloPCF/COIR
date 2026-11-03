@@ -7,6 +7,7 @@ ajustes de futuros com o valor impresso.
 """
 
 import re
+from collections.abc import Sequence
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -26,6 +27,7 @@ from coir.domain.fiscal import (
     NotaMotor,
     OperacaoMotor,
     PosicaoAtivo,
+    SaldoInicial,
     TipoAjuste,
     TipoAtivo,
     TipoEvento,
@@ -269,10 +271,14 @@ def movimentos_banco(
 
 
 def apurar_banco(
-    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date
-) -> Apuracao:
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date,
+    saldos: Sequence[SaldoInicial] | None = None,
+) -> Apuracao:  # fmt: skip
+    """`saldos`: prejuízos iniciais no lugar dos gravados no banco (comparação com um gabarito
+    que começa num marco); None usa os do banco."""
     with conectar(banco) as fabrica, fabrica() as sessao:
         notas, eventos = entradas(sessao, refs, fiscais)
         custos = outros_custos.do_banco(sessao)
-        saldos = saldos_iniciais.do_banco(sessao)
+        if saldos is None:
+            saldos = saldos_iniciais.do_banco(sessao)
     return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos, saldos)

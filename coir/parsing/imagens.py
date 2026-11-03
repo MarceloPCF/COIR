@@ -14,6 +14,7 @@ import pypdfium2 as pdfium
 from PIL import Image, ImageDraw
 
 from coir.erros import AnonimizacaoError
+from coir.parsing.texto_pdf import TRAVA_PDFIUM
 
 DPI = 110  # legível na tela e pequeno o bastante para o e-mail (100 a 200 KB por página)
 FOLGA = 1  # pixels em volta de cada tarja (borda suavizada das letras)
@@ -33,6 +34,17 @@ def paginas_tarjadas(
 ) -> list[Image.Image]:
     """Uma imagem por página. ``textos`` é o texto original de cada página (o que foi
     anonimizado): se o PDF der outro texto, as posições não casam e nada é gerado."""
+    with TRAVA_PDFIUM:  # o suporte gera as imagens numa thread (run.io_bound)
+        return _tarjar(pdf, textos, trocados, alertas, dpi)
+
+
+def _tarjar(
+    pdf: Path,
+    textos: Sequence[str],
+    trocados: Sequence[bytes],
+    alertas: Sequence[Sequence[tuple[int, int]]],
+    dpi: int,
+) -> list[Image.Image]:
     escala = dpi / 72
     try:
         documento = pdfium.PdfDocument(pdf)
@@ -41,26 +53,40 @@ def paginas_tarjadas(
     try:
         if len(documento) != len(textos):
             raise AnonimizacaoError("o PDF tem outro número de páginas que o texto conferido")
-        imagens = []
-        for i in range(len(documento)):
-            pagina = documento[i]
-            textpage = pagina.get_textpage()
-            if textpage.count_chars() != len(textos[i]) or textpage.get_text_range() != textos[i]:
-                raise AnonimizacaoError(f"página {i + 1}: o texto do PDF não casa com o conferido")
-            bitmap = pagina.render(scale=escala, grayscale=True)  # pyright: ignore[reportArgumentType]
-            imagem = bitmap.to_pil().convert("RGB")
-            desenho = ImageDraw.Draw(imagem)
-            posicao = _posicao(pagina, escala)
-            for ini, fim in _trechos(trocados[i]):
-                for r in _caixas(textpage, ini, fim, posicao):
-                    desenho.rectangle(_folga(r, FOLGA), fill=(0, 0, 0))
-            for ini, fim in alertas[i] if i < len(alertas) else ():
-                for r in _caixas(textpage, ini, fim, posicao):
-                    desenho.rectangle(_folga(r, FOLGA + 2), outline=CONTORNO, width=2)
-            imagens.append(imagem.quantize(colors=CORES))
-        return imagens
+        return [_pagina(documento[i], i, textos[i], trocados[i],
+                        alertas[i] if i < len(alertas) else (), escala)
+                for i in range(len(documento))]  # fmt: skip
     finally:
         documento.close()
+
+
+def _pagina(pagina: pdfium.PdfPage, i: int, texto: str, trocado: bytes,
+            alertas: Sequence[tuple[int, int]], escala: float) -> Image.Image:  # fmt: skip
+    """Uma página tarjada; página, textpage e bitmap liberados aqui, dentro da trava (o coletor
+    de lixo poderia liberá-los depois, em outra thread, sem ela)."""
+    try:
+        textpage = pagina.get_textpage()
+        try:
+            if textpage.count_chars() != len(texto) or textpage.get_text_range() != texto:
+                raise AnonimizacaoError(f"página {i + 1}: o texto do PDF não casa com o conferido")
+            bitmap = pagina.render(scale=escala, grayscale=True)  # pyright: ignore[reportArgumentType]
+            try:
+                imagem = bitmap.to_pil().convert("RGB")  # cópia: não depende mais do bitmap
+            finally:
+                bitmap.close()
+            desenho = ImageDraw.Draw(imagem)
+            posicao = _posicao(pagina, escala)
+            for ini, fim in _trechos(trocado):
+                for r in _caixas(textpage, ini, fim, posicao):
+                    desenho.rectangle(_folga(r, FOLGA), fill=(0, 0, 0))
+            for ini, fim in alertas:
+                for r in _caixas(textpage, ini, fim, posicao):
+                    desenho.rectangle(_folga(r, FOLGA + 2), outline=CONTORNO, width=2)
+            return imagem.quantize(colors=CORES)
+        finally:
+            textpage.close()
+    finally:
+        pagina.close()
 
 
 def gravar_png(imagem: Image.Image, destino: Path) -> None:

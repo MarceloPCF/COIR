@@ -251,6 +251,58 @@ def gabarito_externo(
     print(f"Detalhe em {saida} (motivos já analisados: {conhecidas})")
 
 
+@gabarito_app.command("externo-mensal")
+def gabarito_externo_mensal(
+    pasta: Path | None = typer.Argument(
+        None,
+        help="Pasta com os PDFs mensais de outro sistema, um por ano ('*Comuns e Day-Trade*.pdf'; "
+        "padrão: _relatorios-b3).",
+    ),
+    titular: int = typer.Option(1, help="Id do titular (coir titular listar)."),
+    banco: Path | None = OpcaoBanco,
+    destino: Path | None = OpcaoCaminho,
+) -> None:
+    """Compara mês a mês a ficha de renda variável de outro sistema com a apuração do motor,
+    partindo do prejuízo que ele recebeu no primeiro mês (ex.: o da última DIRPF)."""
+    from collections import Counter
+
+    from coir.engine.calendario import fim_do_mes
+    from coir.gabarito.comparar import Tolerancias
+    from coir.gabarito.exportar import exigir_fora_do_repositorio
+    from coir.gabarito.externo_mensal import (
+        carregar_explicacoes,
+        comparar_mensal,
+        explicar,
+        gravar,
+        ler_relatorios,
+        saldo_inicial,
+    )
+    from coir.servicos.apuracao import apurar_banco
+
+    origem = pasta or dados_dir(exigir=True) / "_relatorios-b3"
+    arquivos = sorted(origem.glob("*Comuns e Day-Trade*.pdf"))
+    if not arquivos:
+        raise typer.BadParameter(f"nenhum '*Comuns e Day-Trade*.pdf' em {origem}")
+    meses = ler_relatorios(arquivos)
+    inicial = saldo_inicial(meses, titular)
+    ultimo = meses[-1]
+    apuracao = apurar_banco(_banco(banco), _refs(), _fiscais(),
+                            fim_do_mes(ultimo.ano, ultimo.mes), [inicial])  # fmt: skip
+    pasta_saida = _destino(destino)
+    conhecidas = carregar_explicacoes(pasta_saida / "externo-mensal-explicadas.csv")
+    tol = Tolerancias.carregar().mes
+    linhas = explicar(comparar_mensal(meses, apuracao.meses, titular, tol), conhecidas)
+    print(f"Relatório externo: {len(meses)} meses ({meses[0].mes:02d}/{meses[0].ano} a "
+          f"{ultimo.mes:02d}/{ultimo.ano}); prejuízo inicial em 31/12/{inicial.ano}: "
+          f"comuns {inicial.comum}, day trade {inicial.day_trade}")  # fmt: skip
+    for classe, n in Counter(x.classe for x in linhas).most_common():
+        print(f"  {classe}: {n}")
+    exigir_fora_do_repositorio(pasta_saida)
+    saida = pasta_saida / "externo-mensal-divergencias.csv"
+    gravar([x for x in linhas if x.classe != "confere"], saida)
+    print(f"Detalhe em {saida}")
+
+
 @gabarito_app.command("dirpf")
 def gabarito_dirpf(
     ano: int = typer.Option(..., help="Ano-calendário da declaração entregue (ex.: 2025)."),

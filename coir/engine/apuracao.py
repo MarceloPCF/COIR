@@ -232,13 +232,14 @@ def _apurar_titular(
             pendentes = []
         else:
             darf, novo_acumulado, venc = ZERO, total, None
+        liquido_pme = centavos(pme.get((titular, ano, mes), ZERO))
         apurado = MesApurado(
             titular=titular, ano=ano, mes=mes, categorias=tuple(categorias), imposto=imposto,
             irrf_mes=retido.day_trade + retido.lei, irrf_saldo_anterior=saldo_anterior,
             irrf_deduzido=deduzido, irrf_saldo=saldo.saldo, imposto_devido=devido,
             darf_acumulado_anterior=acumulado_darf, darf=darf,
             darf_acumulado=novo_acumulado, vencimento=venc,
-            isento_pme=centavos(pme.get((titular, ano, mes), ZERO)),
+            isento_pme=max(liquido_pme, ZERO), perda_pme=min(liquido_pme, ZERO),
             irrf_mes_day_trade=retido.day_trade, irrf_saldo_day_trade_anterior=saldo_dt_anterior,
             irrf_saldo_day_trade=saldo.saldo_day_trade,
         )  # fmt: skip

@@ -6,6 +6,7 @@ sobre o mesmo texto que o PDF original daria, sem ter o PDF.
 """
 
 from pathlib import Path
+from threading import RLock
 
 import pypdfium2 as pdfium
 
@@ -19,6 +20,10 @@ class PdfError(CoirError):
 SUFIXO_TEXTO = ".txt"
 SEPARADOR_PAGINAS = ""
 
+# O PDFium não é thread-safe: duas threads usando a biblioteca ao mesmo tempo corrompem o heap
+# (queda nativa 0xc0000374). Todo uso do pypdfium2 (abrir, ler, desenhar, fechar) passa por aqui.
+TRAVA_PDFIUM = RLock()
+
 
 def paginas(caminho: Path) -> list[str]:
     """Devolve o texto de cada página, na ordem."""
@@ -26,17 +31,31 @@ def paginas(caminho: Path) -> list[str]:
         raise PdfError(f"PDF não encontrado: {caminho.name}")
     if caminho.suffix.lower() == SUFIXO_TEXTO:
         return ler_texto(caminho)
-    try:
-        documento = pdfium.PdfDocument(caminho)
-    except pdfium.PdfiumError as erro:
-        raise PdfError(f"PDF ilegível: {caminho.name}") from erro
-    try:
-        textos = [documento[i].get_textpage().get_text_range() for i in range(len(documento))]
-    finally:
-        documento.close()
+    with TRAVA_PDFIUM:
+        try:
+            documento = pdfium.PdfDocument(caminho)
+        except pdfium.PdfiumError as erro:
+            raise PdfError(f"PDF ilegível: {caminho.name}") from erro
+        try:
+            textos = [_texto(documento[i]) for i in range(len(documento))]
+        finally:
+            documento.close()
     if not any(t.strip() for t in textos):
         raise PdfError(f"PDF sem camada de texto: {caminho.name}")
     return textos
+
+
+def _texto(pagina: pdfium.PdfPage) -> str:
+    """Texto de uma página, liberando a página e o textpage ainda dentro da trava (o coletor de
+    lixo poderia liberá-los depois, em outra thread, sem ela)."""
+    try:
+        textpage = pagina.get_textpage()
+        try:
+            return textpage.get_text_range()
+        finally:
+            textpage.close()
+    finally:
+        pagina.close()
 
 
 def ler_texto(caminho: Path) -> list[str]:

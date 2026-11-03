@@ -17,6 +17,7 @@ from coir.db.sessao import conectar
 from coir.domain.nota import NotaExtraida, OperacaoExtraida
 from coir.erros import BancoError, ConciliacaoError, ExtracaoError
 from coir.parsing.conciliar import conciliar
+from coir.parsing.texto_pdf import TRAVA_PDFIUM
 
 PASTA_NOTAS = "_notas-corretagens"
 
@@ -140,21 +141,27 @@ def detalhe(banco: Path, pasta_notas: Path, id_nota: int) -> DetalheNota:
 
 def pagina_png(pdf: Path, pagina: int, largura: int = 1100) -> bytes:
     """Página (1..n) do PDF em PNG, com `largura` pixels."""
-    try:
-        documento = pdfium.PdfDocument(pdf)
-    except (OSError, pdfium.PdfiumError) as erro:
-        raise ExtracaoError(f"não foi possível abrir {pdf.name}: {erro}") from erro
-    try:
-        if not 1 <= pagina <= len(documento):
-            raise ExtracaoError(f"{pdf.name}: página {pagina} não existe ({len(documento)})")
-        folha = documento[pagina - 1]
-        escala = largura / folha.get_width()
-        imagem = folha.render(scale=escala).to_pil()
-        saida = BytesIO()
-        imagem.save(saida, format="PNG", optimize=True)
-        return saida.getvalue()
-    finally:
-        documento.close()
+    with TRAVA_PDFIUM:  # a tela desenha páginas em threads (run.io_bound)
+        try:
+            documento = pdfium.PdfDocument(pdf)
+        except (OSError, pdfium.PdfiumError) as erro:
+            raise ExtracaoError(f"não foi possível abrir {pdf.name}: {erro}") from erro
+        try:
+            if not 1 <= pagina <= len(documento):
+                raise ExtracaoError(f"{pdf.name}: página {pagina} não existe ({len(documento)})")
+            folha = documento[pagina - 1]
+            try:
+                bitmap = folha.render(scale=largura / folha.get_width())
+                try:  # a imagem PIL aponta para a memória do bitmap: gravar antes de liberá-lo
+                    saida = BytesIO()
+                    bitmap.to_pil().save(saida, format="PNG", optimize=True)
+                finally:
+                    bitmap.close()
+            finally:  # página e bitmap liberados dentro da trava, nunca pelo coletor de lixo
+                folha.close()
+            return saida.getvalue()
+        finally:
+            documento.close()
 
 
 def arquivos_incompletos(banco: Path) -> list[str]:
