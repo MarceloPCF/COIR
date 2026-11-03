@@ -190,6 +190,7 @@ def resumo_fiscal(d: DadosRelatorio) -> Relatorio:
         _dinheiro("Acumulado para o mês seguinte"),
         Coluna("Vencimento", T.DATA),
         _dinheiro("Isento PME"),
+        _dinheiro("Perda PME (não compensa)"),
     )
     linhas = [
         (
@@ -205,6 +206,7 @@ def resumo_fiscal(d: DadosRelatorio) -> Relatorio:
             m.darf_acumulado,
             m.vencimento,
             m.isento_pme,
+            m.perda_pme,
         )
         for m in meses
     ]
@@ -213,7 +215,7 @@ def resumo_fiscal(d: DadosRelatorio) -> Relatorio:
             "Imposto, IRRF e DARF do mês (como a DARF é calculada)",
             colunas,
             tuple(linhas),
-            _total(linhas, colunas, {1, 2, 4, 6, 8, 11}) if linhas else None,
+            _total(linhas, colunas, {1, 2, 4, 6, 8, 11, 12}) if linhas else None,
             nota="IRRF sobre vendas comuns (Lei 11.033/2004) e sobre ganho de day trade, com "
             "saldo no ano; DARF abaixo do valor mínimo acumula (Lei 9.430/1996 art. 68).",
         )
@@ -362,17 +364,19 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
         Coluna("Mês"),
         _dinheiro("Total em alienações de ações (Lei 11.033/2004)"),
         _dinheiro("Lucro isento (Lei 11.033/2004)"),
-        _dinheiro("Resultado isento de PME (Lei 13.043/2014 art. 16)"),
+        _dinheiro("Lucro isento de PME (Lei 13.043/2014 art. 16)"),
+        _dinheiro("Perda em ação de PME (não compensa: IN RFB 1.585/2015 art. 67 §2º)"),
     )
     linhas: list[tuple[Valor, ...]] = [
-        (MESES[m.mes - 1], _cat(m, comum).vendas_acoes, _cat(m, comum).isento, m.isento_pme)
+        (MESES[m.mes - 1], _cat(m, comum).vendas_acoes, _cat(m, comum).isento, m.isento_pme,
+         m.perda_pme)
         for m in meses
-    ]
+    ]  # fmt: skip
     outras = Secao(
         "Outras informações (só para consulta)",
         colunas,
         tuple(linhas),
-        _total(linhas, colunas, {1, 2, 3}) if linhas else None,
+        _total(linhas, colunas, {1, 2, 3, 4}) if linhas else None,
     )
     colunas = (
         Coluna("Mês"),

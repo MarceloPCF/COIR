@@ -342,7 +342,11 @@ class MesApurado(Modelo):
     darf: Decimal  # a pagar neste mês (0 se abaixo do mínimo)
     darf_acumulado: Decimal  # passa ao mês seguinte
     vencimento: date | None
-    isento_pme: Decimal = ZERO  # resultado das vendas isentas de PME (perdas não compensam)
+    # vendas de ações de PME (Lei 13.043/2014 art. 16), líquido do mês (critério do usuário,
+    # 03/11/2026): positivo é o ganho isento; negativo é perda que não compensa nada (IN RFB
+    # 1.585/2015 art. 67 §2º), nem ganho isento de outro mês: fica só para consulta
+    isento_pme: Decimal = ZERO  # >= 0
+    perda_pme: Decimal = ZERO  # <= 0
     # parte de day trade (1%) do IRRF, como no programa da Receita (o resto é o de 0,005%)
     irrf_mes_day_trade: Decimal = ZERO
     irrf_saldo_day_trade_anterior: Decimal = ZERO

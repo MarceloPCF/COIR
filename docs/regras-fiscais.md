@@ -126,7 +126,10 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
     (possível evento faltando), sem mudar o cálculo. Venda a descoberto desde zero, sem aviso.
   - Isenção de PME (Lei 13.043/2014 art. 16; IN arts. 59 III e 66 a 69-A), `data/isencao_pme.csv`:
     PRIO3 (compras de 10/07/2014 a 29/01/2021) e AGRO3 (até 03/02/2021), vendas até 31/12/2023;
-    ganho isento, fora do limite, perdas não compensam; day trade dessas ações também isento
+    ganho isento, fora do limite, perdas não compensam (art. 67 §2º); as vendas de PME do mês se
+    somam e o líquido positivo é o lucro isento, o negativo fica só para consulta, sem abater
+    ganho isento de outro mês (critério do usuário de 03/11/2026, parecer do especialista: a
+    norma não decide entre somar por operação ou no mês); day trade dessas ações também isento
     (leitura literal: o art. 59 §2º I só afasta o inciso I). Lotes isento e tributado juntos
     falham alto (controle separado do art. 69-A §4º não implementado; não ocorre no livro). Depois
     de 31/12/2023 a isenção acabou e o lote antigo se junta às compras novas.
@@ -204,9 +207,9 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - total de alienações do limite de R$ 20 mil: o COIR tira as units (R4a) e soma a venda por
     exercício de call (R4); o outro sistema faz o contrário;
   - opção sobre ETF (ex.: BOVA11) vai para "opções - outros" no COIR (objeto não é ação);
-  - perda em ação de PME: o COIR a mostra como lucro isento negativo (Lei 13.043/2014) e soma no ano
-    com os ganhos; o outro sistema mostra zero. Pendente de parecer fiscal (perdas de PME não
-    compensam; o rendimento isento seria só o ganho).
+  - perda em ação de PME: o COIR mostrava a perda como lucro isento negativo e a somava no ano com
+    os ganhos (o rendimento isento da DIRPF saía menor); corrigido em 03/11/2026 (lucro isento 0 e
+    perda à parte, como no outro sistema).
 
 ## Relatórios (F5, 16/10/2026)
 `coir exportar` monta os relatórios de um titular e um ano só com os valores do motor e das notas

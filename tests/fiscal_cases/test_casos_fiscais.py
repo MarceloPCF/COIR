@@ -646,8 +646,25 @@ def test_pme_perda_nao_compensa_e_venda_depois_de_2023_tributa() -> None:
     livro.nota(date(2024, 2, 1), livro.op("V", "PRIO3", 100, "40"))  # ganho 1.000 em 2024
     ap = livro.apurar(date(2024, 2, 29))
     assert categoria(ap, 2020, 3, Categoria.COMUM).prejuizo_a_compensar == 0
-    assert mes(ap, 2020, 3).isento_pme == D(-1000)
+    assert (mes(ap, 2020, 3).isento_pme, mes(ap, 2020, 3).perda_pme) == (0, D(-1000))
     assert categoria(ap, 2024, 2, Categoria.COMUM).vendas_acoes == D(4000)
+
+
+def test_pme_liquido_do_mes_com_piso_zero() -> None:
+    """IN 1.585 arts. 66 e 67 §2º; critério do usuário (03/11/2026): as vendas de PME do mês se
+    somam (ganho 1.000 e perda 300 em mar/2020 = isento 700); mês com resultado negativo tem
+    isento 0 e a perda fica só para consulta, sem abater o ganho isento de outro mês (jan)."""
+    livro = Livro()
+    livro.nota(date(2020, 1, 2), livro.op("C", "PRIO3", 400, "10", pme_ate=PME_ATE),
+               livro.op("C", "AGRO3", 300, "10", pme_ate=PME_ATE))  # fmt: skip
+    livro.nota(date(2020, 1, 20), livro.op("V", "PRIO3", 100, "15"))  # ganho 500
+    livro.nota(date(2020, 3, 2), livro.op("V", "PRIO3", 100, "20"),  # ganho 1.000
+               livro.op("V", "AGRO3", 100, "7"))  # perda 300  # fmt: skip
+    livro.nota(date(2020, 4, 1), livro.op("V", "AGRO3", 100, "4"))  # perda 600
+    ap = livro.apurar(date(2020, 4, 30))
+    pme = {m.mes: (m.isento_pme, m.perda_pme) for m in ap.meses if m.ano == 2020}
+    assert (pme[1], pme[3], pme[4]) == ((D(500), 0), (D(700), 0), (0, D(-600)))
+    assert categoria(ap, 2020, 4, Categoria.COMUM).prejuizo_a_compensar == 0
 
 
 def test_pme_compra_depois_de_2023_junta_ao_lote_antigo() -> None:
