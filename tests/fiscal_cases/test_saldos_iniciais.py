@@ -60,4 +60,8 @@ def test_custodia_inicial_so_de_posicao_comprada_a_vista(cv: str, tipo_ativo: Ti
                  tipo_ativo=tipo_ativo)  # fmt: skip
     livro.nota(date(2025, 1, 10), livro.op("C", "PETR4", 100, "30"))
     with pytest.raises(MotorError, match="custódia inicial"):
-        livro.apurar(date(2025, 1, 31))
+        livro.movimentos(date(2025, 1, 31))
+    # na apuração, o ativo fica isolado e o resto segue
+    ap = livro.apurar(date(2025, 1, 31))
+    [isolado] = ap.isolados
+    assert isolado.ticker == "XPTO3" and "custódia inicial" in isolado.motivo

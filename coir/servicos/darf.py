@@ -56,6 +56,7 @@ class LinhaDarf:
     multa: MultaMora | None  # paga: até o pagamento; em atraso: estimada até hoje
     pagamento: Pagamento | None
     juros: JurosMora | None = None  # Selic + 1% (mesmas datas da multa)
+    pendencia: str = ""  # ativo isolado (falta evento): o valor pode mudar
 
     @property
     def total(self) -> Decimal:
@@ -105,10 +106,12 @@ def darfs(
         competencia = date(m.ano, m.mes, 1)
         codigo = fiscais.parametros.texto("darf_codigo", competencia)
         pago = pagos.get((m.ano, m.mes))
+        pendencia = pendencia_do_mes(m)
         if (m.ano, m.mes) >= (hoje.year, hoje.month):
             if m.darf > 0 or m.darf_acumulado > 0:
                 linhas.append(LinhaDarf(m.ano, m.mes, codigo, None, m.darf + m.darf_acumulado,
-                                        Situacao.EM_APURACAO, None, pago))  # fmt: skip
+                                        Situacao.EM_APURACAO, None, pago,
+                                        pendencia=pendencia))  # fmt: skip
         elif m.darf > 0 and m.vencimento is not None:
             multa: MultaMora | None = None
             juros: JurosMora | None = None
@@ -125,11 +128,26 @@ def darfs(
                 juros = juros_mora(m.darf, competencia, m.vencimento, ate, fiscais.parametros,
                                    fiscais.calendario, fiscais.selic)  # fmt: skip
             linhas.append(LinhaDarf(m.ano, m.mes, codigo, m.vencimento, m.darf, situacao, multa,
-                                    pago, juros))  # fmt: skip
+                                    pago, juros, pendencia))  # fmt: skip
         elif m.darf_acumulado > 0:
             linhas.append(LinhaDarf(m.ano, m.mes, codigo, None, m.darf_acumulado,
-                                    Situacao.ACUMULADA, None, pago))  # fmt: skip
+                                    Situacao.ACUMULADA, None, pago,
+                                    pendencia=pendencia))  # fmt: skip
     return linhas
+
+
+def pendencia_do_mes(m: MesApurado) -> str:
+    """Aviso do mês provisório (ativo isolado por falta de evento), vazio se não for."""
+    partes: list[str] = []
+    if m.incompletos:
+        partes.append(f"operações de {', '.join(m.incompletos)} ficaram fora do cálculo")
+    if m.dependentes:
+        partes.append(f"o prejuízo a compensar e o saldo de IRRF dependem de "
+                      f"{', '.join(m.dependentes)}, isolado(s) em mês anterior")  # fmt: skip
+    if not partes:
+        return ""
+    return ("Valor provisório: " + "; ".join(partes) + ". Falta um evento corporativo ou dado do "
+            "ativo: resolva na tela Eventos e confira esta DARF de novo.")  # fmt: skip
 
 
 def registrar_pagamento(

@@ -15,7 +15,7 @@ from coir.config import dentro_do_repositorio
 from coir.db import repositorio as repo
 from coir.db.modelos import Conta
 from coir.db.sessao import conectar
-from coir.domain.fiscal import Visao
+from coir.domain.fiscal import AtivoIsolado, Visao
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import RE_SERIE_OPCAO, Referencias
 from coir.domain.relatorio import DadosRelatorio, InfoAtivo, NotaDoLivro
@@ -88,17 +88,22 @@ def dados_banco(
         nome, cpf, tid = escolhido.nome, escolhido.cpf, escolhido.id
     lista_proventos, avisos_proventos = proventos_banco(banco, fiscais, tid, pasta_refs)
     params = fiscais.parametros
-    fiscal = carteira(notas, eventos, params, ate, Visao.TITULAR)
+    isolados: list[AtivoIsolado] = []
+    fiscal = carteira(notas, eventos, params, ate, Visao.TITULAR, isolados)
     fim_anterior = date(ano - 1, 12, 31)
-    anterior = carteira(notas, eventos, params, fim_anterior, Visao.TITULAR)
-    na_data = fiscal if (visao, dia) == (Visao.TITULAR, ate) else carteira(notas, eventos, params,
-                                                                           dia, visao)  # fmt: skip
+    anterior = carteira(notas, eventos, params, fim_anterior, Visao.TITULAR, isolados)
+    na_data = fiscal if (visao, dia) == (Visao.TITULAR, ate) else carteira(
+        notas, eventos, params, dia, visao, [])  # fmt: skip
     # custódia por corretora: só a discriminação dos bens; se a visão operacional falhar, os
     # relatórios seguem e a declaração avisa (o custo dos bens é o fiscal, por titular)
-    avisos_irpf: list[str] = []
+    avisos_irpf: list[str] = [
+        f"{i.ticker}: fora dos bens e direitos (pendência desde {i.desde:%d/%m/%Y}: {i.motivo}). "
+        "Resolva na tela Eventos antes de declarar"
+        for i in {(x.ativo, x.desde): x for x in isolados if x.titular == tid}.values()
+    ]
     try:
-        custodia = carteira(notas, eventos, params, ate, Visao.CORRETORA)
-        custodia_anterior = carteira(notas, eventos, params, fim_anterior, Visao.CORRETORA)
+        custodia = carteira(notas, eventos, params, ate, Visao.CORRETORA, [])
+        custodia_anterior = carteira(notas, eventos, params, fim_anterior, Visao.CORRETORA, [])
     except MotorError as erro:
         custodia, custodia_anterior = [], []
         avisos_irpf.append(f"Custódia por corretora indisponível ({erro}): a discriminação dos "

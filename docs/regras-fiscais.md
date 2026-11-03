@@ -111,6 +111,19 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - Units fora da isenção: coincide com a RFB (SC Cosit 145/2021: só "ativos da espécie ações").
   - Venda a descoberto (sem norma específica, leitura A1): resultado na recompra; o limite de
     isenção é o do mês da venda.
+- **Ativo isolado (falta um evento; decisões do usuário de 03/11/2026, parecer do especialista):**
+  quando o livro de um ativo não fecha (ex.: exercício maior que a série, evento sem posição), o
+  ativo sai do cálculo a partir desse dia e o resto da apuração segue. Não é regra da IN, é
+  tratamento de dado incompleto; o mês nunca aparece como definitivo.
+  - O valor das vendas do ativo isolado continua na soma do limite de R$ 20 mil (só o custo é
+    desconhecido; tirar a venda poderia isentar um mês tributável). O IRRF da nota continua
+    crédito.
+  - Meses incompletos: os do ativo desde a última vez que a posição zerou (o evento que falta pode
+    ser anterior ao dia em que o livro parou). Meses dependentes: os seguintes, na categoria do
+    ativo (comum e day trade; FII), com resultado, imposto ou prejuízo a compensar, porque o
+    prejuízo e o saldo de IRRF passam aos meses seguintes. A DARF desses meses sai como provisória.
+  - Venda que passa de comprado a vendido e a posição continua vendida no fim do mês: só aviso
+    (possível evento faltando), sem mudar o cálculo. Venda a descoberto desde zero, sem aviso.
   - Isenção de PME (Lei 13.043/2014 art. 16; IN arts. 59 III e 66 a 69-A), `data/isencao_pme.csv`:
     PRIO3 (compras de 10/07/2014 a 29/01/2021) e AGRO3 (até 03/02/2021), vendas até 31/12/2023;
     ganho isento, fora do limite, perdas não compensam; day trade dessas ações também isento
