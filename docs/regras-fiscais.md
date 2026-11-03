@@ -207,6 +207,8 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - total de alienações do limite de R$ 20 mil: o COIR tira as units (R4a) e soma a venda por
     exercício de call (R4); o outro sistema faz o contrário;
   - opção sobre ETF (ex.: BOVA11) vai para "opções - outros" no COIR (objeto não é ação);
+  - ativo em duas corretoras ao mesmo tempo: o COIR usa o PM único por titular (IN 1.585 art. 58)
+    e o outro sistema calcula por corretora; o resultado cai em outro mês, com a mesma soma;
   - perda em ação de PME: o COIR mostrava a perda como lucro isento negativo e a somava no ano com
     os ganhos (o rendimento isento da DIRPF saía menor); corrigido em 03/11/2026 (lucro isento 0 e
     perda à parte, como no outro sistema).
