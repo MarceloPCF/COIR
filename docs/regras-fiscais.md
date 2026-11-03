@@ -194,6 +194,20 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - dados do COIR: séries de opção com custo na bonificação (só a quantidade muda) e custo
     atribuído de uma bonificação diferente do oficial, corrigidos no `eventos.csv`.
 
+- **Comparação mês a mês com o relatório mensal de outro sistema (`coir gabarito externo-mensal`,
+  03/11/2026):** um PDF por ano, na ordem da ficha de renda variável do programa IRPF, em
+  `COIR_DADOS/_relatorios-b3`. O motor parte do prejuízo que o outro sistema recebeu em janeiro do
+  primeiro ano (o da DIRPF do ano anterior; marco 01/01/2020), sem gravar nada no banco: o que vem
+  antes do marco fica com o gabarito antigo. Compara cada linha (mercados, resultado, prejuízo,
+  imposto, IR fonte e alienações); explicações em `COIR_DADOS/gabarito/externo-mensal-explicadas.csv`.
+  Além das diferenças de rateio e do exercício acima, as de método foram:
+  - total de alienações do limite de R$ 20 mil: o COIR tira as units (R4a) e soma a venda por
+    exercício de call (R4); o outro sistema faz o contrário;
+  - opção sobre ETF (ex.: BOVA11) vai para "opções - outros" no COIR (objeto não é ação);
+  - perda em ação de PME: o COIR a mostra como lucro isento negativo (Lei 13.043/2014) e soma no ano
+    com os ganhos; o outro sistema mostra zero. Pendente de parecer fiscal (perdas de PME não
+    compensam; o rendimento isento seria só o ganho).
+
 ## Relatórios (F5, 16/10/2026)
 `coir exportar` monta os relatórios de um titular e um ano só com os valores do motor e das notas
 (regra 12), sem cálculo novo. Saem em xlsx, csv (padrão brasileiro) e PDF (ADR 0003).
