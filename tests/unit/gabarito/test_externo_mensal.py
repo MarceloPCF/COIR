@@ -130,3 +130,12 @@ def test_compara_linha_a_linha_e_explica_com_curinga(tmp_path: Path) -> None:
                 and x.mes == 2) == "PM inicial errado no outro sistema"  # fmt: skip
     so_mes_1 = [Explicacao(2020, "1", "*", "*", "outro mês")]
     assert all(x.classe != "explicada" for x in explicar(linhas, so_mes_1))
+
+
+def test_mes_que_o_motor_nao_apurou_falha_alto() -> None:
+    """Relatório que começa antes das notas (ou titular errado): sem comparar com zero."""
+    externos = ler_texto([_pagina(1), _pagina(2)])
+    with pytest.raises(GabaritoError, match="não apurou 01/2020"):
+        comparar_mensal(externos, [_apurado(2, "1000")], 1, D("1"))
+    with pytest.raises(GabaritoError, match="titular 2"):
+        comparar_mensal(externos, [_apurado(1, "1000"), _apurado(2, "1000")], 2, D("1"))

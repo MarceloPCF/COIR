@@ -187,3 +187,22 @@ def test_ordem_do_irpf_separa_a_ficha_de_fii() -> None:
 def test_todo_tipo_de_provento_tem_nome_no_relatorio() -> None:
     """Um tipo novo sem nome derrubava o relatório e a tela de Proventos (KeyError ATUALIZACAO)."""
     assert set(NOME_PROVENTO) == set(TipoProvento)
+
+
+def test_perda_de_pme_fica_fora_do_lucro_isento() -> None:
+    """IN RFB 1.585/2015 art. 67 §2º: a perda em ação de PME sai em coluna própria, só para
+    consulta; o lucro isento do mês é 0 (o limite da isenção é fictício aqui, para cair em 2025)."""
+    livro = Livro()
+    limite = date(2025, 12, 31)
+    livro.nota(date(2025, 1, 2), livro.op("C", "PRIO3", 200, "30", pme_ate=limite))
+    livro.nota(date(2025, 2, 3), livro.op("V", "PRIO3", 100, "40"))  # ganho 1.000
+    livro.nota(date(2025, 3, 3), livro.op("V", "PRIO3", 100, "20"))  # perda 1.000
+    d = _dados(livro)
+    outras = _secao(TODOS["irpf-mensal"](d), "Outras informações (só para consulta)")
+    isento = _coluna(outras, "Lucro isento de PME (Lei 13.043/2014 art. 16)")
+    perda = next(i for i, c in enumerate(outras.colunas) if c.nome.startswith("Perda em ação"))
+    linhas = {x[0]: (x[isento], x[perda]) for x in outras.linhas}
+    assert (linhas["Fevereiro"], linhas["Março"]) == ((D(1000), 0), (0, D(-1000)))
+    assert outras.total is not None and outras.total[isento] == D(1000)
+    evolucao = TODOS["evolucao"](d).secoes[0]
+    assert "PME" in evolucao.nota

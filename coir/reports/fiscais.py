@@ -594,6 +594,8 @@ def evolucao(d: DadosRelatorio) -> Relatorio:
         colunas,
         tuple(linhas),
         _total(linhas, colunas, {1, 2, 3, 4, 5}) if linhas else None,
+        nota="Perda em ação de PME não entra: não compensa nada (IN RFB 1.585/2015 art. 67 §2º); "
+        "fica em Outras informações da ficha mensal do IRPF.",
     )
     return Relatorio("evolucao", "Evolução do resultado", _cab(d), (secao,))
 

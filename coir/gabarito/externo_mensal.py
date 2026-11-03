@@ -195,12 +195,16 @@ def _motor(m: MesApurado) -> dict[str, tuple[Decimal, Decimal | None]]:
 
 def comparar_mensal(meses_externos: Iterable[MesExterno], apurados: Iterable[MesApurado],
                     titular: int, tolerancia: Decimal) -> list[LinhaMensal]:  # fmt: skip
-    """Linha a linha (comuns e day trade) dos meses do relatório; mês sem apuração no motor
-    compara com zero (mês sem operação)."""
+    """Linha a linha (comuns e day trade) dos meses do relatório. O motor apura todos os meses
+    da primeira operação do titular em diante: mês do relatório que ele não apurou (titular
+    errado, ou relatório que começa antes das notas) falha alto, em vez de comparar com zero."""
     motor = {(m.ano, m.mes): _motor(m) for m in apurados if m.titular == titular}
     saida: list[LinhaMensal] = []
     for ext in meses_externos:
-        meu = motor.get((ext.ano, ext.mes), {})
+        meu = motor.get((ext.ano, ext.mes))
+        if meu is None:
+            raise GabaritoError(f"o motor não apurou {ext.mes:02d}/{ext.ano} do titular {titular} "
+                                "(sem notas até esse mês?)")  # fmt: skip
         for rotulo, valores in ext.valores.items():
             if rotulo in SEM_COMPARACAO:
                 continue
@@ -208,7 +212,9 @@ def comparar_mensal(meses_externos: Iterable[MesExterno], apurados: Iterable[Mes
                 externo = valores[coluna]
                 if externo is None:
                     continue
-                v = meu.get(rotulo, (ZERO, ZERO))[coluna] or ZERO
+                v = meu[rotulo][coluna]
+                if v is None:
+                    raise GabaritoError(f"linha {rotulo!r} sem a coluna {nome} no motor")
                 classe = "confere" if abs(v - externo) <= tolerancia else "divergente"
                 saida.append(LinhaMensal(ext.ano, ext.mes, rotulo, nome, v, externo, classe))
     return saida

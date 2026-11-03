@@ -150,12 +150,15 @@ def pagina_png(pdf: Path, pagina: int, largura: int = 1100) -> bytes:
             if not 1 <= pagina <= len(documento):
                 raise ExtracaoError(f"{pdf.name}: página {pagina} não existe ({len(documento)})")
             folha = documento[pagina - 1]
-            bitmap = folha.render(scale=largura / folha.get_width())
-            try:  # a imagem PIL aponta para a memória do bitmap: gravar antes de liberá-lo
-                saida = BytesIO()
-                bitmap.to_pil().save(saida, format="PNG", optimize=True)
-            finally:
-                bitmap.close()
+            try:
+                bitmap = folha.render(scale=largura / folha.get_width())
+                try:  # a imagem PIL aponta para a memória do bitmap: gravar antes de liberá-lo
+                    saida = BytesIO()
+                    bitmap.to_pil().save(saida, format="PNG", optimize=True)
+                finally:
+                    bitmap.close()
+            finally:  # página e bitmap liberados dentro da trava, nunca pelo coletor de lixo
+                folha.close()
             return saida.getvalue()
         finally:
             documento.close()

@@ -37,12 +37,25 @@ def paginas(caminho: Path) -> list[str]:
         except pdfium.PdfiumError as erro:
             raise PdfError(f"PDF ilegível: {caminho.name}") from erro
         try:
-            textos = [documento[i].get_textpage().get_text_range() for i in range(len(documento))]
+            textos = [_texto(documento[i]) for i in range(len(documento))]
         finally:
             documento.close()
     if not any(t.strip() for t in textos):
         raise PdfError(f"PDF sem camada de texto: {caminho.name}")
     return textos
+
+
+def _texto(pagina: pdfium.PdfPage) -> str:
+    """Texto de uma página, liberando a página e o textpage ainda dentro da trava (o coletor de
+    lixo poderia liberá-los depois, em outra thread, sem ela)."""
+    try:
+        textpage = pagina.get_textpage()
+        try:
+            return textpage.get_text_range()
+        finally:
+            textpage.close()
+    finally:
+        pagina.close()
 
 
 def ler_texto(caminho: Path) -> list[str]:
