@@ -14,6 +14,7 @@ import pypdfium2 as pdfium
 from PIL import Image, ImageDraw
 
 from coir.erros import AnonimizacaoError
+from coir.parsing.texto_pdf import TRAVA_PDFIUM
 
 DPI = 110  # legível na tela e pequeno o bastante para o e-mail (100 a 200 KB por página)
 FOLGA = 1  # pixels em volta de cada tarja (borda suavizada das letras)
@@ -33,6 +34,17 @@ def paginas_tarjadas(
 ) -> list[Image.Image]:
     """Uma imagem por página. ``textos`` é o texto original de cada página (o que foi
     anonimizado): se o PDF der outro texto, as posições não casam e nada é gerado."""
+    with TRAVA_PDFIUM:  # o suporte gera as imagens numa thread (run.io_bound)
+        return _tarjar(pdf, textos, trocados, alertas, dpi)
+
+
+def _tarjar(
+    pdf: Path,
+    textos: Sequence[str],
+    trocados: Sequence[bytes],
+    alertas: Sequence[Sequence[tuple[int, int]]],
+    dpi: int,
+) -> list[Image.Image]:
     escala = dpi / 72
     try:
         documento = pdfium.PdfDocument(pdf)

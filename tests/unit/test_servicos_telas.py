@@ -1,6 +1,7 @@
 """F6: serviços das telas de importação, notas e operações (banco temporário, notas anonimizadas
 das fixtures no lugar dos PDFs)."""
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -11,6 +12,7 @@ from reportlab.pdfgen.canvas import Canvas
 from coir import referencias
 from coir.config import VAR_CONFIG, VAR_DADOS, arquivo_config, dados_dir, salvar_dados_dir
 from coir.erros import ConfiguracaoError, ExtracaoError, ImportacaoError
+from coir.parsing.texto_pdf import paginas
 from coir.servicos import cadastros, notas, operacoes
 from coir.servicos.estado import Estado
 from coir.servicos.importacao import copiar_para_pasta, importar_lista, por_arquivo
@@ -192,6 +194,23 @@ def test_pagina_do_pdf_em_png(tmp_path: Path) -> None:
     assert png.startswith(b"\x89PNG")
     with pytest.raises(ExtracaoError, match="página 3"):
         notas.pagina_png(pdf, 3)
+
+
+def test_paginas_desenhadas_e_lidas_em_varias_threads(tmp_path: Path) -> None:
+    """O PDFium não é thread-safe; sem a trava global isto derruba o processo (heap corrompido)."""
+    pdf = tmp_path / "nota.pdf"
+    tela = Canvas(str(pdf))
+    for i in range(1, 4):
+        tela.drawString(72, 720, f"pagina {i}")
+        tela.showPage()
+    tela.save()
+    esperado = {p: notas.pagina_png(pdf, p, largura=400) for p in range(1, 4)}
+    tarefas = [1 + i % 3 for i in range(60)]
+    with ThreadPoolExecutor(max_workers=8) as grupo:
+        pngs = list(grupo.map(lambda p: notas.pagina_png(pdf, p, largura=400), tarefas))
+        textos = list(grupo.map(lambda _: paginas(pdf), range(20)))
+    assert pngs == [esperado[p] for p in tarefas]
+    assert all(t == textos[0] for t in textos) and "pagina 3" in textos[0][2]
 
 
 def test_livro_rateia_os_custos_como_o_motor(demo: Path) -> None:
