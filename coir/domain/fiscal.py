@@ -276,6 +276,20 @@ class PosicaoAtivo(Modelo):
         return ZERO if self.quantidade == 0 else self.custo / self.quantidade
 
 
+class AtivoIsolado(Modelo):
+    """Ativo que o motor não conseguiu apurar a partir de `desde` (ex.: falta um evento
+    corporativo): as operações e os eventos dele dessa data em diante ficam fora do cálculo, o
+    resto da carteira segue. `meses`: (ano, mês) com operação ou evento deixado de fora."""
+
+    titular: int
+    ativo: int
+    ticker: str
+    desde: date
+    motivo: str
+    meses: tuple[tuple[int, int], ...] = ()
+    categoria: Categoria = Categoria.COMUM  # FII: só a categoria FII; senão comum e day trade
+
+
 class ResultadoCategoria(Modelo):
     categoria: Categoria
     por_grupo: dict[Grupo, Decimal]
@@ -334,6 +348,15 @@ class MesApurado(Modelo):
     irrf_saldo_day_trade_anterior: Decimal = ZERO
     irrf_saldo_day_trade: Decimal = ZERO
     fichas: tuple[FichaMes, ...] = ()  # comuns/day trade e FII, como no programa IRPF
+    # ativos isolados (pendência): com operação fora do cálculo neste mês, ou isolados antes e
+    # que podem mudar este mês pelo prejuízo a compensar e pelo saldo de IRRF
+    incompletos: tuple[str, ...] = ()
+    dependentes: tuple[str, ...] = ()
+
+    @property
+    def provisorio(self) -> bool:
+        """O valor pode mudar quando a pendência do ativo isolado for resolvida."""
+        return bool(self.incompletos or self.dependentes)
 
     def ficha(self, ficha: Ficha) -> FichaMes:
         for f in self.fichas:
@@ -397,3 +420,8 @@ class Apuracao(Modelo):
     exclusiva: tuple[TributacaoExclusiva, ...]
     irrf_anual: tuple[IrrfAnual, ...]
     avisos: tuple[str, ...] = ()
+    isolados: tuple[AtivoIsolado, ...] = ()
+
+    def pendentes(self, titular: int, ano: int, mes: int) -> list[AtivoIsolado]:
+        """Ativos isolados com operação ou evento fora do cálculo neste mês."""
+        return [i for i in self.isolados if i.titular == titular and (ano, mes) in i.meses]

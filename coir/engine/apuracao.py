@@ -22,6 +22,7 @@ from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from coir.domain.fiscal import (
     ZERO,
     Apuracao,
+    AtivoIsolado,
     Categoria,
     Evento,
     FichaMes,
@@ -77,9 +78,12 @@ def apurar(
     outros_custos: Sequence[OutroCusto] = (),
     saldos_iniciais: Sequence[SaldoInicial] = (),
 ) -> Apuracao:
-    """Apuração de todos os titulares, mês a mês, até o mês de `ate` (visão por titular)."""
+    """Apuração de todos os titulares, mês a mês, até o mês de `ate` (visão por titular). Um
+    ativo que o motor não consegue apurar (ex.: falta um evento) fica isolado e os meses que ele
+    afeta saem marcados como provisórios; o resto segue."""
     avisos: list[str] = []
-    movimentos = movimentar(notas, eventos, parametros, ate, avisos=avisos)
+    isolados: list[AtivoIsolado] = []
+    movimentos = movimentar(notas, eventos, parametros, ate, avisos=avisos, isolados=isolados)
     movimentos += movimentos_futuros(notas, ate, avisos)
     movimentos += [m for c in outros_custos if (m := _outro_custo(c)).data <= ate]
     movimentos.sort(key=lambda m: m.data)
@@ -110,8 +114,41 @@ def apurar(
                                parametros, calendario, avisos, saldos_iniciais)  # fmt: skip
         meses += m
         anuais += a
+    meses = [_marcar(m, isolados) for m in meses]
+    for i in isolados:
+        quando = ", ".join(f"{mes:02d}/{ano}" for ano, mes in i.meses) or "nenhum mês"
+        avisos.append(f"{i.desde}: {i.ticker} ficou fora do cálculo a partir desta data "
+                      f"({i.motivo}). Meses incompletos: {quando}. Em geral falta um evento: "
+                      "resolva na tela Eventos.")  # fmt: skip
     return Apuracao(movimentos=tuple(movimentos), meses=tuple(meses), exclusiva=tuple(exclusiva),
-                    irrf_anual=tuple(anuais), avisos=tuple(avisos))  # fmt: skip
+                    irrf_anual=tuple(anuais), avisos=tuple(avisos),
+                    isolados=tuple(isolados))  # fmt: skip
+
+
+def _marcar(m: MesApurado, isolados: Sequence[AtivoIsolado]) -> MesApurado:
+    """Incompleto: o mês tem operação do ativo isolado fora do cálculo. Dependente: o ativo foi
+    isolado num mês anterior e esta categoria tem resultado, imposto ou prejuízo a compensar
+    neste mês, que podem mudar com o resultado que faltou (decisão do usuário de 03/11/2026,
+    parecer do especialista: prejuízo e IRRF passam aos meses seguintes)."""
+    incompletos: list[str] = []
+    dependentes: list[str] = []
+    for i in isolados:
+        if i.titular != m.titular or not i.meses:
+            continue
+        if (m.ano, m.mes) in i.meses:
+            incompletos.append(i.ticker)
+            continue
+        cats = ({Categoria.FII} if i.categoria is Categoria.FII
+                else {Categoria.COMUM, Categoria.DAY_TRADE})  # fmt: skip
+        if (m.ano, m.mes) > min(i.meses) and any(
+            r.resultado or r.imposto or r.prejuizo_anterior
+            for r in m.categorias if r.categoria in cats
+        ):  # fmt: skip
+            dependentes.append(i.ticker)
+    if not incompletos and not dependentes:
+        return m
+    return m.model_copy(update={"incompletos": tuple(sorted(set(incompletos))),
+                                "dependentes": tuple(sorted(set(dependentes)))})  # fmt: skip
 
 
 def _exclusiva(m: Movimento) -> TributacaoExclusiva:

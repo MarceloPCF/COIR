@@ -104,8 +104,9 @@ def test_incorporacao_de_acoes_pela_leitura_da_receita_nao_implementada_falha_al
     )
     [b] = livro.carteira(date(2025, 5, 31))
     assert (b.ticker, b.custo) == ("BBBB3", D(1500))  # custo mantido (padrão)
-    with pytest.raises(MotorError, match="não implementado"):
-        livro.apurar(date(2025, 5, 31), parametros(incorporacao_acoes_tratamento="rfb"))
+    ap = livro.apurar(date(2025, 5, 31), parametros(incorporacao_acoes_tratamento="rfb"))
+    assert {i.ticker for i in ap.isolados} == {"AAAA3", "BBBB3"}
+    assert all("não implementado" in i.motivo for i in ap.isolados)
 
 
 # --------------------------------------------------------------------------------- cisão

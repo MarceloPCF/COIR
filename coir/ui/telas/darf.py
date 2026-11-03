@@ -131,6 +131,8 @@ def _documento(
     with ui.row().classes("items-baseline gap-3"):
         ui.label(f"DARF de {MESES[x.mes - 1].lower()}/{x.ano}").classes("coir-titulo text-lg")
         ui.label(x.situacao.value).classes(f"text-sm font-semibold {CLASSES[x.situacao]}")
+    if x.pendencia:
+        ui.label(x.pendencia).classes("coir-negativo text-sm w-full").mark("darf-pendencia")
     if x.situacao is darf.Situacao.EM_APURACAO:
         ui.label(
             f"O mês ainda não acabou: {_r(x.principal)} é o imposto apurado até hoje e muda com as "

@@ -239,11 +239,12 @@ def _tipo_evento(fiscais: ReferenciasFiscais, ticker: str) -> TipoAtivo:
 def carteira_banco(
     banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date, visao: Visao
 ) -> tuple[list[PosicaoAtivo], dict[int, str]]:
-    """Posições abertas no fim de `ate` na visão pedida, com o número de cada conta."""
+    """Posições abertas no fim de `ate` na visão pedida, com o número de cada conta. Ativo
+    isolado (pendência, ver ``apurar``) fica fora: a apuração é que lista e avisa."""
     with conectar(banco) as fabrica, fabrica() as sessao:
         notas, eventos = entradas(sessao, refs, fiscais)
         contas = {c.id: c.numero for c in sessao.scalars(select(Conta))}
-    return carteira(notas, eventos, fiscais.parametros, ate, visao), contas
+    return carteira(notas, eventos, fiscais.parametros, ate, visao, isolados=[]), contas
 
 
 def carteiras_banco(
@@ -252,7 +253,8 @@ def carteiras_banco(
     """Posições em várias datas lendo o banco uma vez só (conciliação com a B3)."""
     with conectar(banco) as fabrica, fabrica() as sessao:
         notas, eventos = entradas(sessao, refs, fiscais)
-    return {dia: carteira(notas, eventos, fiscais.parametros, dia, visao) for dia in datas}
+    return {dia: carteira(notas, eventos, fiscais.parametros, dia, visao, isolados=[])
+            for dia in datas}  # fmt: skip
 
 
 def movimentos_banco(
@@ -261,9 +263,9 @@ def movimentos_banco(
     """Movimentos (com futuros) na visão pedida; a apuração usa só a por titular."""
     with conectar(banco) as fabrica, fabrica() as sessao:
         notas, eventos = entradas(sessao, refs, fiscais)
-    return movimentar(notas, eventos, fiscais.parametros, ate, visao) + movimentos_futuros(
-        notas, ate
-    )
+    return movimentar(
+        notas, eventos, fiscais.parametros, ate, visao, isolados=[]
+    ) + movimentos_futuros(notas, ate)
 
 
 def apurar_banco(

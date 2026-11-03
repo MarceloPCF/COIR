@@ -156,6 +156,8 @@ def _conteudo(
                 (len(atrasadas), "DARF(s) em atraso"
                  + (f" ({', '.join(map(str, anos))})" if anos else ""), "/darf"),
                 (len(incompletos), "arquivo(s) com nota rejeitada", "/importar"),
+                (len({i.ativo for i in apuracao.isolados if i.titular == estado.titular}),
+                 "ativo(s) fora do cálculo (falta evento)", "/eventos"),
                 (len(avisos), "aviso(s) para conferir no ano", "/apuracao"),
             ]  # fmt: skip
             if not any(n for n, _, _ in itens):

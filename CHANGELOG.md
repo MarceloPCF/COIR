@@ -23,6 +23,16 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
     botão abre o seu e-mail com a mensagem para o suporte; você anexa e envia.
   - Pela linha de comando: `coir notas anonimizar [--imagens]`.
 
+- **Um evento que falta não trava mais a apuração**: quando o cálculo de um ativo não fecha (em
+  geral por um desdobramento, bonificação ou ajuste de série que não foi lançado), só esse ativo
+  sai do cálculo a partir do dia do problema; os demais continuam. O Painel mostra quantos
+  ativos estão fora, a Apuração diz qual, desde quando e por quê, e a DARF dos meses afetados sai
+  como **provisória**, inclusive a dos meses seguintes cujo prejuízo a compensar depende dele. As
+  vendas do ativo continuam contando no limite de isenção de R$ 20 mil. Lance o evento na tela
+  Eventos e o ativo volta ao cálculo.
+- **Aviso de evento possivelmente faltando**: venda maior que a posição comprada que deixa o
+  ativo vendido no fim do mês gera um aviso na Apuração (não muda o cálculo).
+
 ### Corrigido
 - **Ícone da janela**: a barra de título e a barra de tarefas mostram o símbolo do COIR.
 - **Nome do titular nas notas da XP e da Rico**: nas notas Bovespa o COIR lia o rótulo

@@ -16,6 +16,7 @@ Fontes:
   custo médio (art. 62 §1º e art. 58). Decisões do usuário de 20 e 21/10/2026.
 """
 
+from calendar import monthrange
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
@@ -24,6 +25,7 @@ from decimal import Decimal
 
 from coir.domain.fiscal import (
     ZERO,
+    AtivoIsolado,
     Categoria,
     Evento,
     Grupo,
@@ -126,6 +128,19 @@ class Livro:
         self.termo_hoje: dict[Chave, Posicao] = {}
         self.movimentos: list[Movimento] = []
         self.avisos: list[str] = []
+        # titular e ativos do item em processamento (o que isolar se o motor parar nele)
+        self.em_curso: tuple[int, frozenset[int]] | None = None
+        # (titular, ativo) -> dia a partir do qual o ativo ficou fora do cálculo
+        self.cortes: dict[tuple[int, int], date] = {}
+        # venda que passou de comprado a vendido: posição, dia, quantidade vendida, posição antes
+        self.suspeitas: list[tuple[Chave, date, Decimal, Decimal]] = []
+
+    def fora(self, titular: int, ativo: int, dia: date) -> bool:
+        corte = self.cortes.get((titular, ativo))
+        return corte is not None and corte <= dia
+
+    def processando(self, titular: int, *ativos: int | None) -> None:
+        self.em_curso = (titular, frozenset(a for a in ativos if a is not None))
 
     def _grupo(self, de: Origem) -> int | str | None:
         if self.visao is Visao.CONTA:
@@ -192,11 +207,16 @@ def movimentar(
     ate: date,
     visao: Visao = Visao.TITULAR,
     avisos: list[str] | None = None,
+    isolados: list[AtivoIsolado] | None = None,
 ) -> list[Movimento]:
     """Movimentos de posição até a data `ate` (inclusive) na visão pedida (a apuração usa só a
-    por titular). Situações aceitas mas que pedem conferência (venda a descoberto) vão para
-    `avisos`."""
-    livro = _executar(notas, eventos, parametros, ate, visao)
+    por titular). Situações aceitas mas que pedem conferência (ex.: venda que passa de comprado a
+    vendido) vão para `avisos`.
+
+    Sem `isolados`, um ativo que o motor não consegue apurar para tudo (MotorError). Com a lista,
+    esse ativo sai do cálculo a partir do dia do problema, o resto segue, e ele entra na lista
+    (pendência para o usuário resolver, em geral um evento corporativo que falta)."""
+    livro = _executar(notas, eventos, parametros, ate, visao, isolados)
     if avisos is not None:
         avisos += livro.avisos
     return livro.movimentos
@@ -208,14 +228,16 @@ def carteira(
     parametros: ParametrosFiscais,
     ate: date,
     visao: Visao = Visao.TITULAR,
+    isolados: list[AtivoIsolado] | None = None,
 ) -> list[PosicaoAtivo]:
     """Posições abertas no fim do dia `ate`. Por titular é o custo médio fiscal (apuração e
     IRPF); por corretora e por conta é a visão operacional, que não entra no imposto. Compras a
-    termo ainda não liquidadas não estão na carteira."""
-    livro = _executar(notas, eventos, parametros, ate, visao)
+    termo ainda não liquidadas não estão na carteira. Com `isolados` (ver `movimentar`), o ativo
+    isolado fica fora da carteira: a posição dele não é conhecida."""
+    livro = _executar(notas, eventos, parametros, ate, visao, isolados)
     saida: list[PosicaoAtivo] = []
     for (titular, grupo, ativo, vencimento), pos in livro.posicoes.items():
-        if not pos.quantidade:
+        if not pos.quantidade or (titular, ativo) in livro.cortes:
             continue
         conta = grupo if isinstance(grupo, int) else None
         corretora = grupo if isinstance(grupo, str) else None
@@ -238,10 +260,127 @@ def _executar(
     parametros: ParametrosFiscais,
     ate: date,
     visao: Visao,
+    isolados: list[AtivoIsolado] | None = None,
 ) -> Livro:
-    livro = Livro(visao)
+    """Percorre o livro; com `isolados`, refaz sem o ativo em que parou até fechar."""
+    notas, eventos = list(notas), list(eventos)
+    cortes: dict[tuple[int, int], tuple[date, str]] = {}
+    while True:
+        livro = Livro(visao)
+        livro.cortes = {k: d for k, (d, _) in cortes.items()}
+        try:
+            meses = _percorrer(livro, notas, eventos, parametros, ate)
+            _desde_zerado(livro, meses)
+        except MotorError as erro:
+            if isolados is None or livro.em_curso is None or erro.data is None:
+                raise
+            titular, ativos = livro.em_curso
+            novos = {(titular, a) for a in ativos if (titular, a) not in cortes}
+            if not novos:
+                raise
+            for chave in novos:
+                cortes[chave] = (erro.data, str(erro))
+            continue
+        break
+    if isolados is not None:
+        for (titular, ativo), corte in sorted(livro.cortes.items(), key=lambda x: x[1]):
+            _, motivo = cortes.get((titular, ativo), (corte, ""))
+            if not motivo:  # puxado por outro (exercício, incorporação): o motivo é o dele
+                motivo = next(m for (t, _), (_, m) in cortes.items() if t == titular)
+            isolados.append(AtivoIsolado(
+                titular=titular, ativo=ativo, ticker=livro.tickers.get(ativo, str(ativo)),
+                desde=corte, motivo=motivo,
+                categoria=_categoria(livro.tipos.get(ativo, TipoAtivo.ACAO), day_trade=False),
+                meses=tuple(sorted(meses.get((titular, ativo), set()))),
+            ))  # fmt: skip
+    return livro
+
+
+Meses = dict[tuple[int, int], set[tuple[int, int]]]  # (titular, ativo) -> (ano, mês)
+OpsDoDia = list[tuple[date, _Op]]
+
+
+def _desde_zerado(livro: Livro, meses: Meses) -> None:
+    """O evento que falta pode ser anterior ao dia em que o motor parou: os meses do ativo desde
+    a última vez que a posição zerou também ficam incompletos (decisão do usuário de 03/11/2026,
+    parecer do especialista)."""
+    for (titular, ativo), corte in livro.cortes.items():
+        movs = [m for m in livro.movimentos
+                if m.titular == titular and m.ativo == ativo and m.data < corte]  # fmt: skip
+        zerou = max((i for i, m in enumerate(movs) if m.quantidade_apos == 0), default=-1)
+        meses[(titular, ativo)] |= {(m.data.year, m.data.month) for m in movs[zerou + 1 :]}
+
+
+def _venda_isolada(livro: Livro, dia: date, o: _Op) -> None:
+    """Venda de ativo isolado: o resultado fica de fora (o custo não é conhecido), mas o valor
+    da venda é: entra na soma do limite de isenção do mês e na base que reparte o IRRF (decisão
+    do usuário de 03/11/2026). O IRRF da nota continua crédito do mês."""
+    op = o.op
+    if op.cv != "V" or op.mercado == "TERMO":
+        return
+    pme = op.pme_ate is not None and dia <= op.pme_ate
+    acao = op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT) and op.mercado in MERCADOS_ACAO_A_VISTA
+    base_irrf = op.total if (op.mercado not in MERCADOS_EXERCICIO and not pme
+                             and op.tipo is not TipoAtivo.ETF_RF) else ZERO  # fmt: skip
+    livro.movimentos.append(Movimento(
+        data=dia, titular=o.nota.titular, conta=o.nota.conta, corretora=o.nota.corretora,
+        ativo=op.ativo, ticker=op.ticker, origem=f"op:{op.id}",
+        regra="ativo isolado (pendência): resultado fora do cálculo; o valor da venda conta no "
+        "limite de isenção do mês",
+        categoria=_categoria(op.tipo, day_trade=False),
+        grupo=livro.grupos.get(op.ativo) or _grupo(op.tipo), tipo=op.tipo, cv="V",
+        quantidade=op.quantidade, valor=o.valor, custos=o.custos,
+        venda_acao_a_vista=op.total if acao and not pme else ZERO, base_irrf=base_irrf,
+        quantidade_apos=ZERO, custo_apos=ZERO,
+    ))  # fmt: skip
+
+
+def _isolar(
+    livro: Livro, ops: OpsDoDia, eventos: list[Evento]
+) -> tuple[OpsDoDia, OpsDoDia, list[Evento], Meses]:
+    """Tira do livro as operações e os eventos de ativos isolados a partir do corte. O que está
+    ligado vai junto: o exercício leva a série exercida; a incorporação e a cisão, o destino."""
+    meses: Meses = defaultdict(set)
+    if not livro.cortes:
+        return ops, [], eventos, meses
+    itens = [(dia, o.nota.titular, (o.op.ativo, o.op.opcao)) for dia, o in ops] + [
+        (e.data, e.titular, (e.ativo, e.ativo_destino)) for e in eventos
+    ]
+    mudou = True
+    while mudou:  # o corte de um ativo pode puxar o de outro
+        mudou = False
+        for dia, titular, ativos in itens:
+            ligados = [a for a in ativos if a is not None]
+            if any(livro.fora(titular, a, dia) for a in ligados):
+                for a in ligados:
+                    if not livro.fora(titular, a, dia):
+                        livro.cortes[(titular, a)] = dia
+                        mudou = True
+
+    def tirar(dia: date, titular: int, ativos: tuple[int | None, ...]) -> bool:
+        ligados = [a for a in ativos if a is not None]
+        if not any(livro.fora(titular, a, dia) for a in ligados):
+            return False
+        for a in ligados:
+            meses[(titular, a)].add((dia.year, dia.month))
+        return True
+
+    fica: OpsDoDia = []
+    tiradas: OpsDoDia = []
+    for dia, o in ops:
+        (tiradas if tirar(dia, o.nota.titular, (o.op.ativo, o.op.opcao)) else fica).append((dia, o))
+    eventos = [e for e in eventos if not tirar(e.data, e.titular, (e.ativo, e.ativo_destino))]
+    return fica, tiradas, eventos, meses
+
+
+def _percorrer(
+    livro: Livro, notas: list[NotaMotor], eventos: list[Evento], parametros: ParametrosFiscais,
+    ate: date,
+) -> Meses:  # fmt: skip
+    """Monta os dias e processa; devolve os meses com itens tirados por ativo isolado."""
     dias: dict[date, _Dia] = defaultdict(_Dia)
     vencimentos: set[date] = set()
+    ops: list[tuple[date, _Op]] = []  # dia em que a operação entra no livro
     for nota in notas:
         if nota.data > ate or not nota.operacoes:
             continue  # nota BM&F: só ajustes (futuros.py)
@@ -266,9 +405,9 @@ def _executar(
                     raise MotorError(f"nota {nota.numero} de {nota.data}, {op.ticker}: venda a "
                                      "termo ou termo sem data de liquidação (prazo)")  # fmt: skip
                 if op.liquidacao_termo <= ate:
-                    dias[op.liquidacao_termo].termos.append(item)
+                    ops.append((op.liquidacao_termo, item))
                 continue
-            dias[nota.data].operacoes.append(item)
+            ops.append((nota.data, item))
             if op.tipo is TipoAtivo.OPCAO:
                 if op.vencimento is None or op.vencimento < nota.data:
                     raise MotorError(
@@ -276,6 +415,7 @@ def _executar(
                         "anterior ao negócio (confira data/vencimentos_opcoes*.csv)"
                     )
                 vencimentos.add(op.vencimento)
+    ate_hoje: list[Evento] = []
     for evento in eventos:
         if evento.data <= ate:
             livro.tickers.setdefault(evento.ativo, evento.ticker)
@@ -284,7 +424,12 @@ def _executar(
                 livro.tickers.setdefault(evento.ativo_destino, evento.ticker_destino)
                 livro.tipos.setdefault(evento.ativo_destino,
                                        evento.tipo_ativo_destino or evento.tipo_ativo)  # fmt: skip
-            dias[evento.data].eventos.append(evento)
+            ate_hoje.append(evento)
+    ops, tiradas, ate_hoje, meses = _isolar(livro, ops, ate_hoje)
+    for dia, item in ops:
+        (dias[dia].termos if item.op.mercado == "TERMO" else dias[dia].operacoes).append(item)
+    for evento in ate_hoje:
+        dias[evento.data].eventos.append(evento)
     for venc in vencimentos:
         if venc <= ate:
             dias.setdefault(venc, _Dia())  # o pó acontece mesmo sem negócio no dia
@@ -294,13 +439,35 @@ def _executar(
         except MotorError as erro:
             erro.data = erro.data or dia
             raise
-    return livro
+    livro.em_curso = None
+    _avisar_suspeitas(livro)
+    for dia, o in tiradas:
+        _venda_isolada(livro, dia, o)
+    return meses
+
+
+def _avisar_suspeitas(livro: Livro) -> None:
+    """Avisa a venda que passou de comprado a vendido quando a posição continua vendida no fim
+    do mês (recompra logo depois é venda a descoberto comum, sem aviso)."""
+    for chave, dia, quantidade, antes in livro.suspeitas:
+        titular, _, ativo, _ = chave
+        fim = date(dia.year, dia.month, monthrange(dia.year, dia.month)[1])
+        apos = [m.quantidade_apos for m in livro.movimentos
+                if (m.titular, m.ativo) == (titular, ativo) and m.data <= fim]  # fmt: skip
+        if apos and apos[-1] < 0:
+            aviso = (
+                f"{dia}: venda de {quantidade} {livro.tickers[ativo]} maior que a posição "
+                f"({antes}), que ficou vendida no fim do mês ({apos[-1]}). Pode faltar um "
+                "evento corporativo (desdobramento, bonificação); confira na tela Eventos"
+            )
+            livro.avisos.append(aviso)
 
 
 def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) -> None:
     # cisões depois dos demais eventos do dia (agrupadas por posição de origem e destino)
     cisoes: dict[tuple[Chave, int | None], list[Evento]] = defaultdict(list)
     for evento in sorted(d.eventos, key=lambda e: e.id):
+        livro.processando(evento.titular, evento.ativo, evento.ativo_destino)
         if evento.tipo is TipoEvento.CISAO:
             # as contas que formam a posição (visão por titular) entram juntas: o custo repartido
             # é o de antes do evento, não o que sobra depois da primeira conta
@@ -313,12 +480,14 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
             _evento(livro, evento)
     origens = [chave for chave, _ in cisoes]
     for (chave, _), grupo in cisoes.items():
+        livro.processando(chave[0], chave[2], grupo[0].ativo_destino)
         if origens.count(chave) > 1:  # o percentual é sobre o custo de antes de todas
             raise MotorError(f"cisão de {grupo[0].ticker} ({grupo[0].data}) para dois ativos no "
                              "mesmo dia (não implementado)")  # fmt: skip
         _cisao(livro, chave, grupo)
     livro.termo_hoje = {}
     for t in sorted(d.termos, key=lambda t: (t.nota.id, t.op.ordem)):
+        livro.processando(t.nota.titular, t.op.ativo)
         chave = livro.chave(t.nota.titular, _de(t), t.op.ativo)
         pos = livro.posicoes[chave]
         _lote_pme(pos, t.op, dia)
@@ -344,16 +513,21 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
                         mes_limite=mes_limite)  # fmt: skip
     mesma_corretora = params.booleano("day_trade_mesma_corretora", dia)
     pela_marcacao = params.texto("day_trade_criterio", dia) == "marcacao_corretora"
+    livro.em_curso = None
     compras, vendas, exercicios = _day_trade(livro, dia, d.operacoes, mesma_corretora,
                                              pela_marcacao)  # fmt: skip
     for p in sorted(compras, key=_ordem):
+        livro.processando(p.base.nota.titular, p.base.op.ativo)
         _aplicar(livro, dia, p)
     for o in sorted(exercicios, key=lambda o: (o.nota.id, o.op.ordem)):
+        livro.processando(o.nota.titular, o.op.ativo, o.op.opcao)
         _exercicio(livro, dia, o)
     for p in sorted(vendas, key=_ordem):
+        livro.processando(p.base.nota.titular, p.base.op.ativo)
         _aplicar(livro, dia, p)
     for chave, pos in list(livro.posicoes.items()):
-        if pos.quantidade and chave[3] == dia:
+        if pos.quantidade and chave[3] == dia and not livro.fora(chave[0], chave[2], dia):
+            livro.processando(chave[0], chave[2])
             quantidade = pos.quantidade
             de = livro.origem_unica(chave)
             baixa = pos.virar_po()
@@ -550,6 +724,7 @@ def _aplicar_parte(
             pos.descoberto_desde = None
     else:
         ja_vendida = pos.quantidade < 0
+        antes = pos.quantidade
         # Lei 13.043/2014 art. 16 (IN 1.585 arts. 66 a 69-A): ganho isento, fora do limite
         pme = pos.quantidade > 0 and pos.pme_ate is not None and dia <= pos.pme_ate
         if pme and p.quantidade > pos.quantidade:
@@ -566,7 +741,15 @@ def _aplicar_parte(
             pos.pme_ate = None
         if pos.quantidade < 0 and not ja_vendida:
             pos.descoberto_desde = dia
-    # venda a descoberto é operação normal: sem aviso (decisão do usuário de 25/10/2026)
+            if (
+                antes > 0
+                and o.op.tipo not in (TipoAtivo.OPCAO, TipoAtivo.FUTURO)
+                and (o.op.mercado not in MERCADOS_EXERCICIO and livro.visao is Visao.TITULAR)
+            ):
+                livro.suspeitas.append((chave, dia, p.quantidade, antes))
+    # venda a descoberto a partir de posição zerada é operação normal, sem aviso (decisão do
+    # usuário de 25/10/2026); passar de comprado a vendido e continuar vendido no fim do mês
+    # costuma ser evento que falta: só avisa, o cálculo não muda (decisão de 03/11/2026)
     # base do IRRF 0,005% (Lei 11.033/2004 art. 2º §§1º e 2º): venda comum, sem exercício, PME
     # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas
     base_irrf = p.bruto if (o.op.cv == "V" and o.op.mercado not in MERCADOS_EXERCICIO and not pme
