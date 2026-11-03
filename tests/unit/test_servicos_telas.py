@@ -49,7 +49,10 @@ def test_configuracao_ilegivel_falha_alto(tmp_path: Path) -> None:
         dados_dir(ambiente={VAR_CONFIG: str(arquivo)})
 
 
-def test_trocar_pasta_de_dados_grava_e_zera_a_escolha(tmp_path: Path) -> None:
+def test_trocar_pasta_de_dados_grava_e_zera_a_escolha(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(VAR_CONFIG, str(tmp_path / "config.json"))  # sem a pasta de notas escolhida
     gravadas: list[Path] = []
     estado = Estado(tmp_path / "a" / "coir.db")
     estado.titular, estado.ano = 1, 2026
