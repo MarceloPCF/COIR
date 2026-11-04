@@ -44,9 +44,60 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <p>O formato deste arquivo segue o <a href="https://keepachangelog.com/pt-BR/">Keep a Changelog</a>.</p>
 
-<h2 id="301-2026-10-27">[3.0.1] - 2026-10-27</h2>
+<h2 id="310-2026-11-04">[3.1.0] - 2026-11-04</h2>
+
+<h3 id="adicionado">Adicionado</h3>
+
+<ul>
+<li><p><strong>Tela Suporte</strong>, para mandar uma nota que o COIR não lê ou lê errado (uma corretora nova,
+por exemplo) sem os seus dados pessoais:</p>
+
+<ul>
+<li><strong>Dados para ocultar</strong>, por titular: nome, CPF e contas vêm do cadastro; você completa com
+endereço, telefones, e-mail, assessor e dados bancários, como saem nas notas. Ficam só no seu
+computador. O COIR procura esses dados em qualquer corretora.</li>
+<li><strong>Enviar notas para suporte</strong>: o COIR grava numa pasta o texto de cada nota, com os dados
+pessoais trocados por fictícios do mesmo tamanho, e a imagem de cada página com tarja preta
+sobre eles, mostrando o progresso nota a nota. A cópia só sai se o COIR ler nela o mesmo que
+no original e não sobrar nenhum dado pessoal. Você confere as imagens, grava o <code>.zip</code> e o
+botão abre o seu e-mail com a mensagem para o suporte; você anexa e envia.</li>
+<li>Pela linha de comando: <code>coir notas anonimizar [--imagens]</code>.</li>
+</ul></li>
+<li><p><strong>Um evento que falta não trava mais a apuração</strong>: quando o cálculo de um ativo não fecha (em
+geral por um desdobramento, bonificação ou ajuste de série que não foi lançado), só esse ativo
+sai do cálculo a partir do dia do problema; os demais continuam. O Painel mostra quantos
+ativos estão fora, a Apuração diz qual, desde quando e por quê, e a DARF dos meses afetados sai
+como <strong>provisória</strong>, inclusive a dos meses seguintes cujo prejuízo a compensar depende dele. As
+vendas do ativo continuam contando no limite de isenção de R$ 20 mil. Lance o evento na tela
+Eventos e o ativo volta ao cálculo.</p></li>
+<li><strong>Aviso de evento possivelmente faltando</strong>: venda maior que a posição comprada que deixa o
+ativo vendido no fim do mês gera um aviso na Apuração (não muda o cálculo).</li>
+</ul>
 
 <h3 id="corrigido">Corrigido</h3>
+
+<ul>
+<li><strong>Ícone da janela</strong>: a barra de título e a barra de tarefas mostram o símbolo do COIR.</li>
+<li><strong>Nome do titular nas notas da XP e da Rico</strong>: nas notas Bovespa o COIR lia o rótulo
+"Cliente" como nome do cliente (e "Corretora" nas BM&amp;F novas da XP); o titular criado na
+importação ficava com esse nome. Agora lê o nome impresso.</li>
+<li><strong>Conta das notas BM&amp;F da BTG</strong>: o COIR lia como conta o último número da página, que nas
+notas BTG/Necton pode ser o telefone da ouvidoria. Com isso criava contas que não existem. Nas
+notas de 2025 em diante a última linha é o endereço do banco, e a nota era rejeitada ("conta
+do cliente não encontrada"). Agora a conta é lida depois de "Código cliente". Se em
+Cadastros aparecer uma conta BTG estranha (4 dígitos, como o fim de um telefone), importe as
+notas de novo numa pasta de dados nova. As notas já gravadas não são relidas.</li>
+<li><strong>Telas travadas por um evento que faltava</strong>: exercício de opção com a quantidade ajustada por
+uma bonificação não lançada (ex.: 1.000 opções vendidas e 1.050 exercidas) parava todas as
+telas. Também impedia lançar o próprio evento que resolveria o problema. Agora a tela de
+eventos propõe os eventos até a data em que o livro parou. Dá para lançar os eventos um por
+vez: um evento só é recusado se criar pendência nova.</li>
+<li>Erro no registro ao sair da tela de opções ou de eventos durante o cálculo.</li>
+</ul>
+
+<h2 id="301-2026-10-27">[3.0.1] - 2026-10-27</h2>
+
+<h3 id="corrigido-2">Corrigido</h3>
 
 <ul>
 <li><strong>A janela não abria</strong> depois de extrair o <code>.zip</code> baixado: o Windows marca cada arquivo
@@ -56,7 +107,7 @@ DLLs ao abrir. Na 3.0.0, o contorno é desbloquear o <code>.zip</code> (Propried
 de extrair.</li>
 </ul>
 
-<h3 id="adicionado">Adicionado</h3>
+<h3 id="adicionado-2">Adicionado</h3>
 
 <ul>
 <li>Página do manual <strong>Se o COIR não abrir</strong>: aviso do Windows, antivírus que põe o programa em
@@ -113,7 +164,7 @@ da v2 (todas são correções da v2):
   vencimento.
 - <strong>IRRF até R$ 1,00</strong> (dispensado, não retido) não vira crédito.</p>
 
-<h3 id="adicionado-2">Adicionado</h3>
+<h3 id="adicionado-3">Adicionado</h3>
 
 <ul>
 <li>Licença da v3: AGPL-3.0-or-later (a v2 em <code>legacy/</code> continua MIT).</li>
@@ -130,7 +181,7 @@ da v2 (todas são correções da v2):
 
 <p>Os resultados foram comparados com os da versão 2.1.1 em todas as notas de teste (XP, BTG e Rico), valor por valor, e no Excel em uma amostra de notas de todos os anos e corretoras.</p>
 
-<h3 id="corrigido-2">Corrigido</h3>
+<h3 id="corrigido-3">Corrigido</h3>
 
 <ul>
 <li>Preenchimento de células vazias com <code>fillna(..., inplace=True)</code> em uma coluna trocado por atribuição. No pandas 3 a forma antiga não altera nada e os valores vazios das taxas continuariam vazios. (@tommmdl)</li>
@@ -152,7 +203,7 @@ da v2 (todas são correções da v2):
 
 <p>Correção de instalação: uma instalação nova da 2.1.0 falhava por incompatibilidade de bibliotecas. Nenhuma alteração no código do programa.</p>
 
-<h3 id="corrigido-3">Corrigido</h3>
+<h3 id="corrigido-4">Corrigido</h3>
 
 <ul>
 <li><code>requirements.txt</code> fixa <code>numpy==1.23.5</code> e <code>setuptools==69.5.1</code>. Sem isso o pip instalava o numpy 2.x, incompatível com o pandas 1.3.3, e o setuptools 81 ou superior, que não traz o <code>pkg_resources</code> usado pelo tabula-py 2.3.0.</li>
@@ -182,7 +233,7 @@ da v2 (todas são correções da v2):
 <li><code>requirements.txt</code> convertido para UTF-8 (as versões das bibliotecas não foram alteradas).</li>
 </ul>
 
-<h3 id="adicionado-3">Adicionado</h3>
+<h3 id="adicionado-4">Adicionado</h3>
 
 <ul>
 <li>Leitura da conta do cliente por nota, quando um mesmo PDF reúne notas de contas diferentes.</li>

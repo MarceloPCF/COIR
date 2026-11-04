@@ -8,7 +8,7 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
-## [Não lançado]
+## [3.1.0] - 2026-11-04
 
 ### Adicionado
 - **Tela Suporte**, para mandar uma nota que o COIR não lê ou lê errado (uma corretora nova,
@@ -193,6 +193,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.1.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.0
 [3.0.1]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.1
 [3.0.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.0
 [2.2.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.2.0
