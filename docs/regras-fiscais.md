@@ -267,7 +267,13 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
   misturado seriam 800,00 e 8.700,00). A venda feita antes da liquidação e coberta por ela continua
   na linha à vista (nenhuma fonte decide).
 - Prejuízo herdado em janeiro: o recalculado pelo COIR, com aviso da diferença para o declarado
-  (decisão do usuário; retificação dentro de 5 anos, se for o caso).
+  (decisão do usuário). O prejuízo compensável é o comprovado pelas notas (ônus da prova do
+  contribuinte; valor digitado na DIRPF sem lastro não cria direito). A diferença só muda o imposto
+  do mês em que o prejuízo se esgota: dentro de 5 anos desse mês, retificar e recolher; depois, o
+  crédito decaiu (CTN art. 150 §4º, havendo pagamento; art. 173 I se houver dolo) e não se retifica
+  nem se paga (seria pagamento indevido, CTN art. 156 V); restituição de pagamento a maior, 5 anos do
+  pagamento (CTN art. 168 I). Decisão do usuário de 03/11/2026, com parecer do especialista, num
+  caso de prejuízo de abertura digitado na DIRPF sem lastro nas notas.
 - Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026
   pergunta 720); a discriminação lista a quantidade em cada corretora. CNPJ do emissor pelo pacote
   público da B3 (`data/emissores_b3.csv`).

@@ -390,8 +390,12 @@ def fichas(d: DadosRelatorio) -> FichasIrpf | None:
     bens = _bens(d, mapa, avisos)
     rendimentos = _rendimentos(d, mapa, avisos)
     avisos.append("Resultado negativo até o mês anterior (janeiro): o prejuízo recalculado pelo "
-                  "COIR; se a declaração do ano anterior trouxe outro valor, confira e, se for o "
-                  "caso, retifique (decisão do usuário de 20/10/2026)")  # fmt: skip
+                  "COIR a partir das notas, que é o que se comprova. Se a declaração do ano "
+                  "anterior trouxe outro valor, a diferença só muda o imposto do mês em que o "
+                  "prejuízo acaba: até 5 anos depois desse mês, retifique e recolha a diferença "
+                  "(ou peça de volta o que pagou a mais, até 5 anos do pagamento); depois disso, "
+                  "o imposto decaiu (CTN art. 150 §4º e art. 168 I) e não há o que retificar nem "
+                  "pagar (decisões do usuário de 20/10 e 03/11/2026)")  # fmt: skip
     avisos.append("Imposto pago: o a pagar do mês quando a DARF que o cobriu já foi emitida; no "
                   "programa, informe o valor efetivamente pago no DARF 6015")  # fmt: skip
     return FichasIrpf(
