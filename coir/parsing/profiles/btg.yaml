@@ -2,4 +2,5 @@
 corretora: BTG
 prioridade: 10
 ancoras: ["BTG Pactual CTVM", "43.815.158/0001-22"]
+codigos: ["85"]
 gramaticas: {bovespa: btg, bmf: btg}

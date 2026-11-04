@@ -37,8 +37,20 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **Notas da Clear de 2026 recusadas** com "página sem perfil de corretora conhecido": o
   cabeçalho traz "CLEAR CTVM S/A" em vez de "Clear Corretora". O COIR agora reconhece também
   esse nome e o CNPJ da Clear.
+- **Corretora identificada também pelo código da B3**: sem nome nem CNPJ conhecidos no
+  cabeçalho, vale o código da corretora impresso antes da conta do cliente (3 = XP, 85 = BTG,
+  308 = Clear, 386 = Rico). Se nada bater, a mensagem diz o código lido e o que foi tentado.
+- **Evento lançado na conta errada era aceito** quando já havia outra pendência no livro (por
+  exemplo, uma bonificação que faltava em outro ativo): a conferência parava na visão por
+  titular e não olhava a visão por conta. Com isso a tela Eventos deixava de propor os eventos
+  seguintes. Agora vale a pendência mais antiga das duas visões.
 - **Nota fotografada ou escaneada**: a mensagem agora diz que o PDF é só imagem e pede o PDF
   baixado do site da corretora (o COIR lê o texto da nota, não faz OCR).
+- **Bonificação proposta com custo zero**: quando o pacote de eventos traz o custo atribuído pela
+  companhia (aviso aos acionistas), a proposta da tela Eventos já vem com o custo total. Antes vinha
+  zerada e, se o usuário não preenchesse, o preço médio das vendas seguintes ficava errado.
+- **Motivo de um ativo fora do cálculo**: uma série de opção que saiu do cálculo junto com o
+  ativo-objeto mostrava o motivo de outro ativo do titular; agora mostra o do ativo que a puxou.
 - **Ícone da janela**: a barra de título e a barra de tarefas mostram o símbolo do COIR.
 - **Nome do titular nas notas da XP e da Rico**: nas notas Bovespa o COIR lia o rótulo
   "Cliente" como nome do cliente (e "Corretora" nas BM&F novas da XP); o titular criado na

@@ -2,4 +2,5 @@
 corretora: XP
 prioridade: 20
 ancoras: ["XP INVESTIMENTOS", "02.332.886/0001-04"]
+codigos: ["3"]
 gramaticas: {bovespa: xp, bmf: xp}

@@ -132,6 +132,8 @@ class Livro:
         self.em_curso: tuple[int, frozenset[int]] | None = None
         # (titular, ativo) -> dia a partir do qual o ativo ficou fora do cálculo
         self.cortes: dict[tuple[int, int], date] = {}
+        # ativo puxado para fora por outro ligado (exercício, incorporação) -> o que o puxou
+        self.puxados: dict[tuple[int, int], int] = {}
         # venda que passou de comprado a vendido: posição, dia, quantidade vendida, posição antes
         self.suspeitas: list[tuple[Chave, date, Decimal, Decimal]] = []
 
@@ -284,9 +286,7 @@ def _executar(
         break
     if isolados is not None:
         for (titular, ativo), corte in sorted(livro.cortes.items(), key=lambda x: x[1]):
-            _, motivo = cortes.get((titular, ativo), (corte, ""))
-            if not motivo:  # puxado por outro (exercício, incorporação): o motivo é o dele
-                motivo = next(m for (t, _), (_, m) in cortes.items() if t == titular)
+            motivo = _motivo(cortes, livro.puxados, titular, ativo)
             isolados.append(AtivoIsolado(
                 titular=titular, ativo=ativo, ticker=livro.tickers.get(ativo, str(ativo)),
                 desde=corte, motivo=motivo,
@@ -294,6 +294,20 @@ def _executar(
                 meses=tuple(sorted(meses.get((titular, ativo), set()))),
             ))  # fmt: skip
     return livro
+
+
+def _motivo(
+    cortes: dict[tuple[int, int], tuple[date, str]], puxados: dict[tuple[int, int], int],
+    titular: int, ativo: int,
+) -> str:  # fmt: skip
+    """Motivo do isolamento; o ativo puxado por outro ligado (exercício, incorporação) herda o
+    motivo de quem o puxou, seguindo a cadeia até o ativo em que o motor parou."""
+    visto: set[int] = set()
+    while (titular, ativo) not in cortes and (titular, ativo) in puxados and ativo not in visto:
+        visto.add(ativo)
+        ativo = puxados[(titular, ativo)]
+    _, motivo = cortes.get((titular, ativo), (None, ""))
+    return motivo or next(m for (t, _), (_, m) in cortes.items() if t == titular)
 
 
 Meses = dict[tuple[int, int], set[tuple[int, int]]]  # (titular, ativo) -> (ano, mês)
@@ -351,10 +365,12 @@ def _isolar(
         mudou = False
         for dia, titular, ativos in itens:
             ligados = [a for a in ativos if a is not None]
-            if any(livro.fora(titular, a, dia) for a in ligados):
+            fora = [a for a in ligados if livro.fora(titular, a, dia)]
+            if fora:
                 for a in ligados:
                     if not livro.fora(titular, a, dia):
                         livro.cortes[(titular, a)] = dia
+                        livro.puxados[(titular, a)] = fora[0]
                         mudou = True
 
     def tirar(dia: date, titular: int, ativos: tuple[int | None, ...]) -> bool:
