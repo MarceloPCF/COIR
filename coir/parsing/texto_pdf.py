@@ -41,7 +41,10 @@ def paginas(caminho: Path) -> list[str]:
         finally:
             documento.close()
     if not any(t.strip() for t in textos):
-        raise PdfError(f"PDF sem camada de texto: {caminho.name}")
+        raise PdfError(
+            f"PDF sem texto, só imagem (foto ou digitalização): {caminho.name}. Baixe a nota em "
+            "PDF no site da corretora; o COIR não lê notas fotografadas ou escaneadas"
+        )
     return textos
 
 

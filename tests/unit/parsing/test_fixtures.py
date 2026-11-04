@@ -131,3 +131,23 @@ def test_nome_antes_da_ouvidoria_xp_bmf_novo() -> None:
     )
     c = cliente(texto)
     assert c is not None and c.nome == "FULANO DE TAL"
+
+
+def test_nota_clear_com_razao_social_ctvm() -> None:
+    """Clear (grupo XP) usa o layout da XP; a nota de 2026 traz "CLEAR CTVM S/A" e o CNPJ da Clear
+    no cabeçalho, sem "Corretora". Antes caía em "nenhuma âncora encontrada"."""
+    paginas, esperado = _ler("xp_2026_08_bovespa")
+    clear = [
+        p.replace(
+            "XP INVESTIMENTOS CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+            "CLEAR CTVM S/A",
+        ).replace("02.332.886/0001-04", "15.107.963/0001-66")
+        for p in paginas
+    ]
+    assert "XP INVESTIMENTOS" not in "".join(clear)
+    res = extrair_textos("clear.pdf", clear)
+    assert res.rejeitadas == []
+    [nota] = res.notas
+    assert nota.corretora == "CLEAR"
+    assert nota.numero == esperado["numero_nota"]
+    assert len(nota.negocios_bovespa) == len(esperado["operacoes"])

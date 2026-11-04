@@ -34,6 +34,11 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
   ativo vendido no fim do mês gera um aviso na Apuração (não muda o cálculo).
 
 ### Corrigido
+- **Notas da Clear de 2026 recusadas** com "página sem perfil de corretora conhecido": o
+  cabeçalho traz "CLEAR CTVM S/A" em vez de "Clear Corretora". O COIR agora reconhece também
+  esse nome e o CNPJ da Clear.
+- **Nota fotografada ou escaneada**: a mensagem agora diz que o PDF é só imagem e pede o PDF
+  baixado do site da corretora (o COIR lê o texto da nota, não faz OCR).
 - **Ícone da janela**: a barra de título e a barra de tarefas mostram o símbolo do COIR.
 - **Nome do titular nas notas da XP e da Rico**: nas notas Bovespa o COIR lia o rótulo
   "Cliente" como nome do cliente (e "Corretora" nas BM&F novas da XP); o titular criado na
