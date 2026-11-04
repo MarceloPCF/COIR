@@ -32,7 +32,14 @@ from coir.erros import AnonimizacaoError
 from coir.parsing.anonimizar import CAMPOS_LIVRES as CAMPOS_LIVRES  # para a tela
 from coir.parsing.anonimizar import DadosPessoais, MapaAnonimizacao, conferir
 from coir.parsing.imagens import gravar_png, paginas_tarjadas
-from coir.parsing.texto_pdf import SUFIXO_TEXTO, PdfError, gravar_texto, ler_texto, paginas
+from coir.parsing.texto_pdf import (
+    SUFIXO_TEXTO,
+    PdfError,
+    gravar_texto,
+    ler_texto,
+    paginas,
+    senhas_do_cpf,
+)
 
 log = logging.getLogger(__name__)
 
@@ -149,16 +156,19 @@ def anonimizar_arquivos(
     nomes: Sequence[str] | None = None,
     informados: Sequence[DadosPessoais] = (),
     imagens: bool = False,
+    senhas: Sequence[str] = (),
 ) -> list[ResultadoArquivo]:
     """Grava em ``saida`` o texto anonimizado de cada nota (PDF ou ``.txt``) que passar nos
     portões; as recusas vêm com o motivo (nota e campo, nunca o valor). ``nomes``: nome de cada
     cópia (padrão: o do arquivo, com ``.txt``). Com ``imagens``, grava também a imagem tarjada de
-    cada página dos PDFs (``<cópia>-pagina-N.png``)."""
+    cada página dos PDFs (``<cópia>-pagina-N.png``). PDF protegido: tenta as ``senhas`` e as do
+    CPF dos ``informados``."""
+    tentar = [*senhas, *senhas_do_cpf(d.cpf for d in informados)]
     mapa = carregar_mapa(mapa_caminho)
     saida.mkdir(parents=True, exist_ok=True)
     resultados = [
         _anonimizar_um(a, saida, nomes[i] if nomes is not None else f"{a.stem}.txt",
-                       mapa, sensiveis, informados, imagens)
+                       mapa, sensiveis, informados, imagens, tentar)
         for i, a in enumerate(arquivos)
     ]  # fmt: skip
     salvar_mapa(mapa, mapa_caminho)
@@ -177,9 +187,10 @@ def _anonimizar_um(
     sensiveis: Sequence[str],
     informados: Sequence[DadosPessoais],
     imagens: bool,
+    senhas: Sequence[str],
 ) -> ResultadoArquivo:
     try:
-        textos = paginas(arquivo)
+        textos = paginas(arquivo, senhas)
     except PdfError as erro:
         return ResultadoArquivo(arquivo.name, None, (str(erro),))
     copia = conferir(nome, textos, mapa, sensiveis, informados)
@@ -193,7 +204,8 @@ def _anonimizar_um(
     figuras: list[Path] = []
     if imagens and arquivo.suffix.lower() != SUFIXO_TEXTO:
         try:
-            tarjadas = paginas_tarjadas(arquivo, textos, copia.trocados, copia.alertas)
+            tarjadas = paginas_tarjadas(arquivo, textos, copia.trocados, copia.alertas,
+                                        senhas=senhas)  # fmt: skip
         except AnonimizacaoError as erro:
             destino.unlink()
             return ResultadoArquivo(arquivo.name, None, (f"imagens: {erro}",))
@@ -245,7 +257,9 @@ def novo_envio(dados: Path, banco: Path, agora: datetime) -> Envio:
     return Envio(pasta, [], {so_digitos(d.cpf): d.nome for d in informados}, informados)
 
 
-def preparar_nota(envio: Envio, dados: Path, nome: str, conteudo: bytes) -> ResultadoArquivo:
+def preparar_nota(
+    envio: Envio, dados: Path, nome: str, conteudo: bytes, senhas: Sequence[str] = ()
+) -> ResultadoArquivo:
     """Uma nota do envio, com nome neutro (nota-01.txt, nota-01-pagina-1.png...): o nome do PDF
     pode ter o nome do cliente. O PDF não fica guardado."""
     if Path(nome).suffix.lower() != ".pdf":
@@ -256,7 +270,7 @@ def preparar_nota(envio: Envio, dados: Path, nome: str, conteudo: bytes) -> Resu
         origem.write_bytes(conteudo)
         [r] = anonimizar_arquivos(
             [origem], envio.pasta, dados / ARQUIVO_MAPA, termos_sensiveis(dados),
-            [f"{neutro}.txt"], envio.informados, imagens=True,
+            [f"{neutro}.txt"], envio.informados, imagens=True, senhas=senhas,
         )  # fmt: skip
     nota = ResultadoArquivo(Path(nome).name, r.destino, r.recusas, r.imagens, r.paginas,
                             r.ocultados, r.alertas, r.cpfs)  # fmt: skip

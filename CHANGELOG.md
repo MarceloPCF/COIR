@@ -8,7 +8,7 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
-## [Não lançado]
+## [3.1.0] - 2026-11-04
 
 ### Adicionado
 - **Tela Suporte**, para mandar uma nota que o COIR não lê ou lê errado (uma corretora nova,
@@ -32,8 +32,36 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
   Eventos e o ativo volta ao cálculo.
 - **Aviso de evento possivelmente faltando**: venda maior que a posição comprada que deixa o
   ativo vendido no fim do mês gera um aviso na Apuração (não muda o cálculo).
+- **Notas em PDF com senha** (como as enviadas por e-mail): o COIR tenta sozinho o começo do CPF
+  dos titulares cadastrados. Para a primeira importação, ou se a senha for outra, informe-a no
+  campo **Senha dos PDFs** da tela Importar (vale para todo o lote e fica só na memória até
+  fechar o programa; nunca é gravada) ou com `coir importar --senha`. A tela Notas mostra a
+  página do PDF protegido, e a tela Suporte também o aceita. Sem senha que sirva, a nota é
+  recusada com "PDF protegido por senha", não mais "PDF ilegível".
+- **Sino de pendências no topo da janela**, com a quantidade e um atalho para cada uma: DARF em
+  atraso, nota rejeitada, ativo fora do cálculo, avisos da apuração e a novidade **propostas de
+  evento para conferir**. Vale para todos os anos, não só o escolhido: o atalho abre a tela já no
+  ano do item (a DARF em atraso mais antiga, o ano mais recente com aviso). O cartão Pendências do
+  Painel mostra a mesma lista.
 
 ### Corrigido
+- **Notas da Clear de 2026 recusadas** com "página sem perfil de corretora conhecido": o
+  cabeçalho traz "CLEAR CTVM S/A" em vez de "Clear Corretora". O COIR agora reconhece também
+  esse nome e o CNPJ da Clear.
+- **Corretora identificada também pelo código da B3**: sem nome nem CNPJ conhecidos no
+  cabeçalho, vale o código da corretora impresso antes da conta do cliente (3 = XP, 85 = BTG,
+  308 = Clear, 386 = Rico). Se nada bater, a mensagem diz o código lido e o que foi tentado.
+- **Evento lançado na conta errada era aceito** quando já havia outra pendência no livro (por
+  exemplo, uma bonificação que faltava em outro ativo): a conferência parava na visão por
+  titular e não olhava a visão por conta. Com isso a tela Eventos deixava de propor os eventos
+  seguintes. Agora vale a pendência mais antiga das duas visões.
+- **Nota fotografada ou escaneada**: a mensagem agora diz que o PDF é só imagem e pede o PDF
+  baixado do site da corretora (o COIR lê o texto da nota, não faz OCR).
+- **Bonificação proposta com custo zero**: quando o pacote de eventos traz o custo atribuído pela
+  companhia (aviso aos acionistas), a proposta da tela Eventos já vem com o custo total. Antes vinha
+  zerada e, se o usuário não preenchesse, o preço médio das vendas seguintes ficava errado.
+- **Motivo de um ativo fora do cálculo**: uma série de opção que saiu do cálculo junto com o
+  ativo-objeto mostrava o motivo de outro ativo do titular; agora mostra o do ativo que a puxou.
 - **Ícone da janela**: a barra de título e a barra de tarefas mostram o símbolo do COIR.
 - **Nome do titular nas notas da XP e da Rico**: nas notas Bovespa o COIR lia o rótulo
   "Cliente" como nome do cliente (e "Corretora" nas BM&F novas da XP); o titular criado na
@@ -193,6 +221,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.1.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.0
 [3.0.1]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.1
 [3.0.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.0
 [2.2.0]: https://github.com/MarceloPCF/COIR/releases/tag/v2.2.0

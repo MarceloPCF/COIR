@@ -115,3 +115,25 @@ def test_day_trade_que_compensa_a_venda_nao_avisa() -> None:
     livro.nota(date(2025, 2, 10), livro.op("V", "MGLU3", 200, "11"),
                livro.op("C", "MGLU3", 100, "10"))  # fmt: skip
     assert not any("maior que a posição" in a for a in livro.apurar(date(2025, 2, 28)).avisos)
+
+
+def test_serie_puxada_herda_o_motivo_de_quem_a_puxou() -> None:
+    """Dois problemas no mesmo titular: ITSA4 (exercício em março) e depois LREN3 (exercício de
+    110 sobre 100 em abril). A série LRENF12, exercida em maio sobre LREN3 já isolada, sai junto e
+    o motivo dela é o de LREN3, não o primeiro problema do titular (simulação da 3.1.0 com as
+    notas reais: as opções do LREN mostravam o motivo do ITSA)."""
+    livro = _livro()
+    livro.nota(date(2025, 1, 10), livro.op("C", "LREN3", 100, "15"),
+               livro.op("C", "LRENC10", 100, "0.5", mercado="CALL",
+                        vencimento=date(2025, 4, 17)))  # fmt: skip
+    livro.nota(date(2025, 4, 17), livro.op("C", "LREN3", 110, "10", mercado="EXERC CALL",
+                                           opcao="LRENC10"))  # fmt: skip
+    livro.nota(date(2025, 5, 2), livro.op("C", "LRENF12", 100, "0.4", mercado="CALL",
+                                          vencimento=date(2025, 5, 16)))  # fmt: skip
+    livro.nota(date(2025, 5, 16), livro.op("C", "LREN3", 100, "12", mercado="EXERC CALL",
+                                           opcao="LRENF12"))  # fmt: skip
+    por_ticker = {i.ticker: i for i in livro.apurar(date(2025, 5, 31)).isolados}
+    assert {"ITSA4", "LREN3", "LRENC10", "LRENF12"} <= set(por_ticker)
+    assert "LRENC10" in por_ticker["LREN3"].motivo
+    assert por_ticker["LRENF12"].motivo == por_ticker["LREN3"].motivo
+    assert "ITSAC100" in por_ticker["ITSA4"].motivo

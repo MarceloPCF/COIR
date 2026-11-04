@@ -341,6 +341,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             return
         await run.io_bound(eventos.ignorar, estado.banco, titular, form.proposta.chave,
                            estado.agora(), sim)  # fmt: skip
+        ao_mudar()  # o sino do topo conta as propostas pendentes
         novo()
         await recarregar()
 

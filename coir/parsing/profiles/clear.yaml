@@ -1,5 +1,8 @@
-# Clear (grupo XP): usa o perfil da XP
+# Clear (grupo XP): usa o perfil da XP. As notas de 2026 trazem a razão social "CLEAR CTVM S/A"
+# no cabeçalho, sem "Corretora": a âncora também aceita esse nome e o CNPJ; o código 308 da B3
+# identifica a nota se o nome mudar de novo.
 corretora: CLEAR
 prioridade: 10
-ancoras: ["CLEAR CORRETORA"]
+ancoras: ["CLEAR CORRETORA", "CLEAR CTVM", "15.107.963/0001-66"]
+codigos: ["308"]
 gramaticas: {bovespa: xp, bmf: xp}

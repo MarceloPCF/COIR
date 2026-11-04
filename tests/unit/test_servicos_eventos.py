@@ -387,3 +387,39 @@ def test_propostas_do_pacote_com_o_livro_parado(
     assert [(p.dados.tipo, p.dados.quantidade) for p in do_pacote] == [
         (TipoEvento.DESDOBRAMENTO, 300)
     ]
+
+
+def test_bonificacao_do_pacote_com_custo_atribuido(demo: Path) -> None:
+    """O pacote traz o custo por ação quando o aviso aos acionistas informa (coluna
+    custo_atribuido): a proposta sai com o custo total, senão o PM das vendas seguintes fica errado
+    (IN RFB 1.585/2015 art. 58: a bonificação entra pelo custo atribuído pela companhia). GGBR4:
+    300 ações, bonificação de 5% = 15 a R$ 11,54731631 = 173,2097... -> 173,21."""
+    pasta = _pacote_eventos(demo.parent, [])
+    (pasta / "eventos_b3.csv").write_text(
+        "emissor,isin,tipo,fator,data_com,aprovado_em,isin_emitido,preco,periodo,data_subscricao,"
+        "origem,referencia,custo_atribuido\n"
+        "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-05-31,2023-05-01,BRGGBRTESTE1,,,,cvm_ipe,,11.54731631\n",
+        encoding="utf-8",
+    )  # fmt: skip
+    [bonus] = [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+               if "eventos da B3" in p.movimentacao and p.codigo == "GGBR4"]  # fmt: skip
+    assert (bonus.dados.quantidade, bonus.dados.valor) == (15, Decimal("173.21"))
+    assert "11.54731631 por ação" in bonus.nota and "informe" not in bonus.nota
+
+
+def test_pendencia_na_visao_por_conta_nao_fica_escondida(
+    demo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A visão por titular para no ITSA (dez/2023); a por conta, antes (evento na conta errada,
+    mai/2021). Vale a mais antiga: senão o evento errado passa e o livro por conta, que propõe os
+    eventos seguintes, trava sem o usuário saber por quê."""
+    conta = MotorError("evento DESDOBRAMENTO de BIDI4 sem posição na conta", date(2021, 5, 27))
+
+    def movimentar(*args: object) -> None:
+        raise ITSA if args[-1] is eventos.Visao.TITULAR else conta
+
+    from coir.db.sessao import conectar
+
+    monkeypatch.setattr(eventos, "movimentar", movimentar)
+    with conectar(demo) as fabrica, fabrica() as s:
+        assert eventos._erro_do_livro(s, 1, REFS, FISCAIS) is conta

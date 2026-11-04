@@ -62,7 +62,7 @@ def test_negocio_com_valor_diferente_de_quantidade_x_preco() -> None:
 
 # ------------------------------------------------------------------------------- páginas
 def test_pagina_sem_perfil_e_opcao_flexivel() -> None:
-    with pytest.raises(ExtracaoError, match="sem perfil"):
+    with pytest.raises(ExtracaoError, match="corretora não identificada"):
         classificar("NOTA DE CORRETAGEM\nCorretora Desconhecida S.A.")
     flexivel = "BTG Pactual CTVM S.A.\nFCA - Com Garantia C 1 LIQ.\nMercadoria: Nat. Oper.:"
     assert classificar(flexivel).tipo is TipoPagina.OPCAO_FLEXIVEL

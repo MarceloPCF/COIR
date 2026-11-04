@@ -131,3 +131,51 @@ def test_nome_antes_da_ouvidoria_xp_bmf_novo() -> None:
     )
     c = cliente(texto)
     assert c is not None and c.nome == "FULANO DE TAL"
+
+
+def test_nota_clear_com_razao_social_ctvm() -> None:
+    """Clear (grupo XP) usa o layout da XP; a nota de 2026 traz "CLEAR CTVM S/A" e o CNPJ da Clear
+    no cabeçalho, sem "Corretora". Antes a nota era recusada (corretora não reconhecida)."""
+    paginas, esperado = _ler("xp_2026_08_bovespa")
+    clear = [
+        p.replace(
+            "XP INVESTIMENTOS CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+            "CLEAR CTVM S/A",
+        ).replace("02.332.886/0001-04", "15.107.963/0001-66")
+        for p in paginas
+    ]
+    assert "XP INVESTIMENTOS" not in "".join(clear)
+    res = extrair_textos("clear.pdf", clear)
+    assert res.rejeitadas == []
+    [nota] = res.notas
+    assert nota.corretora == "CLEAR"
+    assert nota.numero == esperado["numero_nota"]
+    assert len(nota.negocios_bovespa) == len(esperado["operacoes"])
+
+
+def _sem_nome_nem_cnpj(paginas: list[str], codigo: str) -> list[str]:
+    """Nota da XP com a razão social e o CNPJ trocados por desconhecidos e o código da B3 dado."""
+    return [
+        p.replace("XP INVESTIMENTOS CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+                  "CORRETORA NOVA S.A.")
+        .replace("02.332.886/0001-04", "00.000.000/0001-91")
+        .replace(" 3-5 000000 ", f" {codigo} 000000 ")
+        for p in paginas
+    ]  # fmt: skip
+
+
+def test_corretora_pelo_codigo_da_b3_sem_nome_nem_cnpj() -> None:
+    """Segunda tentativa: sem nome nem CNPJ conhecidos, o código da corretora na B3 impresso antes
+    da conta ("3-5" é a XP) identifica a corretora; a nota é lida normalmente."""
+    paginas, esperado = _ler("xp_2026_08_bovespa")
+    res = extrair_textos("nova.pdf", _sem_nome_nem_cnpj(paginas, "3-5"))
+    assert res.rejeitadas == []
+    [nota] = res.notas
+    assert nota.corretora == "XP" and nota.numero == esperado["numero_nota"]
+
+
+def test_corretora_desconhecida_diz_o_que_foi_tentado() -> None:
+    paginas, _ = _ler("xp_2026_08_bovespa")
+    res = extrair_textos("nova.pdf", _sem_nome_nem_cnpj(paginas, "999-9"))
+    [rejeitada] = res.rejeitadas
+    assert "código 999 na B3" in rejeitada.motivo and "CNPJ" in rejeitada.motivo

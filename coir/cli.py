@@ -650,6 +650,11 @@ def importar(
     explicacoes: Path | None = typer.Option(
         None, help="CSV de divergências conhecidas (padrão: na pasta do gabarito)."
     ),
+    senha: list[str] | None = typer.Option(
+        None,
+        help="Senha dos PDFs protegidos (repita a opção para várias); o começo do CPF dos "
+        "titulares cadastrados é tentado sem precisar informar.",
+    ),
 ) -> None:
     """Importa as notas da pasta para o banco, numa transação e sem duplicar.
 
@@ -661,7 +666,7 @@ def importar(
     dados = dados_dir(exigir=True)
     rel = importar_pasta(
         _banco(banco), pasta or dados / "_notas-corretagens", _refs(), _agora(),
-        titular,
+        titular, senhas=senha or (),
     )  # fmt: skip
     print(
         f"Arquivos lidos: {len(rel.arquivos_lidos)}; já importados: {len(rel.arquivos_ignorados)}"

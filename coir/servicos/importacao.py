@@ -15,6 +15,7 @@ from collections import Counter
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from functools import partial
 from pathlib import Path
 
 from sqlalchemy import select
@@ -30,9 +31,10 @@ from coir.domain.referencias import Referencias
 from coir.erros import ExtracaoError, ImportacaoError
 from coir.parsing.extrair import Rejeitada, ResultadoExtracao, extrair_pdf, sem_duplicadas
 from coir.parsing.normalizar import classes_das_series, operacoes
+from coir.parsing.texto_pdf import senhas_do_cpf
 
 log = logging.getLogger(__name__)
-Extrator = Callable[[Path], ResultadoExtracao]
+Extrator = Callable[[Path], ResultadoExtracao]  # outro leitor (textos nos testes); None: o PDF
 Progresso = Callable[[int, int, str], None]  # (feitos, total, arquivo em leitura)
 
 
@@ -71,12 +73,16 @@ def importar_arquivos(
     refs: Referencias,
     agora: datetime,
     titular: str | None = None,
-    extrator: Extrator = extrair_pdf,
+    extrator: Extrator | None = None,
     progresso: Progresso | None = None,
+    senhas: Sequence[str] = (),
 ) -> RelatorioImportacao:
-    """Importa os arquivos numa transação da sessão (que não pode ter uma transação aberta)."""
+    """Importa os arquivos numa transação da sessão (que não pode ter uma transação aberta).
+    PDF protegido: tenta as ``senhas`` informadas e depois as do CPF dos titulares cadastrados."""
     rel = RelatorioImportacao()
     with sessao.begin():
+        tentar = [*senhas, *senhas_do_cpf(t.cpf for t in repo.titulares(sessao))]
+        ler = extrator or partial(extrair_pdf, senhas=tentar)
         contas = repo.Contas(sessao, _titular(sessao, titular), explicito=titular is not None)
         ativos = repo.Ativos(sessao)
         ativos.sincronizar_trocas(refs.trocas)
@@ -103,7 +109,7 @@ def importar_arquivos(
                 sessao.add(registro)
             registros[caminho.name] = registro
             rel.arquivos_lidos.append(caminho.name)
-            lote.juntar(extrator(caminho))
+            lote.juntar(ler(caminho))
         lote = sem_duplicadas(lote)
         rel.avisos += lote.avisos
         rel.rejeitadas += lote.rejeitadas
@@ -248,16 +254,17 @@ def importar_pasta(
     refs: Referencias,
     agora: datetime,
     titular: str | None = None,
-    extrator: Extrator = extrair_pdf,
+    extrator: Extrator | None = None,
     sufixo: str = ".pdf",
     progresso: Progresso | None = None,
+    senhas: Sequence[str] = (),
 ) -> RelatorioImportacao:
     """Migração (com backup, se houver o que migrar) e importação de todos os arquivos da pasta."""
     if not pasta.is_dir():
         raise ImportacaoError(f"pasta de notas não encontrada: {pasta}")
     previos = RelatorioImportacao()
     arquivos = arquivos_da_pasta(pasta, previos, sufixo)
-    rel = importar_lista(banco, arquivos, refs, agora, titular, extrator, progresso)
+    rel = importar_lista(banco, arquivos, refs, agora, titular, extrator, progresso, senhas)
     rel.avisos = previos.avisos + rel.avisos
     return rel
 
@@ -268,8 +275,9 @@ def importar_lista(
     refs: Referencias,
     agora: datetime,
     titular: str | None = None,
-    extrator: Extrator = extrair_pdf,
+    extrator: Extrator | None = None,
     progresso: Progresso | None = None,
+    senhas: Sequence[str] = (),
 ) -> RelatorioImportacao:
     """Migração (com backup, se houver o que migrar) e importação dos arquivos num lote.
     Backup antes de importar só quando há arquivo novo ou incompleto ou operações a regravar:
@@ -285,7 +293,8 @@ def importar_lista(
         if pendente:
             fazer_backup(banco, agora)
         with fabrica() as sessao:
-            return importar_arquivos(sessao, arquivos, refs, agora, titular, extrator, progresso)
+            return importar_arquivos(sessao, arquivos, refs, agora, titular, extrator, progresso,
+                                     senhas)  # fmt: skip
 
 
 def marca_das_tabelas(refs: Referencias) -> int:

@@ -11,8 +11,8 @@ from coir.domain.fiscal import Apuracao, Categoria, MesApurado
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import TipoColuna, formatar
-from coir.servicos import atualizacao, darf, notas, painel, versao
-from coir.servicos.estado import Estado
+from coir.servicos import atualizacao, darf, painel, versao
+from coir.servicos.estado import Estado, Pendencia
 from coir.ui import preferencias, tema
 
 log = logging.getLogger(__name__)
@@ -88,17 +88,17 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             apuracao = await run.io_bound(estado.apuracao, estado.fim_do_ano())
             darfs = await run.io_bound(estado.darfs)
             todas = await run.io_bound(estado.darfs_todos_os_anos)
-            incompletos = await run.io_bound(notas.arquivos_incompletos, estado.banco)
+            pendencias = await run.io_bound(estado.pendencias)
         except CoirError as erro:
             corpo.clear()
             with corpo:
                 ui.label(f"Não foi possível apurar: {erro}").classes("coir-negativo")
             return
         espera.delete()
-        if apuracao is None or darfs is None or todas is None or incompletos is None:
+        if apuracao is None or darfs is None or todas is None or pendencias is None:
             return
         with corpo:
-            _conteudo(estado, apuracao, darfs, todas, incompletos, ao_mudar)
+            _conteudo(estado, apuracao, darfs, todas, pendencias, ao_mudar)
 
     ui.timer(0.01, carregar, once=True)
     ui.timer(0.05, tabelas_novas, once=True)
@@ -115,7 +115,7 @@ def _conteudo(
     apuracao: Apuracao,
     darfs: list[darf.LinhaDarf],
     todas: list[darf.LinhaDarf],
-    incompletos: list[str],
+    pendencias: list[Pendencia],
     ao_mudar: Callable[[], object],
 ) -> None:
     """`darfs`: as do ano escolhido (números); `todas`: as de todos os anos (pendências)."""
@@ -128,8 +128,19 @@ def _conteudo(
         estado.darf_escolhida = (linha.ano, linha.mes) if linha else None
         ui.navigate.to("/darf")
 
+    def abrir_item(p: Pendencia) -> Callable[[], None]:
+        """Abre a tela da pendência no ano dela (pode não ser o escolhido)."""
+
+        def abrir() -> None:
+            estado.darf_escolhida = p.darf
+            if p.ano is not None and p.ano != estado.ano:
+                estado.ano = p.ano
+                ao_mudar()
+            ui.navigate.to(p.rota)
+
+        return abrir
+
     meses = [m for m in apuracao.meses if m.titular == estado.titular and m.ano == estado.ano]
-    avisos = [a for a in apuracao.avisos if a[:4] == str(estado.ano) or not a[:4].isdigit()]
     atrasadas = [x for x in todas if x.situacao is darf.Situacao.EM_ATRASO]
     with ui.row().classes("w-full items-stretch gap-4"):
         with _cartao("DARF da vez").mark("cartao-darf"):
@@ -151,27 +162,13 @@ def _conteudo(
                 on_click=lambda: ir_para(vez),
             ).props("flat dense").mark("ver-darf")
         with _cartao("Pendências").mark("cartao-pendencias"):
-            anos = sorted({x.ano for x in atrasadas})
-            itens = [
-                (len(atrasadas), "DARF(s) em atraso"
-                 + (f" ({', '.join(map(str, anos))})" if anos else ""), "/darf"),
-                (len(incompletos), "arquivo(s) com nota rejeitada", "/importar"),
-                (len({i.ativo for i in apuracao.isolados if i.titular == estado.titular}),
-                 "ativo(s) fora do cálculo (falta evento)", "/eventos"),
-                (len(avisos), "aviso(s) para conferir no ano", "/apuracao"),
-            ]  # fmt: skip
-            if not any(n for n, _, _ in itens):
+            if not pendencias:
                 ui.label("Nenhuma pendência.").classes("coir-positivo")
-            mais_antiga = min(atrasadas, key=lambda x: (x.ano, x.mes), default=None)
-            for n, texto, rota in itens:
-                if n:
-                    with ui.row().classes("items-center gap-2"):
-                        ui.icon("error_outline", size="18px").classes("coir-carimbo")
-                        if rota == "/darf":
-                            ui.link(f"{n} {texto}").classes("text-sm cursor-pointer").on(
-                                "click", lambda: ir_para(mais_antiga))  # fmt: skip
-                        else:
-                            ui.link(f"{n} {texto}", rota).classes("text-sm")
+            for p in pendencias:  # as mesmas do sino do topo, de todos os anos
+                with ui.row().classes("items-center gap-2"):
+                    ui.icon("error_outline", size="18px").classes("coir-carimbo")
+                    ui.label(f"{p.quantidade} {p.texto}").classes(
+                        "text-sm cursor-pointer underline").on("click", abrir_item(p))  # fmt: skip
         with _cartao("Atalhos"):
             ui.button(
                 "Importar notas", icon="upload_file", on_click=lambda: ui.navigate.to("/importar")

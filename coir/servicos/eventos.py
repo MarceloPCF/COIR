@@ -16,7 +16,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
-from decimal import ROUND_FLOOR, Decimal, InvalidOperation
+from decimal import ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
 from sqlalchemy import select
@@ -452,16 +452,19 @@ def _preencher(
 def _erro_do_livro(
     s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais
 ) -> MotorError | None:  # fmt: skip
-    """Onde o motor para com o banco como está na sessão (None: o livro fecha)."""
+    """Onde o motor para com o banco como está na sessão (None: o livro fecha): a pendência mais
+    antiga das duas visões. Parar na de titular não pode esconder a de conta (evento lançado na
+    conta errada, simulação da 3.1.0 com as notas reais)."""
     notas, eventos = entradas(s, refs, fiscais)
     notas = [n for n in notas if n.titular == titular]
     eventos = [e for e in eventos if e.titular == titular]
-    try:
-        for visao in (Visao.TITULAR, Visao.CONTA):
+    erros: list[MotorError] = []
+    for visao in (Visao.TITULAR, Visao.CONTA):
+        try:
             movimentar(notas, eventos, fiscais.parametros, date.max, visao)
-    except MotorError as erro:
-        return erro
-    return None
+        except MotorError as erro:
+            erros.append(erro)
+    return min(erros, key=lambda e: e.data or date.min, default=None)
 
 
 def _pendencia_antes(
@@ -778,6 +781,15 @@ def _evento_acao(
             f"subscrição é opcional (preço {preco}, período {ev['periodo']}): lance só o que "
             "você exerceu")  # fmt: skip
     if tipo is TipoEvento.BONIFICACAO:
+        # o pacote traz o custo por ação quando o aviso aos acionistas informa: a proposta já sai
+        # com o custo total; sem ele, o usuário informa (com custo zero o PM da venda fica errado)
+        custo = Decimal(ev.get("custo_atribuido") or 0)
+        if custo:
+            valor = (inteiro * custo).quantize(Decimal("0.01"), ROUND_HALF_UP)
+            pedido = (f"custo atribuído de R$ {custo} por ação, do aviso aos acionistas "
+                      "(confira)")  # fmt: skip
+            nota = "; ".join(x for x in (pedido, nota) if x)
+            return replace(base, quantidade=inteiro, valor=valor), nota
         nota = "; ".join(x for x in ("informe o custo atribuído (aviso aos acionistas)", nota) if x)
     return replace(base, quantidade=inteiro), nota
 

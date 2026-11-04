@@ -1,13 +1,13 @@
 """Notas gravadas para a interface: a lista com filtros, o detalhe com a conciliação e a página
 do PDF em imagem (para conferir a nota ao lado do original)."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 
-import pypdfium2 as pdfium  # pyright: ignore[reportMissingTypeStubs]
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -17,7 +17,7 @@ from coir.db.sessao import conectar
 from coir.domain.nota import NotaExtraida, OperacaoExtraida
 from coir.erros import BancoError, ConciliacaoError, ExtracaoError
 from coir.parsing.conciliar import conciliar
-from coir.parsing.texto_pdf import TRAVA_PDFIUM
+from coir.parsing.texto_pdf import TRAVA_PDFIUM, PdfError, PdfSenhaError, abrir
 
 PASTA_NOTAS = "_notas-corretagens"
 
@@ -139,12 +139,14 @@ def detalhe(banco: Path, pasta_notas: Path, id_nota: int) -> DetalheNota:
                        pdf if pdf.is_file() else None)  # fmt: skip
 
 
-def pagina_png(pdf: Path, pagina: int, largura: int = 1100) -> bytes:
-    """Página (1..n) do PDF em PNG, com `largura` pixels."""
+def pagina_png(pdf: Path, pagina: int, largura: int = 1100, senhas: Sequence[str] = ()) -> bytes:
+    """Página (1..n) do PDF em PNG, com ``largura`` pixels (``senhas``: PDF protegido)."""
     with TRAVA_PDFIUM:  # a tela desenha páginas em threads (run.io_bound)
         try:
-            documento = pdfium.PdfDocument(pdf)
-        except (OSError, pdfium.PdfiumError) as erro:
+            documento = abrir(pdf, senhas)
+        except PdfSenhaError as erro:
+            raise ExtracaoError(str(erro)) from erro
+        except (OSError, PdfError) as erro:
             raise ExtracaoError(f"não foi possível abrir {pdf.name}: {erro}") from erro
         try:
             if not 1 <= pagina <= len(documento):

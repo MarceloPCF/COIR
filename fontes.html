@@ -152,11 +152,11 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 </tr>
 <tr>
   <td>Programa IRPF</td>
-  <td>7</td>
+  <td>8</td>
 </tr>
 <tr>
   <td>CTN</td>
-  <td>1</td>
+  <td>4</td>
 </tr>
 <tr>
   <td>Súmula STJ 360</td>
@@ -689,6 +689,7 @@ dividendo na mesma janela não entra (é provento em dinheiro, não evento em a�
 <li><code>coir/engine/apuracao.py</code> — módulo: …a declaração anual (IN RFB 1.585/2015; decisão do usuário). A DARF usa um saldo único; as fichas do programa IRPF recebem o IRRF que cada uma consumiu (<code>fichas.py</code>). - DARF 6015: abaixo de R$ 10 acumula, inclusive para…</li>
 <li><code>coir/engine/fichas.py</code> — módulo: IRRF por ficha do programa IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei…</li>
 <li><code>data/parametros_fiscais.csv</code> — opcoes<em>linha</em>acoes<em>tipos</em>objeto: programa IRPF, ficha Renda variável: "Mercado de opções - ações" para opção sobre ação; ETF, índice e outros em "Mercado de opções - outros" (P&amp;R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, coerente com o Bens e Direitos do programa (código 03.01, ações inclusive units)</li>
+<li><code>docs/regras-fiscais.md</code> — Decisões da F4 (motor fiscal, 14-15/10/2026): 03/11/2026):** um PDF por ano, na ordem da ficha de renda variável do programa IRPF, em</li>
 <li><code>docs/regras-fiscais.md</code> — R17: R17 | Fichas/códigos da DIRPF mudam por ano | Mapeamento por ano em <code>data/irpf/&lt;ano&gt;.yaml</code> | programa IRPF do ano | revisar anualmente</li>
 <li><code>docs/regras-fiscais.md</code> — Relatórios (F5, 16/10/2026): conferir no programa IRPF do ano: a ficha FII sem linha de IR fonte de day trade; ordem de</li>
 <li><code>tests/fiscal_cases/test_irpf_linhas.py</code> — módulo: Linha da ficha "Renda variável - operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (pareceres de 20 e 21/10/2026), conferidos à mão. Fontes: programa…</li>
@@ -699,6 +700,9 @@ dividendo na mesma janela não entra (é provento em dinheiro, não evento em a�
 
 <ul>
 <li><code>docs/regras-fiscais.md</code> — DARF paga em atraso: multa de mora (F6, 17/10/2026): A denúncia espontânea (CTN art. 138; STJ REsp 1.149.022/SP; Súmula 360) fica como nota na tela:</li>
+<li><code>docs/regras-fiscais.md</code> — Declaração anual (F8, 20/10/2026): crédito decaiu (CTN art. 150 §4º, havendo pagamento; art. 173 I se houver dolo) e não se retifica</li>
+<li><code>docs/regras-fiscais.md</code> — Declaração anual (F8, 20/10/2026): nem se paga (seria pagamento indevido, CTN art. 156 V); restituição de pagamento a maior, 5 anos do</li>
+<li><code>docs/regras-fiscais.md</code> — Declaração anual (F8, 20/10/2026): pagamento (CTN art. 168 I). Decisão do usuário de 03/11/2026, com parecer do especialista, num</li>
 </ul>
 
 <h2 id="sumula-stj-360">Súmula STJ 360</h2>

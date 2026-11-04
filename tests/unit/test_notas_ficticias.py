@@ -4,6 +4,7 @@ em PDF, é lida pelo extrator real e fecha na conciliação; o banco de demonstr
 from datetime import date
 from decimal import Decimal as D
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -78,3 +79,18 @@ def test_opcoes_e_proventos_da_demonstracao(estado: Estado) -> None:
     assert ciclos == {"PETRC380": "exercida", "VALEQ550": "vencida (pó)"}
     proventos, avisos = estado.proventos()
     assert len([p for p in proventos if p.data.year == 2025]) == 9 and not avisos
+
+
+def test_pendencias_do_painel_e_do_sino(estado: Estado, monkeypatch: pytest.MonkeyPatch) -> None:
+    """O sino do topo e o cartão do Painel mostram a mesma lista, de todos os anos (não muda com o
+    ano escolhido): a DARF de outubro em atraso (com o ano e a competência, para abrir a tela no
+    ano certo) e as propostas de evento ainda pendentes."""
+    [darf] = [p for p in estado.pendencias() if p.rota == "/darf"]
+    assert (darf.quantidade, darf.ano, darf.darf) == (1, 2025, (2025, 10))
+    monkeypatch.setattr(estado, "ano", 2024)
+    assert estado.pendencias()[0] == darf
+    assert not [p for p in estado.pendencias() if "proposta" in p.texto]
+    propostas = [SimpleNamespace(situacao=s) for s in ("pendente", "ignorada", "pendente")]
+    monkeypatch.setattr(estado, "propostas", lambda: propostas)
+    [proposta] = [p for p in estado.pendencias() if "proposta" in p.texto]
+    assert (proposta.quantidade, proposta.rota) == (2, "/eventos")

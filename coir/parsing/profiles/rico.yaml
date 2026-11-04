@@ -2,4 +2,5 @@
 corretora: RICO
 prioridade: 10
 ancoras: ["Rico Investimentos", "RICO CORRETORA"]
+codigos: ["386"]
 gramaticas: {bovespa: xp, bmf: xp}
