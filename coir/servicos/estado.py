@@ -33,7 +33,7 @@ from coir.domain.proventos import Provento
 from coir.domain.referencias import Referencias, codigo_atual
 from coir.domain.relatorio import DadosRelatorio
 from coir.erros import CoirError, ConfiguracaoError, ExportacaoError
-from coir.parsing.extrair import extrair_pdf
+from coir.parsing.texto_pdf import senhas_do_cpf
 from coir.reports.irpf import fichas
 from coir.servicos import (
     atualizacao,
@@ -55,6 +55,16 @@ from coir.servicos.versao import VersaoRemota
 
 log = logging.getLogger(__name__)
 T = TypeVar("T")
+
+
+@dataclass(frozen=True)
+class Pendencia:
+    """Um item das pendências do titular (Painel e sino do topo): quantos, o quê e a tela."""
+
+    quantidade: int
+    texto: str
+    rota: str
+    darf: tuple[int, int] | None = None  # (ano, mês) da DARF em atraso mais antiga
 
 
 @dataclass(frozen=True)
@@ -81,7 +91,8 @@ class Estado:
         self.migracao: Migracao | None = None  # banco atualizado nesta abertura (o Painel avisa)
         self.ano: int | None = None
         self.agora: Callable[[], datetime] = datetime.now  # relógio (fixo nos testes)
-        self.extrator: Extrator = extrair_pdf  # leitura dos PDFs (textos nos testes)
+        self.extrator: Extrator | None = None  # None: lê os PDFs (textos nos testes)
+        self.senhas_informadas: list[str] = []  # senhas de PDF desta execução (nunca gravadas)
         self.baixar: atualizacao.Baixar = atualizacao.baixar  # GitHub (falso nos testes)
         self.remoto: atualizacao.PacoteRemoto | None = None  # última verificação do pacote
         self.verificado = False
@@ -385,6 +396,41 @@ class Estado:
             ("proventos", titular),
             lambda: proventos_banco(self.banco, self.fiscais, titular, self.pasta_refs),
         )
+
+    def pendencias(self) -> list[Pendencia]:
+        """O que o titular escolhido tem de resolver (só os itens com quantidade): DARF em
+        atraso (todos os anos), arquivo com nota rejeitada, ativo fora do cálculo, proposta de
+        evento a conferir e avisos do ano escolhido."""
+        if not self.existe or self.titular is None:
+            return []
+        titular = self.titular
+        apuracao = self.apuracao(self.fim_do_ano())
+        atrasadas = [x for x in self.darfs_todos_os_anos()
+                     if x.situacao is darf.Situacao.EM_ATRASO]  # fmt: skip
+        anos = sorted({x.ano for x in atrasadas})
+        antiga = min(((x.ano, x.mes) for x in atrasadas), default=None)
+        avisos = [a for a in apuracao.avisos if a[:4] == str(self.ano) or not a[:4].isdigit()]
+        itens = [
+            Pendencia(len(atrasadas), "DARF(s) em atraso"
+                      + (f" ({', '.join(map(str, anos))})" if anos else ""), "/darf", antiga),
+            Pendencia(len(notas.arquivos_incompletos(self.banco)),
+                      "arquivo(s) com nota rejeitada", "/importar"),
+            Pendencia(len({i.ativo for i in apuracao.isolados if i.titular == titular}),
+                      "ativo(s) fora do cálculo (falta evento)", "/eventos"),
+            Pendencia(sum(p.situacao == "pendente" for p in self.propostas()),
+                      "proposta(s) de evento para conferir", "/eventos"),
+            Pendencia(len(avisos), "aviso(s) para conferir no ano", "/apuracao"),
+        ]  # fmt: skip
+        return [p for p in itens if p.quantidade]
+
+    def senhas_pdf(self) -> list[str]:
+        """Senhas para abrir PDF protegido: as informadas nesta execução (tela Importar) e as
+        do começo do CPF dos titulares cadastrados."""
+        cpfs: list[str] = []
+        if self.existe:
+            with conectar(self.banco) as fabrica, fabrica() as s:
+                cpfs = [t.cpf for t in repo.titulares(s)]
+        return [*self.senhas_informadas, *senhas_do_cpf(cpfs)]
 
     def propostas(self) -> list[eventos.Proposta]:
         """Eventos sugeridos pela movimentação da B3 e pelo pacote público (tela 7); recalcula

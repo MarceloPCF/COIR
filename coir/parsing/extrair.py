@@ -59,9 +59,10 @@ class _Grupo:
     folhas: list[int]
 
 
-def extrair_pdf(caminho: Path) -> ResultadoExtracao:
+def extrair_pdf(caminho: Path, senhas: Sequence[str] = ()) -> ResultadoExtracao:
+    """Notas de um PDF (``senhas``: tentadas se o PDF for protegido); ilegível vira rejeição."""
     try:
-        textos = ler_paginas(caminho)
+        textos = ler_paginas(caminho, senhas)
     except PdfError as erro:
         return ResultadoExtracao(rejeitadas=[Rejeitada(caminho.name, (), str(erro))])
     return extrair_textos(caminho.name, textos)

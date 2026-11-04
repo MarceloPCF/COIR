@@ -63,6 +63,9 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         if not arquivos:
             ui.notify("Nenhum PDF para importar.", type="warning")
             return
+        digitada = str(senha.value or "").strip()
+        if digitada and digitada not in estado.senhas_informadas:
+            estado.senhas_informadas.append(digitada)  # vale até fechar o COIR; nunca gravada
         andamento.ativo, andamento.erros = True, []
         andamento(0, len(arquivos), arquivos[0].name)
         travar(True)
@@ -76,6 +79,7 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 None,
                 estado.extrator,
                 andamento,
+                list(estado.senhas_informadas),
             )
         except CoirError as erro:  # lote desfeito: nada gravado
             ui.notify(
@@ -133,6 +137,20 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 .props("outline")
                 .mark("importar-pasta")
             )
+        senha = (
+            ui.input(
+                "Senha dos PDFs (se houver)",
+                password=True,
+                password_toggle_button=True,
+            )
+            .props("outlined dense")
+            .classes("min-w-[340px]")
+            .tooltip(
+                "O COIR já tenta o começo do CPF dos titulares cadastrados. A senha vale para "
+                "todos os PDFs do lote e fica só na memória até fechar o programa."
+            )
+            .mark("senha-pdfs")
+        )
         pastas.seletor(estado, "pasta_notas", "Pasta das notas", estado.pasta_notas,
                        ui.navigate.reload)  # fmt: skip
         barra = ui.linear_progress(value=0, show_value=False).props("rounded size=8px")

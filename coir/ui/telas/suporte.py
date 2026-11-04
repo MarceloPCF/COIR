@@ -156,7 +156,7 @@ def _envio(estado: Estado) -> None:
                 passo.text = f"Nota {i} de {len(recebidos)}: {nome}"
                 barra.value = (i - 1) / len(recebidos)
                 if await run.io_bound(suporte.preparar_nota, pronto, estado.dados, nome,
-                                      conteudo) is None:  # fmt: skip
+                                      conteudo, estado.senhas_informadas) is None:  # fmt: skip
                     return
             barra.value = 1
         except CoirError as erro:

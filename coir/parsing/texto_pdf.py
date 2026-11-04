@@ -5,16 +5,28 @@ fixtures e as cópias anonimizadas de ``coir notas anonimizar``): quem desenvolv
 sobre o mesmo texto que o PDF original daria, sem ter o PDF.
 """
 
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from threading import RLock
 
 import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_c
 
+from coir.domain.cpf import so_digitos
 from coir.erros import CoirError
 
 
 class PdfError(CoirError):
     """PDF ilegível ou sem camada de texto."""
+
+
+class PdfSenhaError(PdfError):
+    """PDF protegido por senha, e nenhuma das senhas tentadas abriu."""
+
+
+# Notas enviadas por e-mail costumam vir com senha formada pelo começo do CPF do titular (os 3
+# primeiros dígitos é o mais comum); tentar outros começos e o CPF inteiro não custa nada.
+DIGITOS_DO_CPF = (3, 4, 5, 6, 11)
 
 
 SUFIXO_TEXTO = ".txt"
@@ -25,17 +37,46 @@ SEPARADOR_PAGINAS = ""
 TRAVA_PDFIUM = RLock()
 
 
-def paginas(caminho: Path) -> list[str]:
-    """Devolve o texto de cada página, na ordem."""
+def senhas_do_cpf(cpfs: Iterable[str]) -> list[str]:
+    """Senhas prováveis de PDF de nota a partir dos CPFs dos titulares (sem repetir)."""
+    saida: list[str] = []
+    for cpf in cpfs:
+        digitos = so_digitos(cpf)
+        if len(digitos) != 11:
+            continue
+        saida += [digitos[:n] for n in DIGITOS_DO_CPF if digitos[:n] not in saida]
+    return saida
+
+
+def abrir(caminho: Path, senhas: Sequence[str] = ()) -> pdfium.PdfDocument:
+    """Abre o PDF (chamar com ``TRAVA_PDFIUM``); se for protegido, tenta cada uma das
+    ``senhas`` na ordem. Nenhuma serve: ``PdfSenhaError``."""
+    try:
+        return pdfium.PdfDocument(caminho)
+    except pdfium.PdfiumError as erro:
+        if erro.err_code != pdfium_c.FPDF_ERR_PASSWORD:
+            raise PdfError(f"PDF ilegível: {caminho.name}") from erro
+    for senha in dict.fromkeys(s for s in senhas if s):
+        try:
+            return pdfium.PdfDocument(caminho, password=senha)
+        except pdfium.PdfiumError as erro:
+            if erro.err_code != pdfium_c.FPDF_ERR_PASSWORD:
+                raise PdfError(f"PDF ilegível: {caminho.name}") from erro
+    raise PdfSenhaError(
+        f"PDF protegido por senha: {caminho.name}. Informe a senha do PDF ao importar (campo "
+        '"Senha dos PDFs" na tela Importar); nas notas enviadas por e-mail ela costuma ser o '
+        "começo do CPF"
+    )
+
+
+def paginas(caminho: Path, senhas: Sequence[str] = ()) -> list[str]:
+    """Devolve o texto de cada página, na ordem (``senhas``: para PDF protegido)."""
     if not caminho.is_file():
         raise PdfError(f"PDF não encontrado: {caminho.name}")
     if caminho.suffix.lower() == SUFIXO_TEXTO:
         return ler_texto(caminho)
     with TRAVA_PDFIUM:
-        try:
-            documento = pdfium.PdfDocument(caminho)
-        except pdfium.PdfiumError as erro:
-            raise PdfError(f"PDF ilegível: {caminho.name}") from erro
+        documento = abrir(caminho, senhas)
         try:
             textos = [_texto(documento[i]) for i in range(len(documento))]
         finally:

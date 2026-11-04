@@ -124,14 +124,15 @@ def montar(estado: Estado, ao_mudar: Callable[[], object], nota: int | None = No
     async def abrir(id_nota: int) -> None:
         try:
             d = await run.io_bound(notas.detalhe, estado.banco, estado.pasta_notas, id_nota)
+            senhas = await run.io_bound(estado.senhas_pdf)
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return
-        if d is None:
+        if d is None or senhas is None:
             return
         detalhe.clear()
         with detalhe:
-            _detalhe(d)
+            _detalhe(d, senhas)
 
     contador.set_text(_contagem(len(todas)))
     with detalhe:
@@ -140,7 +141,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object], nota: int | None = No
         ui.timer(0.01, lambda: abrir(nota), once=True)
 
 
-def _detalhe(d: notas.DetalheNota) -> None:
+def _detalhe(d: notas.DetalheNota, senhas: list[str]) -> None:
     r = d.resumo
     with ui.row().classes("w-full items-baseline gap-3"):
         ui.label(f"Nota {r.numero}").classes("coir-titulo text-xl")
@@ -182,7 +183,7 @@ def _detalhe(d: notas.DetalheNota) -> None:
                     ui.label(c.rotulo).classes("text-sm")
                     ui.label(_dinheiro(c.valor)).classes("coir-numero text-right text-sm")
         with ui.column().classes("min-w-[380px] flex-[1.1] gap-2"):
-            _pdf(d)
+            _pdf(d, senhas)
     ops: list[tuple[Valor, ...]] = [
         (
             o.cv,
@@ -202,7 +203,7 @@ def _detalhe(d: notas.DetalheNota) -> None:
 LARGURA_AMPLIADA = 2200  # pixels da página ampliada (nítida no zoom)
 
 
-def _pdf(d: notas.DetalheNota) -> None:
+def _pdf(d: notas.DetalheNota, senhas: list[str]) -> None:
     if d.pdf is None:
         ui.label(
             f"O PDF {d.resumo.arquivo} não está na pasta das notas: a nota fica no banco, "
@@ -241,7 +242,8 @@ def _pdf(d: notas.DetalheNota) -> None:
         carregando.set_visibility(True)
         ampliar.open()
         try:
-            png = await run.io_bound(notas.pagina_png, pdf, atual[0], LARGURA_AMPLIADA)
+            png = await run.io_bound(notas.pagina_png, pdf, atual[0], LARGURA_AMPLIADA,
+                                     senhas)  # fmt: skip
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return
@@ -256,7 +258,7 @@ def _pdf(d: notas.DetalheNota) -> None:
     async def mostrar(pagina: int) -> None:
         atual[0] = pagina
         try:
-            png = await run.io_bound(notas.pagina_png, pdf, pagina)
+            png = await run.io_bound(notas.pagina_png, pdf, pagina, 1100, senhas)
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return

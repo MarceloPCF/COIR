@@ -392,14 +392,14 @@ def textos(roteiro: Roteiro) -> list[tuple[str, str]]:
     return saida
 
 
-def pdf(texto: str, destino: Path) -> Path:
+def pdf(texto: str, destino: Path, senha: str | None = None) -> Path:
     """O texto num PDF de páginas A4 deitadas (folhas separadas por form feed), em fonte de
-    largura fixa."""
+    largura fixa; com ``senha``, protegido como as notas enviadas por e-mail."""
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.pdfgen.canvas import Canvas
 
     largura, altura = landscape(A4)
-    tela = Canvas(str(destino), pagesize=(largura, altura))
+    tela = Canvas(str(destino), pagesize=(largura, altura), encrypt=senha)
     for pagina in texto.split("\f"):
         linhas = pagina.splitlines()
         tamanho = min(7.0, (altura - 48) / max(len(linhas), 1) / 1.15)

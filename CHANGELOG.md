@@ -32,6 +32,15 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
   Eventos e o ativo volta ao cálculo.
 - **Aviso de evento possivelmente faltando**: venda maior que a posição comprada que deixa o
   ativo vendido no fim do mês gera um aviso na Apuração (não muda o cálculo).
+- **Notas em PDF com senha** (como as enviadas por e-mail): o COIR tenta sozinho o começo do CPF
+  dos titulares cadastrados. Para a primeira importação, ou se a senha for outra, informe-a no
+  campo **Senha dos PDFs** da tela Importar (vale para todo o lote e fica só na memória até
+  fechar o programa; nunca é gravada) ou com `coir importar --senha`. A tela Notas mostra a
+  página do PDF protegido, e a tela Suporte também o aceita. Sem senha que sirva, a nota é
+  recusada com "PDF protegido por senha", não mais "PDF ilegível".
+- **Sino de pendências no topo da janela**, com a quantidade e um atalho para cada uma: DARF em
+  atraso, nota rejeitada, ativo fora do cálculo, aviso do ano e a novidade **propostas de evento
+  para conferir** (que também aparece no cartão Pendências do Painel).
 
 ### Corrigido
 - **Notas da Clear de 2026 recusadas** com "página sem perfil de corretora conhecido": o

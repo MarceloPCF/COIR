@@ -72,6 +72,15 @@ vendas do ativo continuam contando no limite de isenção de R$ 20 mil. Lance o 
 Eventos e o ativo volta ao cálculo.</p></li>
 <li><strong>Aviso de evento possivelmente faltando</strong>: venda maior que a posição comprada que deixa o
 ativo vendido no fim do mês gera um aviso na Apuração (não muda o cálculo).</li>
+<li><strong>Notas em PDF com senha</strong> (como as enviadas por e-mail): o COIR tenta sozinho o começo do CPF
+dos titulares cadastrados. Para a primeira importação, ou se a senha for outra, informe-a no
+campo <strong>Senha dos PDFs</strong> da tela Importar (vale para todo o lote e fica só na memória até
+fechar o programa; nunca é gravada) ou com <code>coir importar --senha</code>. A tela Notas mostra a
+página do PDF protegido, e a tela Suporte também o aceita. Sem senha que sirva, a nota é
+recusada com "PDF protegido por senha", não mais "PDF ilegível".</li>
+<li><strong>Sino de pendências no topo da janela</strong>, com a quantidade e um atalho para cada uma: DARF em
+atraso, nota rejeitada, ativo fora do cálculo, aviso do ano e a novidade <strong>propostas de evento
+para conferir</strong> (que também aparece no cartão Pendências do Painel).</li>
 </ul>
 
 <h3 id="corrigido">Corrigido</h3>
@@ -80,8 +89,20 @@ ativo vendido no fim do mês gera um aviso na Apuração (não muda o cálculo).
 <li><strong>Notas da Clear de 2026 recusadas</strong> com "página sem perfil de corretora conhecido": o
 cabeçalho traz "CLEAR CTVM S/A" em vez de "Clear Corretora". O COIR agora reconhece também
 esse nome e o CNPJ da Clear.</li>
+<li><strong>Corretora identificada também pelo código da B3</strong>: sem nome nem CNPJ conhecidos no
+cabeçalho, vale o código da corretora impresso antes da conta do cliente (3 = XP, 85 = BTG,
+308 = Clear, 386 = Rico). Se nada bater, a mensagem diz o código lido e o que foi tentado.</li>
+<li><strong>Evento lançado na conta errada era aceito</strong> quando já havia outra pendência no livro (por
+exemplo, uma bonificação que faltava em outro ativo): a conferência parava na visão por
+titular e não olhava a visão por conta. Com isso a tela Eventos deixava de propor os eventos
+seguintes. Agora vale a pendência mais antiga das duas visões.</li>
 <li><strong>Nota fotografada ou escaneada</strong>: a mensagem agora diz que o PDF é só imagem e pede o PDF
 baixado do site da corretora (o COIR lê o texto da nota, não faz OCR).</li>
+<li><strong>Bonificação proposta com custo zero</strong>: quando o pacote de eventos traz o custo atribuído pela
+companhia (aviso aos acionistas), a proposta da tela Eventos já vem com o custo total. Antes vinha
+zerada e, se o usuário não preenchesse, o preço médio das vendas seguintes ficava errado.</li>
+<li><strong>Motivo de um ativo fora do cálculo</strong>: uma série de opção que saiu do cálculo junto com o
+ativo-objeto mostrava o motivo de outro ativo do titular; agora mostra o do ativo que a puxou.</li>
 <li><strong>Ícone da janela</strong>: a barra de título e a barra de tarefas mostram o símbolo do COIR.</li>
 <li><strong>Nome do titular nas notas da XP e da Rico</strong>: nas notas Bovespa o COIR lia o rótulo
 "Cliente" como nome do cliente (e "Corretora" nas BM&amp;F novas da XP); o titular criado na

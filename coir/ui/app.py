@@ -7,11 +7,12 @@ do modelo neutro de `coir.reports`.
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from nicegui import ui
+from nicegui import run, ui
 from nicegui.events import ValueChangeEventArguments
 
 from coir.config import ARQUIVO_REGISTRO
-from coir.servicos.estado import Estado
+from coir.erros import CoirError
+from coir.servicos.estado import Estado, Pendencia
 from coir.ui import preferencias, tema
 from coir.ui.telas import (
     apuracao,
@@ -165,6 +166,12 @@ def montar(estado: Estado) -> None:
     def recarregar() -> None:
         if paginas is not None:
             paginas.refresh()
+        sino.refresh()
+
+    def mudou() -> None:
+        """Uma tela gravou no banco: o topo (titulares, anos e o sino) se refaz."""
+        seletores.refresh()
+        sino.refresh()
 
     def escolher(atributo: str) -> Callable[[ValueChangeEventArguments], None]:
         def mudar(e: ValueChangeEventArguments) -> None:
@@ -185,6 +192,60 @@ def montar(estado: Estado) -> None:
         ui.select(estado.anos(hoje), label="Ano", value=estado.ano, on_change=escolher("ano"),
                   ).props("outlined dense options-dense").classes("w-[110px]")  # fmt: skip
 
+    @ui.refreshable
+    def sino() -> None:
+        """Sino com as pendências do titular (as mesmas do Painel); calcula depois de desenhar,
+        sem travar a janela."""
+        botao = ui.button(icon="notifications_none").props("flat round color=white").tooltip(
+            "Pendências").mark("sino")  # fmt: skip
+        with botao:
+            selo = ui.badge("", color="red").props("floating").mark("sino-quantidade")
+            selo.set_visibility(False)
+            with ui.menu().props("anchor='bottom right' self='top right'") as menu:
+                lista = ui.column().classes("gap-1 p-3 min-w-[300px]")
+        with lista:
+            ui.label("Calculando…").classes("coir-subtitulo text-sm")
+
+        def ir_para(p: Pendencia, menu: ui.menu) -> Callable[[], None]:
+            def ir() -> None:
+                menu.close()
+                if p.darf is not None:  # a DARF em atraso mais antiga pode ser de outro ano
+                    estado.ano, estado.darf_escolhida = p.darf[0], p.darf
+                    seletores.refresh()
+                    sino.refresh()  # os avisos contados são os do ano escolhido
+                ui.navigate.to(p.rota)
+
+            return ir
+
+        async def contar() -> None:
+            if not estado.pronto:
+                lista.clear()
+                with lista:
+                    ui.label("Nenhuma pendência.").classes("coir-positivo text-sm")
+                return
+            try:
+                itens = await run.io_bound(estado.pendencias)
+            except CoirError as erro:
+                itens, falha = [], str(erro)
+            else:
+                falha = ""
+            lista.clear()
+            with lista:
+                ui.label("Pendências").classes("coir-campo-rotulo")
+                if falha:
+                    ui.label(f"Não foi possível calcular: {falha}").classes("coir-negativo text-sm")
+                elif not itens:
+                    ui.label("Nenhuma pendência.").classes("coir-positivo text-sm")
+                for p in itens or []:
+                    ui.item(f"{p.quantidade} {p.texto}", on_click=ir_para(p, menu)).props(
+                        "clickable dense").classes("text-sm")  # fmt: skip
+            if itens:
+                botao.props("icon=notifications")
+                selo.set_text(str(len(itens)))
+                selo.set_visibility(True)
+
+        ui.timer(0.3, contar, once=True)
+
     with ui.header().classes("coir-topo items-center gap-4 pl-6 pr-4 py-2"):
         ui.button(icon="menu", on_click=lambda: gaveta.toggle()).props(
             "flat round dense color=white").tooltip("Mostrar ou ocultar o menu").mark(
@@ -193,6 +254,7 @@ def montar(estado: Estado) -> None:
         ui.space()
         with ui.row().classes("items-center gap-4"):
             seletores()
+        sino()
         ui.button(icon="contrast", on_click=preferencias.alternar_tema).props(
             "flat round color=white").tooltip("Tema claro ou escuro")  # fmt: skip
 
@@ -215,7 +277,7 @@ def montar(estado: Estado) -> None:
         if estado.aviso_tabelas:
             ui.label(estado.aviso_tabelas).classes("coir-carimbo text-sm").mark("aviso-tabelas")
         rotas: dict[str, Callable[..., None]] = {
-            t.rota: _construtor(t, estado, seletores.refresh) for t in (*TELAS, INICIO)
+            t.rota: _construtor(t, estado, mudou) for t in (*TELAS, INICIO)
         }
-        rotas["/notas/{nota}"] = _nota(estado, seletores.refresh)
+        rotas["/notas/{nota}"] = _nota(estado, mudou)
         paginas = ui.sub_pages(rotas).classes("w-full")
