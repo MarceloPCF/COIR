@@ -128,6 +128,18 @@ def _conteudo(
         estado.darf_escolhida = (linha.ano, linha.mes) if linha else None
         ui.navigate.to("/darf")
 
+    def abrir_item(p: Pendencia) -> Callable[[], None]:
+        """Abre a tela da pendência no ano dela (pode não ser o escolhido)."""
+
+        def abrir() -> None:
+            estado.darf_escolhida = p.darf
+            if p.ano is not None and p.ano != estado.ano:
+                estado.ano = p.ano
+                ao_mudar()
+            ui.navigate.to(p.rota)
+
+        return abrir
+
     meses = [m for m in apuracao.meses if m.titular == estado.titular and m.ano == estado.ano]
     atrasadas = [x for x in todas if x.situacao is darf.Situacao.EM_ATRASO]
     with ui.row().classes("w-full items-stretch gap-4"):
@@ -150,19 +162,13 @@ def _conteudo(
                 on_click=lambda: ir_para(vez),
             ).props("flat dense").mark("ver-darf")
         with _cartao("Pendências").mark("cartao-pendencias"):
-            itens = [(p.quantidade, p.texto, p.rota) for p in pendencias]
-            if not itens:
+            if not pendencias:
                 ui.label("Nenhuma pendência.").classes("coir-positivo")
-            mais_antiga = min(atrasadas, key=lambda x: (x.ano, x.mes), default=None)
-            for n, texto, rota in itens:
-                if n:
-                    with ui.row().classes("items-center gap-2"):
-                        ui.icon("error_outline", size="18px").classes("coir-carimbo")
-                        if rota == "/darf":
-                            ui.link(f"{n} {texto}").classes("text-sm cursor-pointer").on(
-                                "click", lambda: ir_para(mais_antiga))  # fmt: skip
-                        else:
-                            ui.link(f"{n} {texto}", rota).classes("text-sm")
+            for p in pendencias:  # as mesmas do sino do topo, de todos os anos
+                with ui.row().classes("items-center gap-2"):
+                    ui.icon("error_outline", size="18px").classes("coir-carimbo")
+                    ui.label(f"{p.quantidade} {p.texto}").classes(
+                        "text-sm cursor-pointer underline").on("click", abrir_item(p))  # fmt: skip
         with _cartao("Atalhos"):
             ui.button(
                 "Importar notas", icon="upload_file", on_click=lambda: ui.navigate.to("/importar")

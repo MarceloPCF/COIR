@@ -39,8 +39,10 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
   página do PDF protegido, e a tela Suporte também o aceita. Sem senha que sirva, a nota é
   recusada com "PDF protegido por senha", não mais "PDF ilegível".
 - **Sino de pendências no topo da janela**, com a quantidade e um atalho para cada uma: DARF em
-  atraso, nota rejeitada, ativo fora do cálculo, aviso do ano e a novidade **propostas de evento
-  para conferir** (que também aparece no cartão Pendências do Painel).
+  atraso, nota rejeitada, ativo fora do cálculo, avisos da apuração e a novidade **propostas de
+  evento para conferir**. Vale para todos os anos, não só o escolhido: o atalho abre a tela já no
+  ano do item (a DARF em atraso mais antiga, o ano mais recente com aviso). O cartão Pendências do
+  Painel mostra a mesma lista.
 
 ### Corrigido
 - **Notas da Clear de 2026 recusadas** com "página sem perfil de corretora conhecido": o

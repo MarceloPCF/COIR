@@ -209,10 +209,11 @@ def montar(estado: Estado) -> None:
         def ir_para(p: Pendencia, menu: ui.menu) -> Callable[[], None]:
             def ir() -> None:
                 menu.close()
-                if p.darf is not None:  # a DARF em atraso mais antiga pode ser de outro ano
-                    estado.ano, estado.darf_escolhida = p.darf[0], p.darf
+                estado.darf_escolhida = p.darf  # a tela DARF abre esta competência
+                if p.ano is not None and p.ano != estado.ano:  # o item pode ser de outro ano
+                    estado.ano = p.ano
                     seletores.refresh()
-                    sino.refresh()  # os avisos contados são os do ano escolhido
+                    recarregar()  # já na tela do item: ela se refaz no ano novo
                 ui.navigate.to(p.rota)
 
             return ir
