@@ -33,7 +33,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | P&R IRPF 2026 | 18 |
 | Manual MIR 2026 | 3 |
 | Programa IRPF | 8 |
-| CTN | 1 |
+| CTN | 4 |
 | Súmula STJ 360 | 1 |
 | REsp 1.149.022/SP | 1 |
 | RIR/2018 | 6 |
@@ -451,6 +451,9 @@ Companhias que saíram da bolsa:
 ## CTN
 
 - `docs/regras-fiscais.md` — DARF paga em atraso: multa de mora (F6, 17/10/2026): A denúncia espontânea (CTN art. 138; STJ REsp 1.149.022/SP; Súmula 360) fica como nota na tela:
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): crédito decaiu (CTN art. 150 §4º, havendo pagamento; art. 173 I se houver dolo) e não se retifica
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): nem se paga (seria pagamento indevido, CTN art. 156 V); restituição de pagamento a maior, 5 anos do
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): pagamento (CTN art. 168 I). Decisão do usuário de 03/11/2026, com parecer do especialista, num
 
 ## Súmula STJ 360
 
