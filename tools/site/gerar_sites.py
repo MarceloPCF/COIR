@@ -36,8 +36,9 @@ PASSOS = [
         "Arraste os PDFs das notas de corretagem (padrão "
         "SINACOR) e as planilhas da Área do Investidor da B3. Cada nota é conferida com o resumo dela; "
         "divergência é avisada, nunca ignorada.",
-        "Testado com XP, Clear, Rico, BTG, Necton e Ágora. Se a sua corretora não for lida, use o "
-        '<a href="#corretora">pedido de corretora</a> (sem mandar a nota nem dados pessoais).',
+        "Testado com XP, Clear, Rico, BTG, Necton e Ágora, inclusive as notas em PDF com senha que "
+        "chegam por e-mail. Se a sua corretora não for lida, a tela "
+        '<a href="#corretora">Suporte</a> manda a nota sem os seus dados pessoais.',
     ),
     (
         "Confira e pague",
@@ -61,7 +62,16 @@ RECURSOS = [
     "Comum, day trade e FII apurados à parte, com isenção de R$ 20 mil, prejuízo a compensar, "
     "IRRF e DARF com mínimo de R$ 10.",
     "Proventos (dividendos, JCP e reembolsos de aluguel) e a declaração anual na ordem do programa.",
-    "Todo valor mostra as operações e a regra aplicada, com a norma da Receita.",
+    "Um evento corporativo que falta tira só aquele ativo do cálculo, com DARF provisória nos meses "
+    "afetados; o restante da apuração continua.",
+    "Um sino no topo da janela junta as pendências de todos os anos: DARF em atraso, nota "
+    "rejeitada, evento para conferir e avisos da apuração.",
+    "Desdobramentos, grupamentos e bonificações com custo publicado entram sozinhos; o que "
+    "depende de você (subscrição, oferta, incorporação) fica numa lista para conferir.",
+    "Reprocessa notas já importadas quando a corretora corrige uma nota, com backup e a versão "
+    "anterior guardada; corretora ainda sem perfil é lida pelos layouts padrão, com aviso.",
+    "Todo valor mostra as operações e a regra aplicada, com a norma da Receita, e o botão "
+    "<strong>Como faço?</strong> abre o manual ao lado de cada tela.",
     "Relatórios em Excel, CSV e PDF sem precisar do Excel instalado.",
 ]
 
@@ -73,18 +83,30 @@ HISTORIA = [
 ]
 
 TELAS = [
-    ("Painel", "A DARF da vez, as pendências e o resultado mês a mês."),
-    ("Importar", "Notas em PDF e planilhas da B3, com conferência de cada nota."),
+    ("Painel", "A DARF da vez, as pendências de todos os anos e o resultado mês a mês."),
+    (
+        "Importar",
+        "Notas em PDF (também com senha) e planilhas da B3, com conferência de cada nota.",
+    ),
     ("Notas e operações", "A nota ao lado do original e o livro de operações com filtros."),
-    ("Apuração mensal", "Resultado por categoria com a memória de cálculo de cada mês."),
+    ("Apuração mensal", "Resultado por categoria e por ativo, com a memória de cálculo do mês."),
     ("DARF", "Vencimento em dia útil, multa e juros por atraso e o registro do pagamento."),
     ("Proventos", "Dividendos, JCP e reembolsos, com a data do crédito do JCP."),
     ("Declaração anual", "Fichas de renda variável, bens e direitos e rendimentos para copiar."),
     ("Carteira e preço médio", "A posição em qualquer data e a evolução do preço médio."),
-    ("Eventos corporativos", "Os eventos da B3 que atingem a sua posição, para confirmar."),
+    (
+        "Eventos corporativos",
+        "Os eventos da B3 que atingem a sua posição, em abas: a conferir, "
+        "lançados, subscrições, transferências, conversões e ofertas.",
+    ),
     ("Opções e futuros", "O ciclo de cada série e os ajustes de cada contrato."),
     ("Conciliação com a B3", "A posição calculada comparada com a da B3."),
     ("Relatórios", "Exportação em Excel, CSV e PDF."),
+    (
+        "Suporte",
+        "Manda uma nota que o COIR não lê, com os seus dados trocados e tarjados, ou o registro "
+        "de um erro, sem dados pessoais.",
+    ),
 ]
 
 # capturas do banco de demonstração (tools/capturas.py), tema claro
@@ -95,6 +117,7 @@ IMAGENS = [
     ("tela-carteira.jpg", "Carteira e preço médio", "Carteira e preço médio"),
     ("tela-declaracao.jpg", "Fichas da declaração anual", "Declaração anual"),
     ("tela-notas.jpg", "Notas de corretagem importadas", "Notas"),
+    ("tela-suporte.jpg", "Dados para ocultar antes de enviar uma nota", "Suporte"),
 ]
 
 DUVIDAS = [
@@ -122,6 +145,21 @@ DUVIDAS = [
         'As <a href="{R}novidades.html">notas da versão</a> explicam cada caso.',
     ),
     (
+        "As notas chegam por e-mail com senha. O COIR lê?",
+        "Lê. O COIR tenta sozinho o começo do CPF dos titulares cadastrados, que é a senha "
+        "comum dessas notas. Se for outra, digite-a no campo <strong>Senha dos PDFs</strong> da tela "
+        "Importar: ela vale para o lote e não é gravada.",
+    ),
+    (
+        "A minha corretora não foi lida. Como mando a nota sem expor os meus dados?",
+        "Pela tela <strong>Suporte</strong> do COIR. Você informa o que aparece nas suas notas "
+        "(nome, CPF, conta, endereço, telefone) e o COIR grava uma cópia com esses dados trocados "
+        "por fictícios, e as imagens das páginas com tarja preta por cima. A cópia só sai se nada "
+        "pessoal sobrar. Você confere as imagens, e o botão abre o seu e-mail com a mensagem "
+        "pronta; você anexa o .zip e envia. As operações (ativos, datas e valores) continuam "
+        "visíveis, porque é delas que a leitura depende.",
+    ),
+    (
         "O COIR substitui um contador?",
         "Não. Ele faz as contas e mostra de onde vem cada valor, mas "
         "confira sempre antes de pagar um DARF ou entregar a declaração. As "
@@ -143,11 +181,16 @@ EMAIL_SUPORTE = "suporte.coir@gmail.com"
 PERFIL = "@coirapp"  # o mesmo nome no Instagram e no YouTube
 INSTAGRAM = "https://www.instagram.com/coirapp/"
 YOUTUBE = "https://www.youtube.com/@coirapp"
+SUPORTE_TEXTO = (
+    "Uma nota não foi lida, ou foi lida errado? Use a tela <strong>Suporte</strong> do COIR: ela "
+    "troca os seus dados por fictícios, cobre-os com tarja nas imagens e prepara o e-mail para "
+    f'<a href="mailto:{EMAIL_SUPORTE}">{EMAIL_SUPORTE}</a>. Para um erro numa tela, ela também '
+    "envia o registro de atividades, sem CPF, nome, conta nem valores "
+    '(<a href="docs/manual/telas/suporte.html">veja como no manual</a>).'
+)
 PEDIDO_TEXTO = (
-    "A sua corretora não foi lida? Conte qual é e o que o COIR mostrou. Não mande a nota nem "
-    "dados pessoais (nome, CPF, conta). Para mandar a nota, use a tela <strong>Suporte</strong> "
-    "do COIR: ela troca os seus dados por fictícios, cobre-os com tarja nas imagens e prepara o "
-    f'e-mail para <a href="mailto:{EMAIL_SUPORTE}">{EMAIL_SUPORTE}</a>.'
+    "Prefere só avisar? Conte qual é a corretora e o que o COIR mostrou. Aqui não mande a nota nem "
+    "dados pessoais (nome, CPF, conta)."
 )
 
 SCRIPT_FORMS = """
@@ -363,7 +406,7 @@ def inicial(raiz: str, exemplo: bool) -> str:
         <a href="#telas-lista">Telas</a>
         <a href="#duvidas">Dúvidas</a>
         <a href="#contato">Avisos</a>
-        <a href="#corretora">Corretora</a>
+        <a href="#corretora">Suporte</a>
       </nav>
     </div>
     <div class="apresentacao">
@@ -468,8 +511,9 @@ def inicial(raiz: str, exemplo: bool) -> str:
 
 <section id="corretora">
   <div class="wrap">
-    <h2>Pedido de corretora</h2>
-    <p class="intro">{PEDIDO_TEXTO}</p>
+    <h2>Suporte e pedido de corretora</h2>
+    <p class="intro">{SUPORTE_TEXTO}</p>
+    <p>{PEDIDO_TEXTO}</p>
     <form id="form-pedido" class="avisos" method="post">
       <label for="pedido-corretora">Corretora</label>
       <input id="pedido-corretora" type="text" name="corretora" required maxlength="80" placeholder="Ex.: Nova Corretora">

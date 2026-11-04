@@ -30,7 +30,8 @@ AGORA = datetime(2026, 10, 16, 12, 0, 0)  # o mesmo relógio do banco de demonst
 # telas do carrossel do site: captura -> arquivo JPEG
 SITE_TELAS = {"painel": "tela-painel.jpg", "apuracao": "tela-apuracao.jpg",
               "carteira": "tela-carteira.jpg", "darf": "tela-darf.jpg",
-              "declaracao": "tela-declaracao.jpg", "notas": "tela-notas.jpg"}  # fmt: skip
+              "declaracao": "tela-declaracao.jpg", "notas": "tela-notas.jpg",
+              "suporte": "tela-suporte.jpg"}  # fmt: skip
 
 
 # telas com painel de detalhe: a linha da tabela que a captura abre (texto da linha)
