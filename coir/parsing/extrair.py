@@ -47,6 +47,7 @@ class Rejeitada:
     motivo: str
     nota: str = ""  # número da nota, quando o cabeçalho foi lido
     data: date | None = None
+    erro: Exception | None = field(default=None, compare=False, repr=False)  # para a auditoria
 
 
 @dataclass
@@ -77,7 +78,7 @@ def extrair_pdf(caminho: Path, senhas: Sequence[str] = ()) -> ResultadoExtracao:
     try:
         textos = ler_paginas(caminho, senhas)
     except PdfError as erro:
-        return ResultadoExtracao(rejeitadas=[Rejeitada(caminho.name, (), str(erro))])
+        return ResultadoExtracao(rejeitadas=[Rejeitada(caminho.name, (), str(erro), erro=erro)])
     return extrair_textos(caminho.name, textos)
 
 
@@ -149,7 +150,7 @@ def _ler(
             desconhecidas[i] = str(erro)
             continue
         except ExtracaoError as erro:
-            res.rejeitadas.append(Rejeitada(arquivo, (i + 1,), str(erro)))
+            res.rejeitadas.append(Rejeitada(arquivo, (i + 1,), str(erro), erro=erro))
             continue
         anterior = grupos[-1] if grupos else None
         if (
@@ -177,7 +178,7 @@ def _ler(
             if impresso is not None:
                 res.clientes[nota.chave] = impresso
         except ExtracaoError as erro:
-            rejeitada.motivo = f"nota {g.cabecalho.numero}: {erro}"
+            rejeitada.motivo, rejeitada.erro = f"nota {g.cabecalho.numero}: {erro}", erro
             res.rejeitadas.append(rejeitada)
     return desconhecidas
 

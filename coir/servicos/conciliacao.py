@@ -21,6 +21,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from coir import auditoria
 from coir.db.modelos import (
     Conta,
     Corretora,
@@ -34,6 +35,7 @@ from coir.domain.fiscal import PosicaoAtivo, TipoAtivo, Visao
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias
 from coir.engine.calendario import UM_DIA, dia_de_pregao
+from coir.servicos import trilha
 from coir.servicos.apuracao import carteira_banco
 
 ZERO = Decimal(0)
@@ -89,6 +91,7 @@ def datas_b3(banco: Path, titular: int) -> list[date]:
         return sorted(s.scalars(consulta))
 
 
+@auditoria.operacao("conciliacao")
 def conciliar(
     banco: Path,
     refs: Referencias,
@@ -147,7 +150,9 @@ def conciliar(
         q_b3, q_coir = b3.get(chave, ZERO), coir.get(chave, ZERO)
         causa = "" if q_b3 == q_coir else _causa(chave[1], eventos, anterior, q_b3, q_coir)
         linhas.append(LinhaConciliacao(chave[0], chave[1], q_b3, q_coir, causa))
-    return Conciliacao(dia, tuple(linhas), tuple(dict.fromkeys(avisos)))
+    resultado = Conciliacao(dia, tuple(linhas), tuple(dict.fromkeys(avisos)))
+    trilha.conciliacao(titular, resultado)
+    return resultado
 
 
 def _causa(

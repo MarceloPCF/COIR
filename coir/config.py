@@ -13,7 +13,7 @@ from collections.abc import Mapping
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from coir import __version__
+from coir import __version__, auditoria
 from coir.erros import ConfiguracaoError
 
 VERSAO = __version__  # para as camadas que não importam o pacote raiz
@@ -133,8 +133,10 @@ class _FormatoSemDados(logging.Formatter):
 
 
 def configurar_registro(dados: Path) -> Path:
-    """Registro de atividades em ``<dados>/logs/coir.log`` (rotativo, 1 MB x 5)."""
+    """Registro de atividades em ``<dados>/logs/coir.log`` (rotativo, 1 MB x 5), que fica neste
+    computador, e o de auditoria (``coir.auditoria``), que o usuário pode mandar ao suporte."""
     arquivo = dados / ARQUIVO_REGISTRO
+    auditoria.configurar(dados, VERSAO)
     arquivo.parent.mkdir(parents=True, exist_ok=True)
     raiz = logging.getLogger()
     if any(getattr(h, "baseFilename", None) == str(arquivo) for h in raiz.handlers):

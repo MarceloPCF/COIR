@@ -38,10 +38,50 @@ def _secao(titulo: str, texto: str) -> ui.column:
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("Suporte").classes("coir-titulo-pagina")
     ui.label(
-        "Para uma nota que o COIR não lê ou lê errado (uma corretora nova, um layout diferente)."
+        "Para um problema no COIR: um erro numa tela, um resultado estranho, ou uma nota que ele "
+        "não lê ou lê errado (uma corretora nova, um layout diferente)."
     ).classes("coir-subtitulo")
+    _registro(estado)
     _dados(estado)
     _envio(estado)
+
+
+# --------------------------------------------------------------------------- registro de auditoria
+def _registro(estado: Estado) -> None:
+    with _secao(
+        "Enviar o registro ao suporte",
+        "O COIR registra o que faz: importações, notas rejeitadas, propostas de eventos, cálculos "
+        "e erros. O registro não tem CPF, nome, conta, endereço, e-mail, nomes de arquivo, textos "
+        "nem valores exatos (só a ordem de grandeza); mostra os códigos dos ativos e as datas dos "
+        "problemas. Se não bastar para corrigir, o suporte pede a nota anonimizada.",
+    ):
+        ui.button("Preparar o registro", icon="description",
+                  on_click=lambda: preparar()).mark("registro-preparar")  # fmt: skip
+        resultado = ui.column().classes("w-full gap-1").mark("registro-resultado")
+
+    async def preparar() -> None:
+        try:
+            feito = await run.io_bound(suporte.exportar_registro, estado.dados, estado.banco,
+                                       estado.agora())  # fmt: skip
+        except CoirError as erro:
+            ui.notify(str(erro), type="negative", multi_line=True)
+            return
+        if feito is None:  # run.io_bound devolve None se a página fechou
+            return
+        resultado.clear()
+        with resultado:
+            ui.label(f"{feito.linhas} linha(s) em {feito.pasta}. Pode abrir o .jsonl para ver o "
+                     "que vai.").classes("coir-positivo text-sm")  # fmt: skip
+            if feito.retidas:
+                ui.label(f"{feito.retidas} linha(s) ficaram de fora na conferência de privacidade."
+                         ).classes("text-sm")  # fmt: skip
+            with ui.row().classes("gap-3"):
+                endereco = suporte.endereco_email_registro(feito.zip, VERSAO)
+                ui.button(
+                    "Escrever e-mail", icon="mail", on_click=lambda: webbrowser.open(endereco)
+                ).mark("registro-email")
+                ui.button("Abrir a pasta", icon="folder_open",
+                          on_click=lambda: abrir(feito.pasta)).props("flat")  # fmt: skip
 
 
 # --------------------------------------------------------------------------- dados para ocultar

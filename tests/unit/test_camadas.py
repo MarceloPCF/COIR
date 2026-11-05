@@ -32,9 +32,11 @@ INTERNOS_PERMITIDOS = {
     "servicos": (
         "coir.servicos", "coir.db", "coir.domain", "coir.engine", "coir.erros", "coir.parsing",
         "coir.reports", "coir.config", "coir.referencias", "coir.importers", "coir.gabarito",
+        "coir.auditoria",
     ),
     # interface: só apresenta; dados e cálculos vêm dos serviços (nunca motor ou banco direto)
-    "ui": ("coir.ui", "coir.servicos", "coir.reports", "coir.domain", "coir.config", "coir.erros"),
+    "ui": ("coir.ui", "coir.servicos", "coir.reports", "coir.domain", "coir.config", "coir.erros",
+           "coir.auditoria"),
 }  # fmt: skip
 EXTERNOS_LIBERADOS = {
     "gabarito": ("pyxlsb", "openpyxl"),
