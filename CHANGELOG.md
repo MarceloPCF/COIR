@@ -8,6 +8,14 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [Não lançado]
+
+### Corrigido
+- **PDF com senha**: a mensagem agora também ensina o caminho da linha de comando,
+  `coir importar --senha`, além do campo "Senha dos PDFs" da tela Importar.
+- **Corretora não identificada**: a mensagem mostra o código da B3 também quando ele vem na mesma
+  linha do rótulo ("Número da Corretora 88-4 Cliente"), como na CM Capital.
+
 ## [3.1.0] - 2026-11-04
 
 ### Adicionado

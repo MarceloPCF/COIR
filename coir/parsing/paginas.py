@@ -24,6 +24,11 @@ Gramatica = Literal["agora", "xp", "btg"]
 # opção flexível (BTG): "Mercadoria:" e depois a modalidade, ex.: "FCA - Com Garantia"
 # código da corretora na B3 e dígito antes da conta do cliente, como em bovespa.RE_CONTA
 RE_CODIGO_CORRETORA = re.compile(r"^\s*(?P<codigo>\d{1,4})-\d\s+\d+\s*$", re.MULTILINE)
+# o código no próprio rótulo, sem a conta ("Número da Corretora 88-4 Cliente", na CM Capital): só
+# para dizer na mensagem qual código a nota traz; quem identifica a corretora é RE_CODIGO_CORRETORA
+RE_CODIGO_NO_ROTULO = re.compile(
+    r"N.?mero\s*da\s*Corretora[ \t]+(?P<codigo>\d{1,4})-\d\b", re.IGNORECASE
+)
 RE_OPCAO_FLEXIVEL = re.compile(r"^\s*F[A-Z]{2}\s*-\s*(?:Com|Sem)\s+Garantia", re.MULTILINE)
 
 
@@ -67,6 +72,7 @@ def _pelo_codigo(texto: str, perfis: tuple[Perfil, ...]) -> Perfil:
     achados = [p for p in perfis if codigos & set(p.codigos)]
     if len({p.corretora for p in achados}) == 1:
         return achados[0]
+    codigos |= {m["codigo"] for m in RE_CODIGO_NO_ROTULO.finditer(texto)}
     impresso = f" (código {', '.join(sorted(codigos))} na B3)" if codigos else ""
     raise ExtracaoError(
         f"corretora não identificada{impresso}: nem o nome, nem o CNPJ, nem o código da B3 "

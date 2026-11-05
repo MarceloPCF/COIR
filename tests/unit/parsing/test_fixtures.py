@@ -8,8 +8,10 @@ from pathlib import Path
 import pytest
 
 from coir.domain.nota import Segmento
+from coir.erros import ExtracaoError
 from coir.parsing.cliente import cliente
 from coir.parsing.extrair import extrair_textos
+from coir.parsing.paginas import classificar
 
 PASTA = Path(__file__).parents[2] / "fixtures" / "notas"
 FIXTURES = sorted(p.name.removesuffix(".txt") for p in PASTA.glob("*.txt"))
@@ -179,3 +181,38 @@ def test_corretora_desconhecida_diz_o_que_foi_tentado() -> None:
     res = extrair_textos("nova.pdf", _sem_nome_nem_cnpj(paginas, "999-9"))
     [rejeitada] = res.rejeitadas
     assert "código 999 na B3" in rejeitada.motivo and "CNPJ" in rejeitada.motivo
+
+
+@pytest.mark.parametrize(
+    ("linha", "impresso"),
+    [
+        ("Número da Corretora 88-4 Cliente", "(código 88 na B3)"),
+        ("Numero da Corretora 88-4", "(código 88 na B3)"),
+        ("NÚMERO DA CORRETORA\t88-4 Cliente", "(código 88 na B3)"),
+        ("Númeroda Corretora 88-4 Cliente", "(código 88 na B3)"),
+    ],
+)
+def test_corretora_desconhecida_com_o_codigo_na_linha_do_rotulo(linha: str, impresso: str) -> None:
+    """A CM Capital imprime o código da B3 no próprio rótulo, sem a conta na mesma linha; a
+    mensagem mostra o código lido, para o usuário saber qual corretora falta."""
+    with pytest.raises(ExtracaoError, match="corretora não identificada") as erro:
+        classificar(f"NOTA DE CORRETAGEM\nCorretora Nova S.A.\n{linha}\n")
+    assert impresso in str(erro.value)
+
+
+def test_codigo_no_rotulo_nao_identifica_a_corretora() -> None:
+    """O código no rótulo só informa: "3-5" é o da XP, mas sem a conta ao lado o layout não é o
+    que o perfil da XP sabe ler, e a nota continua recusada dizendo o código."""
+    with pytest.raises(ExtracaoError, match=r"código 3 na B3"):
+        classificar("NOTA DE CORRETAGEM\nCorretora Nova S.A.\nNúmero da Corretora 3-5 Cliente\n")
+
+
+@pytest.mark.parametrize(
+    "linha",
+    ["Número da Corretora 123456-7 Cliente", "Número da Corretora", "Número da Corretora 88"],
+)
+def test_rotulo_sem_codigo_valido_nao_mostra_codigo(linha: str) -> None:
+    """A conta do cliente (mais de 4 dígitos) nunca aparece na mensagem como se fosse o código."""
+    with pytest.raises(ExtracaoError, match="corretora não identificada") as erro:
+        classificar(f"NOTA DE CORRETAGEM\nCorretora Nova S.A.\n{linha}\n")
+    assert "código" not in str(erro.value).split(":")[0]
