@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from coir import auditoria
 from coir.config import ler_registro
 from coir.db.sessao import fazer_backup, listar_backups, restaurar_backup
 from coir.erros import BancoError
@@ -37,7 +36,6 @@ def fazer_agora(banco: Path, agora: datetime) -> Path:
     return destino
 
 
-@auditoria.operacao("restauracao")
 def restaurar(banco: Path, origem: Path, agora: datetime) -> Path | None:
     return restaurar_backup(banco, origem, agora)
 

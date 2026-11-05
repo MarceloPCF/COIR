@@ -451,14 +451,12 @@ async def test_suporte_prepara_o_registro(tmp_path: Path) -> None:
     estado = _estado(tmp_path / "coir.db")
     estado.preparar(AGORA)
     auditoria.configurar(estado.dados, "9.9.9")
-    agora = datetime.now()  # o registro é do relógio de verdade, não do AGORA dos testes
-    estado.agora = lambda: agora
+    estado.agora = datetime.now  # o registro é do relógio de verdade, não do AGORA dos testes
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/suporte")
         await user.should_see("Enviar o registro ao suporte")
         user.find(marker="registro-preparar").click()
         await user.should_see("Escrever e-mail", retries=ESPERA)
-        await user.should_see("suporte.coir@gmail.com")
     assert len(list((estado.dados / "suporte").glob("registro-*/registro-para-suporte-*.zip"))) == 1
 
 

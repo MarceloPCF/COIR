@@ -3,39 +3,27 @@
 ![Suporte (banco de demonstração)](../imagens/suporte.png)
 
 Para um problema no COIR: um erro numa tela, um resultado estranho, ou uma nota que ele não lê ou
-lê errado (de uma corretora que ele ainda não conhece, ou de um layout diferente). Você manda o
-registro ou a nota **sem os seus dados pessoais**, e quem desenvolve o COIR corrige.
+lê errado. Você manda o registro ou a nota **sem os seus dados pessoais**, e quem desenvolve o COIR
+corrige.
 
 ## Enviar o registro ao suporte
 
-O COIR registra o que faz: as importações, as notas rejeitadas e o motivo, as propostas de eventos,
-os cálculos e os erros. Costuma ser o primeiro envio a fazer, e muitas vezes basta.
+O COIR registra o que faz: importações, notas rejeitadas, propostas de eventos, cálculos e erros.
+**Preparar o registro** grava, numa pasta nova dentro de `suporte` (na pasta de dados), os últimos 30
+dias: um arquivo que você pode abrir para ver o que vai (`.jsonl`, texto) e o `.zip` para anexar.
+**Escrever e-mail** abre uma mensagem para `suporte.coir@gmail.com`: anexe o `.zip`, conte o que
+aconteceu e envie. Nada sai do seu computador sem essa ação sua.
 
-**Preparar o registro** grava, numa pasta nova dentro de `suporte` (na pasta de dados), o registro
-dos últimos 30 dias: um arquivo que você pode abrir para ver o que vai (`.jsonl`, texto, uma linha
-por evento) e o `.zip` para anexar. **Escrever e-mail** abre o seu programa de e-mail com uma
-mensagem para `suporte.coir@gmail.com`: anexe o `.zip`, conte o que aconteceu e envie. Nada sai do
-seu computador sem essa ação sua.
+O registro não tem CPF, nome, conta, endereço, telefone, e-mail, nomes de arquivos ou de pastas,
+textos das notas nem valores exatos, nem no arquivo que fica no seu computador. Arquivo, nota, conta e
+titular aparecem como um código que não dá para reverter (`arq_3fa9c17d20`), e valores só como ordem
+de grandeza (`+1e3` é algo entre 1 mil e 10 mil). A exceção é a diferença de uma nota que não fecha,
+exata até 100, porque é ela que explica o erro. Ele mostra os códigos dos ativos e as datas dos
+problemas e das propostas de eventos. Antes de gravar, o COIR confere tudo de novo; uma linha que não
+passa fica de fora, e a tela diz quantas foram.
 
-O que **não** está no registro, nem no arquivo que fica no seu computador: CPF, nome, conta,
-endereço, telefone, e-mail, nomes de arquivos e de pastas, números das notas e valores exatos.
-
-- Arquivo, nota, conta e titular aparecem como um código (`arq_3fa9c17d20`), o mesmo a cada vez,
-  que não dá para reverter: dá para acompanhar um arquivo sem saber qual é.
-- Valores aparecem só como ordem de grandeza (`+1e3` é algo entre 1 mil e 10 mil). A exceção é a
-  diferença de uma nota que não fecha, exata até 100, porque é ela que explica o erro.
-- Textos só mantêm as palavras do próprio programa. O resto vira a forma: uma palavra de 7 letras
-  vira `«L7»` e 1.234,56 vira `9.999,99`.
-
-O que **está** no registro: os códigos dos ativos e as datas dos problemas e das propostas de
-eventos, o nome das corretoras e, se uma nota não entrou, o nome do ativo como ela imprime. Sem
-isso não dá para corrigir um ativo sem cadastro.
-
-Antes de gravar, uma conferência de privacidade relê tudo e procura o que for pessoal: formatos
-(CPF, e-mail, telefone, CEP, pasta) e os seus dados (cadastro e **Dados para ocultar**, abaixo). Uma
-linha que não passa fica de fora, e a tela diz quantas foram.
-
-Pela linha de comando: `coir registro exportar [--dias 30]`.
+Se o registro não bastar (uma corretora nova, um erro que dependa do centavo), o suporte pede a nota
+anonimizada, abaixo.
 
 ## Dados para ocultar
 

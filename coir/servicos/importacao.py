@@ -69,6 +69,7 @@ def _titular(sessao: Session, cpf: str | None) -> Titular | None:
     return todos[0] if len(todos) == 1 else None
 
 
+@auditoria.operacao("importacao")
 def importar_arquivos(
     sessao: Session,
     arquivos: Sequence[Path],
@@ -81,30 +82,6 @@ def importar_arquivos(
 ) -> RelatorioImportacao:
     """Importa os arquivos numa transação da sessão (que não pode ter uma transação aberta).
     PDF protegido: tenta as ``senhas`` informadas e depois as do CPF dos titulares cadastrados."""
-    with auditoria.operacao("importacao", arquivos=len(arquivos),
-                            titular_informado=titular is not None) as op:  # fmt: skip
-        rel = _importar_arquivos(sessao, arquivos, refs, agora, titular, extrator, progresso,
-                                 senhas)  # fmt: skip
-        op.dados(
-            lidos=len(rel.arquivos_lidos), ignorados=len(rel.arquivos_ignorados),
-            notas_gravadas=rel.notas_gravadas, operacoes_gravadas=rel.operacoes_gravadas,
-            notas_ja_no_banco=rel.notas_ja_no_banco,
-            notas_renormalizadas=rel.notas_renormalizadas, rejeitadas=len(rel.rejeitadas),
-            avisos=len(rel.avisos), titulares_criados=len(rel.titulares_criados),
-        )  # fmt: skip
-    return rel
-
-
-def _importar_arquivos(
-    sessao: Session,
-    arquivos: Sequence[Path],
-    refs: Referencias,
-    agora: datetime,
-    titular: str | None,
-    extrator: Extrator | None,
-    progresso: Progresso | None,
-    senhas: Sequence[str],
-) -> RelatorioImportacao:
     rel = RelatorioImportacao()
     with sessao.begin():
         tentar = [*senhas, *senhas_do_cpf(t.cpf for t in repo.titulares(sessao))]
@@ -124,9 +101,11 @@ def _importar_arquivos(
                 raise ImportacaoError(f"não foi possível ler {caminho.name}: {erro}") from erro
             sha = hashlib.sha256(dados).hexdigest()  # mesmo cálculo de _sha256
             registro = repo.arquivo_por_sha(sessao, sha)
+            repetido = registro is not None and registro.completo
+            auditoria.evento("importacao.arquivo", arquivo=caminho.name, tamanho=len(dados),
+                             situacao="repetido" if repetido else "lendo")  # fmt: skip
             if registro is not None and registro.completo:
                 rel.arquivos_ignorados.append(caminho.name)
-                trilha.arquivo_ignorado(caminho.name, len(dados))
                 continue
             if caminho.name in registros:
                 raise ImportacaoError(f"dois arquivos diferentes com o nome {caminho.name} no lote")
@@ -136,10 +115,7 @@ def _importar_arquivos(
                 sessao.add(registro)
             registros[caminho.name] = registro
             rel.arquivos_lidos.append(caminho.name)
-            trilha.arquivo_lendo(caminho.name, len(dados))
-            lido = ler(caminho)
-            trilha.extracao(caminho.name, lido)
-            lote.juntar(lido)
+            lote.juntar(ler(caminho))
         lote = sem_duplicadas(lote)
         rel.avisos += lote.avisos
         rel.rejeitadas += lote.rejeitadas
@@ -172,7 +148,6 @@ def _importar_arquivos(
         # série de opção gravada agora com a raiz antiga: segue a troca do ativo-objeto
         ativos.sincronizar_trocas(refs.trocas)
         rel.titulares_criados = [f"id {t.id}" for t in contas.criados]  # nome: titular listar
-        trilha.avisos(rel.avisos)
         incompletos = {r.arquivo for r in rel.rejeitadas}
         for nome, registro in registros.items():
             registro.completo = nome not in incompletos
@@ -183,6 +158,12 @@ def _importar_arquivos(
         "%d rejeitadas",
         len(rel.arquivos_lidos), len(rel.arquivos_ignorados), rel.notas_gravadas,
         rel.notas_ja_no_banco, len(rel.rejeitadas),
+    )  # fmt: skip
+    auditoria.evento(
+        "importacao.resumo", lidos=len(rel.arquivos_lidos), ignoradas=len(rel.arquivos_ignorados),
+        gravadas=rel.notas_gravadas, operacoes=rel.operacoes_gravadas,
+        ja_no_banco=rel.notas_ja_no_banco, renormalizadas=rel.notas_renormalizadas,
+        rejeitadas=len(rel.rejeitadas), avisos=len(rel.avisos),
     )  # fmt: skip
     return rel
 
@@ -225,7 +206,7 @@ def _normalizar(
         return operacoes(nota, refs, series)
     except ExtracaoError as erro:
         rel.rejeitadas.append(Rejeitada(nota.arquivo, nota.paginas, f"nota {nota.numero}: {erro}",
-                                        nota.numero, nota.data_pregao, erro=erro))  # fmt: skip
+                                        nota.numero, nota.data_pregao, erro))  # fmt: skip
         trilha.rejeicao(rel.rejeitadas[-1])
         return None
 
@@ -244,7 +225,7 @@ def _gravar(
         conta = contas.conta_da_nota(nota.corretora, nota.conta, cliente)
     except repo.ContaRecusada as erro:
         rel.rejeitadas.append(Rejeitada(nota.arquivo, nota.paginas, f"nota {nota.numero}: {erro}",
-                                        nota.numero, nota.data_pregao, erro=erro))  # fmt: skip
+                                        nota.numero, nota.data_pregao, erro))  # fmt: skip
         trilha.rejeicao(rel.rejeitadas[-1])
         return
     existente = repo.nota_por_chave(sessao, nota.chave)
@@ -253,18 +234,18 @@ def _gravar(
         rel.notas_gravadas += 1
         rel.operacoes_gravadas += len(ops)
         rel.gravadas_por_arquivo[nota.arquivo] += 1
-        trilha.nota(nota.arquivo, nota.numero, "gravada", len(ops))
+        trilha.nota(nota, "gravada", len(ops))
     elif existente.hash_conteudo == repo.hash_conteudo(nota):
         rel.notas_ja_no_banco += 1
         rel.repetidas_por_arquivo[nota.arquivo] += 1
-        trilha.nota(nota.arquivo, nota.numero, "ja_no_banco")
+        trilha.nota(nota, "ja_no_banco")
         if existente.arquivo.nome != nota.arquivo:
             rel.avisos.append(f"nota {nota.numero} de {nota.arquivo} já importada de "
                               f"{existente.arquivo.nome} (idêntica); ignorada")  # fmt: skip
     elif repo.mesmo_conteudo(NotaExtraida.model_validate_json(existente.json_nota), nota):
         rel.notas_ja_no_banco += 1  # o livro fica com a nota gravada primeiro (regra 7)
         rel.repetidas_por_arquivo[nota.arquivo] += 1
-        trilha.nota(nota.arquivo, nota.numero, "ja_no_banco_outro_layout")
+        trilha.nota(nota, "ja_no_banco")
         rel.avisos.append(f"nota {nota.numero} de {nota.arquivo}: mesmos negócios e valores da "
                           f"já importada de {existente.arquivo.nome}, em outro layout; "
                           "ignorada")  # fmt: skip

@@ -91,6 +91,7 @@ def datas_b3(banco: Path, titular: int) -> list[date]:
         return sorted(s.scalars(consulta))
 
 
+@auditoria.operacao("conciliacao")
 def conciliar(
     banco: Path,
     refs: Referencias,
@@ -103,27 +104,6 @@ def conciliar(
     """B3 x COIR na data `dia`; `anterior` (a posição B3 anterior) limita a busca de causas.
     `posicoes`: a carteira do COIR na data por corretora, já calculada (várias datas de uma vez:
     ``carteiras_banco``); sem ela, calcula aqui."""
-    with auditoria.operacao("conciliacao", titular=titular, data=dia) as op:
-        res = _conciliar(banco, refs, fiscais, titular, dia, anterior, posicoes)
-        op.dados(linhas=len(res.linhas), divergentes=len(res.divergentes), avisos=len(res.avisos))
-        for x in res.divergentes:
-            auditoria.evento(
-                "conciliacao.divergencia", "A", titular=titular, data=dia, corretora=x.corretora,
-                ativo=x.codigo, quantidade=x.diferenca, causa=x.causa or None,
-            )  # fmt: skip
-        trilha.avisos(res.avisos, "conciliacao.aviso", titular=titular, data=dia)
-    return res
-
-
-def _conciliar(
-    banco: Path,
-    refs: Referencias,
-    fiscais: ReferenciasFiscais,
-    titular: int,
-    dia: date,
-    anterior: date | None,
-    posicoes: list[PosicaoAtivo] | None,
-) -> Conciliacao:
     avisos: list[str] = []
     b3: dict[tuple[str, str], Decimal] = defaultdict(Decimal)
     with conectar(banco) as fabrica, fabrica() as s:
@@ -170,7 +150,9 @@ def _conciliar(
         q_b3, q_coir = b3.get(chave, ZERO), coir.get(chave, ZERO)
         causa = "" if q_b3 == q_coir else _causa(chave[1], eventos, anterior, q_b3, q_coir)
         linhas.append(LinhaConciliacao(chave[0], chave[1], q_b3, q_coir, causa))
-    return Conciliacao(dia, tuple(linhas), tuple(dict.fromkeys(avisos)))
+    resultado = Conciliacao(dia, tuple(linhas), tuple(dict.fromkeys(avisos)))
+    trilha.conciliacao(titular, resultado)
+    return resultado
 
 
 def _causa(

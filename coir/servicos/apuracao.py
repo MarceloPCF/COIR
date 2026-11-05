@@ -271,19 +271,18 @@ def movimentos_banco(
     ) + movimentos_futuros(notas, ate)
 
 
+@auditoria.operacao("apuracao")
 def apurar_banco(
     banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date,
     saldos: Sequence[SaldoInicial] | None = None,
 ) -> Apuracao:  # fmt: skip
     """`saldos`: prejuízos iniciais no lugar dos gravados no banco (comparação com um gabarito
     que começa num marco); None usa os do banco."""
-    with auditoria.operacao("apuracao", ate=ate) as op:
-        with conectar(banco) as fabrica, fabrica() as sessao:
-            notas, eventos = entradas(sessao, refs, fiscais)
-            custos = outros_custos.do_banco(sessao)
-            if saldos is None:
-                saldos = saldos_iniciais.do_banco(sessao)
-        resultado = apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos,
-                           saldos)  # fmt: skip
-        trilha.apuracao(resultado, op)
-    return resultado
+    with conectar(banco) as fabrica, fabrica() as sessao:
+        notas, eventos = entradas(sessao, refs, fiscais)
+        custos = outros_custos.do_banco(sessao)
+        if saldos is None:
+            saldos = saldos_iniciais.do_banco(sessao)
+    res = apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos, saldos)
+    trilha.apuracao(res)
+    return res

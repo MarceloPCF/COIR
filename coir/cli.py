@@ -1,15 +1,14 @@
 """Linha de comando do COIR (Typer)."""
 
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import typer
 
-from coir import __version__, auditoria
-from coir.config import VAR_DADOS, configurar_registro, dados_dir
+from coir import __version__
+from coir.config import VAR_DADOS, dados_dir
 from coir.erros import CoirError
 
 if TYPE_CHECKING:
@@ -20,7 +19,6 @@ if TYPE_CHECKING:
     from coir.gabarito.modelo import Gabarito
     from coir.gabarito.pseudonimos import MapaPseudonimos
 
-VAR_SEM_REGISTRO = "COIR_SEM_REGISTRO"  # os testes da CLI não gravam na pasta de dados da máquina
 app = typer.Typer(
     help="COIR v3 — Controle de Operações e Imposto de Renda (B3).",
     no_args_is_help=True,
@@ -29,17 +27,12 @@ app = typer.Typer(
 
 @app.callback()
 def principal(
-    contexto: typer.Context,
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Log detalhado."),
 ) -> None:
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    pasta = dados_dir()
-    if pasta.is_dir() and not os.environ.get(VAR_SEM_REGISTRO):
-        configurar_registro(pasta, "cli")
-        auditoria.evento("cli.comando", comando=contexto.invoked_subcommand)
 
 
 @app.command()
@@ -886,38 +879,6 @@ def exportar(
     print(f"DARF do ano: {total:.2f} em {sum(1 for m in meses if m.darf)} mês(es)")
 
 
-# ---------------------------------------------------------------------- registro de auditoria
-registro_app = typer.Typer(
-    help="Registro de auditoria: o que o COIR fez, sem dados pessoais.", no_args_is_help=True
-)
-app.add_typer(registro_app, name="registro")
-
-
-@registro_app.command("exportar")
-def registro_exportar(
-    dias: int = typer.Option(30, min=1, max=3650, help="Período: os últimos N dias."),
-    banco: Path | None = OpcaoBanco,
-) -> None:
-    """Grava o registro para mandar ao suporte, depois do portão de privacidade (.jsonl e .zip).
-
-    O arquivo não tem CPF, nome, conta, endereço, e-mail, nomes de arquivo nem valores exatos; tem
-    códigos de ativos e datas dos problemas. Nada é enviado: anexe o .zip a um e-mail.
-    """
-    from coir.servicos import suporte
-
-    feito = suporte.exportar_registro(dados_dir(exigir=True), _banco(banco), _agora(), dias)
-    print(f"{feito.linhas} linha(s) de {feito.desde} a {feito.ate}.")
-    for motivo, quantas in sorted(feito.retidas.items()):
-        print(f"  retidas pelo portão de privacidade: {quantas} ({motivo})")
-    if feito.cortadas:
-        print(f"  {feito.cortadas} linha(s) mais antigas ficaram de fora pelo tamanho.")
-    if not feito.termos_do_banco:
-        print("  Atenção: o banco não abriu; a conferência não usou o cadastro. Olhe o arquivo.")
-    print(f"Para conferir: {feito.arquivo}")
-    print(f"Para anexar:   {feito.zip}")
-    print(f"Envie para:    {suporte.EMAIL_SUPORTE}")
-
-
 @app.command("ui")
 def abrir_ui(
     banco: Path | None = OpcaoBanco,
@@ -951,7 +912,7 @@ def main() -> None:
     """Ponto de entrada: erros de domínio viram mensagem curta e código de saída 1."""
     try:
         app()
-    except CoirError as erro:  # já ficou no registro de auditoria quando foi criado
+    except CoirError as erro:
         print(f"Erro: {erro}", file=sys.stderr)
         sys.exit(1)
 

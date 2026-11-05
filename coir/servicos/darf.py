@@ -16,7 +16,6 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from coir import auditoria
 from coir.db.modelos import DarfPagamento, Titular
 from coir.db.sessao import conectar
 from coir.domain.fiscal import JurosMora, MesApurado, MultaMora
@@ -201,7 +200,6 @@ def registrar_pagamento(
                 raise ImportacaoError(f"não foi possível guardar o comprovante: {erro}") from erro
             registro.comprovante = relativo.as_posix()
     log.info("pagamento de DARF registrado: titular %d, %02d/%d", titular, mes, ano)
-    auditoria.evento("darf.pagamento", titular=titular, mes=date(ano, mes, 1))
 
 
 def excluir_pagamento(banco: Path, titular: int, ano: int, mes: int) -> None:
@@ -212,4 +210,3 @@ def excluir_pagamento(banco: Path, titular: int, ano: int, mes: int) -> None:
             DarfPagamento.mes == mes))  # fmt: skip
         if registro is not None:
             s.delete(registro)
-    auditoria.evento("darf.pagamento_excluido", titular=titular, mes=date(ano, mes, 1))

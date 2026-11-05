@@ -45,7 +45,6 @@ from coir.servicos import (
     eventos,
     notas,
     operacoes,
-    trilha,
 )
 from coir.servicos.apuracao import apurar_banco, carteira_banco, carteiras_banco, movimentos_banco
 from coir.servicos.b3 import PASTA_B3
@@ -185,7 +184,6 @@ class Estado:
             log.warning("tabelas de data/ não aplicadas ao banco: %s", erro)
             self.aviso_tabelas = f"As tabelas de referência não foram aplicadas ao banco: {erro}"
         self.invalidar()
-        trilha.resumo_do_banco(self.banco, self.pasta_refs)
 
     def _marca(self) -> tuple[int, ...]:
         """Muda sempre que o SQLite grava (arquivo principal ou o journal WAL)."""

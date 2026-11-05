@@ -10,9 +10,6 @@
   só ela usa xlsxwriter e reportlab, e não lê o relógio (a data de geração vem de fora).
 - Nenhuma dessas camadas importa banco, UI, CLI ou bibliotecas de planilha.
 - engine e domain: sem ``float`` (dinheiro é Decimal) e sem leitura de relógio/aleatoriedade.
-- auditoria só usa domain e erros. Serviços e interface registram eventos; parsing só usa a limpeza
-  (a forma de uma página rejeitada), que é pura. O motor não registra nada; o serviço registra a
-  partir do resultado. ``coir.erros`` registra na auditoria os erros que só iriam para a tela.
 """
 
 import ast
@@ -24,8 +21,7 @@ RAIZ = Path(__file__).resolve().parents[2] / "coir"
 INTERNOS_PERMITIDOS = {
     "domain": ("coir.domain", "coir.erros"),
     "engine": ("coir.engine", "coir.domain", "coir.erros"),
-    "parsing": ("coir.parsing", "coir.domain", "coir.erros", "coir.auditoria.limpeza"),
-    "auditoria": ("coir.auditoria", "coir.domain", "coir.erros"),
+    "parsing": ("coir.parsing", "coir.domain", "coir.erros"),
     # ferramenta de validação: lê a planilha do usuário e PDFs; nunca banco, UI nem motor
     "gabarito": (
         "coir.gabarito", "coir.domain", "coir.erros", "coir.parsing", "coir.recursos",
@@ -92,8 +88,7 @@ def _casa(modulo: str, prefixos: tuple[str, ...]) -> bool:
 def _violacoes_de_import(camada: str, modulos: set[str]) -> list[str]:
     liberados = EXTERNOS_LIBERADOS.get(camada, ())
     proibidos = tuple(p for p in EXTERNOS_PROIBIDOS if p not in liberados) + (
-        # auditoria: o segredo dos pseudônimos e o tempo de cada etapa
-        NAO_DETERMINISTICOS if camada not in ("parsing", "auditoria") else ()
+        NAO_DETERMINISTICOS if camada != "parsing" else ()
     )
 
     def errado(mod: str) -> bool:

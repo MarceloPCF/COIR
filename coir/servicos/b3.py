@@ -25,7 +25,6 @@ from coir.db.sessao import conectar, fazer_backup, migrar
 from coir.domain.b3 import TipoPlanilha
 from coir.erros import ImportacaoError
 from coir.importers import b3
-from coir.servicos import trilha
 
 log = logging.getLogger(__name__)
 PASTA_B3 = "_relatorios-b3"  # padrão das planilhas da B3 dentro da pasta de dados
@@ -59,21 +58,12 @@ def _chaves(titular: int, tipo: TipoPlanilha, linhas: Sequence[BaseModel]) -> li
     return chaves
 
 
+@auditoria.operacao("planilhas_b3")
 def importar_planilhas(
     banco: Path, arquivos: Sequence[Path], titular: int, agora: datetime,
     progresso: Callable[[int, int, str], None] | None = None,
 ) -> RelatorioB3:  # fmt: skip
     """Importa as planilhas numa transação; arquivo já importado (mesmo SHA-256) é ignorado."""
-    with auditoria.operacao("planilhas_b3", arquivos=len(arquivos), titular=titular) as op:
-        rel = _importar_planilhas(banco, arquivos, titular, agora, progresso)
-        op.dados(novas=rel.novas)
-    return rel
-
-
-def _importar_planilhas(
-    banco: Path, arquivos: Sequence[Path], titular: int, agora: datetime,
-    progresso: Callable[[int, int, str], None] | None,
-) -> RelatorioB3:  # fmt: skip
     migrar(banco, agora)
     fazer_backup(banco, agora)
     rel = RelatorioB3()
@@ -83,9 +73,9 @@ def _importar_planilhas(
         for feitos, caminho in enumerate(arquivos):
             if progresso is not None:
                 progresso(feitos, len(arquivos), caminho.name)
-            rel.arquivos.append(_importar(s, caminho, titular, agora))
-            r = rel.arquivos[-1]
-            trilha.planilha(r.arquivo, r.tipo, r.linhas, r.novas, r.detalhe)
+            rel.arquivos.append(r := _importar(s, caminho, titular, agora))
+            auditoria.evento("b3.planilha", arquivo=r.arquivo, linhas=r.linhas, novas=r.novas,
+                             tipo=r.tipo.value if r.tipo else None)  # fmt: skip
         if progresso is not None:
             progresso(len(arquivos), len(arquivos), "")
     log.info("planilhas B3: %d arquivo(s), %d linha(s) nova(s)", len(arquivos), rel.novas)

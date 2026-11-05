@@ -116,8 +116,8 @@ def _erro_inesperado(erro: Exception) -> None:
     """Erro não previsto numa tela: avisa na própria janela (o detalhe vai para o registro de
     atividades) em vez de deixar a tela calada ou girando."""
     ui.notify(
-        f"Erro inesperado: {type(erro).__name__}. O detalhe está em Configurações > Registro de "
-        "atividades. Para mandar ao suporte, sem dados pessoais, use Suporte > Enviar o registro.",
+        f"Erro inesperado: {erro!r}. O detalhe está em Configurações > Registro de atividades. "
+        "Para mandar ao suporte, sem dados pessoais: Suporte > Enviar o registro.",
         type="negative", multi_line=True, timeout=0, close_button="Fechar",
     )  # fmt: skip
 

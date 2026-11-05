@@ -147,15 +147,6 @@ def importar_eventos(
     """Grava as linhas novas numa transação (qualquer linha inválida desfaz tudo). Eventos do
     banco que não estão no CSV são contados; com `substituir`, removidos (o CSV é a fonte), menos
     os lançados na tela 7."""
-    with auditoria.operacao("eventos_importar", total=len(linhas)) as op:
-        rel = _importar_eventos(sessao, linhas, substituir)
-        op.dados(novos=rel.novos, ja_no_banco=rel.ja_no_banco)
-    return rel
-
-
-def _importar_eventos(
-    sessao: Session, linhas: list[dict[str, str]], substituir: bool
-) -> RelatorioEventos:
     rel = RelatorioEventos()
     vistas: dict[str, int] = {}
     with sessao.begin():
@@ -399,11 +390,7 @@ def salvar_lote(
             feitos.append(_gravar(s, titular, d, evento_id))
         _conferir_no_motor(s, titular, refs, fiscais, antes)
     for d, evento_id in lote:
-        auditoria.evento(
-            "eventos.salvo", titular=titular, tipo=d.tipo.value, ativo=d.ticker or None,
-            ativo_destino=d.ticker_destino or None, data=d.data, origem=d.origem,
-            alterado=evento_id is not None,
-        )  # fmt: skip
+        trilha.evento_salvo(titular, d, evento_id is not None)
     return feitos
 
 
@@ -556,6 +543,7 @@ RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z]{4})(?P<classe>9|10)$")  # recibo de sub
 JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data ex)
 
 
+@auditoria.operacao("propostas")
 def propostas(
     banco: Path, titular: int, refs: Referencias, fiscais: ReferenciasFiscais | None = None,
     pasta: Path | None = None,
@@ -564,16 +552,6 @@ def propostas(
     a posição (com ``fiscais`` e ``pasta``; já com a data ex) e os da movimentação da B3 (data do
     crédito: a tela pede a data ex antes de gravar). O mesmo evento nas duas fontes aparece uma vez
     (a do pacote)."""
-    with auditoria.operacao("propostas", titular=titular) as op:
-        lista = _propostas(banco, titular, refs, fiscais, pasta)
-        trilha.propostas(titular, lista, op)
-    return lista
-
-
-def _propostas(
-    banco: Path, titular: int, refs: Referencias, fiscais: ReferenciasFiscais | None,
-    pasta: Path | None,
-) -> list[Proposta]:  # fmt: skip
     with conectar(banco) as fabrica, fabrica() as s:
         ignoradas = set(s.scalars(select(PropostaIgnorada.chave)
                                   .where(PropostaIgnorada.titular_id == titular)))  # fmt: skip
@@ -617,6 +595,7 @@ def _propostas(
             saida.append(Proposta(m.chave, m.data, m.movimentacao, codigo, m.quantidade,
                                   m.valor, corretora, situacao, dados, nota))  # fmt: skip
         if fiscais is None or pasta is None:
+            trilha.propostas(titular, saida)
             return saida
         do_pacote = _do_pacote(s, titular, refs, fiscais, pasta, contas, ignoradas, lancados)
     perto = timedelta(days=JANELA)
@@ -633,8 +612,10 @@ def _propostas(
     repetidas = [m for m in saida if any(
         p.dados.tipo is m.dados.tipo and p.codigo == m.codigo and abs(p.data - m.data) <= perto
         for p in do_pacote)]  # fmt: skip
-    return sorted([*do_pacote, *(m for m in saida if m not in repetidas)],
-                  key=lambda p: p.data, reverse=True)  # fmt: skip
+    lista = sorted([*do_pacote, *(m for m in saida if m not in repetidas)],
+                   key=lambda p: p.data, reverse=True)  # fmt: skip
+    trilha.propostas(titular, lista)
+    return lista
 
 
 # eventos do pacote público (eventos_b3.csv: rótulos como a B3 escreve) -> tipo do evento
@@ -862,7 +843,6 @@ def ignorar(banco: Path, titular: int, chave: str, agora: datetime, sim: bool = 
             s.add(PropostaIgnorada(titular_id=titular, chave=chave, ignorada_em=agora))
         elif not sim and registro is not None:
             s.delete(registro)
-    auditoria.evento("eventos.proposta_ignorada", titular=titular, sim=sim)
 
 
 def contas_do_titular(banco: Path, titular: int) -> dict[int, str]:

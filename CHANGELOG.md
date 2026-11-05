@@ -11,20 +11,12 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 ## [Não publicado]
 
 ### Adicionado
-- **Registro de auditoria para o suporte**: o COIR passa a registrar em `logs/auditoria.jsonl` o que
-  faz (importações, o que leu em cada página, notas rejeitadas e o motivo, conciliação com a B3,
-  propostas de eventos, apuração por mês, DARF e erros), para um problema poder ser corrigido só com
-  esse arquivo. Nem no seu computador ele tem CPF, nome, conta, endereço, e-mail, nomes de arquivos
-  ou valores exatos: identificadores viram códigos, valores viram ordem de grandeza e textos só
-  mantêm as palavras do próprio programa. Mostra os códigos dos ativos e as datas dos problemas.
-  - Tela **Suporte > Enviar o registro ao suporte** e `coir registro exportar`: grava o arquivo para
-    você conferir e o `.zip`, depois de uma conferência de privacidade, e abre o e-mail; você anexa e
-    envia.
-  - O registro de atividades (`coir.log`, em Configurações) continua igual e não vai no envio.
-
-### Alterado
-- O aviso de erro inesperado passa a dizer como mandar o registro ao suporte. Ele mostra só o tipo do
-  erro: o texto completo fica no registro de atividades.
+- **Registro de auditoria para o suporte**: o COIR registra em `logs/auditoria.jsonl` o que faz
+  (importações, notas rejeitadas, conciliação com a B3, propostas de eventos, apuração por mês, DARF
+  e erros). Nem no seu computador ele tem CPF, nome, conta, endereço, e-mail, nomes de arquivos,
+  textos ou valores exatos; mostra os códigos dos ativos e as datas dos problemas. Tela **Suporte >
+  Enviar o registro ao suporte**: grava o arquivo para você conferir e o `.zip`, depois de uma
+  conferência de privacidade, e abre o e-mail; você anexa e envia.
 
 ## [3.1.0] - 2026-11-04
 

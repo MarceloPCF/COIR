@@ -10,8 +10,8 @@ from coir.auditoria import erro_de_dominio
 
 class CoirError(Exception):
     """Base de todos os erros do COIR. Todo erro nasce registrado na auditoria, porque a tela só
-    mostra a mensagem. Ficam de fora os que fazem parte do caminho normal e são registrados pelo
-    resultado: a nota rejeitada (``ExtracaoError``) e o ativo isolado (``MotorError``)."""
+    mostra a mensagem. Ficam de fora os do caminho normal, registrados pelo resultado: a nota
+    rejeitada (``ExtracaoError``) e o ativo isolado (``MotorError``)."""
 
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
@@ -40,14 +40,7 @@ class ConciliacaoError(ExtracaoError):
 
 
 class ReferenciaError(ExtracaoError):
-    """Ativo, opção ou contrato sem cadastro nas tabelas de referência (data/).
-
-    ``impresso``: o que a nota imprime (nome do ativo, mercado, contrato), para o registro de
-    auditoria mostrar o que falta cadastrar."""
-
-    def __init__(self, mensagem: str, impresso: str | None = None) -> None:
-        super().__init__(mensagem)
-        self.impresso = impresso
+    """Ativo, opção ou contrato sem cadastro nas tabelas de referência (data/)."""
 
 
 class BancoError(CoirError):
