@@ -22,7 +22,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from coir import referencias
+from coir import auditoria, referencias
 from coir.db import repositorio as repo
 from coir.db.modelos import (
     Conta,
@@ -47,6 +47,7 @@ from coir.domain.referencias import Referencias
 from coir.engine.calendario import proximo_pregao
 from coir.engine.movimentos import movimentar
 from coir.erros import ImportacaoError, MotorError, ReferenciaError
+from coir.servicos import trilha
 from coir.servicos.apuracao import Tickers, entradas
 
 COLUNAS = ("data", "corretora", "conta", "ticker", "tipo", "cv", "quantidade", "valor",
@@ -388,6 +389,8 @@ def salvar_lote(
         for d, evento_id in lote:
             feitos.append(_gravar(s, titular, d, evento_id))
         _conferir_no_motor(s, titular, refs, fiscais, antes)
+    for d, evento_id in lote:
+        trilha.evento_salvo(titular, d, evento_id is not None)
     return feitos
 
 
@@ -515,6 +518,8 @@ def excluir(
             _conferir_no_motor(s, titular, refs, fiscais, antes)
         except ImportacaoError as erro:
             raise ImportacaoError(f"sem este evento o livro não fecha: {erro.__cause__}") from erro
+        auditoria.evento("eventos.excluido", titular=titular, tipo=str(registro.tipo),
+                         data=registro.data, origem=registro.origem)  # fmt: skip
 
 
 # movimentação da B3 (minúsculas) -> tipo e C/V do evento proposto
@@ -538,6 +543,7 @@ RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z]{4})(?P<classe>9|10)$")  # recibo de sub
 JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data ex)
 
 
+@auditoria.operacao("propostas")
 def propostas(
     banco: Path, titular: int, refs: Referencias, fiscais: ReferenciasFiscais | None = None,
     pasta: Path | None = None,
@@ -589,6 +595,7 @@ def propostas(
             saida.append(Proposta(m.chave, m.data, m.movimentacao, codigo, m.quantidade,
                                   m.valor, corretora, situacao, dados, nota))  # fmt: skip
         if fiscais is None or pasta is None:
+            trilha.propostas(titular, saida)
             return saida
         do_pacote = _do_pacote(s, titular, refs, fiscais, pasta, contas, ignoradas, lancados)
     perto = timedelta(days=JANELA)
@@ -605,8 +612,10 @@ def propostas(
     repetidas = [m for m in saida if any(
         p.dados.tipo is m.dados.tipo and p.codigo == m.codigo and abs(p.data - m.data) <= perto
         for p in do_pacote)]  # fmt: skip
-    return sorted([*do_pacote, *(m for m in saida if m not in repetidas)],
-                  key=lambda p: p.data, reverse=True)  # fmt: skip
+    lista = sorted([*do_pacote, *(m for m in saida if m not in repetidas)],
+                   key=lambda p: p.data, reverse=True)  # fmt: skip
+    trilha.propostas(titular, lista)
+    return lista
 
 
 # eventos do pacote público (eventos_b3.csv: rótulos como a B3 escreve) -> tipo do evento

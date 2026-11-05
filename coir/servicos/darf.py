@@ -22,6 +22,7 @@ from coir.domain.fiscal import JurosMora, MesApurado, MultaMora
 from coir.domain.parametros import ReferenciasFiscais
 from coir.engine.darf import juros_mora, multa_mora
 from coir.erros import ImportacaoError
+from coir.servicos import trilha
 
 log = logging.getLogger(__name__)
 PASTA_COMPROVANTES = "comprovantes"
@@ -133,6 +134,8 @@ def darfs(
             linhas.append(LinhaDarf(m.ano, m.mes, codigo, None, m.darf_acumulado,
                                     Situacao.ACUMULADA, None, pago,
                                     pendencia=pendencia))  # fmt: skip
+    if meses:
+        trilha.darfs(meses[0].titular, linhas)
     return linhas
 
 

@@ -8,6 +8,16 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [Não publicado]
+
+### Adicionado
+- **Registro de auditoria para o suporte**: o COIR registra em `logs/auditoria.jsonl` o que faz
+  (importações, notas rejeitadas, conciliação com a B3, propostas de eventos, apuração por mês, DARF
+  e erros). Nem no seu computador ele tem CPF, nome, conta, endereço, e-mail, nomes de arquivos,
+  textos ou valores exatos; mostra os códigos dos ativos e as datas dos problemas. Tela **Suporte >
+  Enviar o registro ao suporte**: grava o arquivo para você conferir e o `.zip`, depois de uma
+  conferência de privacidade, e abre o e-mail; você anexa e envia.
+
 ## [3.1.0] - 2026-11-04
 
 ### Adicionado

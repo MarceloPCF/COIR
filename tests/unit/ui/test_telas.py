@@ -10,6 +10,7 @@ from nicegui import ui
 from nicegui.elements.upload_files import SmallFileUpload
 from nicegui.testing.user_simulation import user_simulation
 
+from coir import auditoria
 from coir.servicos import manutencao
 from coir.servicos.cadastros import adicionar_titular
 from coir.servicos.estado import Estado
@@ -443,6 +444,20 @@ async def test_suporte_prepara_confere_e_grava_o_zip(tmp_path: Path) -> None:
         await user.should_see("Gravado:")
         await user.should_see("suporte.coir@gmail.com")
     assert len(list((estado.dados / "suporte").glob("*/notas-para-suporte-*.zip"))) == 1
+
+
+@pytest.mark.asyncio
+async def test_suporte_prepara_o_registro(tmp_path: Path) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    auditoria.configurar(estado.dados, "9.9.9")
+    estado.agora = datetime.now  # o registro é do relógio de verdade, não do AGORA dos testes
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/suporte")
+        await user.should_see("Enviar o registro ao suporte")
+        user.find(marker="registro-preparar").click()
+        await user.should_see("Escrever e-mail", retries=ESPERA)
+    assert len(list((estado.dados / "suporte").glob("registro-*/registro-para-suporte-*.zip"))) == 1
 
 
 @pytest.mark.asyncio

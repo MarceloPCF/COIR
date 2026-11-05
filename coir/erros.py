@@ -5,9 +5,18 @@ Toda falha de domínio usa uma classe própria (CLAUDE.md, regra 5).
 
 from datetime import date
 
+from coir.auditoria import erro_de_dominio
+
 
 class CoirError(Exception):
-    """Base de todos os erros do COIR."""
+    """Base de todos os erros do COIR. Todo erro nasce registrado na auditoria, porque a tela só
+    mostra a mensagem. Ficam de fora os do caminho normal, registrados pelo resultado: a nota
+    rejeitada (``ExtracaoError``) e o ativo isolado (``MotorError``)."""
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+        if not isinstance(self, ExtracaoError | MotorError):
+            erro_de_dominio(self)
 
 
 class ConfiguracaoError(CoirError):

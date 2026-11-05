@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from coir import auditoria
 from coir.db.modelos import ArquivoB3, MovimentacaoB3, NegociacaoB3, PosicaoB3, Titular
 from coir.db.sessao import conectar, fazer_backup, migrar
 from coir.domain.b3 import TipoPlanilha
@@ -57,6 +58,7 @@ def _chaves(titular: int, tipo: TipoPlanilha, linhas: Sequence[BaseModel]) -> li
     return chaves
 
 
+@auditoria.operacao("planilhas_b3")
 def importar_planilhas(
     banco: Path, arquivos: Sequence[Path], titular: int, agora: datetime,
     progresso: Callable[[int, int, str], None] | None = None,
@@ -71,7 +73,9 @@ def importar_planilhas(
         for feitos, caminho in enumerate(arquivos):
             if progresso is not None:
                 progresso(feitos, len(arquivos), caminho.name)
-            rel.arquivos.append(_importar(s, caminho, titular, agora))
+            rel.arquivos.append(r := _importar(s, caminho, titular, agora))
+            auditoria.evento("b3.planilha", arquivo=r.arquivo, linhas=r.linhas, novas=r.novas,
+                             tipo=r.tipo.value if r.tipo else None)  # fmt: skip
         if progresso is not None:
             progresso(len(arquivos), len(arquivos), "")
     log.info("planilhas B3: %d arquivo(s), %d linha(s) nova(s)", len(arquivos), rel.novas)

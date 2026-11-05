@@ -12,25 +12,29 @@ imagens, o COIR grava o .zip e abre a mensagem já endereçada; o usuário anexa
 sai do computador sem essa ação dele.
 """
 
+import json
 import logging
 import tempfile
 import zipfile
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
+from coir import auditoria
+from coir.config import VERSAO
 from coir.db import repositorio as repo
 from coir.db.modelos import Conta
 from coir.db.sessao import conectar
 from coir.domain.cpf import cpf_valido, so_digitos
-from coir.erros import AnonimizacaoError
+from coir.erros import AnonimizacaoError, CoirError
 from coir.parsing.anonimizar import CAMPOS_LIVRES as CAMPOS_LIVRES  # para a tela
-from coir.parsing.anonimizar import DadosPessoais, MapaAnonimizacao, conferir
+from coir.parsing.anonimizar import PALAVRAS_GENERICAS, DadosPessoais, MapaAnonimizacao, conferir
 from coir.parsing.imagens import gravar_png, paginas_tarjadas
 from coir.parsing.texto_pdf import (
     SUFIXO_TEXTO,
@@ -312,6 +316,79 @@ def endereco_email(zip_: Path, versao: str) -> str:
         f"Versão do COIR: {versao}\n"
         "Corretora:\n"
         "O que acontece (a nota não é lida, um valor sai errado...):\n\n\n"
+        f"(anexe o arquivo {zip_.name})\n"
+    )
+    return f"mailto:{EMAIL_SUPORTE}?subject={quote(assunto)}&body={quote(corpo)}"
+
+
+# ------------------------------------------------------------------------- registro de auditoria
+@dataclass(frozen=True)
+class ExportacaoRegistro:
+    pasta: Path  # <dados>/suporte/registro-<data-hora>: o arquivo legível e o .zip
+    arquivo: Path
+    zip: Path
+    linhas: int
+    retidas: int  # ficaram de fora na conferência de privacidade
+
+
+def _termos_do_titular(dados: Path, banco: Path) -> tuple[auditoria.Termos, bool]:
+    """Os termos que o portão procura, de todos os titulares. Se o banco não abrir (é justamente
+    quando se manda o registro), vale o informado na tela, e a lista fechada continua valendo."""
+    do_banco = True
+    try:
+        pessoais = dados_para_ocultar(dados, banco)
+    except (CoirError, SQLAlchemyError):
+        log.warning("conferência do registro sem o cadastro: banco inacessível")
+        pessoais, do_banco = carregar_dados(dados), False
+    valores = [v for d in pessoais for v in (d.nome, d.cpf, *d.contas, *d.valores()) if v]
+    arquivo = dados / auditoria.ARQUIVO_SEGREDO
+    segredo = arquivo.read_text(encoding="utf-8").strip() if arquivo.is_file() else ""
+    return auditoria.Termos.de(
+        valores, termos_sensiveis(dados), segredo, PALAVRAS_GENERICAS
+    ), do_banco
+
+
+def exportar_registro(
+    dados: Path, banco: Path, agora: datetime, dias: int = 30
+) -> ExportacaoRegistro:
+    """Grava em ``<dados>/suporte`` o registro dos últimos ``dias``, depois do portão de
+    privacidade: o .jsonl, para o usuário olhar, e o .zip, para anexar ao e-mail. Nada sai sem essa
+    ação dele."""
+    limite = (agora.date() - timedelta(days=dias)).isoformat()
+    termos, do_banco = _termos_do_titular(dados, banco)
+    brutas = [x for a in auditoria.arquivos_do_registro(dados)
+              for x in a.read_text(encoding="utf-8", errors="replace").splitlines()]  # fmt: skip
+    linhas, retidas = auditoria.conferir_linhas(brutas, termos)
+    dias_das_linhas = {x: json.loads(x)["t"][:10] for x in linhas}
+    linhas = [x for x in linhas if dias_das_linhas[x] >= limite]
+    if not linhas:
+        raise AnonimizacaoError("ainda não há registro de auditoria para enviar")
+    cabecalho = auditoria.linha(
+        "suporte.exportacao", "I", 0, "00000000", auditoria.segredo(), versao=VERSAO, dias=dias,
+        desde=date.fromisoformat(min(dias_das_linhas[x] for x in linhas)),
+        ate=date.fromisoformat(max(dias_das_linhas[x] for x in linhas)),
+        linhas=len(linhas), retidas=retidas, termos_do_banco=do_banco,
+    )  # fmt: skip
+    texto = "\n".join([cabecalho, *linhas]) + "\n"
+    if auditoria.tem_dado_pessoal(texto, termos):
+        raise AnonimizacaoError("o registro não foi exportado: a conferência achou dado pessoal")
+    pasta = dados / PASTA_SUPORTE / f"registro-{agora:%Y%m%d-%H%M%S}"
+    pasta.mkdir(parents=True)
+    arquivo = pasta / "registro-para-suporte.jsonl"
+    arquivo.write_text(texto, encoding="utf-8", newline="\n")
+    zip_ = pasta / f"registro-para-suporte-{agora:%Y%m%d-%H%M%S}.zip"
+    with zipfile.ZipFile(zip_, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(arquivo, arquivo.name)
+    log.info("registro de auditoria exportado: %d linha(s)", len(linhas))
+    return ExportacaoRegistro(pasta, arquivo, zip_, len(linhas), retidas)
+
+
+def endereco_email_registro(zip_: Path, versao: str) -> str:
+    """Como ``endereco_email``: leva só a versão e o nome do .zip."""
+    assunto = f"COIR {versao} - registro para suporte"
+    corpo = (
+        f"Versão do COIR: {versao}\n"
+        "O que aconteceu, em que tela e quando:\n\n\n"
         f"(anexe o arquivo {zip_.name})\n"
     )
     return f"mailto:{EMAIL_SUPORTE}?subject={quote(assunto)}&body={quote(corpo)}"
