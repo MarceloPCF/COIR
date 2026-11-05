@@ -401,7 +401,8 @@ class Estado:
     def pendencias(self) -> list[Pendencia]:
         """O que o titular escolhido tem de resolver, em todos os anos (não depende do ano
         escolhido; só os itens com quantidade): DARF em atraso, arquivo com nota rejeitada, ativo
-        fora do cálculo até hoje, proposta de evento a conferir e avisos da apuração."""
+        fora do cálculo até hoje, proposta de evento a conferir e avisos da apuração. Os arquivos
+        rejeitados contam para todos: um arquivo rejeitado pode não ter titular conhecido."""
         if not self.existe or self.titular is None:
             return []
         titular = self.titular
@@ -410,7 +411,8 @@ class Estado:
                      if x.situacao is darf.Situacao.EM_ATRASO]  # fmt: skip
         anos = sorted({x.ano for x in atrasadas})
         antiga = min(((x.ano, x.mes) for x in atrasadas), default=None)
-        anos_avisos = sorted({int(a[:4]) for a in apuracao.avisos if a[:4].isdigit()})
+        avisos = apuracao.avisos_de(titular)
+        anos_avisos = sorted({int(a[:4]) for a in avisos if a[:4].isdigit()})
         itens = [
             Pendencia(len(atrasadas), "DARF(s) em atraso"
                       + (f" ({', '.join(map(str, anos))})" if anos else ""), "/darf",
@@ -421,7 +423,7 @@ class Estado:
                       "ativo(s) fora do cálculo (falta evento)", "/eventos"),
             Pendencia(sum(p.situacao == "pendente" for p in self.propostas()),
                       "proposta(s) de evento para conferir", "/eventos"),
-            Pendencia(len(apuracao.avisos), "aviso(s) da apuração para conferir"
+            Pendencia(len(avisos), "aviso(s) da apuração para conferir"
                       + (f" ({', '.join(map(str, anos_avisos))})" if anos_avisos else ""),
                       "/apuracao", anos_avisos[-1] if anos_avisos else None),
         ]  # fmt: skip

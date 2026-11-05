@@ -148,7 +148,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 total=_total_ano(meses),
                 ao_clicar=lambda i: abrir(int(str(i)), mapa),
             ).mark("grade-apuracao")
-            for aviso in apuracao.avisos:
+            for aviso in apuracao.avisos_de(estado.titular):
                 if aviso[:4] == str(estado.ano) or not aviso[:4].isdigit():  # avisos do ano
                     ui.label(f"Atenção: {aviso}").classes("coir-carimbo text-sm")
 
