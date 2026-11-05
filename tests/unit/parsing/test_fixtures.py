@@ -12,7 +12,7 @@ from coir.domain.nota import Segmento
 from coir.erros import ExtracaoError
 from coir.parsing.cliente import cliente
 from coir.parsing.extrair import extrair_textos
-from coir.parsing.paginas import carregar_perfis, classificar
+from coir.parsing.paginas import carregar_perfis, classificar, nome_generico
 
 PASTA = Path(__file__).parents[2] / "fixtures" / "notas"
 FIXTURES = sorted(p.name.removesuffix(".txt") for p in PASTA.glob("*.txt"))
@@ -190,6 +190,10 @@ def test_corretora_sem_perfil_e_lida_pelo_layout_padrao_com_aviso() -> None:
     assert "nova.pdf" in aviso and "CORRETORA 999" in aviso and "confira as operações" in aviso
 
 
+def _ancora_nova(ancora: str) -> str:
+    return "00.000.000/0001-91" if ancora[0].isdigit() else "NOVA"
+
+
 @pytest.mark.parametrize(
     ("fixture", "segmento"),
     [("agora_2008_04_bovespa", Segmento.BOVESPA), ("btg_2023_11_bmf", Segmento.BMF)],
@@ -200,7 +204,7 @@ def test_corretora_sem_perfil_nos_outros_layouts(fixture: str, segmento: Segment
     perfil = next(p for p in carregar_perfis() if classificar(paginas[0]).perfil == p)
     for ancora in perfil.ancoras:
         padrao = re.compile(re.escape(ancora), re.IGNORECASE)
-        paginas = [padrao.sub("NOVA", p) for p in paginas]
+        paginas = [padrao.sub(_ancora_nova(ancora), p) for p in paginas]
     res = extrair_textos("nova.pdf", paginas)
     assert res.rejeitadas == []
     [nota] = res.notas
@@ -224,10 +228,28 @@ def test_corretora_sem_perfil_que_nao_fecha_e_recusada_dizendo_o_problema() -> N
 
 
 def test_pdf_que_nao_e_nota_continua_recusado() -> None:
-    res = extrair_textos("outro.pdf", ["Extrato qualquer\nsem nada de nota de corretagem"])
+    """Sem cabeçalho de nota, a mensagem não diz que uma nota falhou."""
+    res = extrair_textos("outro.pdf", ["Extrato 00.000.000/0001-91\nsem nota de corretagem"])
     assert res.notas == []
     [rejeitada] = res.rejeitadas
-    assert "corretora não identificada" in rejeitada.motivo
+    assert "corretora não identificada" in rejeitada.motivo and "tentou" not in rejeitada.motivo
+
+
+def test_sem_identificar_a_corretora_a_nota_e_recusada() -> None:
+    """Sem um único código nem um único CNPJ, duas corretoras virariam a mesma conta."""
+    paginas, _ = _ler("xp_2026_08_bovespa")
+    sem_perfil = _sem_nome_nem_cnpj(paginas, "999-9")
+    sem_id = [p.replace("999-9", "").replace("00.000.000/0001-91", "") for p in sem_perfil]
+    outra = [f"{p}\n11.111.111/0001-11\n22.222.222/0001-22" for p in sem_id]
+    res = extrair_textos("nova.pdf", outra)
+    assert res.notas == [] and "corretora não identificada" in res.rejeitadas[0].motivo
+
+
+def test_nome_generico_pelo_codigo_ou_pelo_cnpj() -> None:
+    assert nome_generico(["88-4 123", "sem nada"]) == "CORRETORA 88"
+    assert nome_generico(["C.N.P.J. 00.000.000/0001-91"]) == "CORRETORA CNPJ 00000000000191"
+    assert nome_generico(["88-4 123", "85-0 123"]) is None
+    assert nome_generico(["sem nada"]) is None
 
 
 @pytest.mark.parametrize(

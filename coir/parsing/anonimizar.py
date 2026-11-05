@@ -40,7 +40,7 @@ from coir.erros import AnonimizacaoError, ExtracaoError
 from coir.parsing.cliente import RE_CODIGO, RE_CPF
 from coir.parsing.extrair import ResultadoExtracao, extrair_textos
 from coir.parsing.numeros import compactar
-from coir.parsing.paginas import classificar
+from coir.parsing.paginas import carregar_perfis, classificar
 from coir.parsing.texto_pdf import SEPARADOR_PAGINAS
 
 SEM_CORRETORA = "?"  # página que nenhum perfil reconhece (corretora nova)
@@ -328,11 +328,16 @@ def _corretora(texto: str) -> str:
         return SEM_CORRETORA
 
 
+def _chave_corretora(nome: str) -> str:
+    """Chave da conta no mapa: corretora sem perfil, lida ou não, é sempre SEM_CORRETORA."""
+    return nome if nome in {p.corretora for p in carregar_perfis()} else SEM_CORRETORA
+
+
 def _contas(textos: Sequence[str]) -> set[tuple[str, str]]:
     """(corretora, conta) de cada nota lida; nas páginas que o leitor recusa, a conta impressa
     no formato SINACOR ("<código>-<dígito> <conta>") ou sob "Codigo do Cliente"."""
     res = extrair_textos("", textos)
-    contas = {(n.corretora, n.conta) for n in res.notas}
+    contas = {(_chave_corretora(n.corretora), n.conta) for n in res.notas}
     for texto in textos:
         linhas = _linhas(texto)
         corretora = _corretora(texto)
@@ -359,7 +364,7 @@ def _formatado(modelo: str, digitos: str) -> str:
 
 
 def _trocar_contas(p: _Pagina, contas: set[tuple[str, str]], mapa: MapaAnonimizacao) -> None:
-    for corretora, real in contas:
+    for corretora, real in sorted(contas):
         if corretora not in (p.corretora, SEM_CORRETORA) and p.corretora != SEM_CORRETORA:
             continue
         ficticia = mapa.conta(corretora, real)
@@ -608,7 +613,8 @@ def divergencias_de_fidelidade(
         erros.append(f"{len(original.notas)} nota(s) no original e {len(copia.notas)} na cópia")
     for a, b in zip(original.notas, copia.notas, strict=False):
         onde = f"nota {a.numero} de {a.data_pregao:%d/%m/%Y}"
-        esperada = mapa.contas.get(f"{a.corretora}|{a.conta.lstrip('0') or '0'}", a.conta)
+        chave = f"{_chave_corretora(a.corretora)}|{a.conta.lstrip('0') or '0'}"
+        esperada = mapa.contas.get(chave, a.conta)
         if b.conta != esperada:
             erros.append(f"{onde}: campo conta (a fictícia não é a do mapa)")
         da, db = a.model_dump(exclude={"conta"}), b.model_dump(exclude={"conta"})

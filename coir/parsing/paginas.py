@@ -8,6 +8,7 @@ nenhum perfil cobre é tentada pelos layouts padrão (`pagina_generica`), e a co
 """
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import cache
@@ -31,6 +32,7 @@ RE_CODIGO_NO_ROTULO = re.compile(
     r"N.?mero\s*da\s*Corretora[ \t]+(?P<codigo>\d{1,4})-\d\b", re.IGNORECASE
 )
 RE_OPCAO_FLEXIVEL = re.compile(r"^\s*F[A-Z]{2}\s*-\s*(?:Com|Sem)\s+Garantia", re.MULTILINE)
+RE_CNPJ = re.compile(r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b")
 GRAMATICAS_PADRAO: tuple[Gramatica, ...] = ("xp", "btg", "agora")  # layouts de nota que o COIR lê
 
 
@@ -103,11 +105,22 @@ def classificar(texto: str, perfis: tuple[Perfil, ...] | None = None) -> Pagina:
     return _pagina(texto, compacto, perfil)
 
 
-def pagina_generica(texto: str, gramatica: Gramatica) -> Pagina:
-    """A página de uma corretora que nenhum perfil cobre, lida por um dos layouts padrão. A
-    corretora fica com o nome pelo código da B3 impresso, ou genérico sem ele."""
-    codigos = _codigos(texto)
-    nome = f"CORRETORA {codigos[0]}" if len(codigos) == 1 else "CORRETORA NAO IMPLEMENTADA"
+def nome_generico(textos: Iterable[str]) -> str | None:
+    """Nome da corretora sem perfil nestas páginas: pelo código da B3 ou, sem ele, pelo CNPJ. Sem
+    um único código nem um único CNPJ, None: corretoras diferentes não podem virar a mesma conta.
+
+    Quando a corretora ganhar perfil, as notas gravadas com este nome continuam com ele: tratar
+    a troca de nome no commit que criar o perfil."""
+    paginas = list(textos)
+    codigos = {c for t in paginas for c in _codigos(t)}
+    if len(codigos) == 1:
+        return f"CORRETORA {codigos.pop()}"
+    cnpjs = {m.group(0) for t in paginas for m in RE_CNPJ.finditer(t)}
+    return f"CORRETORA CNPJ {re.sub(r'\D', '', cnpjs.pop())}" if len(cnpjs) == 1 else None
+
+
+def pagina_generica(texto: str, gramatica: Gramatica, nome: str) -> Pagina:
+    """A página de uma corretora que nenhum perfil cobre, lida por um dos layouts padrão."""
     segmentos: dict[Segmento, Gramatica] = {Segmento.BOVESPA: gramatica}
     if gramatica != "agora":  # o layout da Ágora é só Bovespa
         segmentos[Segmento.BMF] = gramatica

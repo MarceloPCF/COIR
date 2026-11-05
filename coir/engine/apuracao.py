@@ -91,6 +91,7 @@ def apurar(
         movimentos += movimentar(do_titular, [e for e in eventos if e.titular == titular],
                                  parametros, ate, avisos=aviso, isolados=isolados)  # fmt: skip
         movimentos += movimentos_futuros(do_titular, ate, aviso)
+    isolados.sort(key=lambda i: i.desde)
     movimentos += [m for c in outros_custos if (m := _outro_custo(c)).data <= ate]
     movimentos.sort(key=lambda m: m.data)
     por_mes: dict[tuple[int, int, int], list[Movimento]] = defaultdict(list)

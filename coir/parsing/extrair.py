@@ -29,6 +29,7 @@ from coir.parsing.paginas import (
     Pagina,
     TipoPagina,
     classificar,
+    nome_generico,
     pagina_generica,
 )
 from coir.parsing.texto_pdf import PdfError
@@ -88,29 +89,36 @@ def extrair_textos(arquivo: str, textos: Sequence[str]) -> ResultadoExtracao:
     return res
 
 
-def _generica(gramatica: Gramatica) -> Callable[[str], Pagina]:
-    return lambda texto: pagina_generica(texto, gramatica)
+def _generica(gramatica: Gramatica, nome: str) -> Callable[[str], Pagina]:
+    return lambda texto: pagina_generica(texto, gramatica, nome)
 
 
 def _pelo_layout_padrao(
     arquivo: str, textos: Sequence[str], desconhecidas: dict[int, str], res: ResultadoExtracao
 ) -> None:
-    """Corretora sem perfil: tenta cada layout padrão e fica com o que mais notas fechar."""
+    """Corretora sem perfil: tenta cada layout padrão e fica com o que mais notas fechar. Página
+    em que nenhum layout achou uma nota mantém a recusa original: pode nem ser nota."""
+    nome = nome_generico(textos[i] for i in desconhecidas)
+    if nome is None:  # sem identificar a corretora, a conta poderia ser de outra
+        res.rejeitadas += [Rejeitada(arquivo, (i + 1,), m) for i, m in desconhecidas.items()]
+        return
     tentativas: list[ResultadoExtracao] = []
     for gramatica in GRAMATICAS_PADRAO:
         tentativa = ResultadoExtracao()
-        _ler(arquivo, textos, list(desconhecidas), _generica(gramatica), tentativa)
+        _ler(arquivo, textos, list(desconhecidas), _generica(gramatica, nome), tentativa)
         tentativas.append(tentativa)
-    melhor = max(tentativas, key=lambda t: (len(t.notas), -len(t.rejeitadas)))
+    melhor = max(tentativas, key=lambda t: (len(t.notas), sum(bool(r.nota) for r in t.rejeitadas)))
     for r in melhor.rejeitadas:
+        original = desconhecidas[r.paginas[0] - 1]
         r.motivo = (
-            f"{desconhecidas[r.paginas[0] - 1]}. O COIR tentou ler pelo layout padrão e não "
-            f"conseguiu tudo certo ({r.motivo}): nada desta nota foi gravado"
+            f"{original}. O COIR tentou ler pelo layout padrão e não conseguiu tudo certo "
+            f"({r.motivo}): nada desta nota foi gravado"
+            if r.nota
+            else original
         )
     if melhor.notas:
-        nomes = ", ".join(sorted({n.corretora for n in melhor.notas}))
         melhor.avisos.append(
-            f"{arquivo}: corretora sem perfil no COIR ({nomes}), lida pelo layout padrão. Os "
+            f"{arquivo}: corretora sem perfil no COIR ({nome}), lida pelo layout padrão. Os "
             f"totais de {len(melhor.notas)} nota(s) conferem, mas confira as operações; se algo "
             "estiver errado, mande a nota pela tela Suporte"
         )
