@@ -1,5 +1,6 @@
-"""Tela Suporte: os dados que cada titular quer ocultar e o envio de notas para quem desenvolve
-(texto anonimizado e imagens com tarja, conferidos pelo usuário antes de sair, por e-mail)."""
+"""Tela Suporte: os dados que cada titular quer ocultar, o envio de notas para quem desenvolve
+(texto anonimizado e imagens com tarja, conferidos pelo usuário antes de sair, por e-mail) e o
+envio do registro de auditoria, sem dados pessoais."""
 
 import webbrowser
 from collections.abc import Callable
@@ -38,10 +39,61 @@ def _secao(titulo: str, texto: str) -> ui.column:
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("Suporte").classes("coir-titulo-pagina")
     ui.label(
-        "Para uma nota que o COIR não lê ou lê errado (uma corretora nova, um layout diferente)."
+        "Para um problema no COIR: uma nota que ele não lê ou lê errado (uma corretora nova, um "
+        "layout diferente), um erro numa tela, um resultado estranho."
     ).classes("coir-subtitulo")
+    _registro(estado)
     _dados(estado)
     _envio(estado)
+
+
+# --------------------------------------------------------------------------- registro de auditoria
+def _registro(estado: Estado) -> None:
+    with _secao(
+        "Enviar o registro ao suporte",
+        "O COIR registra o que faz: importações, notas rejeitadas e o motivo, propostas de "
+        "eventos, cálculos e erros. O registro não tem CPF, nome, conta, endereço, e-mail, nomes "
+        "de arquivo nem valores exatos (só a ordem de grandeza); mostra os códigos dos ativos e "
+        "as datas envolvidos. Antes de sair, passa por uma conferência de privacidade. Costuma "
+        "bastar para corrigir o problema; se não bastar, o suporte pede a nota anonimizada.",
+    ):
+        ui.button("Preparar o registro", icon="description",
+                  on_click=lambda: preparar()).mark("registro-preparar")  # fmt: skip
+        resultado = ui.column().classes("w-full gap-1").mark("registro-resultado")
+
+    async def preparar() -> None:
+        try:
+            feito = await run.io_bound(suporte.exportar_registro, estado.dados, estado.banco,
+                                       estado.agora())  # fmt: skip
+        except CoirError as erro:
+            ui.notify(str(erro), type="negative", multi_line=True)
+            return
+        if feito is None:  # run.io_bound devolve None se a página fechou
+            return
+        resultado.clear()
+        with resultado:
+            ui.label(f"{feito.linhas} linha(s), de {feito.desde:%d/%m/%Y} a {feito.ate:%d/%m/%Y}."
+                     ).classes("coir-positivo text-sm")  # fmt: skip
+            if feito.total_retidas:
+                ui.label(f"{feito.total_retidas} linha(s) ficaram de fora na conferência de "
+                         "privacidade.").classes("text-sm")  # fmt: skip
+            if not feito.termos_do_banco:
+                ui.label("O banco não abriu: a conferência não usou o seu cadastro, só os dados "
+                         "para ocultar. Olhe o arquivo antes de enviar.").classes(
+                    "coir-negativo text-sm")  # fmt: skip
+            ui.label(f"Gravado em {feito.pasta}").classes("coir-numero text-sm")
+            ui.label(
+                f"Pode abrir o {feito.arquivo.name} para ver o que vai. Para enviar a "
+                f"{suporte.EMAIL_SUPORTE}: o botão abre a mensagem no seu programa de e-mail; "
+                "anexe o .zip, conte o que aconteceu e envie."
+            ).classes("text-sm")
+            with ui.row().classes("gap-3"):
+                endereco = suporte.endereco_email_registro(feito, VERSAO)
+                ui.button(
+                    "Escrever e-mail", icon="mail", on_click=lambda: webbrowser.open(endereco)
+                ).mark("registro-email")
+                ui.button("Abrir a pasta", icon="folder_open",
+                          on_click=lambda: abrir(feito.pasta)).props("flat")  # fmt: skip
 
 
 # --------------------------------------------------------------------------- dados para ocultar

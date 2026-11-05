@@ -19,11 +19,13 @@ from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from coir import auditoria
 from coir.db.modelos import ArquivoB3, MovimentacaoB3, NegociacaoB3, PosicaoB3, Titular
 from coir.db.sessao import conectar, fazer_backup, migrar
 from coir.domain.b3 import TipoPlanilha
 from coir.erros import ImportacaoError
 from coir.importers import b3
+from coir.servicos import trilha
 
 log = logging.getLogger(__name__)
 PASTA_B3 = "_relatorios-b3"  # padrão das planilhas da B3 dentro da pasta de dados
@@ -62,6 +64,16 @@ def importar_planilhas(
     progresso: Callable[[int, int, str], None] | None = None,
 ) -> RelatorioB3:  # fmt: skip
     """Importa as planilhas numa transação; arquivo já importado (mesmo SHA-256) é ignorado."""
+    with auditoria.operacao("planilhas_b3", arquivos=len(arquivos), titular=titular) as op:
+        rel = _importar_planilhas(banco, arquivos, titular, agora, progresso)
+        op.dados(novas=rel.novas)
+    return rel
+
+
+def _importar_planilhas(
+    banco: Path, arquivos: Sequence[Path], titular: int, agora: datetime,
+    progresso: Callable[[int, int, str], None] | None,
+) -> RelatorioB3:  # fmt: skip
     migrar(banco, agora)
     fazer_backup(banco, agora)
     rel = RelatorioB3()
@@ -72,6 +84,8 @@ def importar_planilhas(
             if progresso is not None:
                 progresso(feitos, len(arquivos), caminho.name)
             rel.arquivos.append(_importar(s, caminho, titular, agora))
+            r = rel.arquivos[-1]
+            trilha.planilha(r.arquivo, r.tipo, r.linhas, r.novas, r.detalhe)
         if progresso is not None:
             progresso(len(arquivos), len(arquivos), "")
     log.info("planilhas B3: %d arquivo(s), %d linha(s) nova(s)", len(arquivos), rel.novas)

@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
+from coir.auditoria.limpeza import esqueleto
 from coir.domain.nota import Cliente, NotaExtraida, Segmento
 from coir.erros import ExtracaoError
 from coir.parsing import bmf, bovespa
@@ -34,6 +35,23 @@ class Rejeitada:
     motivo: str
     nota: str = ""  # número da nota, quando o cabeçalho foi lido
     data: date | None = None
+    # só para o registro de auditoria: a classe do erro e a forma da página (sem dado nenhum)
+    erro: Exception | None = field(default=None, compare=False, repr=False)
+    esqueleto: tuple[str, ...] = field(default=(), compare=False, repr=False)
+
+
+@dataclass(frozen=True)
+class LeituraPagina:
+    """O que o leitor reconheceu numa página (para o registro de auditoria)."""
+
+    pagina: int
+    corretora: str
+    segmento: str
+    layout: str
+    tipo: str
+    folha: int
+    nota: str
+    data: date
 
 
 @dataclass
@@ -43,12 +61,14 @@ class ResultadoExtracao:
     avisos: list[str] = field(default_factory=list)
     # cliente impresso em cada nota, pela chave (dado pessoal: fora de NotaExtraida)
     clientes: dict[tuple[object, ...], Cliente] = field(default_factory=dict)
+    leituras: list[LeituraPagina] = field(default_factory=list)
 
     def juntar(self, outro: "ResultadoExtracao") -> None:
         self.notas += outro.notas
         self.rejeitadas += outro.rejeitadas
         self.avisos += outro.avisos
         self.clientes.update(outro.clientes)
+        self.leituras += outro.leituras
 
 
 @dataclass
@@ -64,7 +84,7 @@ def extrair_pdf(caminho: Path, senhas: Sequence[str] = ()) -> ResultadoExtracao:
     try:
         textos = ler_paginas(caminho, senhas)
     except PdfError as erro:
-        return ResultadoExtracao(rejeitadas=[Rejeitada(caminho.name, (), str(erro))])
+        return ResultadoExtracao(rejeitadas=[Rejeitada(caminho.name, (), str(erro), erro=erro)])
     return extrair_textos(caminho.name, textos)
 
 
@@ -81,8 +101,15 @@ def extrair_textos(arquivo: str, textos: Sequence[str]) -> ResultadoExtracao:
                 continue
             cab = bovespa.cabecalho(texto, pagina.gramatica)
         except ExtracaoError as erro:
-            res.rejeitadas.append(Rejeitada(arquivo, (i + 1,), str(erro)))
+            res.rejeitadas.append(
+                Rejeitada(arquivo, (i + 1,), str(erro), erro=erro, esqueleto=esqueleto(texto))
+            )
             continue
+        res.leituras.append(
+            LeituraPagina(i + 1, pagina.perfil.corretora, pagina.segmento.value,
+                          str(pagina.gramatica), pagina.tipo.value, cab.folha, cab.numero,
+                          cab.data_pregao)
+        )  # fmt: skip
         anterior = grupos[-1] if grupos else None
         if (
             anterior
@@ -110,6 +137,8 @@ def extrair_textos(arquivo: str, textos: Sequence[str]) -> ResultadoExtracao:
                 res.clientes[nota.chave] = impresso
         except ExtracaoError as erro:
             rejeitada.motivo = f"nota {g.cabecalho.numero}: {erro}"
+            rejeitada.erro = erro
+            rejeitada.esqueleto = esqueleto(textos[g.indices[-1]])
             res.rejeitadas.append(rejeitada)
     return res
 

@@ -15,6 +15,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from coir import auditoria
 from coir.db.modelos import Conta, EventoCorporativo, NotaCorretagem, Operacao, TickerHistorico
 from coir.db.sessao import conectar
 from coir.domain.fiscal import (
@@ -43,7 +44,7 @@ from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import carteira, movimentar
 from coir.erros import ReferenciaError
 from coir.parsing import futuros
-from coir.servicos import outros_custos, saldos_iniciais
+from coir.servicos import outros_custos, saldos_iniciais, trilha
 
 RE_PRAZO = re.compile(r"^(?P<mes>\d{2})/(?P<ano>\d{2})$")
 RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é put de novembro
@@ -276,9 +277,13 @@ def apurar_banco(
 ) -> Apuracao:  # fmt: skip
     """`saldos`: prejuízos iniciais no lugar dos gravados no banco (comparação com um gabarito
     que começa num marco); None usa os do banco."""
-    with conectar(banco) as fabrica, fabrica() as sessao:
-        notas, eventos = entradas(sessao, refs, fiscais)
-        custos = outros_custos.do_banco(sessao)
-        if saldos is None:
-            saldos = saldos_iniciais.do_banco(sessao)
-    return apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos, saldos)
+    with auditoria.operacao("apuracao", ate=ate) as op:
+        with conectar(banco) as fabrica, fabrica() as sessao:
+            notas, eventos = entradas(sessao, refs, fiscais)
+            custos = outros_custos.do_banco(sessao)
+            if saldos is None:
+                saldos = saldos_iniciais.do_banco(sessao)
+        resultado = apurar(notas, eventos, fiscais.parametros, fiscais.calendario, ate, custos,
+                           saldos)  # fmt: skip
+        trilha.apuracao(resultado, op)
+    return resultado

@@ -1,10 +1,13 @@
 """Configuração comum dos testes."""
 
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from hypothesis import settings
 
+from coir import auditoria
+from coir.cli import VAR_SEM_REGISTRO
 from coir.config import VAR_CONFIG, dados_dir
 
 # Testes de propriedade determinísticos (mesmos exemplos em toda execução e no CI).
@@ -17,6 +20,14 @@ def _config_isolada(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A configuração gravada pelo programa no %APPDATA% da máquina (pasta de dados, pasta das
     notas, tema) não vaza para os testes."""
     monkeypatch.setenv(VAR_CONFIG, str(tmp_path / "config-teste" / "config.json"))
+    monkeypatch.setenv(VAR_SEM_REGISTRO, "1")  # a CLI não grava na pasta de dados da máquina
+
+
+@pytest.fixture(autouse=True)
+def _registro_desligado() -> Iterator[None]:
+    """O registro de auditoria que um teste ligou não fica ligado no próximo."""
+    yield
+    auditoria.desligar()
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:

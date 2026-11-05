@@ -12,23 +12,29 @@ imagens, o COIR grava o .zip e abre a mensagem já endereçada; o usuário anexa
 sai do computador sem essa ação dele.
 """
 
+import json
 import logging
+import re
 import tempfile
 import zipfile
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
+from coir import auditoria
+from coir.auditoria import portao
+from coir.config import VERSAO
 from coir.db import repositorio as repo
 from coir.db.modelos import Conta
 from coir.db.sessao import conectar
 from coir.domain.cpf import cpf_valido, so_digitos
-from coir.erros import AnonimizacaoError
+from coir.erros import AnonimizacaoError, CoirError
 from coir.parsing.anonimizar import CAMPOS_LIVRES as CAMPOS_LIVRES  # para a tela
 from coir.parsing.anonimizar import DadosPessoais, MapaAnonimizacao, conferir
 from coir.parsing.imagens import gravar_png, paginas_tarjadas
@@ -48,6 +54,10 @@ ARQUIVO_MAPA = Path("_privado") / "mapa-anonimizacao.json"
 ARQUIVO_DADOS = Path("_privado") / "dados-para-ocultar.json"
 ARQUIVO_TERMOS = "termos-sensiveis.txt"  # a mesma lista local de tools/verificar_dados_pessoais
 EMAIL_SUPORTE = "suporte.coir@gmail.com"
+DIAS_DO_REGISTRO = 30
+MAXIMO_DO_REGISTRO = 8_000_000  # em bytes, antes de compactar; ficam as linhas mais recentes
+ARQUIVO_DO_REGISTRO = "registro-para-suporte.jsonl"
+RE_DATA_DA_LINHA = re.compile(r'\{"t": ?"(\d{4}-\d{2}-\d{2})')
 
 
 def carregar_mapa(caminho: Path) -> MapaAnonimizacao:
@@ -163,6 +173,30 @@ def anonimizar_arquivos(
     cópia (padrão: o do arquivo, com ``.txt``). Com ``imagens``, grava também a imagem tarjada de
     cada página dos PDFs (``<cópia>-pagina-N.png``). PDF protegido: tenta as ``senhas`` e as do
     CPF dos ``informados``."""
+    with auditoria.operacao("anonimizacao", arquivos=len(arquivos)) as op:
+        resultados = _anonimizar_arquivos(arquivos, saida, mapa_caminho, sensiveis, nomes,
+                                          informados, imagens, senhas)  # fmt: skip
+        aceitas = sum(r.destino is not None for r in resultados)
+        op.dados(aceitas=aceitas, rejeitadas=len(resultados) - aceitas)
+        for r in resultados:
+            auditoria.evento(
+                "suporte.nota", arquivo=r.origem, paginas=[r.paginas], ocultados=r.ocultados,
+                alertas=r.alertas, situacao="aceita" if r.destino else "recusada",
+                recusas=r.recusas,
+            )  # fmt: skip
+    return resultados
+
+
+def _anonimizar_arquivos(
+    arquivos: Sequence[Path],
+    saida: Path,
+    mapa_caminho: Path,
+    sensiveis: Sequence[str],
+    nomes: Sequence[str] | None,
+    informados: Sequence[DadosPessoais],
+    imagens: bool,
+    senhas: Sequence[str],
+) -> list[ResultadoArquivo]:
     tentar = [*senhas, *senhas_do_cpf(d.cpf for d in informados)]
     mapa = carregar_mapa(mapa_caminho)
     saida.mkdir(parents=True, exist_ok=True)
@@ -313,5 +347,150 @@ def endereco_email(zip_: Path, versao: str) -> str:
         "Corretora:\n"
         "O que acontece (a nota não é lida, um valor sai errado...):\n\n\n"
         f"(anexe o arquivo {zip_.name})\n"
+    )
+    return f"mailto:{EMAIL_SUPORTE}?subject={quote(assunto)}&body={quote(corpo)}"
+
+
+# ------------------------------------------------------------------------- registro de auditoria
+@dataclass(frozen=True)
+class ExportacaoRegistro:
+    pasta: Path  # <dados>/suporte/registro-<data-hora>: o arquivo legível e o .zip
+    arquivo: Path
+    zip: Path
+    desde: date | None
+    ate: date | None
+    linhas: int
+    retidas: dict[str, int]  # motivo -> quantas linhas ficaram de fora
+    cortadas: int  # mais antigas que couberam a menos, pelo limite de tamanho
+    termos_do_banco: bool = True  # falso: banco inacessível, sem o cadastro na conferência
+
+    @property
+    def total_retidas(self) -> int:
+        return sum(self.retidas.values())
+
+
+def _linhas_do_registro(dados: Path, desde: date) -> Iterable[str]:
+    """As linhas do período, da mais antiga à mais recente. Sem a data no começo (linha estranha),
+    a linha segue: quem decide é o portão."""
+    limite = desde.isoformat()
+    for arquivo in auditoria.arquivos_do_registro(dados):
+        with arquivo.open(encoding="utf-8", errors="replace") as entrada:
+            for linha in entrada:
+                linha = linha.strip()
+                data = RE_DATA_DA_LINHA.match(linha)
+                if linha and (data is None or data[1] >= limite):
+                    yield linha
+
+
+def termos_do_titular(dados: Path, banco: Path) -> tuple[portao.Termos, bool]:
+    """Os termos que o portão procura, de todos os titulares. Se o banco não abrir (é justamente
+    quando se manda o registro), vale o que foi informado na tela e o portão continua valendo por
+    forma e por catálogo; o cabeçalho da exportação registra isso."""
+    do_banco_ok = True
+    try:
+        pessoais = dados_para_ocultar(dados, banco)
+    except (CoirError, SQLAlchemyError):
+        log.warning("portão do registro sem os dados do banco: banco inacessível")
+        pessoais = carregar_dados(dados)
+        do_banco_ok = False
+    valores = [v for d in pessoais for v in (d.nome, d.cpf, *d.contas, *d.valores()) if v]
+    segredo = dados / auditoria.ARQUIVO_SEGREDO
+    segredos = [segredo.read_text(encoding="utf-8").strip()] if segredo.is_file() else []
+    return portao.Termos.de(valores, termos_sensiveis(dados), segredos), do_banco_ok
+
+
+def exportar_registro(
+    dados: Path, banco: Path, agora: datetime, dias: int = DIAS_DO_REGISTRO
+) -> ExportacaoRegistro:
+    """Grava em ``<dados>/suporte`` o registro de auditoria dos últimos ``dias``, conferido pelo
+    portão de privacidade (``coir.auditoria.portao``): o .jsonl, para o usuário olhar, e o .zip,
+    para anexar ao e-mail. Nada sai do computador sem essa ação dele."""
+    with auditoria.operacao("exportacao_registro", dias=dias) as op:
+        exportado = _exportar_registro(dados, banco, agora, dias)
+        op.dados(linhas=exportado.linhas, retidas=exportado.total_retidas,
+                 cortadas=exportado.cortadas)  # fmt: skip
+    return exportado
+
+
+def _exportar_registro(dados: Path, banco: Path, agora: datetime, dias: int) -> ExportacaoRegistro:
+    desde = agora.date() - timedelta(days=dias)
+    termos, termos_do_banco = termos_do_titular(dados, banco)
+    conferencia = portao.conferir_linhas(_linhas_do_registro(dados, desde), termos)
+    if not conferencia.linhas:
+        if conferencia.retidas:
+            motivos = ", ".join(f"{m} ({q})" for m, q in sorted(conferencia.retidas.items()))
+            raise AnonimizacaoError(
+                f"nenhuma linha do registro passou na conferência de privacidade: {motivos}"
+            )
+        raise AnonimizacaoError("ainda não há registro de auditoria para enviar")
+    linhas, cortadas = _dentro_do_limite(conferencia.linhas)
+    datas = _datas(linhas)
+    chave = auditoria.segredo() or bytes(32)
+    quando = agora.astimezone()
+    extras = [
+        auditoria.linha_de_evento(
+            "suporte.exportacao", chave, "00000000", 0, quando, versao=VERSAO, dias=dias,
+            desde=min(datas), ate=max(datas),
+            linhas=len(linhas), retidas=conferencia.retidas.total(), cortadas=cortadas,
+            termos_do_banco=termos_do_banco,
+        ),
+        *(auditoria.linha_de_evento("portao.retidas", chave, "00000000", 0, quando, motivo=motivo,
+                                    retidas=quantas)
+          for motivo, quantas in sorted(conferencia.retidas.items())),
+    ]  # fmt: skip
+    # o cabeçalho passa pelo mesmo portão; se ele não passar, a exportação não sai
+    cabecalho = portao.conferir_linhas(extras, termos)
+    if cabecalho.retidas:
+        raise AnonimizacaoError("o cabeçalho da exportação não passou no portão de privacidade")
+    texto = "\n".join([*cabecalho.linhas, *linhas]) + "\n"
+    portao.exigir_texto_limpo(texto, termos)
+    return _gravar_exportacao(dados, agora, texto, conferencia, cortadas, linhas, termos_do_banco)
+
+
+def _datas(linhas: Sequence[str]) -> list[date]:
+    return [date.fromisoformat(json.loads(x)["t"][:10]) for x in linhas]
+
+
+def _dentro_do_limite(linhas: list[str]) -> tuple[list[str], int]:
+    total, inicio = 0, len(linhas)
+    while inicio > 0 and total + len(linhas[inicio - 1].encode()) + 1 <= MAXIMO_DO_REGISTRO:
+        inicio -= 1
+        total += len(linhas[inicio].encode()) + 1
+    return linhas[inicio:], inicio
+
+
+def _gravar_exportacao(dados: Path, agora: datetime, texto: str, conferencia: portao.Conferencia,
+                       cortadas: int, linhas: list[str],
+                       termos_do_banco: bool) -> ExportacaoRegistro:  # fmt: skip
+    pasta = dados / PASTA_SUPORTE / f"registro-{agora:%Y%m%d-%H%M%S}"
+    if pasta.exists():
+        raise AnonimizacaoError("já existe uma exportação neste segundo; tente de novo")
+    pasta.mkdir(parents=True)
+    arquivo = pasta / ARQUIVO_DO_REGISTRO
+    arquivo.write_text(texto, encoding="utf-8", newline="\n")
+    zip_ = pasta / f"registro-para-suporte-{agora:%Y%m%d-%H%M%S}.zip"
+    with zipfile.ZipFile(zip_, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(arquivo, arquivo.name)
+    with zipfile.ZipFile(zip_) as z:  # o .zip tem de dar exatamente o texto conferido
+        conferido = z.read(arquivo.name).decode("utf-8")
+    if conferido != texto or arquivo.read_text(encoding="utf-8") != texto:
+        zip_.unlink()
+        arquivo.unlink()
+        raise AnonimizacaoError("cópia gravada do registro diferente da conferida")
+    log.info("registro de auditoria exportado: %d linha(s)", len(linhas))
+    return ExportacaoRegistro(
+        pasta, arquivo, zip_, min(_datas(linhas)), max(_datas(linhas)), len(linhas),
+        dict(conferencia.retidas), cortadas, termos_do_banco,
+    )  # fmt: skip
+
+
+def endereco_email_registro(exportado: ExportacaoRegistro, versao: str) -> str:
+    """Como ``endereco_email``: leva só a versão e o nome do .zip."""
+    assunto = f"COIR {versao} - registro para suporte"
+    corpo = (
+        f"Versão do COIR: {versao}\n"
+        "O que aconteceu e em que tela:\n"
+        "Quando (dia e hora aproximados):\n\n\n"
+        f"(anexe o arquivo {exportado.zip.name})\n"
     )
     return f"mailto:{EMAIL_SUPORTE}?subject={quote(assunto)}&body={quote(corpo)}"

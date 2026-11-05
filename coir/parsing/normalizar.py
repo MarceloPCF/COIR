@@ -59,7 +59,8 @@ def _bmf(nota: NotaExtraida, n: NegocioBMF, refs: Referencias) -> OperacaoExtrai
     contrato = futuros.contrato(n, refs, nota.data_pregao)
     if contrato is None:
         raise ReferenciaError(
-            f"contrato futuro {n.mercadoria} sem cadastro em contratos_futuros.csv"
+            f"contrato futuro {n.mercadoria} sem cadastro em contratos_futuros.csv",
+            impresso=n.mercadoria,
         )
     return OperacaoExtraida(
         **_comum(nota),  # type: ignore[arg-type]
@@ -79,7 +80,10 @@ def _bovespa(
 ) -> OperacaoExtraida:
     mercado = refs.mercados_bovespa.get(n.mercado.upper())
     if mercado is None:
-        raise ReferenciaError(f"tipo de mercado {n.mercado!r} sem cadastro em mercados_bovespa.csv")
+        raise ReferenciaError(
+            f"tipo de mercado {n.mercado!r} sem cadastro em mercados_bovespa.csv",
+            impresso=n.mercado,
+        )
     impresso, objeto = _papel(n, mercado, refs, series)
     papel = refs.ticker_na_data(impresso, nota.data_pregao)
     return OperacaoExtraida(
@@ -105,7 +109,9 @@ def _papel(
     if mercado in ("CALL", "PUT", "EXERC CALL", "EXERC PUT"):
         m = RE_OPCAO.match(primeiro)
         if not m:
-            raise ReferenciaError(f"código de opção inválido: {n.especificacao!r}")
+            raise ReferenciaError(
+                f"código de opção inválido: {n.especificacao!r}", impresso=n.especificacao
+            )
         classe = m["classe"] or (tokens[1] if len(tokens) > 1 else None) or series.get(m["serie"])
         objeto = _ativo_objeto(m["serie"], classe, refs)
         if mercado.startswith("EXERC"):
@@ -143,5 +149,6 @@ def _ticker_por_nome(especificacao: str, refs: Referencias) -> str:
     ]
     raise ReferenciaError(
         f"ativo {especificacao!r} sem cadastro em data/ativos.csv "
-        f"(parecidos: {', '.join(refs.ativos[s] + '=' + s for s in sugestoes)})"
+        f"(parecidos: {', '.join(refs.ativos[s] + '=' + s for s in sugestoes)})",
+        impresso=especificacao,
     )

@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from coir import referencias
+from coir import auditoria, referencias
 from coir.config import VERSAO
 from coir.erros import AtualizacaoError, ConfiguracaoError
 
@@ -219,6 +219,7 @@ def preparar(dados: Path, remoto: PacoteRemoto, obter: Baixar = baixar) -> Mudan
     return _mudancas(referencias.pasta_efetiva(dados), nova)
 
 
+@auditoria.operacao("atualizacao_tabelas")
 def aplicar(dados: Path) -> None:
     """Passa o pacote preparado a ser o em uso; o anterior fica para voltar."""
     atual, anterior, base = _pastas(dados)

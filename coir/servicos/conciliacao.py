@@ -21,6 +21,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from coir import auditoria
 from coir.db.modelos import (
     Conta,
     Corretora,
@@ -34,6 +35,7 @@ from coir.domain.fiscal import PosicaoAtivo, TipoAtivo, Visao
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias
 from coir.engine.calendario import UM_DIA, dia_de_pregao
+from coir.servicos import trilha
 from coir.servicos.apuracao import carteira_banco
 
 ZERO = Decimal(0)
@@ -101,6 +103,27 @@ def conciliar(
     """B3 x COIR na data `dia`; `anterior` (a posição B3 anterior) limita a busca de causas.
     `posicoes`: a carteira do COIR na data por corretora, já calculada (várias datas de uma vez:
     ``carteiras_banco``); sem ela, calcula aqui."""
+    with auditoria.operacao("conciliacao", titular=titular, data=dia) as op:
+        res = _conciliar(banco, refs, fiscais, titular, dia, anterior, posicoes)
+        op.dados(linhas=len(res.linhas), divergentes=len(res.divergentes), avisos=len(res.avisos))
+        for x in res.divergentes:
+            auditoria.evento(
+                "conciliacao.divergencia", "A", titular=titular, data=dia, corretora=x.corretora,
+                ativo=x.codigo, quantidade=x.diferenca, causa=x.causa or None,
+            )  # fmt: skip
+        trilha.avisos(res.avisos, "conciliacao.aviso", titular=titular, data=dia)
+    return res
+
+
+def _conciliar(
+    banco: Path,
+    refs: Referencias,
+    fiscais: ReferenciasFiscais,
+    titular: int,
+    dia: date,
+    anterior: date | None,
+    posicoes: list[PosicaoAtivo] | None,
+) -> Conciliacao:
     avisos: list[str] = []
     b3: dict[tuple[str, str], Decimal] = defaultdict(Decimal)
     with conectar(banco) as fabrica, fabrica() as s:

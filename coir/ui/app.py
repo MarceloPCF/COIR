@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from nicegui import run, ui
 from nicegui.events import ValueChangeEventArguments
 
+from coir import auditoria
 from coir.config import ARQUIVO_REGISTRO
 from coir.erros import CoirError
 from coir.servicos.estado import Estado, Pendencia
@@ -88,6 +89,7 @@ def _ir(rota: str) -> Callable[[], None]:
 
 def _construtor(tela: Tela, estado: Estado, avisar: Avisar) -> Callable[[], None]:
     def construir() -> None:
+        auditoria.evento("ui.tela", rota=tela.rota)
         if tela.exige_dados and not estado.pronto:
             assistente.montar(estado, avisar)
         else:
@@ -114,7 +116,8 @@ def _erro_inesperado(erro: Exception) -> None:
     """Erro não previsto numa tela: avisa na própria janela (o detalhe vai para o registro de
     atividades) em vez de deixar a tela calada ou girando."""
     ui.notify(
-        f"Erro inesperado: {erro!r}. O detalhe está em Configurações > Registro de atividades.",
+        f"Erro inesperado: {type(erro).__name__}. O detalhe está em Configurações > Registro de "
+        "atividades. Para mandar ao suporte, sem dados pessoais, use Suporte > Enviar o registro.",
         type="negative", multi_line=True, timeout=0, close_button="Fechar",
     )  # fmt: skip
 
