@@ -3,7 +3,8 @@
 Um PDF pode ter várias notas e misturar Bovespa e BM&F; por isso corretora e segmento são decididos
 por página, pelas âncoras do perfil (razão social, CNPJ) e pelo cabeçalho de colunas dos negócios.
 Sem âncora (a corretora mudou o nome impresso, como a Clear em 2026), vale o código da corretora
-na B3, impresso antes da conta do cliente ("3-5 000000" na XP, "85-0 ..." na BTG).
+na B3, impresso antes da conta do cliente ("3-5 000000" na XP, "85-0 ..." na BTG). Corretora que
+nenhum perfil cobre é tentada pelos layouts padrão (`pagina_generica`), e a conciliação decide.
 """
 
 import re
@@ -30,6 +31,11 @@ RE_CODIGO_NO_ROTULO = re.compile(
     r"N.?mero\s*da\s*Corretora[ \t]+(?P<codigo>\d{1,4})-\d\b", re.IGNORECASE
 )
 RE_OPCAO_FLEXIVEL = re.compile(r"^\s*F[A-Z]{2}\s*-\s*(?:Com|Sem)\s+Garantia", re.MULTILINE)
+GRAMATICAS_PADRAO: tuple[Gramatica, ...] = ("xp", "btg", "agora")  # layouts de nota que o COIR lê
+
+
+class CorretoraDesconhecida(ExtracaoError):
+    """Nenhum perfil cobre a página: nem o nome, nem o CNPJ, nem o código da B3."""
 
 
 class Perfil(BaseModel):
@@ -66,15 +72,23 @@ def carregar_perfis() -> tuple[Perfil, ...]:
     return tuple(sorted(perfis, key=lambda p: (p.prioridade, p.corretora)))
 
 
+def _codigos(texto: str) -> list[str]:
+    """Códigos da B3 impressos na página, ao lado da conta ou no rótulo."""
+    return sorted(
+        {m["codigo"] for m in RE_CODIGO_CORRETORA.finditer(texto)}
+        | {m["codigo"] for m in RE_CODIGO_NO_ROTULO.finditer(texto)}
+    )
+
+
 def _pelo_codigo(texto: str, perfis: tuple[Perfil, ...]) -> Perfil:
     """Segunda tentativa, sem nome nem CNPJ conhecidos: o código da corretora na B3."""
     codigos = {m["codigo"] for m in RE_CODIGO_CORRETORA.finditer(texto)}
     achados = [p for p in perfis if codigos & set(p.codigos)]
     if len({p.corretora for p in achados}) == 1:
         return achados[0]
-    codigos |= {m["codigo"] for m in RE_CODIGO_NO_ROTULO.finditer(texto)}
-    impresso = f" (código {', '.join(sorted(codigos))} na B3)" if codigos else ""
-    raise ExtracaoError(
+    impresso = ", ".join(_codigos(texto))
+    impresso = f" (código {impresso} na B3)" if impresso else ""
+    raise CorretoraDesconhecida(
         f"corretora não identificada{impresso}: nem o nome, nem o CNPJ, nem o código da B3 "
         "batem com uma corretora conhecida. Mande a nota pela tela Suporte"
     )
@@ -86,6 +100,22 @@ def classificar(texto: str, perfis: tuple[Perfil, ...] | None = None) -> Pagina:
     perfil = next((p for p in todos if any(compactar(a) in compacto for a in p.ancoras)), None)
     if perfil is None:
         perfil = _pelo_codigo(texto, todos)
+    return _pagina(texto, compacto, perfil)
+
+
+def pagina_generica(texto: str, gramatica: Gramatica) -> Pagina:
+    """A página de uma corretora que nenhum perfil cobre, lida por um dos layouts padrão. A
+    corretora fica com o nome pelo código da B3 impresso, ou genérico sem ele."""
+    codigos = _codigos(texto)
+    nome = f"CORRETORA {codigos[0]}" if len(codigos) == 1 else "CORRETORA NAO IMPLEMENTADA"
+    segmentos: dict[Segmento, Gramatica] = {Segmento.BOVESPA: gramatica}
+    if gramatica != "agora":  # o layout da Ágora é só Bovespa
+        segmentos[Segmento.BMF] = gramatica
+    perfil = Perfil(corretora=nome, prioridade=0, ancoras=(), gramaticas=segmentos)
+    return _pagina(texto, compactar(texto), perfil)
+
+
+def _pagina(texto: str, compacto: str, perfil: Perfil) -> Pagina:
     flexivel = "Mercadoria:" in texto and RE_OPCAO_FLEXIVEL.search(texto)
     tipo = TipoPagina.OPCAO_FLEXIVEL if flexivel else TipoPagina.NOTA
     segmento = Segmento.BMF if "c/vmercadoria" in compacto else Segmento.BOVESPA

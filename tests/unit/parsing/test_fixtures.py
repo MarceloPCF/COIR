@@ -1,6 +1,7 @@
 """As 10 notas anonimizadas de tests/fixtures/notas extraídas e conciliadas = o esperado.json."""
 
 import json
+import re
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -11,7 +12,7 @@ from coir.domain.nota import Segmento
 from coir.erros import ExtracaoError
 from coir.parsing.cliente import cliente
 from coir.parsing.extrair import extrair_textos
-from coir.parsing.paginas import classificar
+from coir.parsing.paginas import carregar_perfis, classificar
 
 PASTA = Path(__file__).parents[2] / "fixtures" / "notas"
 FIXTURES = sorted(p.name.removesuffix(".txt") for p in PASTA.glob("*.txt"))
@@ -176,11 +177,57 @@ def test_corretora_pelo_codigo_da_b3_sem_nome_nem_cnpj() -> None:
     assert nota.corretora == "XP" and nota.numero == esperado["numero_nota"]
 
 
-def test_corretora_desconhecida_diz_o_que_foi_tentado() -> None:
-    paginas, _ = _ler("xp_2026_08_bovespa")
+def test_corretora_sem_perfil_e_lida_pelo_layout_padrao_com_aviso() -> None:
+    """Pedido do usuário de 05/11/2026: corretora não implementada não é recusada de saída. O COIR
+    tenta os layouts que conhece; a conciliação fecha, a nota entra e o cliente é avisado."""
+    paginas, esperado = _ler("xp_2026_08_bovespa")
     res = extrair_textos("nova.pdf", _sem_nome_nem_cnpj(paginas, "999-9"))
+    assert res.rejeitadas == []
+    [nota] = res.notas
+    assert nota.corretora == "CORRETORA 999" and nota.numero == esperado["numero_nota"]
+    assert len(nota.negocios_bovespa) == len(esperado["operacoes"])
+    [aviso] = res.avisos
+    assert "nova.pdf" in aviso and "CORRETORA 999" in aviso and "confira as operações" in aviso
+
+
+@pytest.mark.parametrize(
+    ("fixture", "segmento"),
+    [("agora_2008_04_bovespa", Segmento.BOVESPA), ("btg_2023_11_bmf", Segmento.BMF)],
+)
+def test_corretora_sem_perfil_nos_outros_layouts(fixture: str, segmento: Segmento) -> None:
+    """Vale o layout que fechar a nota, não só o da XP, em Bovespa e em BM&F."""
+    paginas, esperado = _ler(fixture)
+    perfil = next(p for p in carregar_perfis() if classificar(paginas[0]).perfil == p)
+    for ancora in perfil.ancoras:
+        padrao = re.compile(re.escape(ancora), re.IGNORECASE)
+        paginas = [padrao.sub("NOVA", p) for p in paginas]
+    res = extrair_textos("nova.pdf", paginas)
+    assert res.rejeitadas == []
+    [nota] = res.notas
+    assert nota.numero == esperado["numero_nota"] and nota.segmento is segmento
+    assert nota.corretora.startswith("CORRETORA ") and "layout padrão" in res.avisos[0]
+
+
+def test_corretora_sem_perfil_que_nao_fecha_e_recusada_dizendo_o_problema() -> None:
+    """Sem extrair tudo certo, nada entra: a mensagem diz o código, que houve a tentativa e o que
+    não fechou."""
+    paginas, esperado = _ler("xp_2026_08_bovespa")
+    sem_perfil = _sem_nome_nem_cnpj(paginas, "999-9")
+    preco = str(esperado["operacoes"][0]["preco"]).replace(".", ",")
+    quebradas = [p.replace(preco, "1,23", 1) for p in sem_perfil]
+    assert quebradas != sem_perfil
+    res = extrair_textos("nova.pdf", quebradas)
+    assert res.notas == [] and res.avisos == []
     [rejeitada] = res.rejeitadas
     assert "código 999 na B3" in rejeitada.motivo and "CNPJ" in rejeitada.motivo
+    assert "tentou ler pelo layout padrão" in rejeitada.motivo and "nada" in rejeitada.motivo
+
+
+def test_pdf_que_nao_e_nota_continua_recusado() -> None:
+    res = extrair_textos("outro.pdf", ["Extrato qualquer\nsem nada de nota de corretagem"])
+    assert res.notas == []
+    [rejeitada] = res.rejeitadas
+    assert "corretora não identificada" in rejeitada.motivo
 
 
 @pytest.mark.parametrize(

@@ -10,6 +10,11 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ## [Não lançado]
 
+### Adicionado
+- **Corretora ainda sem perfil**: o COIR tenta ler a nota pelos layouts que já conhece. Se os totais
+  da nota fecharem, ela entra com um aviso para você conferir; se não, ela é recusada dizendo o que
+  não deu certo, e nada dela é gravado.
+
 ### Corrigido
 - **PDF com senha**: a mensagem agora também ensina o caminho da linha de comando,
   `coir importar --senha`, além do campo "Senha dos PDFs" da tela Importar.
