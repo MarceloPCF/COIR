@@ -64,8 +64,8 @@ def abrir(caminho: Path, senhas: Sequence[str] = ()) -> pdfium.PdfDocument:
                 raise PdfError(f"PDF ilegível: {caminho.name}") from erro
     raise PdfSenhaError(
         f"PDF protegido por senha: {caminho.name}. Informe a senha do PDF ao importar (campo "
-        '"Senha dos PDFs" na tela Importar); nas notas enviadas por e-mail ela costuma ser o '
-        "começo do CPF"
+        '"Senha dos PDFs" na tela Importar ou, na linha de comando, coir importar --senha); nas '
+        "notas enviadas por e-mail ela costuma ser o começo do CPF"
     )
 
 
