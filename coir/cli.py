@@ -655,6 +655,12 @@ def importar(
         help="Senha dos PDFs protegidos (repita a opção para várias); o começo do CPF dos "
         "titulares cadastrados é tentado sem precisar informar.",
     ),
+    reprocessar: bool = typer.Option(
+        False,
+        "--reprocessar",
+        help="Relê também as notas já importadas: a releitura vale sobre o que está gravado. "
+        "Faz backup antes; nota que a releitura não confirma continua gravada.",
+    ),
 ) -> None:
     """Importa as notas da pasta para o banco, numa transação e sem duplicar.
 
@@ -666,7 +672,7 @@ def importar(
     dados = dados_dir(exigir=True)
     rel = importar_pasta(
         _banco(banco), pasta or dados / "_notas-corretagens", _refs(), _agora(),
-        titular, senhas=senha or (),
+        titular, senhas=senha or (), reprocessar=reprocessar,
     )  # fmt: skip
     print(
         f"Arquivos lidos: {len(rel.arquivos_lidos)}; já importados: {len(rel.arquivos_ignorados)}"
@@ -675,6 +681,9 @@ def importar(
           f"já no banco: {rel.notas_ja_no_banco}; rejeitadas: {len(rel.rejeitadas)}")  # fmt: skip
     if rel.notas_renormalizadas:
         print(f"Notas já gravadas com operações regravadas: {rel.notas_renormalizadas}")
+    if reprocessar:
+        print(f"Reprocessamento: {rel.notas_substituidas} substituída(s), "
+              f"{rel.notas_removidas} removida(s)")  # fmt: skip
     for criado in rel.titulares_criados:
         print(f"Titular criado: {criado} (coir titular listar / renomear)")
     arquivo_exp = explicacoes or dados / "gabarito" / "divergencias-conhecidas.csv"

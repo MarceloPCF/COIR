@@ -344,7 +344,7 @@ def test_exportacao_sem_dado_pessoal_e_que_permite_diagnosticar(
             "suporte.exportacao"} <= {e["ev"] for e in eventos}  # fmt: skip
     rejeicoes = [_d(e) for e in eventos if e["ev"] == "importacao.rejeicao"]
     assert any(r.get("classe") == "ConciliacaoError" and r.get("campo") for r in rejeicoes)
-    assert any(r.get("classe") == "ExtracaoError" and r.get("pilha") for r in rejeicoes)
+    assert any(r.get("classe") == "CorretoraDesconhecida" and r.get("pilha") for r in rejeicoes)
     meses = [_d(e) for e in eventos if e["ev"] == "apuracao.mes"]
     assert meses and len({(m["titular"], m["mes"]) for m in meses}) == len(meses)  # sem repetir
     for m in meses:

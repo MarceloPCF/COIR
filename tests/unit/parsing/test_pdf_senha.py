@@ -6,8 +6,11 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
 from coir import referencias
+from coir.cli import app
+from coir.config import VAR_DADOS
 from coir.erros import ExtracaoError
 from coir.parsing.extrair import extrair_pdf
 from coir.parsing.texto_pdf import PdfSenhaError, paginas, senhas_do_cpf
@@ -17,6 +20,7 @@ from tests.apoio import cpf_de_teste
 from tools import notas_ficticias
 
 AGORA = datetime(2026, 11, 4, 12, 0)
+runner = CliRunner()
 
 
 @pytest.fixture(scope="module")
@@ -48,6 +52,34 @@ def test_pdf_com_senha_abre_com_a_senha_certa(
     assert paginas(protegido, ["999", "123"]) == aberto
     [rejeitada] = extrair_pdf(protegido).rejeitadas
     assert "protegido por senha" in rejeitada.motivo
+
+
+def test_mensagem_orienta_na_tela_e_na_linha_de_comando(
+    tmp_path: Path, textos: list[tuple[str, str]]
+) -> None:
+    """A mesma mensagem chega à tela Importar e ao terminal: precisa servir aos dois."""
+    protegido = _pdf(tmp_path, *textos[0], "123")
+    with pytest.raises(PdfSenhaError) as erro:
+        paginas(protegido)
+    assert "Senha dos PDFs" in str(erro.value) and "coir importar --senha" in str(erro.value)
+
+
+def test_cli_importar_diz_como_informar_a_senha_e_abre_com_ela(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, textos: list[tuple[str, str]]
+) -> None:
+    """Sem a senha, ``coir importar`` rejeita a nota e ensina a opção; com ela, a nota entra."""
+    monkeypatch.setenv(VAR_DADOS, str(tmp_path))
+    pasta = tmp_path / "_notas-corretagens"
+    _pdf(pasta, *textos[0], "123")
+    assert runner.invoke(app, ["banco", "migrar"]).exit_code == 0
+
+    sem_senha = runner.invoke(app, ["importar"])
+    assert sem_senha.exit_code == 1
+    assert "coir importar --senha" in sem_senha.output
+
+    com_senha = runner.invoke(app, ["importar", "--senha", "123"])
+    assert com_senha.exit_code == 0, com_senha.output
+    assert "Notas gravadas: 1" in com_senha.output
 
 
 def test_pagina_da_nota_protegida_na_tela(tmp_path: Path, textos: list[tuple[str, str]]) -> None:

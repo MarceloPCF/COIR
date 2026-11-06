@@ -80,6 +80,7 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 estado.extrator,
                 andamento,
                 list(estado.senhas_informadas),
+                bool(reprocessar.value),
             )
         except CoirError as erro:  # lote desfeito: nada gravado
             ui.notify(
@@ -151,6 +152,15 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             )
             .mark("senha-pdfs")
         )
+        reprocessar = (
+            ui.checkbox("Reprocessar notas já importadas")
+            .tooltip(
+                "Lê de novo os PDFs escolhidos e fica com a releitura, útil se o COIR leu algo "
+                "errado ou se a corretora corrigiu a nota. Faz backup antes; nota que a "
+                "releitura não confirma continua como está."
+            )
+            .mark("reprocessar")
+        )
         pastas.seletor(estado, "pasta_notas", "Pasta das notas", estado.pasta_notas,
                        ui.navigate.reload)  # fmt: skip
         barra = ui.linear_progress(value=0, show_value=False).props("rounded size=8px")
@@ -188,8 +198,8 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             if rel.arquivos_ignorados or rel.notas_ja_no_banco or repetidas:
                 ui.label(
                     "Notas que já estavam no banco não são gravadas de novo (cada nota entra uma "
-                    "vez só): não há nada a fazer. Os PDFs continuam na pasta onde estão; a tela "
-                    "Notas abre o original de lá."
+                    'vez só). Para ler de novo, marque "Reprocessar notas já importadas". Os '
+                    "PDFs continuam na pasta onde estão; a tela Notas abre o original de lá."
                 ).classes("coir-subtitulo text-sm").mark("info-repetidas")
                 for aviso in repetidas:
                     ui.label(aviso).classes("coir-subtitulo text-xs")
@@ -201,6 +211,16 @@ def _resumo(rel: RelatorioImportacao, linhas: list[ResultadoArquivo]) -> None:
         for rotulo, valor, classe in (
             ("arquivos", len(linhas), ""),
             ("notas gravadas", rel.notas_gravadas, "coir-positivo"),
+            *(
+                [("notas substituídas", rel.notas_substituidas, "coir-carimbo")]
+                if rel.notas_substituidas
+                else []
+            ),
+            *(
+                [("registros antigos removidos", rel.notas_removidas, "coir-carimbo")]
+                if rel.notas_removidas
+                else []
+            ),
             ("notas que já estavam no banco", rel.notas_ja_no_banco, ""),
             ("arquivos já importados", len(rel.arquivos_ignorados), ""),
             ("notas rejeitadas", len(rel.rejeitadas), "coir-negativo" if rejeitados else ""),

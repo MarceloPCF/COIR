@@ -69,8 +69,8 @@ CAMPOS: dict[str, object] = {
     **_campos(
         int,
         "avisos dias divergentes gravadas ignoradas isolados ja_no_banco lancadas lidos linha "
-        "linhas meses ms negocios novas operacoes pendentes rejeitadas renormalizadas retidas "
-        "tamanho total",
+        "linhas meses ms negocios novas operacoes pendentes rejeitadas removidas renormalizadas "
+        "retidas substituidas tamanho total",
     ),
     **_campos(
         bool,

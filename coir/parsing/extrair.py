@@ -4,10 +4,14 @@ Cada página é classificada (corretora, segmento); páginas consecutivas com o 
 data e folhas em sequência (1, 2, ...) formam uma nota. Os negócios vêm de todas as folhas; resumo e
 conta, da última. Nota que não concilia, sem conta impressa ou repetida com conteúdo diferente não
 entra: vai para `rejeitadas` com o motivo. Nada é descartado em silêncio.
+
+Corretora sem perfil: as páginas são tentadas por cada layout padrão e vale o que mais notas fechar.
+A conciliação é o portão: a nota lida entra com um aviso, e a que não fecha é recusada dizendo que
+o COIR tentou e o que não deu certo.
 """
 
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -18,7 +22,16 @@ from coir.parsing import bmf, bovespa
 from coir.parsing.cliente import cliente
 from coir.parsing.conciliar import conciliar
 from coir.parsing.numeros import compactar
-from coir.parsing.paginas import Pagina, TipoPagina, classificar
+from coir.parsing.paginas import (
+    GRAMATICAS_PADRAO,
+    CorretoraDesconhecida,
+    Gramatica,
+    Pagina,
+    TipoPagina,
+    classificar,
+    nome_generico,
+    pagina_generica,
+)
 from coir.parsing.texto_pdf import PdfError
 from coir.parsing.texto_pdf import paginas as ler_paginas
 
@@ -71,16 +84,77 @@ def extrair_pdf(caminho: Path, senhas: Sequence[str] = ()) -> ResultadoExtracao:
 
 def extrair_textos(arquivo: str, textos: Sequence[str]) -> ResultadoExtracao:
     res = ResultadoExtracao()
+    desconhecidas = _ler(arquivo, textos, range(len(textos)), classificar, res)
+    if desconhecidas:
+        _pelo_layout_padrao(arquivo, textos, desconhecidas, res)
+    return res
+
+
+def _generica(gramatica: Gramatica, nome: str) -> Callable[[str], Pagina]:
+    return lambda texto: pagina_generica(texto, gramatica, nome)
+
+
+def _pelo_layout_padrao(
+    arquivo: str,
+    textos: Sequence[str],
+    desconhecidas: dict[int, CorretoraDesconhecida],
+    res: ResultadoExtracao,
+) -> None:
+    """Corretora sem perfil: tenta cada layout padrão e fica com o que mais notas fechar. Página
+    em que nenhum layout achou uma nota mantém a recusa original: pode nem ser nota."""
+    nome = nome_generico(textos[i] for i in desconhecidas)
+    if nome is None:  # sem identificar a corretora, a conta poderia ser de outra
+        res.rejeitadas += [
+            Rejeitada(arquivo, (i + 1,), str(erro), erro=erro) for i, erro in desconhecidas.items()
+        ]
+        return
+    tentativas: list[ResultadoExtracao] = []
+    for gramatica in GRAMATICAS_PADRAO:
+        tentativa = ResultadoExtracao()
+        _ler(arquivo, textos, list(desconhecidas), _generica(gramatica, nome), tentativa)
+        tentativas.append(tentativa)
+    melhor = max(tentativas, key=lambda t: (len(t.notas), sum(bool(r.nota) for r in t.rejeitadas)))
+    for r in melhor.rejeitadas:
+        original = desconhecidas[r.paginas[0] - 1]
+        if r.nota:
+            r.motivo = (
+                f"{original}. O COIR tentou ler pelo layout padrão e não conseguiu tudo certo "
+                f"({r.motivo}): nada desta nota foi gravado"
+            )
+        else:
+            r.motivo, r.erro = str(original), original
+    if melhor.notas:
+        melhor.avisos.append(
+            f"{arquivo}: corretora sem perfil no COIR ({nome}), lida pelo layout padrão. Os "
+            f"totais de {len(melhor.notas)} nota(s) conferem, mas confira as operações; se algo "
+            "estiver errado, mande a nota pela tela Suporte"
+        )
+    res.juntar(melhor)
+
+
+def _ler(
+    arquivo: str,
+    textos: Sequence[str],
+    indices: Sequence[int],
+    classifica: Callable[[str], Pagina],
+    res: ResultadoExtracao,
+) -> dict[int, CorretoraDesconhecida]:
+    """Lê as páginas `indices`; devolve as de corretora desconhecida, com o erro."""
+    desconhecidas: dict[int, CorretoraDesconhecida] = {}
     grupos: list[_Grupo] = []
-    for i, texto in enumerate(textos):
+    for i in indices:
+        texto = textos[i]
         try:
-            pagina = classificar(texto)
+            pagina = classifica(texto)
             if pagina.tipo is TipoPagina.OPCAO_FLEXIVEL:
                 res.avisos.append(
                     f"{arquivo} p. {i + 1}: opção flexível (fora do escopo; lançar à mão)"
                 )
                 continue
             cab = bovespa.cabecalho(texto, pagina.gramatica)
+        except CorretoraDesconhecida as erro:
+            desconhecidas[i] = erro
+            continue
         except ExtracaoError as erro:
             res.rejeitadas.append(Rejeitada(arquivo, (i + 1,), str(erro), erro=erro))
             continue
@@ -112,7 +186,7 @@ def extrair_textos(arquivo: str, textos: Sequence[str]) -> ResultadoExtracao:
         except ExtracaoError as erro:
             rejeitada.motivo, rejeitada.erro = f"nota {g.cabecalho.numero}: {erro}", erro
             res.rejeitadas.append(rejeitada)
-    return res
+    return desconhecidas
 
 
 def _montar(arquivo: str, g: _Grupo, textos: list[str]) -> NotaExtraida:

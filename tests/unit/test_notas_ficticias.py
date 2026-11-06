@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from coir.domain.fiscal import Categoria
+from coir.domain.fiscal import Apuracao, Categoria
 from coir.parsing.extrair import extrair_pdf
 from coir.servicos.darf import Situacao
 from coir.servicos.estado import Estado
@@ -79,6 +79,22 @@ def test_opcoes_e_proventos_da_demonstracao(estado: Estado) -> None:
     assert ciclos == {"PETRC380": "exercida", "VALEQ550": "vencida (pó)"}
     proventos, avisos = estado.proventos()
     assert len([p for p in proventos if p.data.year == 2025]) == 9 and not avisos
+
+
+def test_pendencias_contam_so_os_avisos_do_titular_escolhido(
+    estado: Estado, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sino e Painel: aviso de outro titular não conta nem traz o ano dele."""
+    assert estado.titular is not None
+    original = estado.apuracao
+    avisos = ((estado.titular, "2025-02-10: meu aviso"), (estado.titular + 1, "2019-03-01: alheio"))
+
+    def com_avisos(ate: date) -> Apuracao:
+        return original(ate).model_copy(update={"avisos_titular": avisos})
+
+    monkeypatch.setattr(estado, "apuracao", com_avisos)
+    [item] = [p for p in estado.pendencias() if p.rota == "/apuracao"]
+    assert (item.quantidade, item.ano) == (1, 2025) and "2019" not in item.texto
 
 
 def test_pendencias_do_painel_e_do_sino(estado: Estado, monkeypatch: pytest.MonkeyPatch) -> None:

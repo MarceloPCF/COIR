@@ -11,8 +11,10 @@ from coir.parsing.anonimizar import (
     divergencias_de_forma,
     informados_na_copia,
 )
+from coir.parsing.cliente import cliente
 from coir.parsing.numeros import compactar
 from tests.apoio import cpf_de_teste
+from tools import notas_ficticias
 
 PASTA = Path(__file__).parents[2] / "fixtures" / "notas"
 CPF = cpf_de_teste("271828182")
@@ -124,3 +126,22 @@ def test_dados_pessoais_nao_aparecem_no_repr() -> None:
     assert _joana().valores()[:3] == [
         "Rua das Acácias, 98765, apto 12", "Setor Bueno", "Vale do Sol",
     ]  # fmt: skip
+
+
+def test_nota_de_corretora_sem_perfil_lida_tem_uma_so_conta_ficticia() -> None:
+    """A nota que o leitor agora lê pelo layout padrão e a varredura da página dão a mesma chave:
+    uma conta real, uma fictícia, e a cópia passa no portão de fidelidade em qualquer execução."""
+    _, texto = notas_ficticias.textos(notas_ficticias.carregar())[0]
+    nova = (
+        texto.replace("XP INVESTIMENTOS", "CORRETORA NOVA")
+        .replace("02.332.886/0001-04", "00.000.000/0001-91")
+        .replace("3-5 ", "999-9 ")
+        .replace("0800-880-3710", "0800-880-3711")  # o portão recusa telefone repetido
+    )
+    impresso = cliente(nova)
+    assert impresso is not None and impresso.nome is not None
+    dados = DadosPessoais(cpf=impresso.cpf, nome=impresso.nome, contas=[])
+    mapa = _mapa()
+    c = conferir("nota.pdf", [nova], mapa, informados=[dados])
+    assert c.recusas == [], c.recusas
+    assert len(mapa.contas) == 1 and next(iter(mapa.contas)).startswith("?|")

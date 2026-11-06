@@ -423,8 +423,17 @@ class Apuracao(Modelo):
     meses: tuple[MesApurado, ...]
     exclusiva: tuple[TributacaoExclusiva, ...]
     irrf_anual: tuple[IrrfAnual, ...]
-    avisos: tuple[str, ...] = ()
+    avisos_titular: tuple[tuple[int, str], ...] = ()  # (titular, texto)
     isolados: tuple[AtivoIsolado, ...] = ()
+
+    @property
+    def avisos(self) -> tuple[str, ...]:
+        """Os avisos de todos os titulares."""
+        return tuple(texto for _, texto in self.avisos_titular)
+
+    def avisos_de(self, titular: int | None) -> tuple[str, ...]:
+        """Os avisos de um titular só (sino, Painel e tela Apuração)."""
+        return tuple(texto for dono, texto in self.avisos_titular if dono == titular)
 
     def pendentes(self, titular: int, ano: int, mes: int) -> list[AtivoIsolado]:
         """Ativos isolados com operação ou evento fora do cálculo neste mês."""

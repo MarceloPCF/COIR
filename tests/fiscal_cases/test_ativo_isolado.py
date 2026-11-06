@@ -93,6 +93,25 @@ def test_venda_que_passa_de_comprado_a_vendido_avisa() -> None:
     assert not ap.isolados  # só avisa: o cálculo não muda
 
 
+def test_cada_aviso_fica_com_o_titular_dele() -> None:
+    """Decisão do usuário de 05/11/2026: o sino, o Painel e a Apuração mostram só os avisos do
+    titular escolhido. A posição de um titular não cobre a venda do outro, e o ativo isolado de um
+    não aparece para o outro."""
+    livro = _livro()
+    livro.titular = 2
+    livro.nota(date(2025, 1, 10), livro.op("C", "MGLU3", 100, "10"))
+    livro.nota(date(2025, 2, 10), livro.op("V", "MGLU3", 300, "4"))
+    ap = livro.apurar(date(2025, 5, 31))
+
+    [do_2] = ap.avisos_de(2)
+    assert "venda de 300 MGLU3 maior que a posição (100)" in do_2
+    do_1 = ap.avisos_de(1)
+    assert any("ITSA4 ficou fora do cálculo" in a for a in do_1)
+    assert not any("MGLU3" in a for a in do_1)
+    assert ap.avisos_de(3) == ()
+    assert set(ap.avisos) == {*do_1, do_2}
+
+
 def test_vendida_e_recomprada_no_mesmo_mes_nao_avisa() -> None:
     """Decisão do usuário de 03/11/2026: só avisa se continuar vendida no fim do mês."""
     livro = Livro()

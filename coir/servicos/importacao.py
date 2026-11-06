@@ -48,6 +48,9 @@ class RelatorioImportacao:
     operacoes_gravadas: int = 0
     notas_ja_no_banco: int = 0
     notas_renormalizadas: int = 0  # gravadas antes, com operações regravadas (data/ mudou)
+    notas_substituidas: int = 0  # reprocessamento: a releitura mudou o conteúdo da nota
+    notas_removidas: int = 0  # reprocessamento: a releitura deu outra chave à nota do arquivo
+    alteradas_desde: dict[int, date] = field(default_factory=dict[int, date])  # por titular
     rejeitadas: list[Rejeitada] = field(default_factory=list)
     avisos: list[str] = field(default_factory=list)
     titulares_criados: list[str] = field(default_factory=list)  # "nome (id N)", nunca o CPF
@@ -56,7 +59,12 @@ class RelatorioImportacao:
 
     @property
     def mudou(self) -> bool:
-        return self.notas_gravadas > 0 or self.notas_renormalizadas > 0
+        return (
+            self.notas_gravadas > 0
+            or self.notas_renormalizadas > 0
+            or self.notas_substituidas > 0
+            or self.notas_removidas > 0
+        )
 
 
 def _titular(sessao: Session, cpf: str | None) -> Titular | None:
@@ -79,9 +87,14 @@ def importar_arquivos(
     extrator: Extrator | None = None,
     progresso: Progresso | None = None,
     senhas: Sequence[str] = (),
+    reprocessar: bool = False,
 ) -> RelatorioImportacao:
     """Importa os arquivos numa transação da sessão (que não pode ter uma transação aberta).
-    PDF protegido: tenta as ``senhas`` informadas e depois as do CPF dos titulares cadastrados."""
+    PDF protegido: tenta as ``senhas`` informadas e depois as do CPF dos titulares cadastrados.
+
+    ``reprocessar``: relê também os arquivos já importados e a releitura vale sobre o que está
+    gravado (o leitor pode ter errado, ou a corretora pode ter corrigido a nota). Nota que a
+    releitura não confirma continua gravada, com aviso."""
     rel = RelatorioImportacao()
     with sessao.begin():
         tentar = [*senhas, *senhas_do_cpf(t.cpf for t in repo.titulares(sessao))]
@@ -101,10 +114,10 @@ def importar_arquivos(
                 raise ImportacaoError(f"não foi possível ler {caminho.name}: {erro}") from erro
             sha = hashlib.sha256(dados).hexdigest()  # mesmo cálculo de _sha256
             registro = repo.arquivo_por_sha(sessao, sha)
-            repetido = registro is not None and registro.completo
+            repetido = registro is not None and registro.completo and not reprocessar
             auditoria.evento("importacao.arquivo", arquivo=caminho.name, tamanho=len(dados),
                              situacao="repetido" if repetido else "lendo")  # fmt: skip
-            if registro is not None and registro.completo:
+            if repetido:
                 rel.arquivos_ignorados.append(caminho.name)
                 continue
             if caminho.name in registros:
@@ -113,6 +126,8 @@ def importar_arquivos(
                 registro = ArquivoImportado(sha256=sha, nome=caminho.name, tamanho=len(dados),
                                             importado_em=agora, completo=False)  # fmt: skip
                 sessao.add(registro)
+            elif reprocessar:
+                registro.nome = caminho.name  # o PDF pode ter sido renomeado na pasta
             registros[caminho.name] = registro
             rel.arquivos_lidos.append(caminho.name)
             lote.juntar(ler(caminho))
@@ -144,7 +159,10 @@ def importar_arquivos(
             ops = _normalizar(nota, refs, series, rel)
             if ops is not None:
                 _gravar(sessao, nota, ops, registros[nota.arquivo], contas, ativos, rel,
-                        clientes.get(nota.chave))  # fmt: skip
+                        clientes.get(nota.chave), agora, reprocessar)  # fmt: skip
+        if reprocessar:
+            _remover_sem_releitura(sessao, registros, lote.notas, rel, agora)
+            _avisar_darf_paga(sessao, rel)
         # série de opção gravada agora com a raiz antiga: segue a troca do ativo-objeto
         ativos.sincronizar_trocas(refs.trocas)
         rel.titulares_criados = [f"id {t.id}" for t in contas.criados]  # nome: titular listar
@@ -163,6 +181,7 @@ def importar_arquivos(
         "importacao.resumo", lidos=len(rel.arquivos_lidos), ignoradas=len(rel.arquivos_ignorados),
         gravadas=rel.notas_gravadas, operacoes=rel.operacoes_gravadas,
         ja_no_banco=rel.notas_ja_no_banco, renormalizadas=rel.notas_renormalizadas,
+        substituidas=rel.notas_substituidas, removidas=rel.notas_removidas,
         rejeitadas=len(rel.rejeitadas), avisos=len(rel.avisos),
     )  # fmt: skip
     return rel
@@ -220,6 +239,8 @@ def _gravar(
     ativos: repo.Ativos,
     rel: RelatorioImportacao,
     cliente: Cliente | None,
+    agora: datetime,
+    reprocessar: bool = False,
 ) -> None:
     try:  # antes de tudo: titular errado recusa a nota
         conta = contas.conta_da_nota(nota.corretora, nota.conta, cliente)
@@ -249,13 +270,83 @@ def _gravar(
         rel.avisos.append(f"nota {nota.numero} de {nota.arquivo}: mesmos negócios e valores da "
                           f"já importada de {existente.arquivo.nome}, em outro layout; "
                           "ignorada")  # fmt: skip
+    elif reprocessar:
+        mudou = _o_que_mudou(NotaExtraida.model_validate_json(existente.json_nota), nota)
+        _marcar_alteracao(rel, existente.conta.titular_id, existente.data_pregao)
+        repo.remover_nota(sessao, existente, "substituida", mudou, agora)
+        repo.gravar_nota(sessao, nota, ops, arquivo, conta, ativos)
+        rel.notas_substituidas += 1
+        rel.operacoes_gravadas += len(ops)
+        rel.gravadas_por_arquivo[nota.arquivo] += 1
+        trilha.nota(nota, "substituida", len(ops))
+        rel.avisos.append(f"nota {nota.numero} de {nota.arquivo}: substituída pela releitura "
+                          f"(mudou: {mudou}); confira a apuração de "
+                          f"{nota.data_pregao:%m/%Y}")  # fmt: skip
     else:
         motivo = (f"nota {nota.numero}: já importada de {existente.arquivo.nome} com conteúdo "
-                  "diferente")  # fmt: skip
+                  "diferente. Para ficar com esta, importe de novo com \"Reprocessar notas já "
+                  "importadas\" marcado (coir importar --reprocessar)")  # fmt: skip
         rel.rejeitadas.append(
             Rejeitada(nota.arquivo, nota.paginas, motivo, nota.numero, nota.data_pregao)
         )
         trilha.rejeicao(rel.rejeitadas[-1])
+
+
+def _o_que_mudou(antiga: NotaExtraida, nova: NotaExtraida) -> str:
+    nomes = {"negocios_bovespa": "negócios", "negocios_bmf": "negócios",
+             "resumo_bovespa": "resumo financeiro", "resumo_bmf": "resumo financeiro"}  # fmt: skip
+    a, b = antiga.model_dump(), nova.model_dump()
+    return ", ".join(sorted({nomes[c] for c in nomes if a[c] != b[c]})) or "conteúdo"
+
+
+def _marcar_alteracao(rel: RelatorioImportacao, titular: int, data: date) -> None:
+    rel.alteradas_desde[titular] = min(data, rel.alteradas_desde.get(titular, data))
+
+
+def _avisar_darf_paga(sessao: Session, rel: RelatorioImportacao) -> None:
+    """Nota alterada muda o mês dela e pode mudar os seguintes (preço médio e prejuízo)."""
+    for titular, desde in rel.alteradas_desde.items():
+        pagas = repo.darfs_pagas_desde(sessao, titular, desde.year, desde.month)
+        if pagas:
+            rel.avisos.append(f"{pagas} DARF(s) paga(s) de {desde:%m/%Y} em diante: a nota "
+                              "alterada pode mudar o imposto desses meses, pelo preço médio "
+                              "e pelo prejuízo. Veja cada mês na tela DARF")  # fmt: skip
+
+
+def _remover_sem_releitura(
+    sessao: Session,
+    registros: dict[str, ArquivoImportado],
+    novas: Sequence[NotaExtraida],
+    rel: RelatorioImportacao,
+    agora: datetime,
+) -> None:
+    """Nota gravada deste arquivo que a releitura não trouxe: se outra nota nova ocupa as páginas
+    dela, tinha lido errado um dado da chave (conta, número, data) e, sem remover, ficaria em
+    dobro. Se nenhuma ocupa (página pulada) ou a página foi rejeitada agora, ela fica, com aviso."""
+    chaves = {n.chave for n in novas}
+    for nome, registro in registros.items():
+        rejeitadas = {p for r in rel.rejeitadas if r.arquivo == nome for p in r.paginas}
+        for gravada in repo.notas_do_arquivo(sessao, registro):
+            antiga = NotaExtraida.model_validate_json(gravada.json_nota)
+            if antiga.chave in chaves:
+                continue
+            paginas = set(antiga.paginas)
+            certas = [n for n in novas if n.arquivo == nome and paginas & set(n.paginas)]
+            if not certas or rejeitadas & paginas:
+                rel.avisos.append(f"nota {antiga.numero} de {nome}: a releitura não a confirmou e "
+                                  "a gravada foi mantida; veja o motivo na lista")  # fmt: skip
+                continue
+            _marcar_alteracao(rel, gravada.conta.titular_id, gravada.data_pregao)
+            for nova in certas:  # a certa pode ser de outro mês ou de outra conta
+                certa = repo.nota_por_chave(sessao, nova.chave)
+                if certa is not None:
+                    _marcar_alteracao(rel, certa.conta.titular_id, certa.data_pregao)
+            repo.remover_nota(sessao, gravada, "removida", "conta, número ou data", agora)
+            rel.notas_removidas += 1
+            trilha.nota(antiga, "removida")
+            rel.avisos.append(f"nota {antiga.numero} de {nome}: registro antigo removido, a "
+                              "releitura leu outra conta, número ou data; confira a apuração "
+                              f"de {antiga.data_pregao:%m/%Y}")  # fmt: skip
 
 
 def arquivos_da_pasta(pasta: Path, rel: RelatorioImportacao, sufixo: str = ".pdf") -> list[Path]:
@@ -278,13 +369,15 @@ def importar_pasta(
     sufixo: str = ".pdf",
     progresso: Progresso | None = None,
     senhas: Sequence[str] = (),
+    reprocessar: bool = False,
 ) -> RelatorioImportacao:
     """Migração (com backup, se houver o que migrar) e importação de todos os arquivos da pasta."""
     if not pasta.is_dir():
         raise ImportacaoError(f"pasta de notas não encontrada: {pasta}")
     previos = RelatorioImportacao()
     arquivos = arquivos_da_pasta(pasta, previos, sufixo)
-    rel = importar_lista(banco, arquivos, refs, agora, titular, extrator, progresso, senhas)
+    rel = importar_lista(banco, arquivos, refs, agora, titular, extrator, progresso, senhas,
+                         reprocessar)  # fmt: skip
     rel.avisos = previos.avisos + rel.avisos
     return rel
 
@@ -298,6 +391,7 @@ def importar_lista(
     extrator: Extrator | None = None,
     progresso: Progresso | None = None,
     senhas: Sequence[str] = (),
+    reprocessar: bool = False,
 ) -> RelatorioImportacao:
     """Migração (com backup, se houver o que migrar) e importação dos arquivos num lote.
     Backup antes de importar só quando há arquivo novo ou incompleto ou operações a regravar:
@@ -305,16 +399,20 @@ def importar_lista(
     migrar(banco, agora)
     with conectar(banco) as fabrica:
         with fabrica() as sessao:
-            pendente = any(
-                (r := repo.arquivo_por_sha(sessao, _sha256(a))) is None or not r.completo
-                for a in arquivos
-            ) or any(True for _ in _desatualizadas(sessao, refs, repo.series(sessao)))
+            pendente = (
+                reprocessar
+                or any(
+                    (r := repo.arquivo_por_sha(sessao, _sha256(a))) is None or not r.completo
+                    for a in arquivos
+                )
+                or any(True for _ in _desatualizadas(sessao, refs, repo.series(sessao)))
+            )
             # (data/ mudou: as operações de notas antigas vão ser regravadas, regra 8)
         if pendente:
             fazer_backup(banco, agora)
         with fabrica() as sessao:
             return importar_arquivos(sessao, arquivos, refs, agora, titular, extrator, progresso,
-                                     senhas)  # fmt: skip
+                                     senhas, reprocessar)  # fmt: skip
 
 
 def marca_das_tabelas(refs: Referencias) -> int:

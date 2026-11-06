@@ -1,6 +1,7 @@
 """As 10 notas anonimizadas de tests/fixtures/notas extraídas e conciliadas = o esperado.json."""
 
 import json
+import re
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -8,8 +9,10 @@ from pathlib import Path
 import pytest
 
 from coir.domain.nota import Segmento
+from coir.erros import ExtracaoError
 from coir.parsing.cliente import cliente
 from coir.parsing.extrair import extrair_textos
+from coir.parsing.paginas import carregar_perfis, classificar, nome_generico
 
 PASTA = Path(__file__).parents[2] / "fixtures" / "notas"
 FIXTURES = sorted(p.name.removesuffix(".txt") for p in PASTA.glob("*.txt"))
@@ -174,8 +177,111 @@ def test_corretora_pelo_codigo_da_b3_sem_nome_nem_cnpj() -> None:
     assert nota.corretora == "XP" and nota.numero == esperado["numero_nota"]
 
 
-def test_corretora_desconhecida_diz_o_que_foi_tentado() -> None:
-    paginas, _ = _ler("xp_2026_08_bovespa")
+def test_corretora_sem_perfil_e_lida_pelo_layout_padrao_com_aviso() -> None:
+    """Pedido do usuário de 05/11/2026: corretora não implementada não é recusada de saída. O COIR
+    tenta os layouts que conhece; a conciliação fecha, a nota entra e o cliente é avisado."""
+    paginas, esperado = _ler("xp_2026_08_bovespa")
     res = extrair_textos("nova.pdf", _sem_nome_nem_cnpj(paginas, "999-9"))
+    assert res.rejeitadas == []
+    [nota] = res.notas
+    assert nota.corretora == "CORRETORA 999" and nota.numero == esperado["numero_nota"]
+    assert len(nota.negocios_bovespa) == len(esperado["operacoes"])
+    [aviso] = res.avisos
+    assert "nova.pdf" in aviso and "CORRETORA 999" in aviso and "confira as operações" in aviso
+
+
+def _ancora_nova(ancora: str) -> str:
+    return "00.000.000/0001-91" if ancora[0].isdigit() else "NOVA"
+
+
+@pytest.mark.parametrize(
+    ("fixture", "segmento"),
+    [("agora_2008_04_bovespa", Segmento.BOVESPA), ("btg_2023_11_bmf", Segmento.BMF)],
+)
+def test_corretora_sem_perfil_nos_outros_layouts(fixture: str, segmento: Segmento) -> None:
+    """Vale o layout que fechar a nota, não só o da XP, em Bovespa e em BM&F."""
+    paginas, esperado = _ler(fixture)
+    perfil = next(p for p in carregar_perfis() if classificar(paginas[0]).perfil == p)
+    for ancora in perfil.ancoras:
+        padrao = re.compile(re.escape(ancora), re.IGNORECASE)
+        paginas = [padrao.sub(_ancora_nova(ancora), p) for p in paginas]
+    res = extrair_textos("nova.pdf", paginas)
+    assert res.rejeitadas == []
+    [nota] = res.notas
+    assert nota.numero == esperado["numero_nota"] and nota.segmento is segmento
+    assert nota.corretora.startswith("CORRETORA ") and "layout padrão" in res.avisos[0]
+
+
+def test_corretora_sem_perfil_que_nao_fecha_e_recusada_dizendo_o_problema() -> None:
+    """Sem extrair tudo certo, nada entra: a mensagem diz o código, que houve a tentativa e o que
+    não fechou."""
+    paginas, esperado = _ler("xp_2026_08_bovespa")
+    sem_perfil = _sem_nome_nem_cnpj(paginas, "999-9")
+    preco = str(esperado["operacoes"][0]["preco"]).replace(".", ",")
+    quebradas = [p.replace(preco, "1,23", 1) for p in sem_perfil]
+    assert quebradas != sem_perfil
+    res = extrair_textos("nova.pdf", quebradas)
+    assert res.notas == [] and res.avisos == []
     [rejeitada] = res.rejeitadas
     assert "código 999 na B3" in rejeitada.motivo and "CNPJ" in rejeitada.motivo
+    assert "tentou ler pelo layout padrão" in rejeitada.motivo and "nada" in rejeitada.motivo
+
+
+def test_pdf_que_nao_e_nota_continua_recusado() -> None:
+    """Sem cabeçalho de nota, a mensagem não diz que uma nota falhou."""
+    res = extrair_textos("outro.pdf", ["Extrato 00.000.000/0001-91\nsem nota de corretagem"])
+    assert res.notas == []
+    [rejeitada] = res.rejeitadas
+    assert "corretora não identificada" in rejeitada.motivo and "tentou" not in rejeitada.motivo
+
+
+def test_sem_identificar_a_corretora_a_nota_e_recusada() -> None:
+    """Sem um único código nem um único CNPJ, duas corretoras virariam a mesma conta."""
+    paginas, _ = _ler("xp_2026_08_bovespa")
+    sem_perfil = _sem_nome_nem_cnpj(paginas, "999-9")
+    sem_id = [p.replace("999-9", "").replace("00.000.000/0001-91", "") for p in sem_perfil]
+    outra = [f"{p}\n11.111.111/0001-11\n22.222.222/0001-22" for p in sem_id]
+    res = extrair_textos("nova.pdf", outra)
+    assert res.notas == [] and "corretora não identificada" in res.rejeitadas[0].motivo
+
+
+def test_nome_generico_pelo_codigo_ou_pelo_cnpj() -> None:
+    assert nome_generico(["88-4 123", "sem nada"]) == "CORRETORA 88"
+    assert nome_generico(["C.N.P.J. 00.000.000/0001-91"]) == "CORRETORA CNPJ 00000000000191"
+    assert nome_generico(["88-4 123", "85-0 123"]) is None
+    assert nome_generico(["sem nada"]) is None
+
+
+@pytest.mark.parametrize(
+    ("linha", "impresso"),
+    [
+        ("Número da Corretora 88-4 Cliente", "(código 88 na B3)"),
+        ("Numero da Corretora 88-4", "(código 88 na B3)"),
+        ("NÚMERO DA CORRETORA\t88-4 Cliente", "(código 88 na B3)"),
+        ("Númeroda Corretora 88-4 Cliente", "(código 88 na B3)"),
+    ],
+)
+def test_corretora_desconhecida_com_o_codigo_na_linha_do_rotulo(linha: str, impresso: str) -> None:
+    """A CM Capital imprime o código da B3 no próprio rótulo, sem a conta na mesma linha; a
+    mensagem mostra o código lido, para o usuário saber qual corretora falta."""
+    with pytest.raises(ExtracaoError, match="corretora não identificada") as erro:
+        classificar(f"NOTA DE CORRETAGEM\nCorretora Nova S.A.\n{linha}\n")
+    assert impresso in str(erro.value)
+
+
+def test_codigo_no_rotulo_nao_identifica_a_corretora() -> None:
+    """O código no rótulo só informa: "3-5" é o da XP, mas sem a conta ao lado o layout não é o
+    que o perfil da XP sabe ler, e a nota continua recusada dizendo o código."""
+    with pytest.raises(ExtracaoError, match=r"código 3 na B3"):
+        classificar("NOTA DE CORRETAGEM\nCorretora Nova S.A.\nNúmero da Corretora 3-5 Cliente\n")
+
+
+@pytest.mark.parametrize(
+    "linha",
+    ["Número da Corretora 123456-7 Cliente", "Número da Corretora", "Número da Corretora 88"],
+)
+def test_rotulo_sem_codigo_valido_nao_mostra_codigo(linha: str) -> None:
+    """A conta do cliente (mais de 4 dígitos) nunca aparece na mensagem como se fosse o código."""
+    with pytest.raises(ExtracaoError, match="corretora não identificada") as erro:
+        classificar(f"NOTA DE CORRETAGEM\nCorretora Nova S.A.\n{linha}\n")
+    assert "código" not in str(erro.value).split(":")[0]

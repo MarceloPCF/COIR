@@ -3,9 +3,9 @@
 import hashlib
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from coir.db.modelos import (
@@ -13,6 +13,8 @@ from coir.db.modelos import (
     Ativo,
     Conta,
     Corretora,
+    DarfPagamento,
+    NotaAnterior,
     NotaCorretagem,
     NotaCusto,
     Operacao,
@@ -458,6 +460,80 @@ def notas_gravadas(sessao: Session) -> list[NotaCorretagem]:
 
 def operacoes_gravadas(registro: NotaCorretagem) -> list[OperacaoExtraida]:
     return [_operacao(registro, o) for o in registro.operacoes]
+
+
+def notas_do_arquivo(sessao: Session, arquivo: ArquivoImportado) -> list[NotaCorretagem]:
+    if arquivo.id is None:  # arquivo novo, ainda sem nenhuma nota
+        return []
+    consulta = select(NotaCorretagem).where(NotaCorretagem.arquivo_id == arquivo.id)
+    return list(sessao.scalars(consulta))
+
+
+def remover_nota(
+    sessao: Session, registro: NotaCorretagem, motivo: str, mudou: str, agora: datetime
+) -> None:
+    """Só no reprocessamento pedido pelo usuário: guarda a versão atual em ``nota_anterior`` e
+    apaga a nota, os custos e as operações."""
+    sessao.add(
+        NotaAnterior(
+            arquivo_id=registro.arquivo_id, conta_id=registro.conta_id, numero=registro.numero,
+            data_pregao=registro.data_pregao, segmento=registro.segmento,
+            paginas=registro.paginas, json_nota=registro.json_nota, motivo=motivo, mudou=mudou,
+            alterada_em=agora,
+        )
+    )  # fmt: skip
+    for filho in (*registro.custos, *registro.operacoes):
+        sessao.delete(filho)
+    sessao.flush()
+    sessao.delete(registro)
+    sessao.flush()
+
+
+def versoes_anteriores(sessao: Session, registro: NotaCorretagem) -> list[NotaAnterior]:
+    """O que esta nota já foi, da versão mais recente à mais antiga: as trocadas têm a mesma
+    chave; as removidas (lidas com outra chave) estão nas mesmas páginas do mesmo arquivo, no
+    mesmo segmento."""
+    mesma_chave = (
+        (NotaAnterior.conta_id == registro.conta_id)
+        & (NotaAnterior.numero == registro.numero)
+        & (NotaAnterior.data_pregao == registro.data_pregao)
+        & (NotaAnterior.segmento == registro.segmento)
+    )
+    consulta = (
+        select(NotaAnterior)
+        .where(or_(mesma_chave, NotaAnterior.arquivo_id == registro.arquivo_id))
+        .options(selectinload(NotaAnterior.arquivo))
+        .order_by(NotaAnterior.alterada_em.desc(), NotaAnterior.id.desc())
+    )
+    paginas = set(registro.paginas.split(","))
+    return [
+        v
+        for v in sessao.scalars(consulta)
+        if (v.conta_id, v.numero, v.data_pregao, v.segmento)
+        == (registro.conta_id, registro.numero, registro.data_pregao, registro.segmento)
+        or (
+            v.motivo == "removida"
+            and v.arquivo_id == registro.arquivo_id
+            and v.segmento == registro.segmento
+            and paginas & set(v.paginas.split(","))
+        )
+    ]
+
+
+def darfs_pagas_desde(sessao: Session, titular: int, ano: int, mes: int) -> int:
+    """Quantas DARFs do titular foram pagas com competência em ``mes/ano`` ou depois."""
+    consulta = (
+        select(func.count())
+        .select_from(DarfPagamento)
+        .where(
+            DarfPagamento.titular_id == titular,
+            or_(
+                DarfPagamento.ano > ano,
+                (DarfPagamento.ano == ano) & (DarfPagamento.mes >= mes),
+            ),
+        )
+    )
+    return sessao.scalar(consulta) or 0
 
 
 def substituir_operacoes(

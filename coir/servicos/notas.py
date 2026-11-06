@@ -3,7 +3,7 @@ do PDF em imagem (para conferir a nota ao lado do original)."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
@@ -11,8 +11,8 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from coir.db.modelos import ArquivoImportado, Conta, NotaCorretagem
-from coir.db.repositorio import operacoes_gravadas
+from coir.db.modelos import ArquivoImportado, Conta, NotaAnterior, NotaCorretagem
+from coir.db.repositorio import operacoes_gravadas, versoes_anteriores
 from coir.db.sessao import conectar
 from coir.domain.nota import NotaExtraida, OperacaoExtraida
 from coir.erros import BancoError, ConciliacaoError, ExtracaoError
@@ -50,6 +50,17 @@ class Conferencia:
 
 
 @dataclass(frozen=True)
+class VersaoAnterior:
+    """O que a nota dizia antes de um reprocessamento."""
+
+    alterada_em: datetime
+    mudou: str
+    arquivo: str
+    nota: NotaExtraida
+    conferencias: tuple[Conferencia, ...]
+
+
+@dataclass(frozen=True)
 class DetalheNota:
     resumo: ResumoNota
     nota: NotaExtraida
@@ -58,6 +69,7 @@ class DetalheNota:
     conciliada: bool
     motivo: str  # por que não concilia (vazio se concilia)
     pdf: Path | None  # o arquivo na pasta das notas, se estiver lá
+    anteriores: tuple[VersaoAnterior, ...] = ()  # da mais recente à mais antiga
 
 
 def _resumo(n: NotaCorretagem) -> ResumoNota:
@@ -113,6 +125,11 @@ def _conferencias(nota: NotaExtraida) -> tuple[Conferencia, ...]:
     )
 
 
+def _versao(v: NotaAnterior) -> VersaoAnterior:
+    nota = NotaExtraida.model_validate_json(v.json_nota)
+    return VersaoAnterior(v.alterada_em, v.mudou, v.arquivo.nome, nota, _conferencias(nota))
+
+
 def detalhe(banco: Path, pasta_notas: Path, id_nota: int) -> DetalheNota:
     """A nota como impressa, as operações normalizadas e a conciliação refeita (regra 4)."""
     with conectar(banco) as fabrica, fabrica() as s:
@@ -129,6 +146,7 @@ def detalhe(banco: Path, pasta_notas: Path, id_nota: int) -> DetalheNota:
             raise BancoError(f"nota {id_nota} não existe no banco")
         resumo, ops = _resumo(registro), tuple(operacoes_gravadas(registro))
         nota = NotaExtraida.model_validate_json(registro.json_nota)
+        anteriores = tuple(_versao(v) for v in versoes_anteriores(s, registro))
     try:
         conciliar(nota)
         conciliada, motivo = True, ""
@@ -136,7 +154,7 @@ def detalhe(banco: Path, pasta_notas: Path, id_nota: int) -> DetalheNota:
         conciliada, motivo = False, str(erro)
     pdf = pasta_notas / resumo.arquivo
     return DetalheNota(resumo, nota, ops, _conferencias(nota), conciliada, motivo,
-                       pdf if pdf.is_file() else None)  # fmt: skip
+                       pdf if pdf.is_file() else None, anteriores)  # fmt: skip
 
 
 def pagina_png(pdf: Path, pagina: int, largura: int = 1100, senhas: Sequence[str] = ()) -> bytes:

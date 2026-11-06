@@ -2,11 +2,12 @@
 custos e conciliação) ao lado da página do PDF original."""
 
 import base64
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from decimal import Decimal
 
 from nicegui import run, ui
 
+from coir.domain.nota import NotaExtraida
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
@@ -29,6 +30,13 @@ COLUNAS_OPS = (
     Coluna("Preço", T.PRECO),
     Coluna("Total", T.DINHEIRO),
     Coluna("DT"),
+)
+COLUNAS_NEGOCIOS = (
+    Coluna("C/V"),
+    Coluna("Negócio"),
+    Coluna("Qtd.", T.QUANTIDADE),
+    Coluna("Preço", T.PRECO),
+    Coluna("Valor", T.DINHEIRO),
 )
 
 
@@ -160,28 +168,9 @@ def _detalhe(d: notas.DetalheNota, senhas: list[str]) -> None:
                 else:
                     ui.icon("error", size="20px").classes("coir-negativo")
                     ui.label(f"Não concilia: {d.motivo}").classes("coir-negativo text-sm")
-            with ui.grid(columns="1fr auto auto").classes("coir-folha w-full gap-x-4 gap-y-1"):
-                ui.label("Resumo").classes("coir-campo-rotulo")
-                ui.label("Impresso").classes("coir-campo-rotulo text-right")
-                ui.label("Calculado").classes("coir-campo-rotulo text-right")
-                for c in d.conferencias:
-                    ui.label(c.rotulo)
-                    ui.label(_dinheiro(c.impresso)).classes("coir-numero text-right")
-                    if c.calculado is None:
-                        ui.label("")
-                    else:
-                        classe = "coir-positivo" if c.confere else "coir-negativo"
-                        marca = "✓" if c.confere else "✗"
-                        ui.label(f"{_dinheiro(c.calculado)} {marca}").classes(
-                            f"coir-numero text-right {classe}"
-                        )
-            resumo = d.nota.resumo_bovespa or d.nota.resumo_bmf
-            custos = [c for c in resumo.custos if c.valor] if resumo else []
-            ui.label("Custos (itens zerados omitidos)").classes("coir-campo-rotulo")
-            with ui.grid(columns="1fr auto").classes("coir-folha w-full gap-x-4 gap-y-0 py-2"):
-                for c in custos:
-                    ui.label(c.rotulo).classes("text-sm")
-                    ui.label(_dinheiro(c.valor)).classes("coir-numero text-right text-sm")
+            if d.anteriores:
+                _historico(d.anteriores)
+            _resumo_e_custos(d.nota, d.conferencias)
         with ui.column().classes("min-w-[380px] flex-[1.1] gap-2"):
             _pdf(d, senhas)
     ops: list[tuple[Valor, ...]] = [
@@ -198,6 +187,65 @@ def _detalhe(d: notas.DetalheNota, senhas: list[str]) -> None:
     ]
     ui.label(f"Operações ({len(ops)})").classes("coir-campo-rotulo")
     tabela.grade(COLUNAS_OPS, ops, altura="h-[300px]")
+
+
+def _resumo_e_custos(nota: NotaExtraida, conferencias: Sequence[notas.Conferencia]) -> None:
+    with ui.grid(columns="1fr auto auto").classes("coir-folha w-full gap-x-4 gap-y-1"):
+        ui.label("Resumo").classes("coir-campo-rotulo")
+        ui.label("Impresso").classes("coir-campo-rotulo text-right")
+        ui.label("Calculado").classes("coir-campo-rotulo text-right")
+        for c in conferencias:
+            ui.label(c.rotulo)
+            ui.label(_dinheiro(c.impresso)).classes("coir-numero text-right")
+            if c.calculado is None:
+                ui.label("")
+            else:
+                classe = "coir-positivo" if c.confere else "coir-negativo"
+                marca = "✓" if c.confere else "✗"
+                ui.label(f"{_dinheiro(c.calculado)} {marca}").classes(
+                    f"coir-numero text-right {classe}"
+                )
+    resumo = nota.resumo_bovespa or nota.resumo_bmf
+    custos = [c for c in resumo.custos if c.valor] if resumo else []
+    ui.label("Custos (itens zerados omitidos)").classes("coir-campo-rotulo")
+    with ui.grid(columns="1fr auto").classes("coir-folha w-full gap-x-4 gap-y-0 py-2"):
+        for c in custos:
+            ui.label(c.rotulo).classes("text-sm")
+            ui.label(_dinheiro(c.valor)).classes("coir-numero text-right text-sm")
+
+
+def _negocios(nota: NotaExtraida) -> list[tuple[Valor, ...]]:
+    bovespa: list[tuple[Valor, ...]] = [
+        (n.cv, n.especificacao, n.quantidade, n.preco, n.valor) for n in nota.negocios_bovespa
+    ]
+    bmf: list[tuple[Valor, ...]] = [
+        (n.cv, n.mercadoria, n.quantidade, n.preco, n.valor) for n in nota.negocios_bmf
+    ]
+    return bovespa + bmf
+
+
+def _historico(anteriores: Sequence[notas.VersaoAnterior]) -> None:
+    """Linha discreta na nota alterada; o que ela dizia antes só abre a pedido."""
+    with ui.dialog() as janela, ui.card().classes("w-full max-w-4xl gap-3"):
+        for v in anteriores:
+            ui.label(f"Até {v.alterada_em:%d/%m/%Y}: nota {v.nota.numero} de "
+                     f"{v.nota.data_pregao:%d/%m/%Y}, conta {v.nota.conta}, lida de "
+                     f"{v.arquivo}").classes("coir-titulo text-base")  # fmt: skip
+            _resumo_e_custos(v.nota, v.conferencias)
+            linhas = _negocios(v.nota)
+            ui.label(f"Negócios ({len(linhas)})").classes("coir-campo-rotulo")
+            tabela.grade(COLUNAS_NEGOCIOS, linhas, altura="h-[220px]")
+        ui.button("Fechar", on_click=janela.close).props("flat")
+    ultima = anteriores[0]
+    with ui.row().classes("items-center gap-2 no-wrap"):
+        ui.icon("history", size="20px").classes("coir-subtitulo")
+        ui.label(f"Alterada por reprocessamento em {ultima.alterada_em:%d/%m/%Y}; "
+                 f"mudou: {ultima.mudou}.").classes("coir-subtitulo text-sm")  # fmt: skip
+        rotulo = ("Ver versão anterior" if len(anteriores) == 1
+                  else f"Ver {len(anteriores)} versões anteriores")  # fmt: skip
+        ui.button(rotulo, on_click=janela.open).props("flat dense size=sm").mark(
+            "ver-versao-anterior"
+        )
 
 
 LARGURA_AMPLIADA = 2200  # pixels da página ampliada (nítida no zoom)

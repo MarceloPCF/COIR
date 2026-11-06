@@ -81,10 +81,17 @@ def apurar(
     """Apuração de todos os titulares, mês a mês, até o mês de `ate` (visão por titular). Um
     ativo que o motor não consegue apurar (ex.: falta um evento) fica isolado e os meses que ele
     afeta saem marcados como provisórios; o resto segue."""
-    avisos: list[str] = []
+    avisos: dict[int, list[str]] = defaultdict(list)
     isolados: list[AtivoIsolado] = []
-    movimentos = movimentar(notas, eventos, parametros, ate, avisos=avisos, isolados=isolados)
-    movimentos += movimentos_futuros(notas, ate, avisos)
+    movimentos: list[Movimento] = []
+    for titular in sorted({n.titular for n in notas} | {e.titular for e in eventos}):
+        # um titular por vez: cada aviso fica com o dono, e nada de um interfere no outro
+        do_titular = [n for n in notas if n.titular == titular]
+        aviso = avisos[titular]
+        movimentos += movimentar(do_titular, [e for e in eventos if e.titular == titular],
+                                 parametros, ate, avisos=aviso, isolados=isolados)  # fmt: skip
+        movimentos += movimentos_futuros(do_titular, ate, aviso)
+    isolados.sort(key=lambda i: i.desde)
     movimentos += [m for c in outros_custos if (m := _outro_custo(c)).data <= ate]
     movimentos.sort(key=lambda m: m.data)
     por_mes: dict[tuple[int, int, int], list[Movimento]] = defaultdict(list)
@@ -111,17 +118,20 @@ def apurar(
     anuais: list[IrrfAnual] = []
     for titular in sorted(inicio):
         m, a = _apurar_titular(titular, _meses(inicio[titular], ate), por_mes, irrf, pme,
-                               parametros, calendario, avisos, saldos_iniciais)  # fmt: skip
+                               parametros, calendario, avisos[titular],
+                               saldos_iniciais)  # fmt: skip
         meses += m
         anuais += a
     meses = [_marcar(m, isolados) for m in meses]
     for i in isolados:
         quando = ", ".join(f"{mes:02d}/{ano}" for ano, mes in i.meses) or "nenhum mês"
-        avisos.append(f"{i.desde}: {i.ticker} ficou fora do cálculo a partir desta data "
-                      f"({i.motivo}). Meses incompletos: {quando}. Em geral falta um evento: "
-                      "resolva na tela Eventos.")  # fmt: skip
+        avisos[i.titular].append(
+            f"{i.desde}: {i.ticker} ficou fora do cálculo a partir desta data ({i.motivo}). "
+            f"Meses incompletos: {quando}. Em geral falta um evento: resolva na tela Eventos."
+        )
     return Apuracao(movimentos=tuple(movimentos), meses=tuple(meses), exclusiva=tuple(exclusiva),
-                    irrf_anual=tuple(anuais), avisos=tuple(avisos),
+                    irrf_anual=tuple(anuais),
+                    avisos_titular=tuple((t, a) for t in sorted(avisos) for a in avisos[t]),
                     isolados=tuple(isolados))  # fmt: skip
 
 
