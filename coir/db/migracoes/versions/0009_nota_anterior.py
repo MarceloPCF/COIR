@@ -26,7 +26,7 @@ def upgrade() -> None:
         sa.Column("segmento", sa.String(length=10), nullable=False),
         sa.Column("paginas", sa.Text(), nullable=False),
         sa.Column("json_nota", sa.Text(), nullable=False),
-        sa.Column("motivo", sa.String(length=10), nullable=False),
+        sa.Column("motivo", sa.String(length=12), nullable=False),
         sa.Column("mudou", sa.Text(), nullable=False),
         sa.Column("alterada_em", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(["arquivo_id"], ["arquivo_importado.id"],

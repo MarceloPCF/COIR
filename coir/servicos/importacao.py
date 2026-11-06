@@ -320,25 +320,26 @@ def _remover_sem_releitura(
     rel: RelatorioImportacao,
     agora: datetime,
 ) -> None:
-    """Nota gravada deste arquivo que a releitura não trouxe: tinha lido errado um dado da chave
-    (conta, número, data), e a nota certa entrou com a chave nova; sem remover, ficaria em dobro.
-    Se a página dela foi rejeitada agora, ou o arquivo não deu nota nenhuma, ela fica, com aviso."""
+    """Nota gravada deste arquivo que a releitura não trouxe: se outra nota nova ocupa as páginas
+    dela, tinha lido errado um dado da chave (conta, número, data) e, sem remover, ficaria em
+    dobro. Se nenhuma ocupa (página pulada) ou a página foi rejeitada agora, ela fica, com aviso."""
     chaves = {n.chave for n in novas}
     for nome, registro in registros.items():
-        lidas = any(n.arquivo == nome for n in novas)
         rejeitadas = {p for r in rel.rejeitadas if r.arquivo == nome for p in r.paginas}
         for gravada in repo.notas_do_arquivo(sessao, registro):
             antiga = NotaExtraida.model_validate_json(gravada.json_nota)
             if antiga.chave in chaves:
                 continue
-            if not lidas or rejeitadas & set(antiga.paginas):
+            paginas = set(antiga.paginas)
+            certas = [n for n in novas if n.arquivo == nome and paginas & set(n.paginas)]
+            if not certas or rejeitadas & paginas:
                 rel.avisos.append(f"nota {antiga.numero} de {nome}: a releitura não a confirmou e "
                                   "a gravada foi mantida; veja o motivo na lista")  # fmt: skip
                 continue
             _marcar_alteracao(rel, gravada.conta.titular_id, gravada.data_pregao)
-            for nova in novas:  # a certa pode ser de outro mês ou de outra conta
+            for nova in certas:  # a certa pode ser de outro mês ou de outra conta
                 certa = repo.nota_por_chave(sessao, nova.chave)
-                if nova.arquivo == nome and set(nova.paginas) & set(antiga.paginas) and certa:
+                if certa is not None:
                     _marcar_alteracao(rel, certa.conta.titular_id, certa.data_pregao)
             repo.remover_nota(sessao, gravada, "removida", "conta, número ou data", agora)
             rel.notas_removidas += 1

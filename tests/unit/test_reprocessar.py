@@ -2,6 +2,7 @@
 corretora pode corrigir a nota. A releitura vale sobre o gravado, sem duplicar, com backup antes, e
 o que ela não confirma continua gravado. Sem a opção, nada muda."""
 
+from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -181,17 +182,53 @@ def test_registro_removido_aparece_na_nota_certa(tmp_path: Path, pdf: Path) -> N
     assert versao.nota.numero == "999999"
 
 
+def _duas_notas(numero: str | None = None) -> Callable[[Path], ResultadoExtracao]:
+    """Duas notas no arquivo: a da página do PDF (``numero``: lido errado) e outra na página 2."""
+
+    def extrair(c: Path) -> ResultadoExtracao:
+        res = extrair_pdf(c)
+        [nota] = res.notas
+        cliente = next(iter(res.clientes.values()))
+        res.notas = [nota.model_copy(update={"numero": numero or nota.numero}),
+                     nota.model_copy(update={"numero": "777777", "paginas": (2,)})]  # fmt: skip
+        res.clientes = {n.chave: cliente for n in res.notas}
+        return res
+
+    return extrair
+
+
+def _id_do_numero(banco: Path, numero: str) -> int:
+    with conectar(banco) as fabrica, fabrica() as s:
+        return s.scalars(select(NotaCorretagem.id).where(NotaCorretagem.numero == numero)).one()
+
+
 def test_versao_de_outra_nota_do_arquivo_nao_aparece(tmp_path: Path, pdf: Path) -> None:
     """Mesmo arquivo, páginas diferentes: são notas diferentes."""
     banco = tmp_path / "coir.db"
-
-    def outra_pagina(c: Path) -> ResultadoExtracao:
-        return _lida_errada(c, numero="999999", paginas=(90,))  # type: ignore[arg-type]
-
-    _importar(banco, pdf, outra_pagina)
-    _importar(banco, pdf, reprocessar=True)
+    _importar(banco, pdf, _duas_notas("999999"))
+    rel = _importar(banco, pdf, _duas_notas(), reprocessar=True)
+    assert rel.notas_removidas == 1
     assert [g[2].numero for g in _guardadas(banco)] == ["999999"]
-    assert detalhe(banco, tmp_path, _id_nota(banco)).anteriores == ()
+    assert detalhe(banco, tmp_path, _id_do_numero(banco, "777777")).anteriores == ()
+    numero = extrair_pdf(pdf).notas[0].numero
+    [versao] = detalhe(banco, tmp_path, _id_do_numero(banco, numero)).anteriores
+    assert versao.nota.numero == "999999"
+
+
+def test_pagina_pulada_na_releitura_nao_apaga_a_nota(tmp_path: Path, pdf: Path) -> None:
+    """Sem rejeição e sem outra nota nas páginas dela (ex.: pulada com aviso), a nota fica."""
+    banco = tmp_path / "coir.db"
+    _importar(banco, pdf, _duas_notas())
+
+    def so_a_primeira(c: Path) -> ResultadoExtracao:
+        res = _duas_notas()(c)
+        res.notas = res.notas[:1]
+        return res
+
+    rel = _importar(banco, pdf, so_a_primeira, reprocessar=True)
+    assert rel.notas_removidas == 0 and _guardadas(banco) == []
+    assert any("nota 777777" in a and "a gravada foi mantida" in a for a in rel.avisos)
+    assert len(_notas(banco)) == 2
 
 
 def _pagar(banco: Path, ano: int, mes: int) -> None:

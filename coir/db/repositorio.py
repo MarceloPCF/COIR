@@ -491,7 +491,8 @@ def remover_nota(
 
 def versoes_anteriores(sessao: Session, registro: NotaCorretagem) -> list[NotaAnterior]:
     """O que esta nota já foi, da versão mais recente à mais antiga: as trocadas têm a mesma
-    chave; as removidas (lidas com outra chave) estão nas mesmas páginas do mesmo arquivo."""
+    chave; as removidas (lidas com outra chave) estão nas mesmas páginas do mesmo arquivo, no
+    mesmo segmento."""
     mesma_chave = (
         (NotaAnterior.conta_id == registro.conta_id)
         & (NotaAnterior.numero == registro.numero)
@@ -510,7 +511,12 @@ def versoes_anteriores(sessao: Session, registro: NotaCorretagem) -> list[NotaAn
         for v in sessao.scalars(consulta)
         if (v.conta_id, v.numero, v.data_pregao, v.segmento)
         == (registro.conta_id, registro.numero, registro.data_pregao, registro.segmento)
-        or (v.motivo == "removida" and paginas & set(v.paginas.split(",")))
+        or (
+            v.motivo == "removida"
+            and v.arquivo_id == registro.arquivo_id
+            and v.segmento == registro.segmento
+            and paginas & set(v.paginas.split(","))
+        )
     ]
 
 

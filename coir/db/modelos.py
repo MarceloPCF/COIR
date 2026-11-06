@@ -184,7 +184,7 @@ class NotaAnterior(Base):
     segmento: Mapped[str] = mapped_column(String(10))
     paginas: Mapped[str] = mapped_column(Text)
     json_nota: Mapped[str] = mapped_column(Text)
-    motivo: Mapped[str] = mapped_column(String(10))  # substituida ou removida
+    motivo: Mapped[str] = mapped_column(String(12))  # substituida ou removida
     mudou: Mapped[str] = mapped_column(Text)  # "negócios, resumo financeiro"
     alterada_em: Mapped[datetime]
 
