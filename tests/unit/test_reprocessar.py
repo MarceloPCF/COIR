@@ -2,7 +2,7 @@
 corretora pode corrigir a nota. A releitura vale sobre o gravado, sem duplicar, com backup antes, e
 o que ela não confirma continua gravado. Sem a opção, nada muda."""
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -13,11 +13,12 @@ from typer.testing import CliRunner
 from coir import referencias
 from coir.cli import app
 from coir.config import VAR_DADOS
-from coir.db.modelos import NotaCorretagem, Operacao
+from coir.db.modelos import Conta, DarfPagamento, NotaAnterior, NotaCorretagem, Operacao
 from coir.db.sessao import conectar
 from coir.domain.nota import NotaExtraida
 from coir.parsing.extrair import Rejeitada, ResultadoExtracao, extrair_pdf
 from coir.servicos.importacao import RelatorioImportacao, importar_lista
+from coir.servicos.notas import detalhe
 from tools import notas_ficticias
 
 AGORA = datetime(2026, 11, 5, 12, 0)
@@ -136,6 +137,93 @@ def test_nota_corrigida_pela_corretora_em_outro_pdf(tmp_path: Path, pdf: Path) -
     rel = _importar(banco, outro, reprocessar=True)
     assert rel.notas_substituidas == 1 and not rel.rejeitadas
     assert _notas(banco)[0].arquivo == outro.name
+
+
+def _guardadas(banco: Path) -> list[tuple[str, str, NotaExtraida]]:
+    with conectar(banco) as fabrica, fabrica() as s:
+        return [(v.motivo, v.mudou, NotaExtraida.model_validate_json(v.json_nota))
+                for v in s.scalars(select(NotaAnterior))]  # fmt: skip
+
+
+def _id_nota(banco: Path) -> int:
+    with conectar(banco) as fabrica, fabrica() as s:
+        return s.scalars(select(NotaCorretagem.id)).one()
+
+
+def test_a_versao_anterior_fica_guardada_e_aparece_na_nota(tmp_path: Path, pdf: Path) -> None:
+    banco = tmp_path / "coir.db"
+    _importar(banco, pdf, _quantidade_errada)
+    _importar(banco, pdf, reprocessar=True)
+    [(motivo, mudou, antiga)] = _guardadas(banco)
+    assert (motivo, mudou) == ("substituida", "negócios")
+    assert antiga.negocios_bovespa[0].quantidade == Decimal(999)
+    [versao] = detalhe(banco, tmp_path, _id_nota(banco)).anteriores
+    assert versao.alterada_em == AGORA and versao.mudou == "negócios" and versao.arquivo == pdf.name
+    assert versao.nota == antiga
+
+
+def test_releitura_igual_nao_guarda_versao(tmp_path: Path, pdf: Path) -> None:
+    banco = tmp_path / "coir.db"
+    _importar(banco, pdf)
+    _importar(banco, pdf, reprocessar=True)
+    assert _guardadas(banco) == []
+    assert detalhe(banco, tmp_path, _id_nota(banco)).anteriores == ()
+
+
+def test_registro_removido_aparece_na_nota_certa(tmp_path: Path, pdf: Path) -> None:
+    """Outra chave, mesmas páginas do mesmo arquivo: é a mesma nota lida errada."""
+    banco = tmp_path / "coir.db"
+    _importar(banco, pdf, lambda c: _lida_errada(c, numero="999999"))
+    _importar(banco, pdf, reprocessar=True)
+    [(motivo, mudou, antiga)] = _guardadas(banco)
+    assert (motivo, mudou, antiga.numero) == ("removida", "conta, número ou data", "999999")
+    [versao] = detalhe(banco, tmp_path, _id_nota(banco)).anteriores
+    assert versao.nota.numero == "999999"
+
+
+def test_versao_de_outra_nota_do_arquivo_nao_aparece(tmp_path: Path, pdf: Path) -> None:
+    """Mesmo arquivo, páginas diferentes: são notas diferentes."""
+    banco = tmp_path / "coir.db"
+
+    def outra_pagina(c: Path) -> ResultadoExtracao:
+        return _lida_errada(c, numero="999999", paginas=(90,))  # type: ignore[arg-type]
+
+    _importar(banco, pdf, outra_pagina)
+    _importar(banco, pdf, reprocessar=True)
+    assert [g[2].numero for g in _guardadas(banco)] == ["999999"]
+    assert detalhe(banco, tmp_path, _id_nota(banco)).anteriores == ()
+
+
+def _pagar(banco: Path, ano: int, mes: int) -> None:
+    with conectar(banco) as fabrica, fabrica.begin() as s:
+        titular = s.scalars(select(Conta.titular_id)).first()
+        assert titular is not None
+        pago_em = date(ano, mes, 1)
+        s.add(DarfPagamento(titular_id=titular, ano=ano, mes=mes, data_pagamento=pago_em,
+                            valor_pago=Decimal(10), observacao="",
+                            registrado_em=AGORA))  # fmt: skip
+
+
+def test_aviso_de_darf_paga_do_mes_da_nota_em_diante(tmp_path: Path, pdf: Path) -> None:
+    """Conta o mês da nota e os seguintes (preço médio e prejuízo), não os anteriores."""
+    banco = tmp_path / "coir.db"
+    _importar(banco, pdf, _quantidade_errada)
+    data = _notas(banco)[0].data_pregao
+    _pagar(banco, data.year - 1, data.month)
+    _pagar(banco, data.year, data.month)
+    _pagar(banco, data.year + 1, 1)
+    rel = _importar(banco, pdf, reprocessar=True)
+    assert any(f"2 DARF(s) paga(s) de {data:%m/%Y} em diante" in a for a in rel.avisos)
+    assert any(f"confira a apuração de {data:%m/%Y}" in a for a in rel.avisos)
+
+
+def test_sem_nota_alterada_nao_ha_aviso_de_darf(tmp_path: Path, pdf: Path) -> None:
+    banco = tmp_path / "coir.db"
+    _importar(banco, pdf)
+    data = _notas(banco)[0].data_pregao
+    _pagar(banco, data.year, data.month)
+    rel = _importar(banco, pdf, reprocessar=True)
+    assert not any("DARF" in a for a in rel.avisos)
 
 
 def test_cli_reprocessar(tmp_path: Path, pdf: Path, monkeypatch: pytest.MonkeyPatch) -> None:

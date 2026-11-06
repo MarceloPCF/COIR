@@ -150,6 +150,12 @@ async def test_reprocessar_notas_ja_importadas_pela_tela(tmp_path: Path) -> None
         opcao.set_value(True)
         user.find(marker="importar-pasta").click()
         await user.should_see("notas substituídas", retries=ESPERA)
+        [gravada] = listar(estado.banco, None, None)
+        estado.ano = gravada.data.year
+        await user.open(f"/notas/{gravada.id}")
+        await user.should_see("Alterada por reprocessamento", retries=ESPERA)
+        user.find(marker="ver-versao-anterior").click()
+        await user.should_see("lida de", retries=ESPERA)
 
 
 @pytest.mark.asyncio

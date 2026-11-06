@@ -1,7 +1,9 @@
 """Esquema do banco (SQLAlchemy 2). Mudanças só por migração Alembic (regra 11).
 
 Cadastros: titular, corretora, conta, ativo, ticker_historico, serie_opcao.
-Fatos (imutáveis, regra 7): arquivo_importado, nota_corretagem, nota_custo, operacao.
+Fatos (imutáveis, regra 7): arquivo_importado, nota_corretagem, nota_custo, operacao. Só o
+reprocessamento pedido pelo usuário troca uma nota, e a versão anterior vai para
+nota_anterior.
 
 O ativo tem chave interna; o ISIN é único e opcional (a nota SINACOR não o traz; o pipeline de
 referências da F7 o preenche). O mesmo ticker pode ser de ativos diferentes em épocas diferentes:
@@ -166,6 +168,27 @@ class Operacao(Base):
     total: Mapped[Decimal]
     ativo_objeto: Mapped[str | None] = mapped_column(String(20))
     prazo_termo_dias: Mapped[int | None]
+
+
+class NotaAnterior(Base):
+    """Versão de uma nota que o reprocessamento trocou ou removeu (regra 7): sempre dá para
+    saber o que ela dizia antes, mesmo depois que os backups girarem."""
+
+    __tablename__ = "nota_anterior"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    arquivo_id: Mapped[int] = mapped_column(ForeignKey("arquivo_importado.id"))
+    conta_id: Mapped[int] = mapped_column(ForeignKey("conta.id"))
+    numero: Mapped[str] = mapped_column(String(40))
+    data_pregao: Mapped[date]
+    segmento: Mapped[str] = mapped_column(String(10))
+    paginas: Mapped[str] = mapped_column(Text)
+    json_nota: Mapped[str] = mapped_column(Text)
+    motivo: Mapped[str] = mapped_column(String(10))  # substituida ou removida
+    mudou: Mapped[str] = mapped_column(Text)  # "negócios, resumo financeiro"
+    alterada_em: Mapped[datetime]
+
+    arquivo: Mapped[ArquivoImportado] = relationship()
 
 
 class EventoCorporativo(Base):

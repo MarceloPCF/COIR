@@ -14,7 +14,8 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **Reprocessar notas já importadas**: marque a opção na tela Importar (ou use
   `coir importar --reprocessar`) para ler os PDFs de novo e ficar com a releitura, quando o COIR
   leu algo errado ou a corretora corrigiu a nota. Há backup antes, a lista diz o que mudou e a nota
-  que a releitura não confirma continua como está.
+  que a releitura não confirma continua como está. A versão anterior fica guardada e aparece na
+  tela Notas, e a lista avisa quando há DARF paga do mês da nota em diante.
 - **Corretora ainda sem perfil**: o COIR tenta ler a nota pelos layouts que já conhece. Se os totais
   da nota fecharem, ela entra com um aviso para você conferir; se não, ela é recusada dizendo o que
   não deu certo, e nada dela é gravado.

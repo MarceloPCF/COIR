@@ -50,6 +50,7 @@ class RelatorioImportacao:
     notas_renormalizadas: int = 0  # gravadas antes, com operações regravadas (data/ mudou)
     notas_substituidas: int = 0  # reprocessamento: a releitura mudou o conteúdo da nota
     notas_removidas: int = 0  # reprocessamento: a releitura deu outra chave à nota do arquivo
+    alteradas_desde: dict[int, date] = field(default_factory=dict[int, date])  # por titular
     rejeitadas: list[Rejeitada] = field(default_factory=list)
     avisos: list[str] = field(default_factory=list)
     titulares_criados: list[str] = field(default_factory=list)  # "nome (id N)", nunca o CPF
@@ -158,9 +159,10 @@ def importar_arquivos(
             ops = _normalizar(nota, refs, series, rel)
             if ops is not None:
                 _gravar(sessao, nota, ops, registros[nota.arquivo], contas, ativos, rel,
-                        clientes.get(nota.chave), reprocessar)  # fmt: skip
+                        clientes.get(nota.chave), agora, reprocessar)  # fmt: skip
         if reprocessar:
-            _remover_sem_releitura(sessao, registros, lote.notas, rel)
+            _remover_sem_releitura(sessao, registros, lote.notas, rel, agora)
+            _avisar_darf_paga(sessao, rel)
         # série de opção gravada agora com a raiz antiga: segue a troca do ativo-objeto
         ativos.sincronizar_trocas(refs.trocas)
         rel.titulares_criados = [f"id {t.id}" for t in contas.criados]  # nome: titular listar
@@ -237,6 +239,7 @@ def _gravar(
     ativos: repo.Ativos,
     rel: RelatorioImportacao,
     cliente: Cliente | None,
+    agora: datetime,
     reprocessar: bool = False,
 ) -> None:
     try:  # antes de tudo: titular errado recusa a nota
@@ -268,16 +271,17 @@ def _gravar(
                           f"já importada de {existente.arquivo.nome}, em outro layout; "
                           "ignorada")  # fmt: skip
     elif reprocessar:
-        antiga = NotaExtraida.model_validate_json(existente.json_nota)
-        repo.remover_nota(sessao, existente)
+        mudou = _o_que_mudou(NotaExtraida.model_validate_json(existente.json_nota), nota)
+        _marcar_alteracao(rel, existente.conta.titular_id, existente.data_pregao)
+        repo.remover_nota(sessao, existente, "substituida", mudou, agora)
         repo.gravar_nota(sessao, nota, ops, arquivo, conta, ativos)
         rel.notas_substituidas += 1
         rel.operacoes_gravadas += len(ops)
         rel.gravadas_por_arquivo[nota.arquivo] += 1
         trilha.nota(nota, "substituida", len(ops))
         rel.avisos.append(f"nota {nota.numero} de {nota.arquivo}: substituída pela releitura "
-                          f"(mudou: {_o_que_mudou(antiga, nota)}); confira a apuração do "
-                          "mês")  # fmt: skip
+                          f"(mudou: {mudou}); confira a apuração de "
+                          f"{nota.data_pregao:%m/%Y}")  # fmt: skip
     else:
         motivo = (f"nota {nota.numero}: já importada de {existente.arquivo.nome} com conteúdo "
                   "diferente. Para ficar com esta, importe de novo com \"Reprocessar notas já "
@@ -295,11 +299,26 @@ def _o_que_mudou(antiga: NotaExtraida, nova: NotaExtraida) -> str:
     return ", ".join(sorted({nomes[c] for c in nomes if a[c] != b[c]})) or "conteúdo"
 
 
+def _marcar_alteracao(rel: RelatorioImportacao, titular: int, data: date) -> None:
+    rel.alteradas_desde[titular] = min(data, rel.alteradas_desde.get(titular, data))
+
+
+def _avisar_darf_paga(sessao: Session, rel: RelatorioImportacao) -> None:
+    """Nota alterada muda o mês dela e pode mudar os seguintes (preço médio e prejuízo)."""
+    for titular, desde in rel.alteradas_desde.items():
+        pagas = repo.darfs_pagas_desde(sessao, titular, desde.year, desde.month)
+        if pagas:
+            rel.avisos.append(f"{pagas} DARF(s) paga(s) de {desde:%m/%Y} em diante: a nota "
+                              "alterada pode mudar o imposto desses meses, pelo preço médio "
+                              "e pelo prejuízo. Veja cada mês na tela DARF")  # fmt: skip
+
+
 def _remover_sem_releitura(
     sessao: Session,
     registros: dict[str, ArquivoImportado],
     novas: Sequence[NotaExtraida],
     rel: RelatorioImportacao,
+    agora: datetime,
 ) -> None:
     """Nota gravada deste arquivo que a releitura não trouxe: tinha lido errado um dado da chave
     (conta, número, data), e a nota certa entrou com a chave nova; sem remover, ficaria em dobro.
@@ -316,12 +335,17 @@ def _remover_sem_releitura(
                 rel.avisos.append(f"nota {antiga.numero} de {nome}: a releitura não a confirmou e "
                                   "a gravada foi mantida; veja o motivo na lista")  # fmt: skip
                 continue
-            repo.remover_nota(sessao, gravada)
+            _marcar_alteracao(rel, gravada.conta.titular_id, gravada.data_pregao)
+            for nova in novas:  # a certa pode ser de outro mês ou de outra conta
+                certa = repo.nota_por_chave(sessao, nova.chave)
+                if nova.arquivo == nome and set(nova.paginas) & set(antiga.paginas) and certa:
+                    _marcar_alteracao(rel, certa.conta.titular_id, certa.data_pregao)
+            repo.remover_nota(sessao, gravada, "removida", "conta, número ou data", agora)
             rel.notas_removidas += 1
             trilha.nota(antiga, "removida")
             rel.avisos.append(f"nota {antiga.numero} de {nome}: registro antigo removido, a "
                               "releitura leu outra conta, número ou data; confira a apuração "
-                              "do mês")  # fmt: skip
+                              f"de {antiga.data_pregao:%m/%Y}")  # fmt: skip
 
 
 def arquivos_da_pasta(pasta: Path, rel: RelatorioImportacao, sufixo: str = ".pdf") -> list[Path]:
