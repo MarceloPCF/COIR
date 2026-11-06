@@ -460,6 +460,22 @@ def operacoes_gravadas(registro: NotaCorretagem) -> list[OperacaoExtraida]:
     return [_operacao(registro, o) for o in registro.operacoes]
 
 
+def notas_do_arquivo(sessao: Session, arquivo: ArquivoImportado) -> list[NotaCorretagem]:
+    if arquivo.id is None:  # arquivo novo, ainda sem nenhuma nota
+        return []
+    consulta = select(NotaCorretagem).where(NotaCorretagem.arquivo_id == arquivo.id)
+    return list(sessao.scalars(consulta))
+
+
+def remover_nota(sessao: Session, registro: NotaCorretagem) -> None:
+    """Apaga a nota, os custos e as operações (só no reprocessamento pedido pelo usuário)."""
+    for filho in (*registro.custos, *registro.operacoes):
+        sessao.delete(filho)
+    sessao.flush()
+    sessao.delete(registro)
+    sessao.flush()
+
+
 def substituir_operacoes(
     sessao: Session, registro: NotaCorretagem, ops: Iterable[OperacaoExtraida], ativos: Ativos
 ) -> None:

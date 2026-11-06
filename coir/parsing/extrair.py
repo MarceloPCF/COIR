@@ -95,13 +95,18 @@ def _generica(gramatica: Gramatica, nome: str) -> Callable[[str], Pagina]:
 
 
 def _pelo_layout_padrao(
-    arquivo: str, textos: Sequence[str], desconhecidas: dict[int, str], res: ResultadoExtracao
+    arquivo: str,
+    textos: Sequence[str],
+    desconhecidas: dict[int, CorretoraDesconhecida],
+    res: ResultadoExtracao,
 ) -> None:
     """Corretora sem perfil: tenta cada layout padrão e fica com o que mais notas fechar. Página
     em que nenhum layout achou uma nota mantém a recusa original: pode nem ser nota."""
     nome = nome_generico(textos[i] for i in desconhecidas)
     if nome is None:  # sem identificar a corretora, a conta poderia ser de outra
-        res.rejeitadas += [Rejeitada(arquivo, (i + 1,), m) for i, m in desconhecidas.items()]
+        res.rejeitadas += [
+            Rejeitada(arquivo, (i + 1,), str(erro), erro=erro) for i, erro in desconhecidas.items()
+        ]
         return
     tentativas: list[ResultadoExtracao] = []
     for gramatica in GRAMATICAS_PADRAO:
@@ -111,12 +116,13 @@ def _pelo_layout_padrao(
     melhor = max(tentativas, key=lambda t: (len(t.notas), sum(bool(r.nota) for r in t.rejeitadas)))
     for r in melhor.rejeitadas:
         original = desconhecidas[r.paginas[0] - 1]
-        r.motivo = (
-            f"{original}. O COIR tentou ler pelo layout padrão e não conseguiu tudo certo "
-            f"({r.motivo}): nada desta nota foi gravado"
-            if r.nota
-            else original
-        )
+        if r.nota:
+            r.motivo = (
+                f"{original}. O COIR tentou ler pelo layout padrão e não conseguiu tudo certo "
+                f"({r.motivo}): nada desta nota foi gravado"
+            )
+        else:
+            r.motivo, r.erro = str(original), original
     if melhor.notas:
         melhor.avisos.append(
             f"{arquivo}: corretora sem perfil no COIR ({nome}), lida pelo layout padrão. Os "
@@ -132,9 +138,9 @@ def _ler(
     indices: Sequence[int],
     classifica: Callable[[str], Pagina],
     res: ResultadoExtracao,
-) -> dict[int, str]:
-    """Lê as páginas `indices`; devolve as de corretora desconhecida, com o motivo."""
-    desconhecidas: dict[int, str] = {}
+) -> dict[int, CorretoraDesconhecida]:
+    """Lê as páginas `indices`; devolve as de corretora desconhecida, com o erro."""
+    desconhecidas: dict[int, CorretoraDesconhecida] = {}
     grupos: list[_Grupo] = []
     for i in indices:
         texto = textos[i]
@@ -147,7 +153,7 @@ def _ler(
                 continue
             cab = bovespa.cabecalho(texto, pagina.gramatica)
         except CorretoraDesconhecida as erro:
-            desconhecidas[i] = str(erro)
+            desconhecidas[i] = erro
             continue
         except ExtracaoError as erro:
             res.rejeitadas.append(Rejeitada(arquivo, (i + 1,), str(erro), erro=erro))

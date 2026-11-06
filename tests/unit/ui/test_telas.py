@@ -3,6 +3,7 @@
 import asyncio
 import json
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ from nicegui.elements.upload_files import SmallFileUpload
 from nicegui.testing.user_simulation import user_simulation
 
 from coir import auditoria
+from coir.parsing.extrair import ResultadoExtracao
 from coir.servicos import manutencao
 from coir.servicos.cadastros import adicionar_titular
 from coir.servicos.estado import Estado
@@ -115,6 +117,39 @@ async def test_importar_a_pasta_das_notas(tmp_path: Path) -> None:
         await user.should_see("gravado")
     assert listar(estado.banco, None, None)
     assert [p.name for p in estado.pasta_notas.iterdir()] == [f"{origem.stem}.pdf"]  # sem cópia
+
+
+@pytest.mark.asyncio
+async def test_reprocessar_notas_ja_importadas_pela_tela(tmp_path: Path) -> None:
+    """A nota lida errada na primeira vez é trocada quando a opção está marcada."""
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    estado.pasta_notas.mkdir()
+    origem = notas()[0]
+    (estado.pasta_notas / f"{origem.stem}.pdf").write_bytes(origem.read_bytes())
+    certo = estado.extrator
+    assert certo is not None
+
+    def errado(caminho: Path) -> ResultadoExtracao:
+        res = certo(caminho)
+        [nota] = res.notas
+        negocio = nota.negocios_bovespa[0].model_copy(update={"quantidade": Decimal(999)})
+        res.notas = [nota.model_copy(
+            update={"negocios_bovespa": (negocio, *nota.negocios_bovespa[1:])})]  # fmt: skip
+        return res
+
+    estado.extrator = errado
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/importar")
+        user.find(marker="importar-pasta").click()
+        await user.should_see("notas gravadas", retries=ESPERA)
+        estado.extrator = certo
+        [opcao] = user.find(marker="reprocessar").elements
+        assert isinstance(opcao, ui.checkbox)
+        opcao.set_value(True)
+        user.find(marker="importar-pasta").click()
+        await user.should_see("notas substituídas", retries=ESPERA)
 
 
 @pytest.mark.asyncio
