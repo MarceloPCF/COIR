@@ -3,8 +3,8 @@
 IN RFB 1.585/2015 art. 65 §3º: o day trade casa "pela ordem" a 1ª compra com a 1ª venda, isto
 é, na ordem cronológica dos negócios. A nota não traz o horário; a corretora, que o tem e retém o
 IRRF de 1% (art. 65 §5º), marca os negócios de day trade com "D". O COIR usa a marcação quando ela
-é consistente (quantidade D de compra = de venda = a menor das duas no dia) e, sem marcação ou
-com marcação inconsistente, a ordem impressa (parâmetro day_trade_criterio).
+cobre o day trade do dia (quantidade D de compra e de venda maior ou igual à menor das duas) e, sem
+marcação ou com marcação insuficiente, a ordem impressa (parâmetro day_trade_criterio).
 """
 
 from datetime import date

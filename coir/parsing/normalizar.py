@@ -1,13 +1,16 @@
 """Nota extraída -> operações normalizadas (ticker, mercado, categoria, total).
 
-Sem chute: nome de pregão sem cadastro levanta ReferenciaError com sugestões (rapidfuzz) para o
-usuário cadastrar em data/ativos.csv. Exercício de opção: ativo-objeto = 4 letras do código + dígito
+Sem chute: nome de pregão que nenhuma tabela conhece levanta ReferenciaError dizendo o que fazer
+(atualizar as tabelas; persistindo, mandar a nota pelo Suporte). O nome é procurado nas tabelas
+curadas e no histórico de nomes de pregão da B3, pela data do negócio. Exercício de opção:
+ativo-objeto = 4 letras do código + dígito
 da classe (ON->3, PN->4, ...); sem classe na linha, a classe da abertura da série; por último
 data/opcoes_raiz.csv.
 """
 
 import re
 from collections.abc import Iterable
+from datetime import date
 
 from rapidfuzz import process
 
@@ -17,6 +20,7 @@ from coir.domain.referencias import Referencias
 from coir.erros import ReferenciaError
 from coir.parsing import futuros
 from coir.parsing.numeros import compactar
+from coir.parsing.observacoes import marca_suspeita
 
 RE_TICKER = re.compile(r"^[A-Z0-9]{4}\d{1,2}F?$")
 RE_OPCAO = re.compile(
@@ -80,7 +84,7 @@ def _bovespa(
     mercado = refs.mercados_bovespa.get(n.mercado.upper())
     if mercado is None:
         raise ReferenciaError(f"tipo de mercado {n.mercado!r} sem cadastro em mercados_bovespa.csv")
-    impresso, objeto = _papel(n, mercado, refs, series)
+    impresso, objeto = _papel(n, mercado, refs, series, nota.data_pregao)
     papel = refs.ticker_na_data(impresso, nota.data_pregao)
     return OperacaoExtraida(
         **_comum(nota),  # type: ignore[arg-type]
@@ -98,7 +102,7 @@ def _bovespa(
 
 
 def _papel(
-    n: NegocioBovespa, mercado: str, refs: Referencias, series: dict[str, str]
+    n: NegocioBovespa, mercado: str, refs: Referencias, series: dict[str, str], dia: date
 ) -> tuple[str, str | None]:
     tokens = n.especificacao.split()
     primeiro = tokens[0] if tokens else ""
@@ -107,20 +111,27 @@ def _papel(
         if not m:
             raise ReferenciaError(f"código de opção inválido: {n.especificacao!r}")
         classe = m["classe"] or (tokens[1] if len(tokens) > 1 else None) or series.get(m["serie"])
-        objeto = _ativo_objeto(m["serie"], classe, refs)
+        objeto = _ativo_objeto(m["serie"], classe, refs, dia)
         if mercado.startswith("EXERC"):
             if objeto is None:
                 raise ReferenciaError(f"exercício {primeiro}: ativo-objeto não identificado")
             return objeto, m["serie"]
         return m["serie"], objeto
     if RE_TICKER.match(primeiro):  # BTG imprime o código (às vezes o fracionário "LREN3F" na VISTA)
+        suspeita = next((t for t in tokens[1:] if marca_suspeita(t)), None)
+        if suspeita is not None:
+            raise ReferenciaError(_marca_de_day_trade(n.especificacao, suspeita))
         return _sem_fracionario(primeiro), None
-    return _ticker_por_nome(n.especificacao, refs), None
+    return _ticker_por_nome(n, refs, dia), None
 
 
-def _ativo_objeto(serie: str, classe: str | None, refs: Referencias) -> str | None:
+def _ativo_objeto(serie: str, classe: str | None, refs: Referencias, dia: date) -> str | None:
     if classe and classe in refs.classes:
-        return serie[:4] + refs.classes[classe]
+        objeto = serie[:4] + refs.classes[classe]
+        # série de raiz que continua depois da troca da classe (RAIZ PN -> RAIZ55): o código novo
+        if any(t.ticker_impresso == objeto and dia > t.ate for t in refs.trocas):
+            return refs.ticker_na_data(objeto, date.min)
+        return objeto
     return refs.opcoes_raiz.get(serie[:4])
 
 
@@ -129,19 +140,52 @@ def _sem_fracionario(ticker: str) -> str:
     return ticker[:-1] if ticker.endswith("F") else ticker
 
 
-def _ticker_por_nome(especificacao: str, refs: Referencias) -> str:
+def _procurar(especificacao: str, refs: Referencias, dia: date) -> str | None:
+    """Nome de pregão -> ticker, tirando os sufixos de governança do fim um a um: primeiro as
+    tabelas curadas, depois o histórico da B3 pela data do negócio."""
     chave = compactar(especificacao)
     while True:
         if chave in refs.ativos:
             return refs.ativos[chave]
+        ticker = refs.nome_na_data(chave, dia)
+        if ticker is not None:
+            return ticker
         sufixo = next((s for s in refs.sufixos if chave.endswith(s) and len(chave) > len(s)), None)
         if sufixo is None:
-            break
+            return None
         chave = chave[: -len(sufixo)]
-    sugestoes = [
-        s for s, _, _ in process.extract(compactar(especificacao), list(refs.ativos), limit=3)
-    ]
-    raise ReferenciaError(
-        f"ativo {especificacao!r} sem cadastro em data/ativos.csv "
-        f"(parecidos: {', '.join(refs.ativos[s] + '=' + s for s in sugestoes)})"
+
+
+def _marca_de_day_trade(especificacao: str, marca: str) -> str:
+    return (f"{especificacao!r}: {marca!r} parece marca de day trade que o COIR não conhece. Mande "
+            "a nota pela tela Suporte; a nota não entrou para o day trade não virar operação "
+            "comum")  # fmt: skip
+
+
+def _ticker_por_nome(n: NegocioBovespa, refs: Referencias, dia: date) -> str:
+    achado = _procurar(n.especificacao, refs, dia)
+    # o começo das marcas pode ser o fim do nome: "RAIZEN PNA P", "GOOGLE DRN A" + D
+    for k in range(len(n.observacao), 0, -1):
+        if achado is None and n.observacao[:k].isalnum():
+            achado = _procurar(f"{n.especificacao} {n.observacao[:k]}", refs, dia)
+    tokens = n.especificacao.split()
+    if achado is None and len(tokens) > 1 and len(tokens[-1]) <= 3:
+        if marca_suspeita(tokens[-1]):
+            raise ReferenciaError(_marca_de_day_trade(n.especificacao, tokens[-1]))
+        achado = _procurar(" ".join(tokens[:-1]), refs, dia)  # marca nova, fora da legenda
+    if achado is None:
+        raise ReferenciaError(_sem_cadastro(n.especificacao, refs))
+    return achado
+
+
+def _sem_cadastro(especificacao: str, refs: Referencias) -> str:
+    """Só sugere nome muito parecido: sugestão fraca já levou a procurar o ativo errado."""
+    parecidos = process.extract(compactar(especificacao), list(refs.ativos), limit=3,
+                                score_cutoff=90)  # fmt: skip
+    nomes = ", ".join(refs.ativos[s] + "=" + s for s, _, _ in parecidos)
+    dica = f" Parecidos, não usados: {nomes}."
+    return (
+        f"ativo {especificacao!r} não encontrado nas tabelas do COIR. Atualize as tabelas em "
+        "Configurações e importe de novo; se continuar, mande a nota pela tela Suporte."
+        + (dica if parecidos else "")
     )

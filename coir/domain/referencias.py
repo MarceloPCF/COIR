@@ -10,6 +10,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 RE_SERIE_OPCAO = re.compile(r"^[A-Z0-9]{4}[A-X]\d")
+DIAS_NOME_PROXIMO = 365
 
 
 def opcao_de_compra(serie: str) -> bool:
@@ -64,6 +65,31 @@ class Referencias(BaseModel):
     sufixos: tuple[str, ...]  # sufixos de governança removidos do nome de pregão (compactos)
     trocas: tuple[TrocaTicker, ...] = ()
     instituicoes_b3: dict[str, str] = {}  # prefixo do nome compactado -> corretora (perfil)
+    # histórico da B3: nome compacto -> (primeiro negócio, último negócio, ticker), datas ISO
+    nomes_historicos: dict[str, tuple[tuple[str, str, str], ...]] = {}
+
+    def nome_na_data(self, chave: str, dia: date) -> str | None:
+        """Ticker do nome de pregão em ``dia``. Nome usado por dois tickers: vale o do período; fora
+        de todos, o mais próximo em até um ano (ativo sem negócio naqueles dias). Dois no mesmo
+        período, ou longe de todos: None, sem palpite. Nome de um ticker só vale sempre."""
+        periodos = self.nomes_historicos.get(chave)
+        if not periodos:
+            return None
+        hoje = dia.isoformat()
+        dentro = {t for desde, ate, t in periodos if desde <= hoje <= ate}
+        if len(dentro) > 1:
+            return None
+        if dentro:
+            return next(iter(dentro))
+
+        def distancia(p: tuple[str, str, str]) -> int:
+            inicio, fim = date.fromisoformat(p[0]), date.fromisoformat(p[1])
+            return min(abs((dia - inicio).days), abs((dia - fim).days))
+
+        if len({p[2] for p in periodos}) == 1:
+            return periodos[0][2]
+        perto = min(periodos, key=distancia)
+        return perto[2] if distancia(perto) <= DIAS_NOME_PROXIMO else None
 
     def corretora_b3(self, instituicao: str) -> str | None:
         """Instituição como a B3 escreve ("XP INVESTIMENTOS CCTVM S/A.") -> corretora do COIR."""

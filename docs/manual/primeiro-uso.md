@@ -13,7 +13,7 @@
 3. **Titular**: informe CPF e nome de quem é dono das notas. As notas também criam o titular pelo
    CPF impresso.
 4. **Notas**: importe os PDFs das notas de corretagem (de preferência todo o histórico, desde a
-   primeira compra). Cada nota é conferida ao centavo; as que não fecharem aparecem com o motivo.
+   primeira compra). Cada nota é conferida; centavos de arredondamento viram a linha "Ajuste de arredondamento", e as que não fecharem aparecem com o motivo.
 5. **Planilhas da B3** (opcional, recomendado): em Importar › Planilhas da B3, a movimentação da
    Área do Investidor traz proventos e eventos; o consolidado mensal permite a conciliação.
 6. **Histórico incompleto?** Se as notas começam depois de você já ter ações, informe a custódia

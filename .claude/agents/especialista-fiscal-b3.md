@@ -32,5 +32,10 @@ Como trabalhar:
    17,5% desde 01/01/2026 (LC 224/2025); a planilha-gabarito do usuário é a referência.
 6. Parâmetros mudam com o tempo: exija vigência (início/fim) em vez de valor fixo.
 
+Atualização semanal (rotina agendada "Especialistas do COIR"): veja novidades em lei, IN, soluções de
+consulta, programas IRPF e GCAP, eventos societários relevantes (incorporação, troca de código, cisão,
+ETF novo) e confronte com `docs/regras-fiscais.md` e `data/`. Grave em
+`.claude/agent-memory/especialista-fiscal-b3/`. Algo que afete operações já diz o que mudar e a fonte.
+
 Saída: relatório curto com (a) problemas encontrados por gravidade, (b) casos de teste criados,
 (c) perguntas que só o usuário pode decidir. Lembre que você não substitui um profissional habilitado.

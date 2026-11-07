@@ -601,17 +601,16 @@ def propostas(
     perto = timedelta(days=JANELA)
 
     def mesma(p: Proposta, m: Proposta) -> bool:
-        return (
-            p.dados.tipo is m.dados.tipo and p.codigo == m.codigo and abs(p.data - m.data) <= perto
-        )
+        janela = (timedelta(days=JANELA_RESGATE) if p.dados.tipo is TipoEvento.REDUCAO_CAPITAL
+                  else perto)  # fmt: skip
+        return (p.dados.tipo is m.dados.tipo and p.codigo == m.codigo
+                and abs(p.data - m.data) <= janela)  # fmt: skip
 
     # ignorou a proposta da movimentação: a do pacote para o mesmo evento também fica ignorada
     do_pacote = [replace(p, situacao="ignorada") if p.situacao == "pendente" and any(
         mesma(p, m) and m.situacao == "ignorada" for m in saida) else p
         for p in do_pacote]  # fmt: skip
-    repetidas = [m for m in saida if any(
-        p.dados.tipo is m.dados.tipo and p.codigo == m.codigo and abs(p.data - m.data) <= perto
-        for p in do_pacote)]  # fmt: skip
+    repetidas = [m for m in saida if any(mesma(p, m) for p in do_pacote)]
     lista = sorted([*do_pacote, *(m for m in saida if m not in repetidas)],
                    key=lambda p: p.data, reverse=True)  # fmt: skip
     trilha.propostas(titular, lista)
@@ -624,7 +623,11 @@ TIPOS_PACOTE = {
     "GRUPAMENTO": TipoEvento.GRUPAMENTO,
     "BONIFICACAO": TipoEvento.BONIFICACAO,
     "SUBSCRICAO": TipoEvento.SUBSCRICAO,
+    # dinheiro junto de uma incorporação: "fator" é o % do custo que sai das ações recebidas,
+    # "preco" é o dinheiro por ação e "data_subscricao" é o pagamento (PETZ3 -> AUAU3, resgate)
+    "REDUCAO_CAPITAL": TipoEvento.REDUCAO_CAPITAL,
 }
+JANELA_RESGATE = 31  # dias entre a data ex e o pagamento em dinheiro que a B3 mostra
 AJUSTA_SERIE = {t: t for t in (TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO,
                                 TipoEvento.BONIFICACAO)}  # fmt: skip
 GRUPAMENTO_EXTREMO = Decimal("0.01")  # 100 viram 1 ou mais forte
@@ -645,6 +648,15 @@ def _posicoes(movs: list[Movimento]) -> dict[tuple[int, int], list[tuple[date, D
     for m in movs:
         if m.conta is not None and m.ativo is not None:
             saida[(m.conta, m.ativo)].append((m.data, m.quantidade_apos))
+    return saida
+
+
+def _custos(movs: list[Movimento]) -> dict[tuple[int, int], list[tuple[date, Decimal]]]:
+    """(conta, ativo) -> [(data, custo total depois)], na visão por conta, em ordem."""
+    saida: dict[tuple[int, int], list[tuple[date, Decimal]]] = defaultdict(list)
+    for m in movs:
+        if m.conta is not None and m.ativo is not None:
+            saida[(m.conta, m.ativo)].append((m.data, m.custo_apos))
     return saida
 
 
@@ -681,6 +693,7 @@ def _do_pacote(
         limite = erro.data
         movs = movimentar(notas, evs, fiscais.parametros, limite - timedelta(days=1), Visao.CONTA)
     historico = _posicoes(movs)
+    custos = _custos(movs)
     inicio = min((m.data for m in movs), default=date.max)
     tickers_serie = {m.ativo: m.ticker for m in movs if m.tipo is TipoAtivo.OPCAO and m.ativo}
     objeto_da_serie = {
@@ -716,7 +729,11 @@ def _do_pacote(
             if not q or conta not in nome_conta:
                 continue
             serie = tickers_serie.get(ativo)
-            if ativo in ativos and serie is None:
+            if ativo in ativos and serie is None and tipo is TipoEvento.REDUCAO_CAPITAL:
+                dados, nota = _resgate(ev, ticker, conta, q, _na_data(custos[(conta, ativo)],
+                                                                      data_com), fator, data_ex,
+                                       por_isin)  # fmt: skip
+            elif ativo in ativos and serie is None:
                 dados, nota = _evento_acao(ev, tipo, cisao, ticker, conta, q, fator, data_ex,
                                            por_isin)  # fmt: skip
             elif (serie is not None
@@ -732,7 +749,8 @@ def _do_pacote(
                                    .encode()).hexdigest()  # fmt: skip
             if chave in ignoradas:
                 situacao = "ignorada"
-            elif _ja_lancado(s, refs, dados.ticker, dados.data, lancados):
+            elif _ja_lancado(s, refs, dados.ticker, dados.data, lancados,
+                             troca_conta=tipo is not TipoEvento.REDUCAO_CAPITAL):  # fmt: skip
                 situacao = "lançado"
             else:
                 situacao = "pendente"
@@ -754,6 +772,33 @@ def _fracao(total: Decimal) -> tuple[Decimal, str]:
     nota = (f"fração de {total - inteiro} vai a leilão: lance o leilão de fração quando for "
             "creditado") if total != inteiro else ""  # fmt: skip
     return inteiro, nota
+
+
+def _resgate(
+    ev: dict[str, str], ticker: str, conta: int, q: Decimal, custo: Decimal, parte: Decimal,
+    data_ex: date, por_isin: dict[str, str],
+) -> tuple[DadosEvento | None, str]:  # fmt: skip
+    """Dinheiro junto de uma incorporação: a parte do custo que era da ação resgatada sai das ações
+    recebidas, sem resultado na bolsa (SC Cosit 37/2020; parecer do especialista de 07/11/2026). O
+    valor do evento é esse custo, nunca o dinheiro. O resgate é alienação fora de bolsa."""
+    if q <= 0:
+        return None, ""
+    destino = por_isin.get(ev["isin_emitido"], ticker)
+    valor = (custo * parte).quantize(Decimal("0.01"), ROUND_HALF_UP)
+    dinheiro = (q * Decimal(ev["preco"] or 0)).quantize(Decimal("0.01"), ROUND_HALF_UP)
+    pago = date.fromisoformat(ev["data_subscricao"]) if ev["data_subscricao"] else data_ex
+    nota = (
+        f"o valor proposto é a parte do custo que sai de {destino} ({ev['fator']}%), não o "
+        f"dinheiro. O dinheiro (R$ {dinheiro}, pago em {pago:%d/%m/%Y}) é resgate de ações: menos "
+        "este custo, dá "
+        "ganho ou perda fora da bolsa, no programa GCAP da Receita. O COIR não calcula esse "
+        "resultado, a perda não compensa ganhos da bolsa, e há isenção até R$ 35 mil no mês"
+    )
+    return DadosEvento(
+        tipo=TipoEvento.REDUCAO_CAPITAL, data=data_ex, conta=conta, ticker=destino, cv="V",
+        quantidade=None, valor=valor, origem="b3",
+        observacao=f"pacote público da B3: parte do custo na incorporação ({ev['fator']}%)",
+    ), nota  # fmt: skip
 
 
 def _evento_acao(
@@ -818,12 +863,13 @@ def _ajuste_serie(
 
 def _ja_lancado(
     s: Session, refs: Referencias, ticker: str, dia: date,
-    lancados: list[tuple[int, int | None, date]],
+    lancados: list[tuple[int, int | None, date]], troca_conta: bool = True,
 ) -> bool:  # fmt: skip
     """Há evento do ativo (de origem ou recebido) a até JANELA dias, ou troca de código em
-    data/trocas_ticker.csv (ex.: incorporação JSLG3 -> SIMH3 tratada como troca)."""
+    data/trocas_ticker.csv (ex.: incorporação JSLG3 -> SIMH3 tratada como troca). A repartição do
+    custo de uma incorporação com dinheiro (``troca_conta=False``) vem junto com a troca."""
     perto = timedelta(days=JANELA)
-    if any(t.ticker == ticker and abs(t.ate - dia) <= perto for t in refs.trocas):
+    if troca_conta and any(t.ticker == ticker and abs(t.ate - dia) <= perto for t in refs.trocas):
         return True
     ativo = repo.ativo_existente(s, ticker, dia)
     if ativo is None:  # código atual de ativo que se chamava outra coisa na data
@@ -843,6 +889,12 @@ def ignorar(banco: Path, titular: int, chave: str, agora: datetime, sim: bool = 
             s.add(PropostaIgnorada(titular_id=titular, chave=chave, ignorada_em=agora))
         elif not sim and registro is not None:
             s.delete(registro)
+
+
+def ignoradas(banco: Path, titular: int) -> set[str]:
+    with conectar(banco) as fabrica, fabrica() as s:
+        return set(s.scalars(select(PropostaIgnorada.chave)
+                             .where(PropostaIgnorada.titular_id == titular)))  # fmt: skip
 
 
 def contas_do_titular(banco: Path, titular: int) -> dict[int, str]:

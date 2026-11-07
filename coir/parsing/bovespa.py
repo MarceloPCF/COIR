@@ -19,6 +19,7 @@ from coir.domain.nota import (
     ResumoBovespa,
 )
 from coir.erros import ExtracaoError
+from coir.parsing import observacoes
 from coir.parsing.numeros import (
     RE_DECIMAL,
     RE_INTEIRO,
@@ -50,9 +51,6 @@ RE_NEGOCIO = {
     "agora": re.compile(_INICIO + _FIM_AGORA + r"\s*$"),
 }
 RE_PRAZO = re.compile(r"^(?P<prazo>\d{2}/\d{2}|\d{1,4})\s+")
-# marcas de observação (*) vistas nas notas: H home broker, @ contraparte, D day trade, # negócio
-# direto, 2 corretora na contraparte, 8 liquidação institucional (ex.: "H#", "D#2", "@#")
-RE_OBS = re.compile(r"^(?=.)H?@?D?#?[28]?$")
 RE_LIQUIDO = re.compile(
     rf"L\s*[íi]\s*q\s*u\s*i\s*d\s*o\s*p\s*a\s*r\s*a\s*(?P<data>\d{{2}}/\d{{2}}/\d{{4}})\s*"
     rf"(?P<valor>{RE_DECIMAL})\s*\|?\s*(?P<dc>[DC])?"
@@ -68,6 +66,9 @@ RE_ISS_AGORA = re.compile(rf"ISS\s*\([^)]*\)\s*(?P<valor>{RE_DECIMAL})(?:\s*(?P<
 RE_SO_VALOR = re.compile(rf"^\s*{RE_MONTANTE.pattern}\s*$")
 RE_CONTA = re.compile(r"^\s*(?P<codigo>\d{1,4}-\d)\s+(?P<conta>\d+)\s*$")
 RE_CONTA_AGORA = re.compile(r"^\s*(?P<conta>\d+)-(?P<dv>\d)\s+\D")
+# preço cotado por lote: valor = quantidade x preço / fator (RAIZ55: 100; lote de mil: "*")
+FATORES_COTACAO = (1, 10, 100, 1000)
+CENTAVO = Decimal("0.01")
 
 # (rótulos aceitos, categoria, grupo); o primeiro rótulo que tiver valor na nota vale
 CUSTOS_COMUNS: tuple[tuple[tuple[str, ...], CategoriaCusto, GrupoCusto], ...] = (
@@ -187,6 +188,7 @@ def conta(texto: str, variante: Variante) -> str:
 # ---------------------------------------------------------------------------------- negócios
 def negocios(texto: str, variante: Variante) -> list[NegocioBovespa]:
     saida: list[NegocioBovespa] = []
+    marcas = observacoes.legenda(texto)
     for linha in texto.splitlines():
         if "BOVESPA" not in linha:
             continue
@@ -195,11 +197,37 @@ def negocios(texto: str, variante: Variante) -> list[NegocioBovespa]:
             if re.match(r"^\s*(?:\d-)?BOVESPA\s+[CV]\s", linha):
                 raise ExtracaoError(f"linha de negócio fora do padrão: {linha.strip()!r}")
             continue
-        saida.append(_negocio(m))
+        saida.append(_negocio(m, marcas))
     return saida
 
 
-def _negocio(m: re.Match[str]) -> NegocioBovespa:
+def _confere_valor(
+    quantidade: Decimal, preco: Decimal, valor: Decimal, lote_mil: bool, especificacao: str
+) -> None:
+    """O valor impresso prevalece: quantidade x preço só confere a leitura. Vale o valor exato
+    (arredondado ou truncado ao centavo) e também a diferença que o arredondamento do preço
+    explica, como no preço médio de execuções agregadas (3 a 17,45 impressos com valor 52,34). O
+    fator é o do lote de cotação (RAIZ55 cota por 100; a Ágora marca o lote de mil com "*")."""
+    fatores = (1000,) if lote_mil else FATORES_COTACAO
+    for fator in fatores:
+        bruto = quantidade * preco / fator
+        if valor in {bruto.quantize(CENTAVO, ROUND_HALF_UP), bruto.quantize(CENTAVO, ROUND_DOWN)}:
+            return
+    expoente = preco.as_tuple().exponent
+    casas = -expoente if isinstance(expoente, int) else 0
+    meio_tick = Decimal(5) / 10 ** (casas + 1)
+    # só o fator conhecido da linha: lote com o valor exato acima já passou, e fator solto com folga
+    # esconderia preço ou quantidade lidos errado
+    fator = fatores[0]
+    if abs(quantidade * preco / fator - valor) <= quantidade * meio_tick / fator + CENTAVO:
+        return
+    raise ExtracaoError(
+        f"negócio {especificacao}: quantidade x preço = {quantidade * preco / fatores[0]} difere "
+        f"do valor {valor} além do que o arredondamento do preço explica"
+    )
+
+
+def _negocio(m: re.Match[str], marcas: frozenset[str] = frozenset()) -> NegocioBovespa:
     mercado = re.sub(r"\s+", " ", m["mercado"]).strip()
     meio = m["meio"].strip()
     prazo = ""
@@ -207,20 +235,10 @@ def _negocio(m: re.Match[str]) -> NegocioBovespa:
     if p and (mercado != "VISTA" or "/" in p["prazo"]):  # VISTA "01/00" (XP 2017) é ruído
         prazo = p["prazo"] if mercado != "VISTA" else ""
         meio = meio[p.end() :]
-    tokens = meio.split()
-    obs = ""
-    if len(tokens) > 1 and RE_OBS.match(tokens[-1]):
-        obs = tokens.pop()
-    lote_mil = "*" in tokens
-    especificacao = " ".join(t for t in tokens if t != "*")
+    tokens, obs, lote_mil = observacoes.separar(meio.split(), marcas)
+    especificacao = " ".join(tokens)
     quantidade, preco, valor = decimal_br(m["qtd"]), decimal_br(m["preco"]), decimal_br(m["valor"])
-    bruto = quantidade * preco / (1000 if lote_mil else 1)
-    # valor impresso ao centavo: arredondado ou truncado (a Ágora trunca no lote de mil)
-    centavo = Decimal("0.01")
-    if valor not in {bruto.quantize(centavo, ROUND_HALF_UP), bruto.quantize(centavo, ROUND_DOWN)}:
-        raise ExtracaoError(
-            f"negócio {especificacao}: quantidade x preço = {bruto} difere do valor {valor}"
-        )
+    _confere_valor(quantidade, preco, valor, lote_mil, especificacao)
     return NegocioBovespa(
         cv=m["cv"],  # type: ignore[arg-type]
         mercado=mercado,

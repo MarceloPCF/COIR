@@ -141,6 +141,28 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         return
     form = _Form(_vazio(contas, estado.fim_do_ano()))
     todas = {"ver": False}
+    secao_saidas = ui.column().classes("w-full gap-1")
+
+    def desenhar_saidas() -> None:
+        secao_saidas.clear()
+        with secao_saidas:
+            for saiu in estado.ativos_que_sairam():
+                with ui.row().classes("w-full items-center gap-2 flex-nowrap"):
+                    ui.label(saiu.texto).classes("coir-subtitulo text-sm grow").mark(
+                        "ativo-que-saiu"
+                    )
+
+                    async def dispensar(chave: str = saiu.chave) -> None:
+                        await run.io_bound(eventos.ignorar, estado.banco, titular, chave,
+                                           estado.agora())  # fmt: skip
+                        ao_mudar()  # o sino do topo conta o aviso
+                        desenhar_saidas()
+
+                    ui.button("Ignorar", on_click=dispensar).props("flat dense").mark(
+                        "ignorar-saida"
+                    )
+
+    desenhar_saidas()
 
     secao_propostas = ui.column().classes("w-full gap-2")
     with ui.row().classes("w-full items-start gap-4 flex-nowrap"):

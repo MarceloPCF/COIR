@@ -23,7 +23,7 @@ from coir.db.modelos import (
     Titular,
 )
 from coir.domain.cpf import cpf_valido, so_digitos
-from coir.domain.nota import Cliente, NotaExtraida, OperacaoExtraida, Segmento
+from coir.domain.nota import ROTULO_AJUSTE, Cliente, NotaExtraida, OperacaoExtraida, Segmento
 from coir.domain.referencias import RE_SERIE_OPCAO, TrocaTicker
 from coir.erros import BancoError, ImportacaoError
 
@@ -355,7 +355,9 @@ def _sem_layout(nota: NotaExtraida) -> dict[str, object]:
         if isinstance(resumo, dict):
             custos: list[dict[str, object]] = resumo["custos"]  # type: ignore[assignment]
             resumo["custos"] = sorted(
-                (str(c["categoria"]), str(c["valor"])) for c in custos if c["valor"] != 0
+                (str(c["categoria"]), str(c["valor"]))
+                for c in custos
+                if c["valor"] != 0 and c["rotulo"] != ROTULO_AJUSTE
             )
     return dados
 

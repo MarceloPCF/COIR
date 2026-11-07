@@ -17,7 +17,9 @@ parâmetros fiscais com vigência). Nunca colocar aqui dados pessoais: esses fic
 | `pacote.json` | formato do esquema de `data/` e data da última coleta pública (o app só usa pacote baixado do mesmo formato e mais novo) | `formato`, `data` |
 | `instrumentos_b3.csv` | **gerado**: ações, units, BDR, ETF e fundos do Cadastro de Instrumentos da B3, com ISIN; histórico (nunca apaga) | `ticker`, `isin`, `categoria`, `especificacao`, `emissor`, `nome`, `visto_desde`, `visto_ate` |
 | `ativos_b3.csv` | **gerado**: nome de pregão da companhia + classe → ticker (por baixo de `ativos.csv`) | `nome_pregao`, `ticker` |
-| `tipos_ativo_b3.csv` | **gerado**: UNIT, BDR, ETF e FII pela categoria da B3 (por baixo de `tipos_ativo.csv`; fundo só com "imobiliário"/"Fiagro" no nome) | `ticker`, `tipo`, `observacao` |
+| `tipos_ativo_b3.csv` | **gerado**: UNIT, BDR, ETF, ETF_RF, FII e ação de lote especial pela categoria da B3 (por baixo de `tipos_ativo.csv`; fundo só com "imobiliário"/"Fiagro" no nome); ticker que saiu do cadastro, pelo COTAHIST | `ticker`, `tipo`, `observacao` |
+| `nomes_pregao_b3.csv` | **gerado**: nome de pregão como a nota imprime -> ticker e período, do COTAHIST (2008 em diante; a coleta semanal soma o ano corrente) e da lista de ETF de renda fixa da B3; sem os sufixos do fim; usado depois de `ativos.csv`, pela data do negócio; nunca apaga | `nome_pregao`, `ticker`, `desde`, `ate`, `tipo` |
+| `saidas_b3.csv` | o que houve com ativo que parou de negociar (incorporação, OPA...), curada, com fonte: o aviso da tela Eventos usa; não muda custo nem quantidade | `ticker`, `ultimo_negocio`, `situacao`, `destino`, `relacao`, `dinheiro_por_acao`, `confianca`, `fonte`, `observacao` |
 | `opcoes_raiz_b3.csv` | **gerado**: raiz de opção → ativo-objeto, só raiz com um objeto (por baixo de `opcoes_raiz.csv`) | `raiz`, `ticker` |
 | `eventos_b3.csv` | **gerado**: desdobramentos, grupamentos (fator = razão), bonificações e subscrições (fator em %), cisões com o ISIN emitido; data com; nunca apaga | `emissor`, `isin`, `tipo`, `fator`, `data_com`, `aprovado_em`, `isin_emitido`, `preco`, `periodo`, `data_subscricao` |
 | `emissores_b3.csv` | **gerado**: CNPJ e razão social de cada emissor (companhias e fundos FII, Fiagro e ETF da B3), para o Bens e Direitos do IRPF; histórico por emissor e CNPJ (o CNPJ de um fundo pode mudar; vale o visto por último); nunca apaga | `emissor`, `cnpj`, `razao_social`, `tipo`, `visto_desde`, `visto_ate` |
@@ -32,9 +34,10 @@ programa ainda não saiu fica com `provisorio: true` (o relatório avisa). Acomp
 COIR, não o pacote público: exercício novo pede revisão das fichas no código.
 
 Os arquivos **gerados** saem do pipeline público `uv run python -m tools.referencias atualizar`
-(GitHub Actions toda segunda, `.github/workflows/referencias.yml`): só fontes públicas, sem login
+(GitHub Actions, uma vez por semana no primeiro dia com pregão; se falhar, abre uma issue e tenta no
+dia seguinte; `.github/workflows/referencias.yml`): só fontes públicas, sem login
 (Cadastro de Instrumentos, empresas, proventos e fundos listados da B3, série 4390 do BCB). A coleta abre um PR com o
-resumo (ativos novos, trocas de ticker candidatas pelo ISIN, eventos novos, Selic); o merge publica o
+resumo (ativos que saíram do cadastro, ativos novos, trocas de ticker pelo ISIN, eventos novos, Selic); o merge publica o
 release `referencias-AAAA.MM.DD`, que o app oferece em Configurações. Não edite os gerados à mão:
 corrija na tabela curada correspondente, que vale por cima.
 
@@ -43,7 +46,7 @@ tickers ficaram com o primeiro, como a v2 fazia: `B TECH EQI ON` (JBDU3; descart
 (JBDU4; descartado BLUT4) e `WILSON SONS ON` (WSON33; descartado PORT3). Corrigido: `WEG ON ED` → WEGE3
 (a v2 tinha WEGE4).
 
-Ativo sem cadastro não é chutado: a extração falha com sugestões de nomes parecidos para incluir em `ativos.csv`.
+Ativo sem cadastro não é chutado: a extração falha dizendo para atualizar as tabelas e, se continuar, mandar a nota pelo Suporte.
 
 `selic_mensal.csv`: série 4390 do Banco Central (SGS), a mesma da consulta Selic do Sicalc. Para
 atualizar, baixar `https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=csv` e manter só os

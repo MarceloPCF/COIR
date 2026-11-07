@@ -5,14 +5,20 @@ name: Referências públicas (coleta semanal)
 # O mantenedor revisa; o merge publica o pacote (publicar-referencias.yml).
 # Pré-requisito: Settings > Actions > General > "Allow GitHub Actions to create and approve pull
 # requests".
+#
+# Roda em todo dia útil, mas coleta uma vez por semana: o primeiro dia com pregão da semana faz a
+# coleta, e os seguintes só agem se ela ainda não deu certo. Falhou: abre uma issue (o GitHub avisa
+# por e-mail), e o dia seguinte tenta de novo. Deu certo: a issue é fechada.
 
 on:
   schedule:
-    - cron: "0 9 * * 1"  # segunda, 06:00 de Brasília
+    - cron: "0 9 * * 1-5"  # dias úteis, 06:00 de Brasília
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: write
+  issues: write
   pull-requests: write
 
 concurrency:
@@ -23,9 +29,58 @@ env:
   PYTHONUTF8: "1"
 
 jobs:
-  coletar:
+  decidir:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 10
+    outputs:
+      coletar: ${{ steps.decisao.outputs.coletar }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: main
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          version: "0.12.23"
+
+      - name: Precisa coletar hoje?
+        id: decisao
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENTO: ${{ github.event_name }}
+        run: |
+          if [ "$EVENTO" = "workflow_dispatch" ]; then
+            echo "Pedido à mão: coleta."
+            echo "coletar=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          situacao=0
+          uv run --no-project --python 3.13 python -m tools.referencias pregao || situacao=$?
+          if [ "$situacao" = "10" ]; then
+            echo "Dia sem pregão: fica para o próximo dia útil."
+            echo "coletar=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          elif [ "$situacao" != "0" ]; then
+            echo "Erro ao consultar o calendário (código $situacao)."
+            exit "$situacao"
+          fi
+          segunda=$(date -u -d "$(date -u +%F) -$(( $(date -u +%u) - 1 )) days" +%F)
+          for run in $(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/referencias.yml/runs?created=%3E%3D$segunda&per_page=20" --jq '.workflow_runs[].id'); do
+            feita=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs" --jq '[.jobs[] | select(.name == "coletar" and .conclusion == "success")] | length')
+            if [ "$feita" != "0" ]; then
+              echo "A coleta desta semana já deu certo (execução $run)."
+              echo "coletar=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "coletar=true" >> "$GITHUB_OUTPUT"
+
+  coletar:
+    needs: decidir
+    if: needs.decidir.outputs.coletar == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -76,3 +131,32 @@ jobs:
           gh pr create --base main --head "$ramo" \
             --title "Referências públicas: coleta de $dia" \
             --body-file "$RUNNER_TEMP/resumo.md"
+
+  alarme:
+    needs: [decidir, coletar]
+    # avisa também se a própria decisão quebrou: senão a coleta para sem ninguém saber
+    if: always() && (needs.decidir.result == 'failure' || needs.decidir.outputs.coletar == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Abrir ou fechar a issue da coleta
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULTADO: ${{ needs.decidir.result == 'failure' && 'failure' || needs.coletar.result }}
+          EXECUCAO: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          titulo="Coleta de referências públicas falhou"
+          aberta=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$titulo\" in:title" --json number --jq '.[0].number // empty')
+          if [ "$RESULTADO" = "success" ]; then
+            if [ -n "$aberta" ]; then
+              gh issue close "$aberta" --repo "$GITHUB_REPOSITORY" --comment "A coleta voltou a funcionar: $EXECUCAO"
+            fi
+            exit 0
+          fi
+          texto="Resultado: $RESULTADO em $(date -u +%F). Veja o log: $EXECUCAO. O próximo dia útil tenta de novo; sem a coleta, as tabelas do COIR ficam paradas."
+          if [ -n "$aberta" ]; then
+            gh issue comment "$aberta" --repo "$GITHUB_REPOSITORY" --body "$texto"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$titulo" --body "$texto"
+          fi

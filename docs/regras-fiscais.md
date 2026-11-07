@@ -14,7 +14,7 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R5 | Prejuízo de mês isento continua compensável | Parâmetro `prejuizo_mes_isento_compensavel = true` | Lei 8.981/1995 art. 72 §8º; Manual MIR 2026; decisão do usuário (14/10/2026) | A |
 | R6 | IRRF 0,005% s/ vendas comuns (dispensado se ≤ R$ 1; não incide no exercício nem em PME) e 1% s/ ganho de DT | Ler da nota; os dois abatem o imposto total do mês (o de DT consumido primeiro); saldo aos meses seguintes do ano; em dezembro, o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT: divergência de orientação registrada | M |
 | R7 | Custo de aquisição inclui corretagem, emolumentos e taxas; na venda os custos reduzem a alienação | Rateio proporcional ao valor da operação na nota | IN RFB 1.585/2015 | A |
-| R8 | Bonificação: soma quantidade com custo atribuído; desdobramento/grupamento: só quantidade; redução de capital com restituição reduz o custo. Incorporação/fusão/cisão/conversão: o custo das ações entregues vai para as recebidas na proporção da assembleia, sem resultado (cisão: percentual divulgado pela companhia, sobre o custo de antes do evento; sem percentual, bloqueia); incorporação de ações (art. 252): custo mantido, com aviso da divergência da RFB (parâmetro `incorporacao_acoes_tratamento`); ajuste de série de opção pela B3: sem efeito fiscal (código e quantidade mudam, custo e vencimento ficam); fração vendida em leilão: alienação pelo PM no mês do crédito, entra no limite de isenção (parâmetro `leilao_fracao_isentavel`). Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); Lei 6.404 arts. 227-229 e 252 | A |
+| R8 | Bonificação: soma quantidade com custo atribuído; desdobramento/grupamento: só quantidade; redução de capital com restituição reduz o custo. Dinheiro junto de incorporação, por resgate de ações (PETZ3 -> AUAU3): o custo é repartido pelo valor atribuído pela companhia, a parte da ação resgatada sai por `REDUCAO_CAPITAL` na data ex (o valor é esse custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026). Incorporação/fusão/cisão/conversão: o custo das ações entregues vai para as recebidas na proporção da assembleia, sem resultado (cisão: percentual divulgado pela companhia, sobre o custo de antes do evento; sem percentual, bloqueia); incorporação de ações (art. 252): custo mantido, com aviso da divergência da RFB (parâmetro `incorporacao_acoes_tratamento`); ajuste de série de opção pela B3: sem efeito fiscal (código e quantidade mudam, custo e vencimento ficam); fração vendida em leilão: alienação pelo PM no mês do crédito, entra no limite de isenção (parâmetro `leilao_fracao_isentavel`). Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A |
 | R9 | Exercício de opções: prêmio integra custo (titular de call) / valor de venda (lançador de call); casos simétricos para put | Vincular opção, ativo-objeto e negócio de exercício; 4 casos com exemplo. A nota traz só o código da opção + "E" (ex.: KLBNO193E), às vezes + classe; ativo-objeto = 4 letras + classe (ON→3, PN→4, PNA→5, PNB→6, UNT→11); sem classe: classe da abertura da série, depois opcoes.csv | IN RFB 1.585/2015 | M |
 | R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A |
 | R11 | Futuros: resultado no encerramento ou liquidação da posição = soma dos ajustes desde a abertura − custos; encerramento parcial pelo preço médio; day trade no dia | Ajustes da posição aberta acumulados por contrato e realizados no encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A |
@@ -60,10 +60,12 @@ da F4 trata como divergência conhecida, nunca ajusta o motor para bater.
   (14/10/2026): data da liquidação = data do pregão + prazo do contrato; os custos da nota de compra
   (corretagem, emolumentos, taxa de termo) entram no custo das ações liquidadas. Validar com o
   `especialista-fiscal-b3` na F4.
-- **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte, retida pelo administrador na venda
-  com lucro. Registrar a posição e o custo, mas fora da apuração mensal e do DARF; vai para a DIRPF
-  como rendimento de tributação exclusiva. Precisa de tipo de ativo próprio em `data/` (F4, confirmar
-  alíquotas e base com o `especialista-fiscal-b3`).
+- **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte (Lei 13.043/2014 art. 2º §4º). Na
+  venda em bolsa, retém a instituição que paga o ganho ao investidor; o administrador só retém no
+  resgate e na distribuição (art. 4º I e II). Registrar a posição e o custo, mas fora da apuração
+  mensal e do DARF; vai para a DIRPF como rendimento de tributação exclusiva. Tipo `ETF_RF` em `data/`.
+  O COIR não calcula esse imposto: a alíquota é do fundo e muda com o prazo médio da carteira (25%, 20%
+  ou 15%, art. 2º I a III).
 - **Transferência de custódia entre corretoras do mesmo titular:**
   evento próprio que move quantidade e PM de uma conta para outra, sem resultado. A nota continua na
   corretora que a emitiu; a planilha v2 relabelava as notas.
@@ -77,8 +79,10 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   divergência ou ambiguidade, o usuário é consultado antes de aplicar.
 - **Day trade:** casamento pela ordem dos negócios (IN 1.585 art. 65 §3º: 1ª compra com a 1ª venda),
   que é a ordem cronológica. A nota não traz horário; a corretora, que o tem e retém o IRRF de 1%,
-  marca os negócios de day trade com "D". Vale a marcação D quando consistente (quantidade D de
-  compra = de venda = a menor das duas no dia); sem marcação ou com marcação inconsistente (aviso),
+  marca os negócios de day trade com "D". Vale a marcação D quando cobre o day trade do dia (quantidade
+  D de compra e de venda maior ou igual à menor das duas no dia). A corretora pode marcar a linha
+  inteira de um negócio que só em parte fechou no dia: 500 D x 200 D são 200 de day trade e 300 comuns
+  (IN 1.585 art. 65 §§1º a 3º). Sem marcação ou com marcação insuficiente (aviso), vale
   a ordem impressa nas notas do dia (número da nota e linha). Parâmetro `day_trade_criterio`
   (decisão do usuário de 25/10/2026, parecer do especialista; antes, só a ordem impressa). O
   excedente vira comum pelo preço do próprio negócio. Substitui a "média do dia". Antes de
@@ -183,9 +187,10 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   carteira zerada), quando o PM inicial lançado à mão no outro sistema não é confiável. Desde o marco,
   as diferenças encontradas foram:
   - centavos: o outro sistema rateia os custos da nota sem arredondar a parcela (com rateio exato, confere).
-    Nenhuma norma fixa o critério de rateio nem o arredondamento da parcela (a IN RFB 1.585/2015 só
-    manda somar os custos ao custo de aquisição e deduzi-los da alienação); o COIR mantém
-    centavos com maiores restos, que somam exatamente a nota (decisão de 16/10/2026);
+    A IN RFB 1.585/2015 art. 56 §§3º e 4º admite deduzir os custos necessários e permite ratear os do
+    dia proporcionalmente ao valor financeiro de cada operação, mas não fixa o arredondamento da
+    parcela; o COIR mantém centavos com maiores restos, que somam exatamente a nota (decisão de
+    16/10/2026);
   - futuros: o outro sistema distribui os custos de cada nota BM&F entre as linhas por outro critério; a
     soma de todos os futuros é igual (diferença total R$ 0,00 fora a opção flexível). Pendência
     pós-v3.0: ratear os custos de futuros por contrato e por categoria (a B3 cobra emolumentos e

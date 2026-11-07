@@ -407,6 +407,27 @@ def test_bonificacao_do_pacote_com_custo_atribuido(demo: Path) -> None:
     assert "11.54731631 por ação" in bonus.nota and "informe" not in bonus.nota
 
 
+def test_dinheiro_de_incorporacao_propoe_a_parte_do_custo_nao_o_dinheiro(demo: Path) -> None:
+    """Molde de PETZ3 -> AUAU3 (parecer do especialista de 07/11/2026; SC Cosit 37/2020): o evento
+    tira das ações recebidas a parte do custo da ação resgatada, em % do custo. GGBR4: 300 ações na
+    data com; 10% do custo; o dinheiro é só informado, com o programa em que ele vai."""
+    pasta = _pacote_eventos(demo.parent, [])
+    (pasta / "eventos_b3.csv").write_text(
+        "emissor,isin,tipo,fator,data_com,aprovado_em,isin_emitido,preco,periodo,data_subscricao,"
+        "origem,referencia,custo_atribuido\n"
+        "GGBR,BRGGBRTESTE1,REDUCAO_CAPITAL,10,2023-05-31,2023-05-01,BRGGBRTESTE1,0.50,,2023-06-20,"
+        "cvm_ipe,fato relevante,\n",
+        encoding="utf-8",
+    )  # fmt: skip
+    [resgate] = [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                 if "eventos da B3" in p.movimentacao]  # fmt: skip
+    assert resgate.dados.tipo is TipoEvento.REDUCAO_CAPITAL
+    assert (resgate.dados.cv, resgate.data) == ("V", date(2023, 6, 1))
+    assert resgate.dados.valor != Decimal("150.00")  # o dinheiro: 300 x 0,50
+    assert "R$ 150.00" in resgate.nota and "GCAP" in resgate.nota and "20/06/2023" in resgate.nota
+    assert resgate.situacao == "pendente"
+
+
 def test_pendencia_na_visao_por_conta_nao_fica_escondida(
     demo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

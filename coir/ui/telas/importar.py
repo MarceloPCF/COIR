@@ -247,7 +247,10 @@ def _linha(x: ResultadoArquivo) -> None:
                 ui.label(d).classes("coir-subtitulo text-sm")
         situacao = ROTULOS[x.situacao] + (" (divergência conhecida)" if x.conhecida else "")
         if x.notas:
-            situacao = f"{x.notas} nota{'s' if x.notas > 1 else ''} · {situacao}"
+            plural = "s" if x.notas > 1 else ""
+            situacao = (f"{x.notas} nota{plural} gravada{plural}; outras recusadas"
+                        if x.situacao == "rejeitado"
+                        else f"{x.notas} nota{plural} · {situacao}")  # fmt: skip
         ui.label(situacao).classes(f"text-sm whitespace-nowrap {classe}")
 
 

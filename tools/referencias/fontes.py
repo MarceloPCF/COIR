@@ -12,7 +12,8 @@ import logging
 import time
 import urllib.error
 import urllib.request
-from collections.abc import Callable, Iterable, Mapping
+import zipfile
+from collections.abc import Callable, Collection, Iterable, Mapping
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, cast
@@ -22,6 +23,7 @@ from tools.referencias.gerar import (
     Coleta,
     EventoB3,
     GeracaoError,
+    ler_csv,
     ler_instrumentos,
     nomes_de_pregao,
 )
@@ -39,6 +41,7 @@ B3_COTAHIST = "https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_A{ano}.
 ANOS_FRE = range(2010, 2024)  # o FRE de 2024 em diante não tem mais a tabela de desdobramentos
 CVM_FCA = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FCA/DADOS/fca_cia_aberta_{ano}.zip"
 FCA_DESDE = 2018  # o FCA traz o código de negociação de 2018 em diante
+NOMES_DESDE = 2008  # primeiro ano com notas
 Baixar = Callable[[str], bytes]
 
 
@@ -68,18 +71,26 @@ def _json(bruto: bytes, origem: str) -> Any:
 
 
 def instrumentos(dia: date, obter: Baixar = baixar) -> tuple[date, bytes]:
-    """Cadastro de Instrumentos do último pregão até ``dia`` (volta até 7 dias)."""
+    """Cadastro de Instrumentos do último pregão até ``dia`` (volta até 7 dias). Dia sem arquivo
+    (feriado, fim de semana) pode vir como erro HTTP 400: tenta o dia anterior."""
+    falha: GeracaoError | None = None
     for atras in range(8):
         quando = dia - timedelta(days=atras)
         url = f"{B3_ARQUIVOS}/requestname?fileName=InstrumentsConsolidatedFile&date={quando}"
-        pedido = _json(obter(url), "cadastro de instrumentos")
-        token = pedido.get("token") if isinstance(pedido, dict) else None
-        if not token:
+        try:
+            pedido = _json(obter(url), "cadastro de instrumentos")
+            token = pedido.get("token") if isinstance(pedido, dict) else None
+            if not token:
+                continue
+            bruto = obter(f"{B3_ARQUIVOS}/?token={token}")
+        except GeracaoError as erro:
+            log.warning("cadastro de instrumentos de %s: %s", quando, erro)
+            falha = erro
             continue
-        bruto = obter(f"{B3_ARQUIVOS}/?token={token}")
         if bruto.startswith(b"Status do Arquivo"):
             return quando, bruto
-    raise GeracaoError(f"cadastro de instrumentos indisponível nos 7 dias antes de {dia}")
+    raise GeracaoError(f"cadastro de instrumentos indisponível nos 7 dias antes de {dia}"
+                       + (f"; último erro: {falha}" if falha else ""))  # fmt: skip
 
 
 def empresas(obter: Baixar = baixar, por_pagina: int = 120) -> list[Mapping[str, object]]:
@@ -188,7 +199,8 @@ def fundos(
             seguidas = 0
             d = cast(Mapping[str, object], detalhe)
             saida.append({"acronym": sigla, "cnpj": d.get("cnpj"), "typeName": tipo,
-                          "fundName": f.get("fundName")})  # fmt: skip
+                          "fundName": f.get("fundName"), "tradingName": d.get("tradingName"),
+                          "tradingCode": d.get("tradingCode")})  # fmt: skip
             time.sleep(pausa)
     return saida, falhas
 
@@ -239,7 +251,36 @@ def selic(obter: Baixar = baixar) -> list[Mapping[str, str]]:
     return cast(list[Mapping[str, str]], resposta)
 
 
-def coletar(dia: date, obter: Baixar = baixar, pausa: float = 0.2) -> Coleta:
+def sufixos_especificacao(pasta: Path) -> set[str]:
+    return {r["sufixo"] for r in ler_csv(pasta / "sufixos_especificacao.csv")}
+
+
+def nomes_recentes(dia: date, sufixos: Collection[str],
+                   obter: Baixar = baixar) -> tuple[list[dict[str, str]], list[str]]:  # fmt: skip
+    """Nomes de pregão do COTAHIST do ano de ``dia`` e, em janeiro, do anterior (fecha dezembro; o
+    arquivo do ano novo pode nem existir ainda). Falta vai para o resumo: a tabela nunca apaga."""
+    saida: list[dict[str, str]] = []
+    falhas: list[str] = []
+    for ano in [dia.year - 1, dia.year] if dia.month == 1 else [dia.year]:
+        try:
+            saida += hist.ler_nomes(obter(B3_COTAHIST.format(ano=ano)), sufixos)
+        except (GeracaoError, zipfile.BadZipFile) as erro:
+            log.warning("COTAHIST de %d: %s", ano, erro)
+            falhas.append(f"COTAHIST de {ano}")
+    return saida, falhas
+
+
+def nomes_historicos(ate: date, sufixos: Collection[str], cache: Path | None = None,
+                     obter: Baixar = baixar) -> list[dict[str, str]]:  # fmt: skip
+    """Nomes de pregão de todos os anos com notas, de 2008 até ``ate`` (uns 1,5 GB de zips)."""
+    saida: list[dict[str, str]] = []
+    for ano in range(NOMES_DESDE, ate.year + 1):
+        saida += hist.ler_nomes(_em_cache(B3_COTAHIST.format(ano=ano), cache, obter), sufixos)
+    return saida
+
+
+def coletar(dia: date, obter: Baixar = baixar, pausa: float = 0.2,
+            sufixos: Collection[str] = ()) -> Coleta:  # fmt: skip
     """Uma coleta completa. Eventos e histórico de proventos só das companhias com ação ou unit no
     cadastro."""
     quando, bruto = instrumentos(dia, obter)
@@ -251,9 +292,11 @@ def coletar(dia: date, obter: Baixar = baixar, pausa: float = 0.2) -> Coleta:
     nomes = {e: n for e, n in nomes_de_pregao(companhias).items() if e in emissores}
     por_historico, falhas_historico = historico(nomes, obter, pausa)
     lista_fundos, falhas_fundos = fundos(obter, pausa)
+    nomes, falhas_nomes = nomes_recentes(dia, sufixos, obter)
     return Coleta(data=dia, instrumentos=bruto, empresas=companhias, eventos=por_emissor,
-                  selic=selic(obter), sem_resposta=tuple(falhas + falhas_historico + falhas_fundos),
-                  fundos=lista_fundos, historico=por_historico)  # fmt: skip
+                  selic=selic(obter),
+                  sem_resposta=tuple(falhas + falhas_historico + falhas_fundos + falhas_nomes),
+                  fundos=lista_fundos, historico=por_historico, nomes=nomes)  # fmt: skip
 
 
 def _em_cache(url: str, cache: Path | None, obter: Baixar) -> bytes:

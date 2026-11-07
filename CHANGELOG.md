@@ -10,7 +10,26 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ## [Não lançado]
 
+### Corrigido
+
+- **Marcas da coluna Obs.:** qualquer combinação e ordem é aceita (`D@`, `D#@`, `@D`...), e vale também a legenda impressa na própria nota. Antes, `D@` e `D#@` travavam a nota.
+- **Day trade perdido em silêncio:** em notas com o código do ativo na linha, `PETR4 D@` entrava como operação comum. Quem importou notas desse tipo deve usar "Reprocessar notas já importadas".
+- **Day trade parcial:** 500 D x 200 D no mesmo dia são 200 de day trade e 300 comuns, sem aviso (IN RFB 1.585/2015 art. 65).
+- **Lote de cotação diferente:** RAIZ55 cota por 100; o valor de quantidade x preço agora aceita fator 1, 10, 100 e 1.000.
+- **Coleta das tabelas públicas:** feriado não trava mais a coleta, a falha abre uma issue e o dia seguinte tenta de novo.
+- **Mensagem de ativo não encontrado:** diz o que fazer e só sugere nome muito parecido.
+- **Tela Importar:** arquivo com parte das notas recusada mostra "N notas gravadas; outras recusadas".
+
+### Alterado
+
+- **Centavos de arredondamento não recusam mais a nota.** A diferença entre os valores impressos vira a linha de custo "Ajuste de arredondamento", e a nota fecha com o líquido impresso. Só o que passar do que o arredondamento explica consome a tolerância de R$ 0,05 por nota, com aviso; acima dela, a nota é recusada.
+
 ### Adicionado
+
+- **Histórico de nomes de pregão da B3 desde 2008** (`nomes_pregao_b3.csv`), pela data do negócio, e todos os ETFs de renda fixa listados.
+- **RAIZ4 -> RAIZ55, PETZ3 -> AUAU3** (com a repartição do custo do resgate em dinheiro, em Eventos), trocas de nome confirmadas pelo histórico (IMCH3, OGSA3, BRIT3, NINJ3, REAG3, FICT3) e tipo do NFTS11.
+- **Aviso de ativo que parou de negociar:** posição em ativo sem negócio há mais de 90 dias aparece no sino e na tela Eventos, com o que houve, quando se sabe.
+- A coleta semanal lista no PR todo ativo que saiu do cadastro, para revisão.
 - **Reprocessar notas já importadas**: marque a opção na tela Importar (ou use
   `coir importar --reprocessar`) para ler os PDFs de novo e ficar com a releitura, quando o COIR
   leu algo errado ou a corretora corrigiu a nota. Há backup antes, a lista diz o que mudou e a nota

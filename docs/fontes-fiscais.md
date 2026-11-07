@@ -8,27 +8,29 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 |---|---|
 | LC 224/2025 | 8 |
 | Lei 6.404/1976 | 4 |
+| Lei 7.713/1988 | 2 |
 | Lei 8.668/1993 | 1 |
 | Lei 8.981/1995 | 10 |
 | Lei 9.249/1995 | 15 |
-| Lei 9.250 | 3 |
+| Lei 9.250/1995 | 4 |
 | Lei 9.430/1996 | 17 |
 | Lei 9.779/1999 | 1 |
 | Lei 9.959/2000 | 5 |
 | Lei 11.033/2004 | 25 |
 | Lei 11.051/2004 | 5 |
 | Lei 12.350/2010 | 1 |
-| Lei 13.043/2014 | 14 |
+| Lei 13.043/2014 | 15 |
 | Lei 14.754/2023 | 3 |
 | Lei 15.265/2025 | 11 |
 | Lei 15.270/2025 | 10 |
 | MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 65 |
+| IN RFB 1.585/2015 | 69 |
 | IN RFB 1.700/2017 | 2 |
 | Res. CMN 4.880/2020 | 1 |
+| SC Cosit 37/2020 | 3 |
 | SC Cosit 67/2024 | 1 |
 | SC Cosit 145/2021 | 1 |
-| SC Cosit 224/2014 | 3 |
+| SC Cosit 224/2014 | 4 |
 | P&R IRPF | 5 |
 | P&R IRPF 2026 | 18 |
 | Manual MIR 2026 | 3 |
@@ -137,8 +139,13 @@ Companhias que saíram da bolsa:
 
 - `data/parametros_fiscais.csv` — incorporacao_acoes_tratamento: Lei 6.404 art. 252: custo das ações entregues mantido nas recebidas (TRF1/TRF3/TRF4; decisão do usuário 19/10/2026). A RFB diverge (SC Cosit 224/2014: alienação, ganho de capital no GCAP); a tela de Eventos avisa
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): 75 §10), o que pede a deliberação e a data com (Lei 6.404/1976 art. 205). A data do crédito vem
-- `docs/regras-fiscais.md` — R8: …art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); Lei 6.404 arts. 227-229 e 252 | A
+- `docs/regras-fiscais.md` — R8: …de ações; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …(substituição de ações): não é alienação, a data de aquisição é a original. - Incorporação de ações (Lei 6.404 art. 252): custo mantido (TRF1, TRF3, TRF4; decisão do usuário de 19/10/2026); a RFB diverge (SC Cosit…
+
+## Lei 7.713/1988
+
+- `tests/fiscal_cases/test_petz_auau.py` — módulo: …pela companhia: 0,71 / 4,39 = 16,17312073%. - O resgate da PN é alienação: dinheiro menos o custo da PN (Lei 7.713/1988 art. 3º §3º; SC Cosit 37/2020, CETIP/BM&FBOVESPA, com a mesma estrutura de ON + PN resgatável).…
+- `tests/fiscal_cases/test_raiz55.py` — módulo: …e primeiro de RAIZ55 em 03/11/2026. Nada muda na quantidade nem nos direitos. Regra: não há alienação (Lei 7.713/1988 art. 3º §3º), e o custo e a quantidade continuam os mesmos. Na nota, a quantidade é a de ações e o…
 
 ## Lei 8.668/1993
 
@@ -175,10 +182,11 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_proventos.py` — módulo: Proventos a partir da movimentação da B3 (casos fictícios conferidos à mão, 19/10/2026). Fontes: Lei 9.249/1995 arts. 9º e 10 (JCP exclusivo; dividendos isentos); LC 224/2025 art. 8º e art. 14 III (JCP a 17,5%…
 - `tests/fiscal_cases/test_proventos.py` — test_jcp_creditado_no_ano_anterior_com_a_mesma_aliquota: …B3 ou informe), declarado em 2024 e a receber em 31/12/2024 (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art. 9º §2º).
 
-## Lei 9.250
+## Lei 9.250/1995
 
 - `data/parametros_fiscais.csv` — aliquota_irrf_dividendos_acima_limite: Lei 15.270/2025 (Lei 9.250 art. 6º-A caput e §§1º e 2º)
 - `data/parametros_fiscais.csv` — dividendos_limite_mensal_mesma_pj: Lei 15.270/2025 (Lei 9.250 art. 6º-A): acima de R$ 50 mil no mês da mesma PJ há retenção de 10% sobre o total
+- `tests/fiscal_cases/test_petz_auau.py` — módulo: …mensal; a perda não compensa ganhos da bolsa. - Isenção do resgate: até R$ 35 mil alienados no mês (Lei 9.250/1995 art. 22 II). - A incorporação em si segue o parâmetro incorporacao_acoes_tratamento (custo…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de capital reduz o custo); Lei 15.270/2025 (Lei 9.250 art. 6º-A: IRRF de 10% sobre o total dos dividendos da mesma PJ no mês acima de R$ 50 mil). Decisões do…
 
 ## Lei 9.430/1996
@@ -264,6 +272,7 @@ Companhias que saíram da bolsa:
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): **ETF de renda fixa:** fora da apuração e do DARF; ganho listado para a DIRPF (Lei 13.043/2014).
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Isenção de PME (Lei 13.043/2014 art. 16; IN arts. 59 III e 66 a 69-A), `data/isencao_pme.csv`:
+- `docs/regras-fiscais.md` — Decisões da validação da extração (F2, 14/10/2026): **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte (Lei 13.043/2014 art. 2º §4º). Na
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Reembolso de BTC ao doador: isento até 2025 (Lei 13.043/2014 art. 7º, reproduzido na IN 1.585
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_etf_de_renda_fixa_fica_fora_da_apuracao: Lei 13.043/2014 arts. 2º a 4º: ETF de renda fixa tem tributação exclusiva na fonte; o ganho vai para a lista da DIRPF, não para o DARF nem para a isenção.
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_pme_ganho_isento_e_fora_do_limite: Lei 13.043/2014 art. 16; IN 1.585 arts. 66 e 67 §3º: ganho na venda de ações de PME é isento e o valor não entra…
@@ -340,7 +349,8 @@ Companhias que saíram da bolsa:
 - `data/parametros_fiscais.csv` — leilao_fracao_isentavel: sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (decisão do usuário 19/10/2026)
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
 - `data/parametros_fiscais.csv` — reembolso_btc_norma_omissa: IN RFB 1.585/2015 art. 74 §1º I a (reembolso de dividendos de BTC expressamente isento)
-- `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Nenhuma norma fixa o critério de rateio nem o arredondamento da parcela (a IN RFB 1.585/2015 só
+- `data/trocas_ticker.csv` — PETZ3: B3 COTAHIST: último negócio de PETZ3 em 02/01/2026; AUAU3 desde 05/01/2026 (RI: relação 1:1, abertura deduzida de R$ 0,71); CNPJ muda (18328118000109 -> 53153938000108): incorporação tratada como troca curada, custo mantido (IN RFB 1.585/2015 art. 58 §6º); R$ 0,71 por ação à parte: resgate de PN, SC Cosit 37/2020
+- `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): A IN RFB 1.585/2015 art. 56 §§3º e 4º admite deduzir os custos necessários e permite ratear os do
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): é isento (IN RFB 1.585/2015 art. 59 §2º IV); a venda entra na soma do limite do mês dela.
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Bens e Direitos pelo custo de aquisição (IN RFB 1.585/2015 art. 58), também no ano da compra; a
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Termo (IN RFB 1.585/2015 art. 62 I e §1º): a venda à vista na data da liquidação vai para
@@ -369,6 +379,7 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t8_day_trade_de_fii_fica_na_categoria_fii: R3: FII (inclusive day trade) a 20%, compensação só entre FII (IN RFB 1.585/2015). Ganho 100: IR 20,00 - IRRF 1,00 = 19,00.
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_termo_liquidado_depois_da_venda_das_acoes_realiza_o_resultado: R18 + venda a descoberto (leitura A1, decisão do usuário de 15/10/2026; IN RFB 1.585/2015 art. 58: custo médio): sem posição, compra a termo de 1.000 a 31,00 (custos 40) em 03/01 e venda…
 - `tests/fiscal_cases/test_day_trade_marcacao.py` — módulo: Day trade pela marcação D da corretora (F9, decisão do usuário de 25/10/2026). IN RFB 1.585/2015 art. 65 §3º: o day trade casa "pela ordem" a 1ª compra com a 1ª venda, isto é, na ordem…
+- `tests/fiscal_cases/test_day_trade_parcial.py` — módulo: …dela fecha no dia (parecer do especialista fiscal de 07/11/2026; números conferidos à mão). Fontes (IN RFB 1.585/2015): - art. 65 §1º: day trade é a operação iniciada e encerrada no mesmo dia, com o mesmo ativo, na…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …de fração (números conferidos à mão no parecer do especialista fiscal de 19/10/2026). Fontes: - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o custo das ações…
 - `tests/fiscal_cases/test_futuros_commodities.py` — módulo: …e na conferência do câmbio implícito. Casos fechados à mão pelo especialista (19/10/2026). Fontes: IN RFB 1.585/2015 art. 61 (resultado = soma dos ajustes no encerramento), art. 65 (15% e 20% day trade, inclusive…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das corretoras, custo médio) e 715; IN RFB 1.585/2015 arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração)…
@@ -376,7 +387,9 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_irrf_fichas.py` — módulo: …Casos do especialista fiscal, conferidos à mão. Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º; fichas "Renda variável - operações comuns/day trade" e "Operações -…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_day_trade_usado_no_imposto_de_fii_gera_aviso: IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês (saldo único da DARF), mas a ficha FII…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_irrf_de_day_trade_nao_abate_fii_antes_do_0005: IN RFB 1.585/2015 art. 65 §8º I e ficha FII sem linha de day trade: dezembro/2026 com imposto só de FII (V 100…
+- `tests/fiscal_cases/test_petz_auau.py` — módulo: …em 23/01/2026. Valor exato pago: R$ 0,7109 por ação (imprensa, sobre o resultado do 4T25). Regra: - IN RFB 1.585/2015 art. 58 §6º: o custo das ações originais vai para as recebidas, e a ON e a PN foram recebidas.…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de…
+- `tests/fiscal_cases/test_raiz55.py` — módulo: …os mesmos. Na nota, a quantidade é a de ações e o preço é por 100 ações; o custo é o valor impresso (IN RFB 1.585/2015 art. 58 caput). A PNA continua ação para a isenção de R$ 20 mil (art. 59 caput).
 - `tests/fiscal_cases/test_saldos_iniciais.py` — módulo: …parecer do especialista). Custódia inicial: a posição em 31/12 entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58), o mesmo do Bens e Direitos, sem resultado e sem efeito no day trade (art. 65 §2º).…
 
 ## IN RFB 1.700/2017
@@ -387,6 +400,12 @@ Companhias que saíram da bolsa:
 ## Res. CMN 4.880/2020
 
 - `docs/regras-fiscais.md` — R12: …acumula, inclusive para o ano seguinte | `data/feriados.csv` (o último dia útil do ano não é útil: Res. CMN 4.880/2020 art. 3º) + acúmulo | RIR/2018 art. 915; Lei 9.430/1996 art. 68 caput e §1º | A
+
+## SC Cosit 37/2020
+
+- `data/trocas_ticker.csv` — PETZ3: B3 COTAHIST: último negócio de PETZ3 em 02/01/2026; AUAU3 desde 05/01/2026 (RI: relação 1:1, abertura deduzida de R$ 0,71); CNPJ muda (18328118000109 -> 53153938000108): incorporação tratada como troca curada, custo mantido (IN RFB 1.585/2015 art. 58 §6º); R$ 0,71 por ação à parte: resgate de PN, SC Cosit 37/2020
+- `docs/regras-fiscais.md` — R8: …custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026).…
+- `tests/fiscal_cases/test_petz_auau.py` — módulo: …- O resgate da PN é alienação: dinheiro menos o custo da PN (Lei 7.713/1988 art. 3º §3º; SC Cosit 37/2020, CETIP/BM&FBOVESPA, com a mesma estrutura de ON + PN resgatável). Fora de bolsa, vai para o GCAP e…
 
 ## SC Cosit 67/2024
 
@@ -399,14 +418,15 @@ Companhias que saíram da bolsa:
 ## SC Cosit 224/2014
 
 - `data/parametros_fiscais.csv` — incorporacao_acoes_tratamento: Lei 6.404 art. 252: custo das ações entregues mantido nas recebidas (TRF1/TRF3/TRF4; decisão do usuário 19/10/2026). A RFB diverge (SC Cosit 224/2014: alienação, ganho de capital no GCAP); a tela de Eventos avisa
-- `docs/regras-fiscais.md` — R8: …art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); Lei 6.404 arts. 227-229 e 252 | A
+- `docs/regras-fiscais.md` — R8: …art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …6.404 art. 252): custo mantido (TRF1, TRF3, TRF4; decisão do usuário de 19/10/2026); a RFB diverge (SC Cosit 224/2014), parâmetro incorporacao_acoes_tratamento. - Ajuste de série de opção pela B3 (Manual de…
+- `tests/fiscal_cases/test_petz_auau.py` — módulo: …incorporação em si segue o parâmetro incorporacao_acoes_tratamento (custo mantido); a RFB diverge (SC Cosit 224/2014), e a tela de Eventos avisa. O motor recebe só a repartição do custo, na data ex: REDUCAO_CAPITAL…
 
 ## P&R IRPF
 
 - `docs/regras-fiscais.md` — Decisões da validação do gabarito (F1, 14/10/2026): 06/2008). R5 (P&R IRPF) diz que continua compensável; uma resposta de IA consultada pelo usuário diz o
 - `docs/regras-fiscais.md` — Decisões da validação do gabarito (F1, 14/10/2026): P&R IRPF antes de implementar; enquanto isso, parâmetro configurável.
-- `docs/regras-fiscais.md` — R8: …na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); Lei 6.404 arts. 227-229…
+- `docs/regras-fiscais.md` — R8: …na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_exercicio_parcial_e_sobra_vira_po_no_vencimento: R9/R10 (IN RFB 1.585/2015 art. 58; P&R IRPF, opções): titular de 1.000 calls exerce 600 no vencimento; as 400 restantes viram pó (perde 40% do prêmio de 1.000 = -400); o custo das ações leva 600 do prêmio.
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …ou cisão, o custo das ações originais é atribuído às recebidas na proporção fixada pela assembleia; P&R IRPF (substituição de ações): não é alienação, a data de aquisição é a original. - Incorporação de ações (Lei…
 

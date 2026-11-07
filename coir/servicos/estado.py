@@ -45,6 +45,7 @@ from coir.servicos import (
     eventos,
     notas,
     operacoes,
+    saidas,
 )
 from coir.servicos.apuracao import apurar_banco, carteira_banco, carteiras_banco, movimentos_banco
 from coir.servicos.b3 import PASTA_B3
@@ -423,11 +424,21 @@ class Estado:
                       "ativo(s) fora do cálculo (falta evento)", "/eventos"),
             Pendencia(sum(p.situacao == "pendente" for p in self.propostas()),
                       "proposta(s) de evento para conferir", "/eventos"),
+            Pendencia(len(self.ativos_que_sairam()),
+                      "ativo(s) na carteira que pararam de negociar", "/eventos"),
             Pendencia(len(avisos), "aviso(s) da apuração para conferir"
                       + (f" ({', '.join(map(str, anos_avisos))})" if anos_avisos else ""),
                       "/apuracao", anos_avisos[-1] if anos_avisos else None),
         ]  # fmt: skip
         return [p for p in itens if p.quantidade]
+
+    def ativos_que_sairam(self) -> list[saidas.AtivoQueSaiu]:
+        """Posições do titular em ativo que parou de negociar na bolsa (falta evento?)."""
+        if not self.existe or self.titular is None:
+            return []
+        posicoes, _ = self.carteira(self.agora().date(), Visao.TITULAR)
+        return saidas.ativos_que_sairam(posicoes, self.titular, self.pasta_refs,
+                                        eventos.ignoradas(self.banco, self.titular))  # fmt: skip
 
     def senhas_pdf(self) -> list[str]:
         """Senhas para abrir PDF protegido: as informadas nesta execução (tela Importar) e as

@@ -597,11 +597,12 @@ def _day_trade(
             mc = [o for o in c if o.op.marcada_dt]
             mv = [o for o in v if o.op.marcada_dt]
             if (
-                sum((o.op.quantidade for o in mc), ZERO)
-                == dt
-                == sum((o.op.quantidade for o in mv), ZERO)
+                sum((o.op.quantidade for o in mc), ZERO) >= dt
+                and sum((o.op.quantidade for o in mv), ZERO) >= dt
             ):
-                # os negócios marcados D primeiro: são exatamente o day trade
+                # os negócios marcados D primeiro: cobrem o day trade do dia, e a corretora pode
+                # marcar a linha inteira quando só parte dela fecha no dia (500 D x 200 D: 200 de
+                # day trade e 300 comuns, IN RFB 1.585/2015 art. 65 §§1º a 3º)
                 c = mc + [o for o in c if not o.op.marcada_dt]
                 v = mv + [o for o in v if not o.op.marcada_dt]
                 regra = MARCACAO

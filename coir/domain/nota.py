@@ -58,7 +58,7 @@ class NegocioBovespa(Modelo):
     mercado: str  # cru: VISTA, FRACIONARIO, TERMO, OPCAO DE COMPRA, EXERC OPC VENDA...
     prazo: str  # cru: "02/23" (opção), "90" (termo, dias) ou ""
     especificacao: str  # nome de pregão ("COPASA ON NM") ou código ("BBASN380 ON", "KLBNM199E")
-    observacao: str  # marcas: D (day trade), #, @, H, 2, 8...
+    observacao: str  # marcas da coluna Obs., em qualquer ordem: D (day trade), #, @, H...
     quantidade: Decimal
     preco: Decimal
     valor: Decimal
@@ -87,6 +87,7 @@ class NegocioBMF(Modelo):
 
 
 GrupoCusto = Literal["cblc", "bolsa", "despesas", "bmf"]
+ROTULO_AJUSTE = "Ajuste de arredondamento"  # linha criada na conciliação, não impressa na nota
 
 
 class Custo(Modelo):

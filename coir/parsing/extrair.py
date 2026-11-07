@@ -180,6 +180,7 @@ def _ler(
                 raise ExtracaoError(f"folhas fora de sequência: {g.folhas}")
             nota = conciliar(_montar(arquivo, g, [textos[i] for i in g.indices]))
             res.notas.append(nota)
+            res.avisos += nota.avisos
             impresso = cliente(textos[g.indices[-1]])  # da última folha, como a conta
             if impresso is not None:
                 res.clientes[nota.chave] = impresso
