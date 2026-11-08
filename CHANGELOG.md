@@ -20,6 +20,13 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **Mensagem de ativo não encontrado:** diz o que fazer e só sugere nome muito parecido.
 - **Tela Importar:** arquivo com parte das notas recusada mostra "N notas gravadas; outras recusadas".
 
+- **Propostas de eventos sumiam:** um ativo que o motor não consegue apurar parava a busca, e os eventos seguintes de toda a carteira deixavam de ser propostos. Agora só as propostas daquele ativo esperam.
+- **Ações de PME na Apuração mensal:** o resultado isento (e a perda) agora aparece na coluna própria e na memória de cálculo do mês.
+
+- **Tabela de ações de PME incompleta:** só tinha PRIO3 e AGRO3. Entraram SQIA3 (compras até 05/09/2019), CRDE3, FRTA3, GSHP3, NUTR3 e PRNR3, e a data de corte de AGRO3 passou a 04/02/2021. Vendas dessas ações até 31/12/2023 podem mudar de tributadas para isentas: reprocesse a apuração e confira.
+- **Ações de PME com lote isento e tributado:** o COIR agora controla os dois lotes em separado (IN RFB 1.585/2015 art. 69-A §4º), e a custódia inicial e os eventos entram no lote certo. Antes, o ativo saía do cálculo.
+- **Ajuste de custo do fim da isenção de PME:** em 01/01/2024, o lote isento sobe à média dos 30 pregões, quando maior que o custo pago (Lei 13.043/2014 art. 17 §6º). Muda o preço médio e o imposto de vendas depois de 2023.
+
 ### Alterado
 
 - **Centavos de arredondamento não recusam mais a nota.** A diferença entre os valores impressos vira a linha de custo "Ajuste de arredondamento", e a nota fecha com o líquido impresso. Só o que passar do que o arredondamento explica consome a tolerância de R$ 0,05 por nota, com aviso; acima dela, a nota é recusada.
@@ -30,6 +37,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **RAIZ4 -> RAIZ55, PETZ3 -> AUAU3** (com a repartição do custo do resgate em dinheiro, em Eventos), trocas de nome confirmadas pelo histórico (IMCH3, OGSA3, BRIT3, NINJ3, REAG3, FICT3) e tipo do NFTS11.
 - **Aviso de ativo que parou de negociar:** posição em ativo sem negócio há mais de 90 dias aparece no sino e na tela Eventos, com o que houve, quando se sabe.
 - A coleta semanal lista no PR todo ativo que saiu do cadastro, para revisão.
+- **Operações por ativo, mês a mês:** em Operações finalizadas (também nos arquivos exportados) e na Apuração mensal, uma linha por dia e ativo, com custo médio, preço final, lucratividade e resultado, em blocos por mês e mercado. Clicar numa linha abre as operações dela.
 - **Reprocessar notas já importadas**: marque a opção na tela Importar (ou use
   `coir importar --reprocessar`) para ler os PDFs de novo e ficar com a releitura, quando o COIR
   leu algo errado ou a corretora corrigiu a nota. Há backup antes, a lista diz o que mudou e a nota

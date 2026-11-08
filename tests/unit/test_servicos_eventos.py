@@ -389,6 +389,47 @@ def test_propostas_do_pacote_com_o_livro_parado(
     ]
 
 
+def test_ativo_travado_nao_esconde_as_propostas_dos_outros(
+    demo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Um ativo que o motor isola em 15/03/2023 só limita as propostas dele. Antes, o primeiro
+    problema parava o livro, e nenhum evento posterior de nenhum ativo era proposto."""
+    from coir.domain.fiscal import AtivoIsolado
+
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+    ])  # fmt: skip
+    real = eventos.movimentar
+
+    def com_isolado(ativo: int) -> object:
+        def movimentar(*args: object, isolados: list[AtivoIsolado] | None = None) -> object:
+            if isolados is not None:
+                isolados.append(AtivoIsolado(titular=1, ativo=ativo, ticker="TRAVA3",
+                                             desde=date(2023, 3, 15), motivo="teste"))  # fmt: skip
+            return real(*args, isolados=[])  # type: ignore[arg-type]
+
+        return movimentar
+
+    def propostas() -> list[TipoEvento]:
+        return [p.dados.tipo for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                if "eventos da B3" in p.movimentacao and p.codigo == "GGBR4"]  # fmt: skip
+
+    monkeypatch.setattr(eventos, "movimentar", com_isolado(999999))  # outro ativo travou
+    assert set(propostas()) == {TipoEvento.DESDOBRAMENTO, TipoEvento.BONIFICACAO}
+    from sqlalchemy import select
+
+    from coir.db.modelos import TickerHistorico
+    from coir.db.sessao import conectar
+
+    with conectar(demo) as fabrica, fabrica() as s:
+        ggbr = s.scalars(select(TickerHistorico.ativo_id)
+                         .where(TickerHistorico.ticker == "GGBR4")).first()  # fmt: skip
+    assert ggbr is not None
+    monkeypatch.setattr(eventos, "movimentar", com_isolado(ggbr))  # o próprio ativo travou
+    assert propostas() == [TipoEvento.DESDOBRAMENTO]  # o de depois espera a pendência
+
+
 def test_bonificacao_do_pacote_com_custo_atribuido(demo: Path) -> None:
     """O pacote traz o custo por ação quando o aviso aos acionistas informa (coluna
     custo_atribuido): a proposta sai com o custo total, senão o PM das vendas seguintes fica errado

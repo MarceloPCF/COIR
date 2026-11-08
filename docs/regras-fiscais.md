@@ -129,14 +129,55 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - Venda que passa de comprado a vendido e a posição continua vendida no fim do mês: só aviso
     (possível evento faltando), sem mudar o cálculo. Venda a descoberto desde zero, sem aviso.
   - Isenção de PME (Lei 13.043/2014 art. 16; IN arts. 59 III e 66 a 69-A), `data/isencao_pme.csv`:
-    PRIO3 (compras de 10/07/2014 a 29/01/2021) e AGRO3 (até 03/02/2021), vendas até 31/12/2023;
+    PRIO3 (compras de 10/07/2014 a 29/01/2021, RI da companhia), AGRO3 (até 04/02/2021), SQIA3 (até
+    05/09/2019), e CRDE3, FRTA3, GSHP3, NUTR3 e PRNR3 sem oferta subsequente conhecida, vendas até
+    31/12/2023;
     ganho isento, fora do limite, perdas não compensam (art. 67 §2º); as vendas de PME do mês se
     somam e o líquido positivo é o lucro isento, o negativo fica só para consulta, sem abater
     ganho isento de outro mês (critério do usuário de 03/11/2026, parecer do especialista: a
     norma não decide entre somar por operação ou no mês); day trade dessas ações também isento
-    (leitura literal: o art. 59 §2º I só afasta o inciso I). Lotes isento e tributado juntos
-    falham alto (controle separado do art. 69-A §4º não implementado; não ocorre no livro). Depois
-    de 31/12/2023 a isenção acabou e o lote antigo se junta às compras novas.
+    (leitura literal: o art. 59 §2º I só afasta o inciso I).
+  - Lotes de PME (parecer do especialista, decisões do usuário de 08/11/2026). Casos em
+    `tests/fiscal_cases/test_pme_lotes.py`.
+    - Dois lotes por titular e ativo, cada um com seu PM (A). IN art. 69-A §4º: "controlar, de forma
+      separada" as ações de antes da oferta subsequente, "que ainda gozem da isenção", das adquiridas
+      a partir dela, "que serão tributadas"; §2º e SC Cosit 63/2020: as de antes continuam isentas. A
+      norma manda só separar: não há ticker, código ou informação da corretora por lote (não localizei).
+    - Ordem na venda: **a norma não fixa**. Padrão: o lote isento sai primeiro (coincide com o mais
+      antigo primeiro nos casos comuns), e a venda que atravessa os lotes reparte valor e custos pela
+      quantidade. Parâmetro `pme_lote_ordem_venda` (`isento_primeiro`, `tributado_primeiro`), com
+      vigência. Confiança baixa: é escolha, não regra.
+    - Custódia inicial (a data de aquisição não é conhecida), pela data do evento (M): na janela,
+      isenta, com aviso de que a compra antes de 10/07/2014 não é isenta (Lei 13.043 art. 17 caput);
+      antes da janela, tributada; depois da janela, tributada, com aviso para o usuário separar a
+      parte comprada antes da oferta. O usuário pode informar o contrário em qualquer caso.
+    - Comprada até 10/07/2014: tributada, com custo pelo maior entre o pago e a média dos 30 pregões
+      anteriores a essa data (art. 17 §5º; IN art. 67 §5º). O COIR não tem essa média; o usuário
+      informa o custo já ajustado.
+    - Limite de R$ 20 mil: só o lote isento fica fora (IN art. 67 §3º); o lote tributado soma e pode
+      ter o ganho isento pelo limite (A).
+    - IRRF 0,005%: não há retenção enquanto a companhia cumpre os requisitos (IN art. 67 §6º). Depois
+      da oferta a retenção pode alcançar também a venda isenta, e o valor é crédito (IN art. 69-A §3º,
+      que remete ao art. 64, embora a dedução esteja no art. 63 §8º) (M). O motor já credita todo o
+      IRRF da nota.
+    - Eventos, pela data do evento: bonificação e subscrição na janela vão para o lote isento (art.
+      17 III e IV); a partir da oferta, para o tributado, ainda que a ação de origem seja isenta (IN
+      art. 69-A §1º, A). Desdobramento e grupamento repartem a quantidade pelos lotes sem mudar o
+      custo (IN art. 58 §7º II). Transferência entre contas não muda nada na visão fiscal (art. 17 §1º
+      só exige ficar no depositário central). Incorporação, cisão e leilão de fração com lote isento
+      no prazo seguem falhando alto (sem norma nem caso real). Empréstimo não tira a isenção do
+      emprestador (art. 17 §4º); a venda a descoberto do tomador não é de ação adquirida: tributada.
+    - Day trade não toca nos lotes: a data da compra decide (na janela, isento; depois, tributado).
+      Exercício: a data de aquisição é a do exercício, e o prêmio entra no lote que recebe a ação.
+    - Fim da isenção: a venda até 31/12/2023 segue as regras acima. Em 01/01/2024, o custo do lote
+      isento vai ao maior entre o custo pago e a quantidade x média de fechamento ponderada pelo volume
+      nos 30 pregões anteriores a 31/12/2023 (Lei 13.043 art. 17 §6º; IN art. 68; texto A), e os lotes
+      se fundem no PM único do art. 58. Antes dessa regra o COIR só juntava os lotes pelo custo pago,
+      o que apura ganho a maior. Decisões do parecer (M): o ajuste compara o PM do lote; alcança só o
+      lote isento (o art. 69-A tira o outro do regime, embora o §6º não o exclua em palavras); a
+      posição de 31/12/2023 fica pelo custo pago. A média entra em coluna nova de
+      `data/isencao_pme.csv`, calculada do COTAHIST até o pregão de 28/12/2023; não localizei valor
+      publicado pela RFB ou pela B3, e, se houver, ele prevalece.
 - **PM e carteira (princípios do usuário, 15/10/2026; IN 1.585 art. 58):**
   - PM fiscal consolidado por titular e ativo, somando todas as corretoras e contas, na posição
     da categoria de operação aplicável: carteira comum à vista; opção por série e vencimento;
@@ -392,7 +433,7 @@ corretoras diferentes, com código e contas próprios (decisão do usuário). Fi
 - Rateio dos custos de futuros por contrato e por categoria, configurável (hoje pelo volume).
 - Day trade entre corretoras antes de 28/07/2010: a ordem dos negócios entre notas de corretoras
   diferentes segue o número da nota (as notas não trazem horário).
-- Controle separado de lote de PME isento e tributado (IN 1.585 art. 69-A §4º): falha alto.
+- Incorporação, cisão ou leilão de lote isento de PME dentro do prazo da isenção: falha alto (sem norma nem caso real).
 - Venda a termo: falha alto (só a compra a termo está implementada).
 - `data/feriados.csv` cobre até 2027: estender antes de apurar dezembro de 2027.
 

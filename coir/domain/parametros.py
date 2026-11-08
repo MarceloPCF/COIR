@@ -117,6 +117,7 @@ class IsencaoPME(Modelo):
     aquisicao_ate: date
     vendas_ate: date
     fonte: str = ""
+    media_fim: Decimal | None = None  # média dos 30 pregões antes do fim (Lei 13.043 art. 17 §6º)
 
     def compra_elegivel(self, dia: date) -> bool:
         return self.aquisicao_desde <= dia <= self.aquisicao_ate

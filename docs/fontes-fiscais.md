@@ -19,15 +19,17 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 11.033/2004 | 25 |
 | Lei 11.051/2004 | 5 |
 | Lei 12.350/2010 | 1 |
-| Lei 13.043/2014 | 15 |
+| Lei 13.043/2014 | 26 |
 | Lei 14.754/2023 | 3 |
 | Lei 15.265/2025 | 11 |
 | Lei 15.270/2025 | 10 |
 | MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 69 |
+| IN RFB 1.585/2015 | 78 |
 | IN RFB 1.700/2017 | 2 |
+| IN RFB 1.916/2019 | 1 |
 | Res. CMN 4.880/2020 | 1 |
 | SC Cosit 37/2020 | 3 |
+| SC Cosit 63/2020 | 2 |
 | SC Cosit 67/2024 | 1 |
 | SC Cosit 145/2021 | 1 |
 | SC Cosit 224/2014 | 4 |
@@ -35,7 +37,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | P&R IRPF 2026 | 18 |
 | Manual MIR 2026 | 3 |
 | Programa IRPF | 8 |
-| CTN | 4 |
+| CTN | 5 |
 | Súmula STJ 360 | 1 |
 | REsp 1.149.022/SP | 1 |
 | RIR/2018 | 6 |
@@ -263,19 +265,30 @@ Companhias que saíram da bolsa:
 
 ## Lei 13.043/2014
 
+- `coir/engine/movimentos.py` — _fim_da_isencao: Lei 13.043/2014 art. 17 §6º e IN 1.585 art. 68: no dia seguinte ao fim da isenção, o lote isento sobe à média dos…
+- `coir/engine/posicao.py` — fim_da_isencao: Lei 13.043/2014 art. 17 §6º: o lote isento sobe ao maior entre o custo pago e quantidade x média dos 30 pregões, e os lotes se fundem num PM só (art. 58). Devolve o aumento.
 - `coir/engine/proventos.py` — _origem_reembolso: …é a quantidade emprestada vezes o valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica;…
 - `data/irpf/2025.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2026.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
 - `data/irpf/2027.yaml` — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c
-- `data/isencao_pme.csv` — AGRO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (AGRO3); oferta subsequente precificada em 04/02/2021
-- `data/isencao_pme.csv` — PRIO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (HRT Participações, HRTP3); RI PRIO: isentas as compradas entre 10/07/2014 e 29/01/2021 (oferta subsequente de jan/2021)
+- `data/isencao_pme.csv` — AGRO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (BrasilAgro); oferta subsequente precificada em 03/02/2021, anunciada em 04/02/2021, novas ações negociadas a partir de 05/02/2021; compras até 04/02/2021 (imprensa e o mesmo critério da PRIO; sem documento aberto da companhia); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — CRDE3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (CR2 Empreendimentos); sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); sem negócio nos 30 pregões finais de 2023
+- `data/isencao_pme.csv` — FRTA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Renar Maçãs, RNAR3, hoje Pomifrutas); sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — GSHP3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (General Shopping); sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado); só 4 pregões com negócio
+- `data/isencao_pme.csv` — NUTR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Nutriplant); sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — PRIO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (HRT Participações, HRTP3); RI PRIO: isentas as compradas entre 10/07/2014 e 29/01/2021, e as adquiridas a partir de 01/02/2021 não (follow-on precificado em 28/01/2021); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — PRNR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; fora da tabela de 2014 da B3; citada por fontes secundárias como enquadrada; sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — SQIA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Senior Solution, SNSL3); RI Sinqia, citado por fontes secundárias: isentas as compradas entre 10/07/2014 e 05/09/2019 (oferta deliberada em 05/09/2019, Formulário de Referência 2019); sem negócio nos 30 pregões finais de 2023
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): **ETF de renda fixa:** fora da apuração e do DARF; ganho listado para a DIRPF (Lei 13.043/2014).
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Isenção de PME (Lei 13.043/2014 art. 16; IN arts. 59 III e 66 a 69-A), `data/isencao_pme.csv`:
+- `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): isenta, com aviso de que a compra antes de 10/07/2014 não é isenta (Lei 13.043 art. 17 caput);
+- `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): nos 30 pregões anteriores a 31/12/2023 (Lei 13.043 art. 17 §6º; IN art. 68; texto A), e os lotes
 - `docs/regras-fiscais.md` — Decisões da validação da extração (F2, 14/10/2026): **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte (Lei 13.043/2014 art. 2º §4º). Na
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Reembolso de BTC ao doador: isento até 2025 (Lei 13.043/2014 art. 7º, reproduzido na IN 1.585
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_etf_de_renda_fixa_fica_fora_da_apuracao: Lei 13.043/2014 arts. 2º a 4º: ETF de renda fixa tem tributação exclusiva na fonte; o ganho vai para a lista da DIRPF, não para o DARF nem para a isenção.
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_pme_ganho_isento_e_fora_do_limite: Lei 13.043/2014 art. 16; IN 1.585 arts. 66 e 67 §3º: ganho na venda de ações de PME é isento e o valor não entra…
+- `tests/fiscal_cases/test_pme_lotes.py` — módulo: Lotes isento e tributado de ações de PME (parecer do especialista de 08/11/2026). Norma lida: - Lei 13.043/2014 art. 16 caput (isenção até 31/12/2023, mercado à vista de bolsa) e art. 17: caput (aquisição a…
 - `tests/fiscal_cases/test_proventos.py` — test_reembolso_com_origem_informada_pelo_usuario: …usuário, pelo informe ou extrato, prevalece sobre a identificada pelo valor; o tratamento é o da origem (Lei 13.043/2014 art. 7º; Lei 15.265/2025 arts. 20 e 21). Mesmo caso do JCP de 0,520530743 por ação (442,45 =…
 - `tests/fiscal_cases/test_proventos.py` — test_reembolso_de_jcp_identificado_pelo_valor_por_acao: …o reembolso é a quantidade emprestada vezes o valor por ação do provento do dia, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II). JCP de 0,520530743 por ação pago em 14/03/2025 (pacote da B3), 1.000 ações…
 
@@ -343,10 +356,17 @@ Companhias que saíram da bolsa:
 - `data/irpf/2027.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
 - `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/irpf/2027.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
-- `data/isencao_pme.csv` — AGRO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (AGRO3); oferta subsequente precificada em 04/02/2021
-- `data/isencao_pme.csv` — PRIO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (HRT Participações, HRTP3); RI PRIO: isentas as compradas entre 10/07/2014 e 29/01/2021 (oferta subsequente de jan/2021)
+- `data/isencao_pme.csv` — AGRO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (BrasilAgro); oferta subsequente precificada em 03/02/2021, anunciada em 04/02/2021, novas ações negociadas a partir de 05/02/2021; compras até 04/02/2021 (imprensa e o mesmo critério da PRIO; sem documento aberto da companhia); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — CRDE3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (CR2 Empreendimentos); sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); sem negócio nos 30 pregões finais de 2023
+- `data/isencao_pme.csv` — FRTA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Renar Maçãs, RNAR3, hoje Pomifrutas); sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — GSHP3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (General Shopping); sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado); só 4 pregões com negócio
+- `data/isencao_pme.csv` — NUTR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Nutriplant); sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — PRIO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (HRT Participações, HRTP3); RI PRIO: isentas as compradas entre 10/07/2014 e 29/01/2021, e as adquiridas a partir de 01/02/2021 não (follow-on precificado em 28/01/2021); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — PRNR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; fora da tabela de 2014 da B3; citada por fontes secundárias como enquadrada; sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
+- `data/isencao_pme.csv` — SQIA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Senior Solution, SNSL3); RI Sinqia, citado por fontes secundárias: isentas as compradas entre 10/07/2014 e 05/09/2019 (oferta deliberada em 05/09/2019, Formulário de Referência 2019); sem negócio nos 30 pregões finais de 2023
 - `data/parametros_fiscais.csv` — day_trade_criterio: IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (decisão do usuário de 25/10/2026, parecer do especialista). Alternativa: ordem_impressa
 - `data/parametros_fiscais.csv` — leilao_fracao_isentavel: sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (decisão do usuário 19/10/2026)
+- `data/parametros_fiscais.csv` — pme_lote_ordem_venda: IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; isento_primeiro ou tributado_primeiro (decisão do usuário de 08/11/2026)
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
 - `data/parametros_fiscais.csv` — reembolso_btc_norma_omissa: IN RFB 1.585/2015 art. 74 §1º I a (reembolso de dividendos de BTC expressamente isento)
 - `data/trocas_ticker.csv` — PETZ3: B3 COTAHIST: último negócio de PETZ3 em 02/01/2026; AUAU3 desde 05/01/2026 (RI: relação 1:1, abertura deduzida de R$ 0,71); CNPJ muda (18328118000109 -> 53153938000108): incorporação tratada como troca curada, custo mantido (IN RFB 1.585/2015 art. 58 §6º); R$ 0,71 por ação à parte: resgate de PN, SC Cosit 37/2020
@@ -388,6 +408,8 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_day_trade_usado_no_imposto_de_fii_gera_aviso: IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês (saldo único da DARF), mas a ficha FII…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_irrf_de_day_trade_nao_abate_fii_antes_do_0005: IN RFB 1.585/2015 art. 65 §8º I e ficha FII sem linha de day trade: dezembro/2026 com imposto só de FII (V 100…
 - `tests/fiscal_cases/test_petz_auau.py` — módulo: …em 23/01/2026. Valor exato pago: R$ 0,7109 por ação (imprensa, sobre o resultado do 4T25). Regra: - IN RFB 1.585/2015 art. 58 §6º: o custo das ações originais vai para as recebidas, e a ON e a PN foram recebidas.…
+- `tests/fiscal_cases/test_pme_lotes.py` — módulo: …pelo volume negociado nos últimos 30 (trinta) pregões anteriores a 31 de dezembro de 2023"). - IN RFB 1.585/2015 art. 58 caput (média ponderada), arts. 66 a 68 (repetem a lei) e art. 69-A (incluído pela IN RFB…
+- `tests/fiscal_cases/test_pme_lotes.py` — test_data_de_corte_das_ofertas_subsequentes: IN RFB 1.585/2015 art. 69-A: compras a partir da oferta subsequente são tributadas; §2º: as anteriores continuam isentas. A data é a que a companhia publicou, quando há.
 - `tests/fiscal_cases/test_proventos.py` — módulo: …na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de…
 - `tests/fiscal_cases/test_raiz55.py` — módulo: …os mesmos. Na nota, a quantidade é a de ações e o preço é por 100 ações; o custo é o valor impresso (IN RFB 1.585/2015 art. 58 caput). A PNA continua ação para a isenção de R$ 20 mil (art. 59 caput).
 - `tests/fiscal_cases/test_saldos_iniciais.py` — módulo: …parecer do especialista). Custódia inicial: a posição em 31/12 entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58), o mesmo do Bens e Direitos, sem resultado e sem efeito no day trade (art. 65 §2º).…
@@ -396,6 +418,10 @@ Companhias que saíram da bolsa:
 
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): 8º). Creditado = registrado como dívida com o acionista individualizado (IN RFB 1.700/2017 art.
 - `tests/fiscal_cases/test_proventos.py` — test_jcp_com_data_com_em_janeiro_e_retencao_do_ano_anterior_so_avisa: …x 0,50 bruto. Crédito na data com (a mais tarde entre aprovação e data com: IN SRF 41/1998 art. 3º; IN RFB 1.700/2017 art. 75 §10). 3a: retenção de 17,5% (líquido 412,50): ano 2026, bruto 500,00, sem aviso. 3b:…
+
+## IN RFB 1.916/2019
+
+- `tests/fiscal_cases/test_pme_lotes.py` — módulo: …1.585/2015 art. 58 caput (média ponderada), arts. 66 a 68 (repetem a lei) e art. 69-A (incluído pela IN RFB 1.916/2019): caput (sem isenção para as ações adquiridas a partir da data da oferta subsequente), §1º…
 
 ## Res. CMN 4.880/2020
 
@@ -406,6 +432,11 @@ Companhias que saíram da bolsa:
 - `data/trocas_ticker.csv` — PETZ3: B3 COTAHIST: último negócio de PETZ3 em 02/01/2026; AUAU3 desde 05/01/2026 (RI: relação 1:1, abertura deduzida de R$ 0,71); CNPJ muda (18328118000109 -> 53153938000108): incorporação tratada como troca curada, custo mantido (IN RFB 1.585/2015 art. 58 §6º); R$ 0,71 por ação à parte: resgate de PN, SC Cosit 37/2020
 - `docs/regras-fiscais.md` — R8: …custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026).…
 - `tests/fiscal_cases/test_petz_auau.py` — módulo: …- O resgate da PN é alienação: dinheiro menos o custo da PN (Lei 7.713/1988 art. 3º §3º; SC Cosit 37/2020, CETIP/BM&FBOVESPA, com a mesma estrutura de ON + PN resgatável). Fora de bolsa, vai para o GCAP e…
+
+## SC Cosit 63/2020
+
+- `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): a partir dela, "que serão tributadas"; §2º e SC Cosit 63/2020: as de antes continuam isentas. A
+- `tests/fiscal_cases/test_pme_lotes.py` — módulo: …§1º (inclusive preferência e bonificação), §2º (as anteriores permanecem isentas), §3º (IRRF do art. 63 na venda isenta é compensável) e §4º ("O investidor deverá controlar, de forma separada, as ações…
 
 ## SC Cosit 67/2024
 
@@ -474,6 +505,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): crédito decaiu (CTN art. 150 §4º, havendo pagamento; art. 173 I se houver dolo) e não se retifica
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): nem se paga (seria pagamento indevido, CTN art. 156 V); restituição de pagamento a maior, 5 anos do
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): pagamento (CTN art. 168 I). Decisão do usuário de 03/11/2026, com parecer do especialista, num
+- `tests/fiscal_cases/test_pme_lotes.py` — test_data_da_custodia_decide_a_marca: A custódia inicial segue a janela do CSV pela data do evento. Dentro dela o COIR presume aquisição a partir de 10/07/2014 (com aviso); fora, não presume isenção (CTN art. 111 II).
 
 ## Súmula STJ 360
 

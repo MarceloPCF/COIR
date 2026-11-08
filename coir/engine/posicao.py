@@ -4,6 +4,9 @@ aquisição; custos da compra integram o custo, os da venda reduzem a alienaçã
 Posição comprada: quantidade > 0 e custo > 0. Vendida (venda a descoberto, lançamento de opção):
 quantidade < 0 e custo < 0 (= receita da venda); o resultado sai na recompra ou no vencimento.
 A venda não muda o PM; a posição zerada não guarda resto de custo.
+
+Ações de PME (IN 1.585 art. 69-A §4º): a posição guarda à parte a quantidade e o custo do lote
+isento; o lote tributado é a diferença. Cada lote tem o seu PM até o fim da isenção.
 """
 
 from dataclasses import dataclass
@@ -24,7 +27,10 @@ class Posicao:
     quantidade: Decimal = ZERO
     custo: Decimal = ZERO
     descoberto_desde: date | None = None  # venda a descoberto que abriu a posição vendida
-    pme_ate: date | None = None  # lote elegível à isenção de PME (vendas isentas até a data)
+    pme_ate: date | None = None  # lote isento de PME: vendas isentas até a data
+    pme_media: Decimal | None = None  # média dos 30 pregões do fim da isenção (Lei 13.043 art. 17)
+    isento_quantidade: Decimal = ZERO  # parte da posição no lote isento de PME
+    isento_custo: Decimal = ZERO
 
     @property
     def pm(self) -> Decimal:
@@ -89,6 +95,62 @@ class Posicao:
         """Evento corporativo: soma quantidade e custo (com sinal), sem resultado."""
         self.quantidade += quantidade
         self.custo = ZERO if self.quantidade == 0 else self.custo + custo
+
+    # ------------------------------------------------------------------ lote isento de PME
+    def isento_em(self, dia: date) -> bool:
+        return self.isento_quantidade > 0 and self.pme_ate is not None and dia <= self.pme_ate
+
+    def somar_isento(self, quantidade: Decimal, custo: Decimal, ate: date,
+                     media: Decimal | None) -> None:  # fmt: skip
+        """Marca como isenta uma parte que já entrou na posição."""
+        self.isento_quantidade += quantidade
+        self.isento_custo += custo
+        self.pme_ate, self.pme_media = ate, self.pme_media or media
+
+    def _limpar_isento(self) -> None:
+        if self.isento_quantidade == 0:
+            self.isento_custo, self.pme_ate, self.pme_media = ZERO, None, None
+
+    def tirar_isento(self, quantidade: Decimal) -> Decimal:
+        """Tira `quantidade` do lote isento e devolve o custo dela (a posição não muda aqui)."""
+        if quantidade == self.isento_quantidade:
+            custo = self.isento_custo
+        else:
+            custo = self.isento_custo * quantidade / self.isento_quantidade
+        self.isento_quantidade -= quantidade
+        self.isento_custo -= custo
+        self._limpar_isento()
+        return custo
+
+    def vender_isento(self, quantidade: Decimal, valor: Decimal) -> Baixa:
+        return self.vender_lote(quantidade, valor, self.tirar_isento(quantidade))
+
+    def vender_tributado(self, quantidade: Decimal, valor: Decimal) -> Baixa:
+        """Venda de dentro do lote tributado, pelo PM dele, com o lote isento na mesma posição."""
+        tem = self.quantidade - self.isento_quantidade
+        total = self.custo - self.isento_custo
+        custo = total if quantidade == tem else total * quantidade / tem
+        return self.vender_lote(quantidade, valor, custo)
+
+    def repartir_isento(self, quantidade: Decimal, custo: Decimal) -> None:
+        """Desdobramento, grupamento e redução de capital atingem os dois lotes pela quantidade.
+        Chamar antes de `ajustar`."""
+        if self.isento_quantidade and self.quantidade:
+            parte = self.isento_quantidade / self.quantidade
+            self.isento_quantidade += quantidade * parte
+            self.isento_custo += custo * parte
+
+    def fim_da_isencao(self) -> Decimal:
+        """Lei 13.043/2014 art. 17 §6º: o lote isento sobe ao maior entre o custo pago e quantidade
+        x média dos 30 pregões, e os lotes se fundem num PM só (art. 58). Devolve o aumento."""
+        media = self.pme_media
+        aumento = ZERO
+        if media is not None:
+            aumento = max(self.isento_quantidade * media - self.isento_custo, ZERO)
+        self.custo += aumento
+        self.isento_quantidade = ZERO
+        self._limpar_isento()
+        return aumento
 
     def virar_po(self) -> Baixa:
         """Vencimento sem exercício: titular perde o custo; lançador ganha a receita."""

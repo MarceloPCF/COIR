@@ -198,8 +198,9 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                             on_change=lambda e: ver_todas(bool(e.value), propostas)
                             ).mark("ver-propostas")  # fmt: skip
             if not propostas:
-                ui.label("Importe a movimentação da B3 (Importar > Planilhas da B3) para ver os "
-                         "eventos sugeridos.").classes("coir-vazio w-full")  # fmt: skip
+                ui.label("Nenhum evento público da B3 atinge as suas posições. A movimentação da "
+                         "B3 (Importar > Planilhas da B3) pode trazer mais sugestões.").classes(
+                    "coir-vazio w-full")  # fmt: skip
             elif not mostradas:
                 ui.label("Nenhuma proposta pendente: os eventos da movimentação já estão "
                          "lançados ou ignorados.").classes("coir-vazio w-full")  # fmt: skip

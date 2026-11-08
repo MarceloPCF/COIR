@@ -286,11 +286,28 @@ async def test_apuracao_abre_a_memoria_do_mes(demo: Path) -> None:
         await user.should_see("Apurado até 16/10/2026", retries=ESPERA)
         grade = user.find(marker="grade-apuracao").elements.pop()
         assert isinstance(grade, ui.aggrid)
+        nomes = [c["headerName"] for c in grade.options["columnDefs"]]
+        assert nomes[5:7] == ["Isento", "PME (isento)"]  # o resultado de PME aparece no mês
         agosto = next(r for r in grade.options["rowData"] if r["c0"] == "Agosto")
         user.find(marker="grade-apuracao").trigger("rowClicked", {"data": agosto})
         await user.should_see("Memória de agosto de 2026")
         await user.should_see("1. Limite de isenção (ações à vista)")
         await user.should_see("Movimentos do mês com resultado (13)")
+        await user.should_see("Resultado por ativo")
+        por_ativo = user.find(marker="movimentos-por-ativo").elements.pop()
+        movimentos = user.find(marker="movimentos-mes").elements.pop()
+        assert isinstance(por_ativo, ui.aggrid) and isinstance(movimentos, ui.aggrid)
+        linhas = por_ativo.options["rowData"]
+        assert linhas and len(movimentos.options["rowData"]) == 13
+        # clicar numa linha mostra só os movimentos dela; clicar de novo mostra todos
+        linha = linhas[0]
+        user.find(marker="movimentos-por-ativo").trigger("rowClicked", {"data": linha})
+        await user.should_see("Resultado por ativo")
+        vistos = movimentos.options["rowData"]
+        assert 0 < len(vistos) < 13 and {r["c1"] for r in vistos} == {linha["c0"]}
+        user.find(marker="movimentos-por-ativo").trigger("rowClicked", {"data": linha})
+        await user.should_see("Resultado por ativo")
+        assert len(movimentos.options["rowData"]) == 13
 
 
 @pytest.mark.asyncio
@@ -340,6 +357,11 @@ async def test_operacoes_finalizadas_numa_grade_com_filtros_e_resumo(demo: Path)
         await user.should_see("Resumo fiscal do ano", retries=ESPERA)
         user.find(marker="relatorio-operacoes-finalizadas").click()
         await user.should_see("Resultado por categoria e tipo", retries=ESPERA)
+        # a vista que abre é por ativo, mês a mês; a operação a operação fica um clique adiante
+        vista = user.find(marker="finalizadas-vista").elements.pop()
+        assert isinstance(vista, ui.toggle) and vista.value == "ativo"
+        vista.set_value("operacao")
+        await user.should_see(marker="finalizadas")
         grade = user.find(marker="finalizadas").elements.pop()
         resumo = user.find(marker="finalizadas-resumo").elements.pop()
         assert isinstance(grade, ui.aggrid) and isinstance(resumo, ui.aggrid)
@@ -348,6 +370,11 @@ async def test_operacoes_finalizadas_numa_grade_com_filtros_e_resumo(demo: Path)
         await user.should_see("Resultado por categoria e tipo")
         assert {r["c1"] for r in grade.options["rowData"]} == {ativo}
         assert resumo.options["pinnedBottomRowData"][0]["c2"] == str(len(grade.options["rowData"]))
+        vista.set_value("ativo")
+        await user.should_see(marker="finalizadas-por-ativo")
+        meses = [g for g in user.find(marker="finalizadas-por-ativo").elements
+                 if isinstance(g, ui.aggrid)]  # fmt: skip
+        assert meses and {r["c0"] for g in meses for r in g.options["rowData"]} == {ativo}
 
 
 @pytest.mark.asyncio

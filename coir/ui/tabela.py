@@ -16,6 +16,8 @@ from coir.reports.modelo import NUMERICAS, Coluna, Secao, TipoColuna, Valor, for
 
 Linha = Sequence[Valor]
 POUCAS_LINHAS = 20
+# operações por dia e ativo (reports.agrupar): cabe na tela sem cortar a data e os títulos
+LARGURAS_POR_ATIVO = (84, 74, 80, 82, 48, 96, 48, 92, 92, 100, 72, 96)
 
 
 def _bruto(valor: Valor) -> str | None:

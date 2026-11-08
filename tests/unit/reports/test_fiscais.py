@@ -111,7 +111,8 @@ def test_operacoes_finalizadas_somam_o_resultado_do_mes() -> None:
     d = _dados(_livro())
     rel = TODOS["operacoes-finalizadas"](d)
     assert [s.titulo for s in rel.secoes] == [
-        "2025 - Fevereiro - Bovespa", "2025 - Março - Bovespa"]  # fmt: skip
+        "2025 - Fevereiro - Bovespa", "2025 - Março - Bovespa",
+        "2025 - Fevereiro - Bovespa - por ativo", "2025 - Março - Bovespa - por ativo"]  # fmt: skip
     marco = rel.secoes[1]
     res = _coluna(marco, "Resultado")
     m = mes(d.apuracao, 2025, 3)
@@ -206,3 +207,58 @@ def test_perda_de_pme_fica_fora_do_lucro_isento() -> None:
     assert outras.total is not None and outras.total[isento] == D(1000)
     evolucao = TODOS["evolucao"](d).secoes[0]
     assert "PME" in evolucao.nota
+
+
+def test_por_ativo_uma_linha_por_dia_e_ativo_em_blocos_por_mes() -> None:
+    """VALE3 em 09/03, dois negócios: uma linha só, com os preços médios: custo (1.000,00 + 100,00)
+    / 110 = 10,00; final (1.100,00 + 132,00) / 110 = 11,20; lucratividade 132,00 / 1.100,00 = 12%.
+    O mesmo ativo em outro dia, outra corretora ou no day trade é outra linha, e futuro é outro
+    bloco, como no controle que o usuário usa para conferir."""
+    from decimal import Decimal as D
+
+    from coir.reports.agrupar import ItemOperacao, por_mes, total_por_ativo
+
+    def item(
+        dia: date, ativo: str, q: int, a: str | None, e: str | None, r: str, corretora: str = "XP",
+        categoria: str = "Comum", obs: str = "",
+    ) -> ItemOperacao:  # fmt: skip
+        return ItemOperacao(dia, ativo, corretora, categoria, "C/V", D(q), D(a) if a else None,
+                            D(e) if e else None, D(r), obs)  # fmt: skip
+
+    linhas = por_mes([
+        item(date(2020, 3, 9), "VALE3", 100, "1000.00", "1100.00", "100.00", obs="isento"),
+        item(date(2020, 3, 9), "VALE3", 10, "100.00", "132.00", "32.00", obs="isento"),
+        item(date(2020, 3, 6), "PETR4", 50, "500.00", "450.00", "-50.00"),
+        item(date(2020, 3, 20), "VALE3", 1, "10.00", "11.00", "1.00"),
+        item(date(2020, 3, 9), "VALE3", 5, "50.00", "60.00", "10.00", categoria="Day trade"),
+        item(date(2020, 3, 9), "VALE3", 7, "70.00", "77.00", "7.00", corretora="BTG"),
+        item(date(2020, 4, 1), "VALE3", 1, "10.00", "11.00", "1.00"),
+        item(date(2020, 3, 2), "WINZ25", 2, None, None, "20.00"),
+    ])  # fmt: skip
+    assert list(linhas) == [(2020, 3, "Bovespa"), (2020, 3, "BM&F"), (2020, 4, "Bovespa")]
+    marco = linhas[(2020, 3, "Bovespa")]
+    assert [(x[8], x[0], x[2], x[3]) for x in marco] == [
+        (date(2020, 3, 6), "PETR4", "XP", "Comum"),
+        (date(2020, 3, 9), "VALE3", "BTG", "Comum"),
+        (date(2020, 3, 9), "VALE3", "XP", "Comum"),
+        (date(2020, 3, 9), "VALE3", "XP", "Day trade"),
+        (date(2020, 3, 20), "VALE3", "XP", "Comum"),
+    ]
+    vale = marco[2]
+    assert vale[1] == D(110) and (vale[4], vale[6]) == ("C", "V")
+    assert vale[5] == D(10) and vale[7] == D("11.2") and vale[9] == D("0.12")
+    assert vale[10] == "isento" and vale[11] == D("132.00")
+    futuro = linhas[(2020, 3, "BM&F")][0]
+    assert futuro[5] is None and futuro[9] is None  # só o resultado
+    total = total_por_ativo(marco)
+    assert total[0] == "Total" and total[-1] == D("100.00") and total[1] is None
+
+
+def test_relatorio_exportado_traz_cada_mes_por_ativo_e_fecha_com_o_mes() -> None:
+    rel = TODOS["operacoes-finalizadas"](_dados(_livro()))
+    assert [s.titulo for s in rel.secoes] == [
+        "2025 - Fevereiro - Bovespa", "2025 - Março - Bovespa",
+        "2025 - Fevereiro - Bovespa - por ativo", "2025 - Março - Bovespa - por ativo"]  # fmt: skip
+    for detalhe, por_ativo in ((rel.secoes[0], rel.secoes[2]), (rel.secoes[1], rel.secoes[3])):
+        assert detalhe.total is not None and por_ativo.total is not None
+        assert por_ativo.total[-1] == detalhe.total[_coluna(detalhe, "Resultado")]

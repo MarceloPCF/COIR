@@ -79,6 +79,7 @@ class OperacaoMotor(Modelo):
     objeto_tipo: TipoAtivo | None = None  # opção: tipo do ativo-objeto (None: não identificado)
     liquidacao_termo: date | None = None  # compra a termo: entra na carteira nesta data
     pme_ate: date | None = None  # compra elegível à isenção de PME: vendas isentas até esta data
+    pme_media_fim: Decimal | None = None  # média dos 30 pregões do fim da isenção (art. 17 §6º)
     marcada_dt: bool = False  # a nota marca o negócio como day trade (observação "D")
 
 
@@ -217,6 +218,9 @@ class Evento(Modelo):
     tipo_ativo_destino: TipoAtivo | None = None
     quantidade_destino: Decimal | None = None
     natureza: NaturezaEvento | None = None
+    pme_ate: date | None = None  # ações recebidas no lote isento de PME: vendas isentas até a data
+    pme_media_fim: Decimal | None = None  # média dos 30 pregões do fim da isenção (art. 17 §6º)
+    aviso: str = ""  # o que a apuração mostra sobre o evento (presunção da custódia de PME)
     percentual_custo: Decimal | None = None  # cisão: fração do custo de A que vai para B (0..1)
     observacao: str = ""
 

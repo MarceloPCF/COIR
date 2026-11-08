@@ -6,8 +6,9 @@ usam o mesmo objeto. Nenhum cálculo fiscal novo aqui: os valores vêm da apura�
 """
 
 from collections import defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import replace
+from datetime import date
 from decimal import Decimal
 
 from coir.domain.fiscal import (
@@ -26,6 +27,7 @@ from coir.domain.fiscal import (
 from coir.domain.nota import CategoriaCusto
 from coir.domain.proventos import Provento, TipoProvento
 from coir.domain.relatorio import DadosRelatorio
+from coir.reports.agrupar import COLUNAS_POR_ATIVO, ItemOperacao, por_mes, total_por_ativo
 from coir.reports.irpf import declaracao
 from coir.reports.modelo import (
     Cabecalho,
@@ -505,6 +507,45 @@ def _obs(m: Movimento, isento: bool) -> str:
     return ", ".join(marcas)
 
 
+def itens_finalizadas(
+    colunas: Sequence[Coluna], linhas: Iterable[Sequence[Valor]]
+) -> list[ItemOperacao]:
+    """Linhas de operações finalizadas -> itens do agrupamento por mês e ativo."""
+    nomes = [c.nome for c in colunas]
+
+    def numero(x: Sequence[Valor], nome: str) -> Decimal | None:
+        v = x[nomes.index(nome)]
+        return v if isinstance(v, Decimal) else None
+
+    def texto(x: Sequence[Valor], nome: str) -> str:
+        return str(x[nomes.index(nome)] or "")
+
+    saida: list[ItemOperacao] = []
+    for x in linhas:
+        dia = x[nomes.index("Data")]
+        if isinstance(dia, date):
+            saida.append(ItemOperacao(
+                data=dia, ativo=texto(x, "Ativo"), corretora=texto(x, "Corretora"),
+                categoria=texto(x, "Categoria"), sentido=texto(x, "C/V"),
+                quantidade=numero(x, "Quantidade") or Decimal(0),
+                abertura=numero(x, "Abertura"), encerramento=numero(x, "Encerramento"),
+                resultado=numero(x, "Resultado") or Decimal(0), obs=texto(x, "Obs."),
+            ))  # fmt: skip
+    return saida
+
+
+def _por_ativo_mes_a_mes(secoes: tuple[Secao, ...]) -> tuple[Secao, ...]:
+    """Cada mês com uma linha por dia e ativo, para conferir com outro controle (e nos arquivos)."""
+    if not secoes:
+        return ()
+    itens = itens_finalizadas(secoes[0].colunas, [x for s in secoes for x in s.linhas])
+    return tuple(
+        Secao(f"{ano} - {MESES[mes - 1]} - {mercado} - por ativo", COLUNAS_POR_ATIVO, tuple(linhas),
+              total_por_ativo(linhas))
+        for (ano, mes, mercado), linhas in por_mes(itens).items()
+    )  # fmt: skip
+
+
 def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
     isento = {m.mes: _cat(m, Categoria.COMUM).isento > 0 for m in _meses(d)}
     colunas = (
@@ -513,6 +554,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
         Coluna("Corretora"),
         Coluna("Categoria"),
         Coluna("Tipo"),
+        Coluna("C/V"),
         Coluna("Quantidade", T.QUANTIDADE),
         Coluna("Custo médio", T.PM),
         _dinheiro("Abertura"),
@@ -538,6 +580,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
                 m.corretora or "",
                 CATEGORIA_CURTA[m.categoria],
                 NOME_GRUPO[m.grupo],
+                {"V": "C/V", "C": "V/C"}.get(m.cv or "", ""),  # o que abriu / o que encerrou
                 quantidade or None,
                 unit,
                 None if futuro else abertura,
@@ -552,7 +595,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
             f"{d.ano} - {MESES[mes - 1]} - {mercado}",
             colunas,
             tuple(linhas),
-            _total(linhas, colunas, {9}),
+            _total(linhas, colunas, {10}),
         )
         for (mes, mercado), linhas in sorted(
             blocos.items(), key=lambda x: (x[0][0], x[0][1] != "Bovespa")
@@ -562,7 +605,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
         "operacoes-finalizadas",
         "Operações finalizadas",
         _cab(d),
-        secoes,
+        (*secoes, *_por_ativo_mes_a_mes(secoes)),
         pdf=True,
         notas=(
             "Abertura: custo médio baixado (ou receita da venda, na recompra de "

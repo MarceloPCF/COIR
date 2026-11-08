@@ -35,8 +35,8 @@ from coir.domain.fiscal import (
     Visao,
 )
 from coir.domain.nota import NegocioBMF, NotaExtraida
-from coir.domain.parametros import ReferenciasFiscais
-from coir.domain.referencias import RE_SERIE_OPCAO, Referencias
+from coir.domain.parametros import IsencaoPME, ReferenciasFiscais
+from coir.domain.referencias import RE_SERIE_OPCAO, Referencias, codigo_atual
 from coir.engine.apuracao import apurar
 from coir.engine.apuracao import conta_na_isencao as conta_na_isencao  # para a tela
 from coir.engine.calendario import liquidacao_termo, vencimento_opcao
@@ -125,9 +125,9 @@ def _nota_bovespa(
                 o.ativo_objeto
             )
         isencao = refs.pme.get(o.papel)
-        pme_ate = None
+        pme_ate, pme_media = None, None
         if not opcao and o.cv == "C" and isencao and isencao.compra_elegivel(registro.data_pregao):
-            pme_ate = isencao.vendas_ate
+            pme_ate, pme_media = isencao.vendas_ate, isencao.media_fim
         liquidacao = None
         if o.mercado == "TERMO" and o.prazo_termo_dias is not None:
             liquidacao = liquidacao_termo(registro.data_pregao, o.prazo_termo_dias, refs.calendario)
@@ -138,6 +138,7 @@ def _nota_bovespa(
                 quantidade=o.quantidade, preco=o.preco, total=o.total,
                 vencimento=_vencimento(negocio.prazo, o.papel, refs) if opcao else None,
                 opcao=exercida, liquidacao_termo=liquidacao, pme_ate=pme_ate,
+                pme_media_fim=pme_media,
                 marcada_dt=negocio.day_trade,
                 objeto_tipo=_objeto_tipo(o.papel, publicas, refs) if opcao else None,
             )
@@ -214,6 +215,10 @@ def entradas(
         ticker = tickers.ticker(e.ativo_id, e.data)
         destino = None if e.ativo_destino_id is None else tickers.ticker(e.ativo_destino_id,
                                                                          e.data)  # fmt: skip
+        tipo = TipoEvento(e.tipo)
+        isencao = fiscais.pme.get(codigo_atual(refs)(ticker))
+        no_lote = (isencao is not None and tipo in EVENTOS_DO_LOTE_PME
+                   and isencao.compra_elegivel(e.data))  # fmt: skip
         eventos.append(
             Evento(
                 id=e.id, data=e.data, titular=e.conta.titular_id, conta=e.conta_id,
@@ -228,9 +233,33 @@ def entradas(
                 quantidade_destino=e.quantidade_destino,
                 natureza=None if e.natureza is None else NaturezaEvento(e.natureza),
                 percentual_custo=e.percentual_custo, observacao=e.observacao,
+                pme_ate=isencao.vendas_ate if isencao and no_lote else None,
+                pme_media_fim=isencao.media_fim if isencao and no_lote else None,
+                aviso=_aviso_custodia_pme(ticker, e.data, isencao) if isencao
+                and tipo is TipoEvento.CUSTODIA_INICIAL else "",
             )
         )  # fmt: skip
     return notas, eventos
+
+
+EVENTOS_DO_LOTE_PME = (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO, TipoEvento.CUSTODIA_INICIAL)
+
+
+def _aviso_custodia_pme(ticker: str, dia: date, isencao: IsencaoPME) -> str:
+    """A custódia não traz a data de compra: dentro da janela presume isenção (decisão do usuário
+    de 08/11/2026, parecer do especialista); fora dela, não."""
+    if dia > isencao.vendas_ate:
+        return ""
+    if isencao.compra_elegivel(dia):
+        return (f"{dia}: custódia inicial de {ticker}: sem a data de compra, o COIR considerou que "
+                f"as ações foram compradas a partir de {isencao.aquisicao_desde:%d/%m/%Y} e as "
+                "tratou como isentas de PME (Lei 13.043/2014 art. 17). Ações compradas antes "
+                f"dessa data não são isentas: lance essa parte como custódia em 31/12/"
+                f"{isencao.aquisicao_desde.year - 1}")  # fmt: skip
+    return (f"{dia}: custódia inicial de {ticker} tratada como tributada. Ações compradas entre "
+            f"{isencao.aquisicao_desde:%d/%m/%Y} e {isencao.aquisicao_ate:%d/%m/%Y} são isentas de "
+            f"PME até {isencao.vendas_ate:%d/%m/%Y}: lance essa parte como custódia numa data "
+            "dentro desse período")  # fmt: skip
 
 
 def _tipo_evento(fiscais: ReferenciasFiscais, ticker: str) -> TipoAtivo:

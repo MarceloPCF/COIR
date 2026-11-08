@@ -135,6 +135,8 @@ body.body--dark {{ --q-primary: #2E6FB8; }}
   --ag-row-hover-color: var(--coir-caneta-fundo); --ag-selected-row-background-color:
   var(--coir-caneta-fundo); --ag-pinned-row-border: 2px solid var(--coir-linha); }}
 .coir-grade .ag-row-pinned {{ font-weight: 600; background: var(--coir-fundo); }}
+.coir-grade .ag-layout-auto-height .ag-center-cols-viewport,
+.coir-grade .ag-layout-auto-height .ag-center-cols-container {{ min-height: 0 !important; }}
 .ag-right-aligned-cell {{ font-variant-numeric: tabular-nums; }}
 .coir-item-ativo {{ background: var(--coir-caneta-fundo); color: var(--coir-caneta);
   font-weight: 600; }}

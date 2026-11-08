@@ -426,6 +426,7 @@ def carregar_fiscais(pasta: Path | None = None) -> ReferenciasFiscais:
             ticker=p["ticker"], aquisicao_desde=date.fromisoformat(p["aquisicao_desde"]),
             aquisicao_ate=date.fromisoformat(p["aquisicao_ate"]),
             vendas_ate=date.fromisoformat(p["vendas_ate"]), fonte=p["fonte"],
+            media_fim=Decimal(p["media_fim"]) if p.get("media_fim") else None,
         )
         for p in _linhas(base / "isencao_pme.csv")
     }  # fmt: skip

@@ -10,7 +10,8 @@ from nicegui import run, ui
 
 from coir.domain.relatorio import DadosRelatorio
 from coir.erros import CoirError
-from coir.reports.fiscais import ABAS, MESES, TODOS, relatorios
+from coir.reports.agrupar import COLUNAS_POR_ATIVO, chave_da_linha, por_mes, total_por_ativo
+from coir.reports.fiscais import ABAS, MESES, TODOS, itens_finalizadas, relatorios
 from coir.reports.modelo import Coluna, Relatorio, Secao, TipoColuna, Valor
 from coir.servicos.estado import Estado
 from coir.servicos.relatorios import FORMATOS, exportar
@@ -177,14 +178,17 @@ def _uma_por_vez(rel: Relatorio, secoes: list[Secao], pasta: Path) -> None:
 
 def _finalizadas(secoes: list[Secao]) -> None:
     """Operações finalizadas do ano numa grade só, com filtros (meses, corretora, ativo,
-    categoria e tipo) e o resultado somado por categoria e tipo, como nos controles de IR."""
+    categoria e tipo) e o resultado somado por categoria e tipo, como nos controles de IR. Duas
+    vistas: cada mês com uma linha por dia e ativo, ou operação a operação. Clicar numa linha abre
+    só as operações daquele ativo naquele dia."""
     colunas = secoes[0].colunas
+    secoes = [s for s in secoes if s.colunas == colunas]  # a seção por ativo é refeita pelo filtro
     nome = [c.nome for c in colunas]
     i_data, i_ativo, i_corretora = nome.index("Data"), nome.index("Ativo"), nome.index("Corretora")
     i_cat, i_tipo, i_res = nome.index("Categoria"), nome.index("Tipo"), nome.index("Resultado")
     todas = [linha for s in secoes for linha in s.linhas]
     filtro: dict[str, object] = {"de": 1, "ate": 12, "corretora": "", "ativo": "", "cat": "",
-                                 "tipo": ""}  # fmt: skip
+                                 "tipo": "", "clicado": ""}  # fmt: skip
 
     def vistas() -> list[tuple[Valor, ...]]:
         ativo = str(filtro["ativo"]).strip().upper()
@@ -201,6 +205,10 @@ def _finalizadas(secoes: list[Secao]) -> None:
                 continue
             saida.append(tuple(x))
         return saida
+
+    def detalhe(linhas: list[tuple[Valor, ...]]) -> list[tuple[Valor, ...]]:
+        clicado = filtro["clicado"]
+        return [x for x in linhas if not clicado or f"{x[i_data]}|{x[i_ativo]}" == clicado]
 
     def soma(linhas: list[tuple[Valor, ...]]) -> Decimal:
         return sum((v for x in linhas if isinstance(v := x[i_res], Decimal)), Decimal(0))
@@ -238,13 +246,48 @@ def _finalizadas(secoes: list[Secao]) -> None:
     grade_resumo = tabela.grade(colunas_resumo, resumo(linhas), total=("Total", "", len(linhas),
                                 soma(linhas)))  # fmt: skip
     grade_resumo.mark("finalizadas-resumo")
+
+    vista = ui.toggle({"ativo": "Por ativo, mês a mês", "operacao": "Operação a operação"},
+                      value="ativo", on_change=lambda e: trocar_vista(e.value),
+                      ).props("no-caps dense").mark("finalizadas-vista")  # fmt: skip
+    meses_por_ativo = ui.column().classes("w-full gap-3")
     grade = tabela.grade(colunas, linhas, total=total(linhas), altura="h-[560px]",
                          pelo_conteudo=True)  # fmt: skip
     grade.mark("finalizadas")
+    grade.set_visibility(False)
+
+    def abrir_ativo(chave: object) -> None:
+        filtro["clicado"] = chave
+        mostradas = detalhe(vistas())
+        tabela.atualizar(grade, colunas, mostradas, total=total(mostradas))
+        vista.set_value("operacao")
+
+    def desenhar_meses(linhas: list[tuple[Valor, ...]]) -> None:
+        meses_por_ativo.clear()
+        with meses_por_ativo:
+            for (ano, mes, mercado), do_mes in por_mes(itens_finalizadas(colunas, linhas)).items():
+                ui.label(f"{ano} - {MESES[mes - 1]} - {mercado}").classes("coir-titulo text-base")
+                tabela.grade(COLUNAS_POR_ATIVO, do_mes, chaves=[chave_da_linha(x) for x in do_mes],
+                             total=total_por_ativo(do_mes),
+                             larguras=tabela.LARGURAS_POR_ATIVO, ao_clicar=abrir_ativo,
+                             ).mark("finalizadas-por-ativo")  # fmt: skip
+
+    def trocar_vista(valor: object) -> None:
+        por_ativo_visivel = valor == "ativo"
+        meses_por_ativo.set_visibility(por_ativo_visivel)
+        grade.set_visibility(not por_ativo_visivel)
+        if por_ativo_visivel and filtro["clicado"]:
+            filtro["clicado"] = ""  # volta a mostrar todas as operações do filtro
+            mostradas = vistas()
+            tabela.atualizar(grade, colunas, mostradas, total=total(mostradas))
+
+    desenhar_meses(linhas)
 
     def mudar(chave: str, valor: object) -> None:
         filtro[chave] = valor
+        filtro["clicado"] = ""  # filtro novo: volta a mostrar todas as operações do filtro
         linhas = vistas()
         tabela.atualizar(grade, colunas, linhas, total=total(linhas))
         tabela.atualizar(grade_resumo, colunas_resumo, resumo(linhas),
                          total=("Total", "", len(linhas), soma(linhas)))  # fmt: skip
+        desenhar_meses(linhas)

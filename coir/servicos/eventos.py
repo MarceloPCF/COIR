@@ -36,6 +36,7 @@ from coir.db.modelos import (
 from coir.db.sessao import conectar
 from coir.domain.fiscal import (
     TIPOS_COM_DESTINO,
+    AtivoIsolado,
     Movimento,
     NaturezaEvento,
     TipoAtivo,
@@ -683,8 +684,11 @@ def _do_pacote(
     notas = [n for n in notas if n.titular == titular]
     evs = [e for e in evs if e.titular == titular]
     limite = date.max
+    isolados: list[AtivoIsolado] = []
     try:
-        movs = movimentar(notas, evs, fiscais.parametros, limite, Visao.CONTA)
+        # o ativo que não fecha sai do cálculo a partir do problema, e os outros seguem: um ativo
+        # travado não pode esconder os eventos de toda a carteira
+        movs = movimentar(notas, evs, fiscais.parametros, limite, Visao.CONTA, isolados=isolados)
     except MotorError as erro:
         if erro.data is None:
             raise
@@ -692,6 +696,7 @@ def _do_pacote(
         # as posições até a véspera bastam para propor o evento que destrava o livro
         limite = erro.data
         movs = movimentar(notas, evs, fiscais.parametros, limite - timedelta(days=1), Visao.CONTA)
+    parou_em = {i.ativo: i.desde for i in isolados}
     historico = _posicoes(movs)
     custos = _custos(movs)
     inicio = min((m.data for m in movs), default=date.max)
@@ -726,8 +731,8 @@ def _do_pacote(
             select(TickerHistorico.ticker).where(TickerHistorico.ativo_id == a))}  # fmt: skip
         for (conta, ativo), hist in historico.items():
             q = _na_data(hist, data_com)
-            if not q or conta not in nome_conta:
-                continue
+            if not q or conta not in nome_conta or data_ex > parou_em.get(ativo, date.max):
+                continue  # depois de onde o ativo parou, a posição na data com não é conhecida
             serie = tickers_serie.get(ativo)
             if ativo in ativos and serie is None and tipo is TipoEvento.REDUCAO_CAPITAL:
                 dados, nota = _resgate(ev, ticker, conta, q, _na_data(custos[(conta, ativo)],
