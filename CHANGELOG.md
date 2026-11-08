@@ -29,6 +29,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ### Alterado
 
+- **A janela abre maximizada**, em vez do tamanho fixo que não cabia nas telas menores.
 - **Centavos de arredondamento não recusam mais a nota.** A diferença entre os valores impressos vira a linha de custo "Ajuste de arredondamento", e a nota fecha com o líquido impresso. Só o que passar do que o arredondamento explica consome a tolerância de R$ 0,05 por nota, com aviso; acima dela, a nota é recusada.
 
 ### Adicionado
