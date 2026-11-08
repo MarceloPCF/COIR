@@ -321,6 +321,35 @@ def test_custodia_inicial_de_ativo_sem_nota_cadastra_o_ativo(demo: Path) -> None
         eventos.salvar(demo, 1, replace(d, ticker="ITAU"), REFS, FISCAIS)
 
 
+def test_custodia_com_codigo_antigo_vai_para_o_ativo_das_notas(demo: Path) -> None:
+    """Caso real: custódia de CNTO3 em 31/12/2019 e notas gravadas como SBFG3 (trocas_ticker.csv).
+    Eram dois ativos, e as vendas do código novo ficavam sem posição. Aqui, VELH4 era GGBR4: a
+    carteira mostra uma linha só, somando a custódia às 300 ações das notas."""
+    from coir.domain.referencias import TrocaTicker
+
+    refs = REFS.model_copy(update={"trocas": (*REFS.trocas, TrocaTicker(
+        ticker_impresso="VELH4", ticker="GGBR4", ate=date(2023, 12, 31)))})  # fmt: skip
+    antes = _carteira(demo, date(2024, 1, 31))["GGBR4"]
+    d = DadosEvento(tipo=TipoEvento.CUSTODIA_INICIAL, data=date(2023, 12, 31), conta=AGORA_CONTA,
+                    ticker="VELH4", cv="C", quantidade=D(100), valor=D(3000))  # fmt: skip
+    eventos.salvar_lote(demo, 1, [(d, None)], refs, FISCAIS)
+    depois = _carteira(demo, date(2024, 1, 31))
+    assert "VELH4" not in depois
+    assert depois["GGBR4"] == (antes[0] + 100, antes[1] + 3000)
+
+
+def test_custodia_com_codigo_antigo_sem_notas_nasce_com_o_codigo_novo(demo: Path) -> None:
+    """Sem nota nenhuma do ativo: entra pelo código atual, e as notas futuras caem nele."""
+    from coir.domain.referencias import TrocaTicker
+
+    refs = REFS.model_copy(update={"trocas": (*REFS.trocas, TrocaTicker(
+        ticker_impresso="VELH3", ticker="ITUB3", ate=date(2023, 12, 31)))})  # fmt: skip
+    d = DadosEvento(tipo=TipoEvento.CUSTODIA_INICIAL, data=date(2023, 12, 31), conta=AGORA_CONTA,
+                    ticker="VELH3", cv="C", quantidade=D(100), valor=D(3000))  # fmt: skip
+    eventos.salvar_lote(demo, 1, [(d, None)], refs, FISCAIS)
+    assert _carteira(demo, date(2024, 1, 31))["ITUB3"] == (D(100), D(3000))
+
+
 # ----------------------------------------------- pendência no livro (teste com notas reais, 3.0.1)
 def _pendencias(monkeypatch: pytest.MonkeyPatch, *erros: MotorError | None) -> None:
     """O motor para em `erros[0]` antes de gravar e em `erros[1]` depois."""

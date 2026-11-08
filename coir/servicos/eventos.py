@@ -388,7 +388,7 @@ def salvar_lote(
     with conectar(banco) as fabrica, fabrica.begin() as s:
         antes = _pendencia_antes(s, titular, refs, fiscais)
         for d, evento_id in lote:
-            feitos.append(_gravar(s, titular, d, evento_id))
+            feitos.append(_gravar(s, titular, d, evento_id, refs))
         _conferir_no_motor(s, titular, refs, fiscais, antes)
     for d, evento_id in lote:
         trilha.evento_salvo(titular, d, evento_id is not None)
@@ -398,7 +398,9 @@ def salvar_lote(
 RE_TICKER_CUSTODIA = re.compile(r"^[A-Z0-9]{4}\d{1,2}$")  # ação, unit, ETF, BDR, FII
 
 
-def _gravar(s: Session, titular: int, d: DadosEvento, evento_id: int | None) -> int:
+def _gravar(
+    s: Session, titular: int, d: DadosEvento, evento_id: int | None, refs: Referencias
+) -> int:
     d = replace(d, ticker=d.ticker.strip().upper(),
                 ticker_destino=(d.ticker_destino or "").strip().upper() or None,
                 observacao=d.observacao.strip())  # fmt: skip
@@ -416,14 +418,19 @@ def _gravar(s: Session, titular: int, d: DadosEvento, evento_id: int | None) -> 
     registro = EventoCorporativo() if evento_id is None else s.get(EventoCorporativo, evento_id)
     if registro is None or (evento_id is not None and registro.conta.titular_id != titular):
         raise ImportacaoError(f"evento {evento_id} não encontrado")
-    ativo = repo.ativo_existente(s, d.ticker, d.data) or repo.ativo_pelo_codigo_antigo(
-        s, d.ticker, d.data
+    # código da época (CNTO3 em 2019): é o mesmo ativo do código novo (SBFG3), que é como as notas
+    # podem ter entrado; sem isso, a custódia abriria um ativo separado das operações
+    atual = refs.ticker_na_data(d.ticker, d.data)
+    ativo = (
+        (repo.ativo_existente(s, atual, d.data) if atual != d.ticker else None)
+        or repo.ativo_existente(s, d.ticker, d.data)
+        or repo.ativo_pelo_codigo_antigo(s, d.ticker, d.data)
     )
     if ativo is None and d.tipo is TipoEvento.CUSTODIA_INICIAL:
         # quem começa sem as notas antigas lança ativos que ainda não têm negócio no banco
         if not RE_TICKER_CUSTODIA.match(d.ticker):
             raise ImportacaoError(f"{d.ticker}: código de negociação inválido (ex.: PETR4)")
-        ativo = repo.Ativos(s).ativo_id(d.ticker, d.data)
+        ativo = repo.Ativos(s).ativo_id(atual, d.data)
     if ativo is None:
         raise ImportacaoError(f"{d.ticker} sem negócio no banco em {d.data:%d/%m/%Y}")
     _preencher(s, registro, d, chaves[0], ativo)

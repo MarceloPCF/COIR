@@ -27,6 +27,8 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **Ações de PME com lote isento e tributado:** o COIR agora controla os dois lotes em separado (IN RFB 1.585/2015 art. 69-A §4º), e a custódia inicial e os eventos entram no lote certo. Antes, o ativo saía do cálculo.
 - **Ajuste de custo do fim da isenção de PME:** em 01/01/2024, o lote isento sobe à média dos 30 pregões, quando maior que o custo pago (Lei 13.043/2014 art. 17 §6º). Muda o preço médio e o imposto de vendas depois de 2023.
 
+- **Custódia inicial com código antigo:** CNTO3 lançado em 31/12/2019 criava um ativo separado do SBFG3 das notas. Agora a custódia segue a tabela de trocas. Quem já lançou deve apagar a linha e lançar de novo.
+
 ### Alterado
 
 - **A janela abre maximizada**, em vez do tamanho fixo que não cabia nas telas menores.
