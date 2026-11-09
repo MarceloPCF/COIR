@@ -40,7 +40,7 @@ from coir.erros import AnonimizacaoError, ExtracaoError
 from coir.parsing.cliente import RE_CODIGO, RE_CPF
 from coir.parsing.extrair import ResultadoExtracao, extrair_textos
 from coir.parsing.numeros import compactar
-from coir.parsing.paginas import carregar_perfis, classificar
+from coir.parsing.paginas import carregar_perfis, classificar, layout_b3rv
 from coir.parsing.texto_pdf import SEPARADOR_PAGINAS
 
 SEM_CORRETORA = "?"  # página que nenhum perfil reconhece (corretora nova)
@@ -303,6 +303,8 @@ def anonimizar(
         else:
             p.com_bloco = _trocar_bloco_do_cliente(p, padroes, mapa)
             _trocar_valores_rotulados(p, mapa)
+            if layout_b3rv(p.original):
+                _trocar_cabecalho_b3rv(p, mapa)
         _trocar_informados(p, fortes, fracos, padroes, mapa)
     termos = frozenset(t for p in paginas for t in p.termos) | frozenset(nomes)
     desconhecidas = [n for n, p in enumerate(paginas, start=1) if p.corretora == SEM_CORRETORA]
@@ -601,6 +603,24 @@ def _trocar_valores_rotulados(p: _Pagina, mapa: MapaAnonimizacao) -> None:
                 ini, fim = seguinte.start() + w.start(), seguinte.start() + w.end()
                 if p.livre(ini, fim):
                     p.trocar(ini, fim, mapa.trocar("banco", w.group(0)))
+
+
+def _trocar_cabecalho_b3rv(p: _Pagina, mapa: MapaAnonimizacao) -> None:
+    """Layout b3rv: o endereço vem depois do CPF, a conta corrente depois do rótulo e o telefone
+    logo depois do cabeçalho dos negócios."""
+    linhas = _linhas(p.original)
+    compactos = [compactar(m.group(0)) for m in linhas]
+    i_cpf = next((i for i, m in enumerate(linhas) if RE_CPF.search(m.group(0))), None)
+    i_codigo = next((i for i, c in enumerate(compactos) if c.startswith("codigocliente")), None)
+    if i_cpf is not None and i_codigo is not None:
+        for m in linhas[i_cpf + 1 : i_codigo]:
+            _trocar_palavras(p, m.start(), m.end(), mapa)
+    for i, c in enumerate(compactos[:-1]):
+        seguinte = linhas[i + 1]
+        if (c == "contacorrente" and RE_SO_NUMERO.match(seguinte.group(0))) or (
+            c.startswith("qnegociacao") and RE_TELEFONE.search(seguinte.group(0))
+        ):
+            _trocar_palavras(p, seguinte.start(), seguinte.end(), mapa)
 
 
 # ------------------------------------------------------------------------------------ portões

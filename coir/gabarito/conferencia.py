@@ -56,7 +56,7 @@ def linhas_bovespa(texto: str) -> list[LinhaNegocio]:
     """Linhas de negócio Bovespa: '... BOVESPA C|V ... quantidade preço [D|C] valor [D|C]'."""
     saida: list[LinhaNegocio] = []
     for linha in texto.splitlines():
-        m = re.search(r"BOVESPA\s+(?P<cv>[CV])\s", linha)
+        m = re.search(r"(?:BOVESPA\s+|B3\s*RV\s*LISTADO\s*)(?P<cv>[CV])\s", linha)
         if not m:
             continue
         tokens = RE_NUMERO.findall(linha[m.end() :])
