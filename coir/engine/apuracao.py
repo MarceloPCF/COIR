@@ -174,7 +174,8 @@ def _outro_custo(c: OutroCusto) -> Movimento:
     return Movimento(
         data=fim_do_mes(c.ano, c.mes), titular=c.titular, conta=None, corretora=None, ativo=None,
         ticker="", origem=f"custo:{c.id}",
-        regra="outros custos dedutíveis lançados pelo usuário: reduzem o resultado do mês"
+        regra="outros custos dedutíveis lançados pelo usuário: reduzem primeiro o ganho isento do "
+        "mês e depois o resultado"
         + (f" ({c.descricao})" if c.descricao else ""),
         categoria=c.categoria, grupo=Grupo.A_VISTA, tipo=TipoAtivo.ACAO, cv=None,
         quantidade=ZERO, valor=ZERO, custos=c.valor, resultado=-c.valor,
@@ -319,6 +320,13 @@ def _categoria(
                 isento += isentavel
                 por_grupo[Grupo.A_VISTA] -= isentavel
                 total -= isentavel
+        # custo lançado à mão em mês de ganho isento: reduz o isento antes de reduzir o tributável,
+        # senão o ganho ficaria isento e o custo ainda viraria prejuízo (decisão de 08/11/2026)
+        custos = sum((-m.resultado for m in movs if m.origem.startswith("custo:")), ZERO)
+        abatido = min(custos, max(isento, ZERO))
+        isento -= abatido
+        por_grupo[Grupo.A_VISTA] += abatido
+        total += abatido
     resultado = centavos(total)
     saldo = resultado + prejuizo_anterior
     aliquota = params.decimal(ALIQUOTAS[cat], dia)

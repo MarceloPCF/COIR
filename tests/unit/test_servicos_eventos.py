@@ -514,3 +514,228 @@ def test_pendencia_na_visao_por_conta_nao_fica_escondida(
     monkeypatch.setattr(eventos, "movimentar", movimentar)
     with conectar(demo) as fabrica, fabrica() as s:
         assert eventos._erro_do_livro(s, 1, REFS, FISCAIS) is conta
+
+
+def test_so_o_evento_mais_antigo_do_ativo_e_seguro_e_o_numero_e_o_que_entra(demo: Path) -> None:
+    """Dois desdobramentos seguidos de GGBR4 (300 na conta Ágora): primeiro só o de março é seguro,
+    com 300. Lançado, o de junho passa a ser seguro, com 600: o que o usuário confere é o que entra.
+    Bonificação sem custo, cisão e grupamento extremo ficam para o usuário."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-08-31,2023-08-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,GRUPAMENTO,0.01,2023-10-31,2023-10-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,CIS RED CAP,28.29,2023-11-30,2023-11-01,BRGOAUTESTE1,,,",
+    ])  # fmt: skip
+
+    def seguras() -> list[eventos.Proposta]:
+        return [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                if p.segura and p.codigo == "GGBR4" and p.situacao == "pendente"]  # fmt: skip
+
+    [primeira] = seguras()
+    assert (primeira.data, primeira.dados.quantidade) == (date(2023, 3, 1), 300)
+    r1 = eventos.lancar_seguras(demo, 1, [primeira.chave], REFS, FISCAIS, pasta)
+    [segunda] = seguras()
+    assert (segunda.data, segunda.dados.quantidade) == (date(2023, 6, 1), 600)
+    r2 = eventos.lancar_seguras(demo, 1, [segunda.chave], REFS, FISCAIS, pasta)
+    assert (len(r1.ids), r1.recusadas, len(r2.ids), r2.recusadas) == (1, (), 1, ())
+    lancados = sorted(eventos.listar(demo, 1), key=lambda e: e.dados.data)
+    assert [e.dados.quantidade for e in lancados] == [300, 600]
+    assert _carteira(demo, date(2023, 6, 30))["GGBR4"][0] == 1200
+    assert seguras() == []  # bonificação sem custo pede conferência e segura os seguintes
+    resto = {p.dados.tipo: p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+             if p.codigo == "GGBR4" and p.situacao == "pendente"}  # fmt: skip
+    assert "lance antes o evento anterior" not in resto[TipoEvento.BONIFICACAO].nota
+    assert "lance antes o evento anterior" in resto[TipoEvento.GRUPAMENTO].nota
+    eventos.excluir_lote(demo, 1, [*r1.ids, *r2.ids], REFS, FISCAIS)
+    assert eventos.listar(demo, 1) == []
+
+
+def test_proposta_da_movimentacao_nunca_e_segura(demo: Path) -> None:
+    """A movimentação traz a data do crédito, não a data ex: pede conferência."""
+    movimentos = planilha(demo.parent / "movimentacao-2023.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "03/03/2023", "Desdobro", "GGBR4 - GERDAU S.A.", AGORA_B3, 300, "-", "-"],
+    ]})  # fmt: skip
+    importar_planilhas(demo, [movimentos], 1, AGORA)
+    [p] = eventos.propostas(demo, 1, REFS)
+    assert (p.situacao, p.segura) == ("pendente", False)
+
+
+def test_pendencia_anterior_do_ativo_tira_a_proposta_das_seguras(demo: Path) -> None:
+    """Bonificação pendente (sem custo) antes do desdobramento: a quantidade do desdobramento
+    depende dela, então ele espera a conferência. Conferida a bonificação, ele volta a ser seguro
+    e com a quantidade certa (300 + 15 = 315)."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+    ])  # fmt: skip
+    por_tipo = {p.dados.tipo: p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                if p.codigo == "GGBR4"}  # fmt: skip
+    assert not por_tipo[TipoEvento.DESDOBRAMENTO].segura
+    eventos.salvar(demo, 1, replace(por_tipo[TipoEvento.BONIFICACAO].dados, valor=D("150")),
+                   REFS, FISCAIS)  # fmt: skip
+    [desdobro] = [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                  if p.dados.tipo is TipoEvento.DESDOBRAMENTO and p.codigo == "GGBR4"]  # fmt: skip
+    assert (desdobro.segura, desdobro.dados.quantidade) == (True, 315)
+    assert "lance antes" not in desdobro.nota
+
+
+def test_dois_eventos_do_ativo_na_mesma_data_pedem_conferencia(demo: Path) -> None:
+    """A ordem deles muda a quantidade (ex.: grupamento e desdobramento no mesmo dia)."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,GRUPAMENTO,0.5,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+    ])  # fmt: skip
+    assert not [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                if p.codigo == "GGBR4" and p.segura]  # fmt: skip
+
+
+def test_evento_que_emite_outra_classe_nao_e_seguro(demo: Path) -> None:
+    """Desdobramento que emite outro ISIN: a proposta credita a ação possuída, por isso pede
+    conferência."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGOAUTESTE1,,,",
+    ])  # fmt: skip
+    [p] = [x for x in eventos.propostas(demo, 1, REFS, FISCAIS, pasta) if x.codigo == "GGBR4"]
+    assert not p.segura
+
+
+def test_oferta_nao_esconde_proposta_proxima_do_mesmo_ativo(demo: Path) -> None:
+    """Follow-on em 25/05/2023 e bonificação com data ex em 01/06/2023: a compra não conta como o
+    evento já lançado."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+    ])  # fmt: skip
+    oferta = DadosEvento(tipo=TipoEvento.OFERTA_PUBLICA, data=date(2023, 5, 25), conta=AGORA_CONTA,
+                         ticker="GGBR4", cv="C", quantidade=D(100), valor=D(2000))  # fmt: skip
+    eventos.salvar(demo, 1, oferta, REFS, FISCAIS)
+    [p] = [x for x in eventos.propostas(demo, 1, REFS, FISCAIS, pasta) if x.codigo == "GGBR4"]
+    assert (p.dados.tipo, p.situacao) == (TipoEvento.BONIFICACAO, "pendente")
+
+
+def _dois_desdobramentos(demo: Path) -> tuple[Path, list[str]]:
+    """Dois desdobramentos em sequência: só o primeiro é seguro."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+    ])  # fmt: skip
+    lista = eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+    return pasta, [p.chave for p in lista if p.segura]
+
+
+def test_lote_recusado_volta_com_o_motivo_e_nao_trava_os_outros(
+    demo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Desdobramentos de GGBR4 e GOAU4 no mesmo lote: o motor recusa o de GGBR4; o outro entra."""
+    oferta = DadosEvento(tipo=TipoEvento.OFERTA_PUBLICA, data=date(2023, 1, 10), conta=AGORA_CONTA,
+                         ticker="GOAU4", cv="C", quantidade=D(100), valor=D(1000))  # fmt: skip
+    eventos.salvar(demo, 1, oferta, REFS, FISCAIS)
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
+        "GOAU,BRGOAUTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGOAUTESTE1,,,",
+    ])  # fmt: skip
+    chaves = [p.chave for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta) if p.segura]
+    assert len(chaves) == 2
+    original = eventos.salvar_lote
+
+    def recusa_ggbr(
+        banco: Path, titular: int, lote: list[tuple[DadosEvento, int | None]], *resto: object
+    ) -> list[int]:
+        if any(d.ticker == "GGBR4" for d, _ in lote):
+            raise ImportacaoError("não fecha")
+        return original(banco, titular, lote, *resto)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(eventos, "salvar_lote", recusa_ggbr)
+    resultado = eventos.lancar_seguras(demo, 1, chaves, REFS, FISCAIS, pasta)
+    assert len(resultado.ids) == 1
+    assert resultado.recusadas == (("GGBR4", "não fecha"),)
+    assert _carteira(demo, date(2023, 3, 31))["GOAU4"][0] == 200
+
+
+def test_lote_com_proposta_que_deixou_de_ser_segura_avisa(demo: Path) -> None:
+    """A tela estava atrás do banco: pedir o segundo desdobramento antes do primeiro não lança nada
+    com a quantidade errada; ele volta dizendo que precisa de conferência."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
+    ])  # fmt: skip
+    [segundo] = [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                 if p.codigo == "GGBR4" and p.data == date(2023, 6, 1)]  # fmt: skip
+    resultado = eventos.lancar_seguras(demo, 1, [segundo.chave], REFS, FISCAIS, pasta)
+    assert resultado.ids == ()
+    assert resultado.recusadas == (("GGBR4", "agora precisa de conferência: lance na lista"),)
+
+
+def test_desfazer_lote_com_evento_ja_excluido(demo: Path) -> None:
+    pasta, chaves = _dois_desdobramentos(demo)
+    resultado = eventos.lancar_seguras(demo, 1, chaves, REFS, FISCAIS, pasta)
+    eventos.excluir(demo, 1, max(resultado.ids), REFS, FISCAIS)
+    eventos.excluir_lote(demo, 1, resultado.ids, REFS, FISCAIS, ignorar_ausentes=True)
+    assert eventos.listar(demo, 1) == []
+
+
+CAB_ORIGEM = ("emissor,isin,tipo,fator,data_com,aprovado_em,isin_emitido,preco,periodo,"
+              "data_subscricao,origem,referencia,custo_atribuido\n")  # fmt: skip
+
+
+def _pacote_bonus(demo: Path, *linhas: str) -> Path:
+    pasta = demo.parent / "pacote"
+    if not pasta.exists():
+        _pacote_eventos(demo.parent, [])
+    (pasta / "eventos_b3.csv").write_text(CAB_ORIGEM + "".join(f"{x}\n" for x in linhas),
+                                          encoding="utf-8")  # fmt: skip
+    return pasta
+
+
+def test_bonificacao_com_custo_da_cvm_e_segura_e_as_outras_nao(demo: Path) -> None:
+    """Só com custo maior que zero lido do comunicado na CVM (cvm_ipe); o custo por ação e a fonte
+    vão para a confirmação. 300 x 5% = 15 a 2,00 = 30,00."""
+    pasta = _pacote_bonus(demo, "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-05-31,2023-05-01,BRGGBRTESTE1"
+                                ",,,,cvm_ipe,IPE RAD 1,2.00")  # fmt: skip
+    [p] = [x for x in eventos.propostas(demo, 1, REFS, FISCAIS, pasta) if x.codigo == "GGBR4"]
+    assert (p.segura, p.custo_por_acao, p.referencia) == (True, D("2.00"), "IPE RAD 1")
+    assert p.dados.valor == D("30.00")
+    resultado = eventos.lancar_seguras(demo, 1, [p.chave], REFS, FISCAIS, pasta)
+    assert (len(resultado.ids), resultado.recusadas) == (1, ())
+    pasta = _pacote_bonus(demo, "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2024-05-31,2024-05-01,BRGGBRTESTE1"
+                                ",,,,b3,,2.00")  # fmt: skip
+    [q] = [x for x in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+           if x.codigo == "GGBR4" and x.data.year == 2024]  # fmt: skip
+    assert not q.segura
+
+
+def test_bonificacao_noutra_classe_credita_a_classe_emitida(demo: Path) -> None:
+    """GGBR4 recebe GOAU4 (ativo sem nota no banco): a proposta credita GOAU4, abre a posição ao
+    gravar e nunca é segura."""
+    pasta = _pacote_bonus(demo, "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-05-31,2023-05-01,BRGOAUTESTE1"
+                                ",,,,cvm_ipe,IPE RAD 1,2.00")  # fmt: skip
+    [p] = [x for x in eventos.propostas(demo, 1, REFS, FISCAIS, pasta) if x.codigo == "GOAU4"]
+    assert p.dados.natureza is NaturezaEvento.OUTRA_CLASSE
+    assert not p.segura and "outra classe" in p.nota
+    eventos.salvar(demo, 1, p.dados, REFS, FISCAIS)
+    assert _carteira(demo, date(2023, 6, 30))["GOAU4"] == (D(15), D(30))
+    assert _carteira(demo, date(2023, 6, 30))["GGBR4"][0] == 300
+
+
+def test_subscricao_noutra_classe_credita_a_classe_emitida(demo: Path) -> None:
+    pasta = _pacote_bonus(demo, "GGBR,BRGGBRTESTE1,SUBSCRICAO,10,2023-05-31,2023-05-01,BRGOAUTESTE1"
+                                ",5.00,,,b3,,")  # fmt: skip
+    [p] = [x for x in eventos.propostas(demo, 1, REFS, FISCAIS, pasta) if x.codigo == "GOAU4"]
+    assert (p.dados.quantidade, p.dados.valor) == (30, D("150.00"))
+    assert "outra classe" in p.nota
+    eventos.salvar(demo, 1, p.dados, REFS, FISCAIS)
+    assert _carteira(demo, date(2023, 6, 30))["GOAU4"] == (D(30), D(150))
+
+
+def test_oferta_de_pme_leva_a_data_da_isencao_ao_motor(demo: Path) -> None:
+    from coir.db.sessao import conectar
+    from coir.servicos.apuracao import entradas
+
+    oferta = DadosEvento(tipo=TipoEvento.OFERTA_PUBLICA, data=date(2019, 6, 17), conta=AGORA_CONTA,
+                         ticker="AGRO3", cv="C", quantidade=D(100), valor=D(2700))  # fmt: skip
+    eventos.salvar(demo, 1, oferta, REFS, FISCAIS)
+    with conectar(demo) as fabrica, fabrica() as s:
+        _, evs = entradas(s, REFS, FISCAIS)
+    [e] = [x for x in evs if x.tipo is TipoEvento.OFERTA_PUBLICA]
+    assert e.pme_ate == date(2023, 12, 31)

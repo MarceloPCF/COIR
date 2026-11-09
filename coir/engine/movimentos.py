@@ -46,6 +46,9 @@ from coir.erros import MotorError
 MERCADOS_DT = frozenset({"VISTA", "FRACIONARIO", "CALL", "PUT"})
 MERCADOS_ACAO_A_VISTA = frozenset({"VISTA", "FRACIONARIO", "EXERC CALL", "EXERC PUT"})
 MERCADOS_EXERCICIO = frozenset({"EXERC CALL", "EXERC PUT"})
+ABREM_POSICAO = frozenset(
+    {TipoEvento.SUBSCRICAO, TipoEvento.OFERTA_PUBLICA, TipoEvento.CUSTODIA_INICIAL}
+)
 
 # titular, grupo da visão (None por titular; corretora; conta), ativo, vencimento (opção: o
 # código da série se repete de um ano para outro, ex.: TAEEL382 em dez/2023 e dez/2025)
@@ -457,8 +460,11 @@ def _percorrer(
     for venc in vencimentos:
         if venc <= ate:
             dias.setdefault(venc, _Dia())  # o pó acontece mesmo sem negócio no dia
+    ofertas = [e for e in eventos if e.tipo is TipoEvento.OFERTA_PUBLICA
+               and not livro.fora(e.titular, e.ativo, e.data)]  # fmt: skip
     for dia in sorted(dias):
         try:
+            _antecipar_ofertas(livro, dia, dias, ofertas, parametros)
             _processar_dia(livro, dia, dias[dia], parametros)
         except MotorError as erro:
             erro.data = erro.data or dia
@@ -468,6 +474,43 @@ def _percorrer(
     for dia, o in tiradas:
         _venda_isolada(livro, dia, o)
     return meses
+
+
+def _antecipar_ofertas(
+    livro: Livro, dia: date, dias: dict[date, _Dia], ofertas: list[Evento],
+    parametros: ParametrosFiscais,
+) -> None:  # fmt: skip
+    """A negociação pode começar antes da liquidação da oferta: a venda do dia que deixaria a
+    posição vendida é das ações da oferta, então a aquisição entra antes dela, e o ganho fica no
+    mês do pregão da venda (decisão do usuário de 08/11/2026; IN RFB 1.585/2015 art. 58). Antecipa
+    só o que cobre a venda, da oferta mais próxima para a mais distante. A posição vendida há mais
+    tempo que a janela não é venda das ações da oferta: o motor falha alto em _evento."""
+    hoje = dias[dia]
+    if not ofertas or not hoje.operacoes:
+        return
+    janela = timedelta(days=int(parametros.decimal("janela_liquidacao_oferta_dias", dia)))
+    for e in sorted(ofertas, key=lambda x: (x.data, x.id)):
+        if not dia < e.data <= dia + janela:
+            continue
+        chave = _chave_evento(livro, e)
+        saldo = livro.posicoes[chave].quantidade
+        for x in hoje.eventos:  # os eventos do dia vêm antes das operações
+            if x.tipo is TipoEvento.OFERTA_PUBLICA and _chave_evento(livro, x) == chave:
+                saldo += x.quantidade or ZERO
+        for o in (*hoje.termos, *hoje.operacoes):
+            if livro.chave(o.nota.titular, _de(o), o.op.ativo) == chave:
+                saldo += o.op.quantidade if o.op.cv == "C" else -o.op.quantidade
+        if saldo >= 0:
+            continue
+        ofertas.remove(e)
+        if e.data in dias:
+            dias[e.data].eventos.remove(e)
+        hoje.eventos.append(e.model_copy(update={"data": dia}))
+        if livro.visao is Visao.TITULAR:
+            livro.avisos.append(
+                f"Oferta de {e.ticker}: venda em {dia:%d/%m/%Y}, antes da liquidação em "
+                f"{e.data:%d/%m/%Y}. A compra entra no dia da venda, para o ganho ficar nesse mês."
+            )
 
 
 def _avisar_suspeitas(livro: Livro) -> None:
@@ -1086,13 +1129,21 @@ def _evento(livro: Livro, e: Evento) -> None:
         raise MotorError(f"custódia inicial de {e.ticker} ({e.data}): só compra de ações, ETF, "
                          "BDR, units e FII; para opções, futuros e posição vendida, importe as "
                          "notas desde a abertura")  # fmt: skip
-    abre = e.tipo in (TipoEvento.SUBSCRICAO, TipoEvento.CUSTODIA_INICIAL) and e.cv == "C"
+    abre = (e.tipo in ABREM_POSICAO or e.natureza is NaturezaEvento.OUTRA_CLASSE) and e.cv == "C"
     if pos.quantidade == 0 and not abre:
-        # só a subscrição e a custódia inicial abrem posição; nos demais o evento cairia numa
-        # posição que não existe
+        # só a subscrição, a oferta pública, a custódia inicial e a bonificação noutra classe abrem
+        # posição; nos demais o evento cairia numa posição que não existe
         raise MotorError(
             f"evento {e.tipo.value} de {e.ticker} ({e.data}) sem posição na conta "
             f"{e.corretora} {e.conta} (confira data, conta e ticker do evento)"
+        )
+    if pos.quantidade < 0 and (e.tipo in (TipoEvento.OFERTA_PUBLICA, TipoEvento.SUBSCRICAO)
+                               or e.natureza is NaturezaEvento.OUTRA_CLASSE):  # fmt: skip
+        # o ajuste abaixo zeraria a posição vendida e o ganho da venda sumiria sem resultado (regra
+        # 5). A venda logo antes da liquidação da oferta já foi tratada em _antecipar_ofertas
+        raise MotorError(
+            f"{e.tipo.value.lower()} de {e.ticker} ({e.data}): há venda antes desta data e a "
+            f"posição está vendida em {pos.quantidade} (confira a data do evento e as vendas)"
         )
     if e.tipo is TipoEvento.REDUCAO_CAPITAL and pos.custo + custo < 0 < pos.quantidade:
         raise MotorError(f"redução de capital de {e.ticker} ({e.data}) maior que o custo")
@@ -1108,7 +1159,7 @@ def _evento(livro: Livro, e: Evento) -> None:
     pos.ajustar(quantidade, custo)
     if (e.cv == "C" and e.pme_ate is not None and e.data <= e.pme_ate
             and e.tipo in (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO,
-                           TipoEvento.CUSTODIA_INICIAL)):  # fmt: skip
+                           TipoEvento.CUSTODIA_INICIAL, TipoEvento.OFERTA_PUBLICA)):  # fmt: skip
         # IN 1.585 art. 67 IV e art. 69-A §1º: a data do evento decide o lote
         pos.somar_isento(quantidade, custo, e.pme_ate, e.pme_media_fim)
     if e.aviso and livro.visao is Visao.TITULAR and e.aviso not in livro.avisos:

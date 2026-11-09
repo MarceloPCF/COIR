@@ -125,6 +125,12 @@ body.body--dark {{ --q-primary: #2E6FB8; }}
 .coir-positivo {{ color: var(--coir-positivo); }}
 .coir-negativo {{ color: var(--coir-negativo); }}
 .coir-carimbo {{ color: var(--coir-carimbo); }}
+.coir-ajuda {{ position: absolute; top: 0; right: 0; color: var(--coir-caneta); z-index: 1; }}
+.coir-manual {{ background: var(--coir-superficie); border-right: 1px solid var(--coir-linha);
+  border-radius: 0; padding: 16px 20px; }}
+.coir-manual .nicegui-markdown {{ line-height: 1.5; }}
+.coir-manual h2 {{ font-size: 15px; margin: 16px 0 4px; }}
+.coir-manual p, .coir-manual ul, .coir-manual ol {{ margin: 0 0 8px; }}
 .coir-vazio {{ border: 1px dashed var(--coir-linha); border-radius: 6px; padding: 32px;
   color: var(--coir-tinta-suave); text-align: left; }}
 .coir-grade .ag-root-wrapper {{ --ag-font-family: {FONTE_TEXTO}; --ag-font-size: 13px;

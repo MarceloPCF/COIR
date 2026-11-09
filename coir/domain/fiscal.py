@@ -135,7 +135,7 @@ class PosicaoFuturo(Modelo):
 
 
 class OutroCusto(Modelo):
-    """Custo dedutível lançado pelo usuário num mês (ex.: taxas de aluguel de ações - BTC): reduz o
+    """Custo dedutível lançado pelo usuário num mês (ex.: corretagem e tarifas do BTC): reduz o
     resultado da categoria no mês (como a aba BTC_Outros da planilha v2)."""
 
     id: int
@@ -175,16 +175,19 @@ class TipoEvento(StrEnum):
     INCORPORACAO = "INCORPORACAO"  # troca de A por B com o custo (ver NaturezaEvento)
     CISAO = "CISAO"  # parte do custo de A vai para B, pelo percentual da companhia
     LEILAO_FRACAO = "LEILAO_FRACAO"  # fração vendida em leilão pela companhia (alienação)
+    OFERTA_PUBLICA = "OFERTA_PUBLICA"  # compra em IPO ou follow-on: não aparece em nota
 
 
 class NaturezaEvento(StrEnum):
-    """Natureza da INCORPORACAO (a regra fiscal muda com ela)."""
+    """Natureza da INCORPORACAO (a regra fiscal muda com ela). ``OUTRA_CLASSE`` marca a BONIFICACAO
+    ou a SUBSCRICAO noutra classe da companhia, que pode abrir posição."""
 
     INCORPORACAO_SOCIEDADE = "INCORPORACAO_SOCIEDADE"  # Lei 6.404 art. 227
     INCORPORACAO_ACOES = "INCORPORACAO_ACOES"  # Lei 6.404 art. 252 (divergência RFB x Judiciário)
     FUSAO = "FUSAO"  # Lei 6.404 art. 228
     CONVERSAO = "CONVERSAO"  # de classe na mesma companhia (ex.: PN -> ON)
     AJUSTE_SERIE = "AJUSTE_SERIE"  # série de opção com código ou quantidade ajustados pela B3
+    OUTRA_CLASSE = "OUTRA_CLASSE"  # bonificação ou subscrição noutra classe (quem tem PN recebe ON)
 
 
 TIPOS_COM_DESTINO = frozenset({TipoEvento.INCORPORACAO, TipoEvento.CISAO})
@@ -223,6 +226,7 @@ class Evento(Modelo):
     aviso: str = ""  # o que a apuração mostra sobre o evento (presunção da custódia de PME)
     percentual_custo: Decimal | None = None  # cisão: fração do custo de A que vai para B (0..1)
     observacao: str = ""
+    pme_ate: date | None = None  # oferta de PME: vendas isentas até a data (Lei 13.043 art. 16)
 
 
 # --------------------------------------------------------------------------------------- saídas

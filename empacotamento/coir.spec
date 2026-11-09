@@ -14,6 +14,7 @@ dados = [
     (str(RAIZ / "coir" / "db" / "migracoes"), "coir/db/migracoes"),  # o Alembic lê os .py
     (str(RAIZ / "coir" / "parsing" / "profiles"), "coir/parsing/profiles"),
     (str(RAIZ / "coir" / "ui" / "estaticos"), "coir/ui/estaticos"),
+    (str(RAIZ / "docs" / "manual" / "telas" / "*.md"), "docs/manual/telas"),  # "Como faço?"
     *collect_data_files("nicegui"),
     *collect_data_files("reportlab"),
 ]

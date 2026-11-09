@@ -10,8 +10,19 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Eventos em abas:** A conferir, Lançados, Subscrições, Transferências, Conversões e Ofertas (IPO), cada uma com um formulário curto e sem o C/V.
+- **Lançar as seguras:** lança de uma vez os desdobramentos e grupamentos das tabelas da B3 que não pedem nada do usuário, com lista para conferir antes e opção de desfazer.
+- **Oferta pública (IPO e follow-on):** a compra, que não aparece em nota, entra no preço médio, mesmo em ativo ainda sem nota.
+- **Como faço?:** em cada tela, um botão abre a página do manual ao lado, sem cobrir o que você está preenchendo.
+
 ### Corrigido
 
+- **Aluguel de ações (BTC):** a tela Outros custos mandava deduzir a taxa de aluguel, que, segundo a Receita, pessoa física não pode abater (Solução de Consulta Cosit 42/2020). Se você lançou essa taxa, revise: ficam só a corretagem e as tarifas da B3 do empréstimo, no mês da recompra. A tela avisa quando a descrição fala em aluguel.
+- **Custo em mês de ganho isento:** reduz primeiro o ganho isento, em vez de virar prejuízo a compensar.
+- **Subscrição com posição vendida:** agora dá erro, em vez de zerar a posição e perder o ganho da venda.
+- **Evento que entrega outra classe:** subscrição e bonificação creditam a classe emitida, não a ação que você tem.
 - **Marcas da coluna Obs.:** qualquer combinação e ordem é aceita (`D@`, `D#@`, `@D`...), e vale também a legenda impressa na própria nota. Antes, `D@` e `D#@` travavam a nota.
 - **Day trade perdido em silêncio:** em notas com o código do ativo na linha, `PETR4 D@` entrava como operação comum. Quem importou notas desse tipo deve usar "Reprocessar notas já importadas".
 - **Day trade parcial:** 500 D x 200 D no mesmo dia são 200 de day trade e 300 comuns, sem aviso (IN RFB 1.585/2015 art. 65).

@@ -48,7 +48,7 @@ PME isentas); sobraram estas diferenças, que não são erros do cálculo:
 
 - Imposto de renda de ativos no exterior.
 - Opção flexível (o leitor reconhece a nota e avisa; não calcula).
-- Aluguel de ações (BTC) como operação; na 3.0 os custos do aluguel entram como "outros custos" e o
+- Aluguel de ações (BTC) como operação; na 3.0 a corretagem e as tarifas da B3 do empréstimo entram como "outros custos" e o
   reembolso de proventos como rendimento isento.
 - Renda fixa e Tesouro Direto.
 - Carteira: alocação, balanceamento, rentabilidade e manejo de risco (fase futura, F10).

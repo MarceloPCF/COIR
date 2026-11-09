@@ -14,6 +14,7 @@ import csv
 import hashlib
 import re
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from decimal import ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidOperation
@@ -47,7 +48,7 @@ from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias
 from coir.engine.calendario import proximo_pregao
 from coir.engine.movimentos import movimentar
-from coir.erros import ImportacaoError, MotorError, ReferenciaError
+from coir.erros import CoirError, ImportacaoError, MotorError, ReferenciaError
 from coir.servicos import trilha
 from coir.servicos.apuracao import Tickers, entradas
 
@@ -78,7 +79,8 @@ def _decimal(texto: str, campo: str, linha: int) -> Decimal | None:
 
 
 EXIGE_QUANTIDADE = {TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO, TipoEvento.BONIFICACAO,
-                    TipoEvento.SUBSCRICAO, TipoEvento.CUSTODIA_INICIAL}  # fmt: skip
+                    TipoEvento.SUBSCRICAO, TipoEvento.CUSTODIA_INICIAL,
+                    TipoEvento.OFERTA_PUBLICA}  # fmt: skip
 
 
 def _conta(sessao: Session, corretora: str, numero: str, linha: int) -> Conta:
@@ -263,6 +265,9 @@ class Proposta:
     situacao: str
     dados: DadosEvento
     nota: str
+    segura: bool = False  # pode entrar pelo botão "Lançar as seguras" (ver _segura)
+    custo_por_acao: Decimal | None = None  # bonificação: como veio do aviso aos acionistas
+    referencia: str = ""  # de onde veio o custo (documento na CVM)
 
 
 def _nome_conta(conta: Conta) -> str:
@@ -317,6 +322,11 @@ def _validar(d: DadosEvento) -> None:
         raise erro("informe a quantidade")
     if d.tipo in (TipoEvento.REDUCAO_CAPITAL, TipoEvento.LEILAO_FRACAO) and not d.valor:
         raise erro("informe o valor")
+    if d.tipo is TipoEvento.OFERTA_PUBLICA:
+        if d.cv != "C":
+            raise erro("a oferta pública é uma compra (C)")
+        if not d.valor:
+            raise erro("informe o valor pago")
     if d.tipo is TipoEvento.CUSTODIA_INICIAL:
         # decisões do usuário (25/10/2026): só em 31/12 e só posição comprada
         if (d.data.month, d.data.day) != (12, 31):
@@ -338,7 +348,9 @@ def _validar(d: DadosEvento) -> None:
         raise erro("informe a natureza (incorporação, fusão, conversão, ajuste de série...)")
     if d.tipo not in TIPOS_COM_DESTINO and (d.ticker_destino or d.quantidade_destino):
         raise erro("ativo e quantidade recebidos só valem em incorporação e cisão")
-    if d.tipo is not TipoEvento.INCORPORACAO and d.natureza is not None:
+    outra_classe = (d.tipo in (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO)
+                    and d.natureza is NaturezaEvento.OUTRA_CLASSE)  # fmt: skip
+    if d.tipo is not TipoEvento.INCORPORACAO and d.natureza is not None and not outra_classe:
         raise erro("natureza só vale na incorporação")
     if d.tipo is not TipoEvento.CISAO and d.percentual_custo is not None:
         raise erro("percentual do custo só vale na cisão")
@@ -426,8 +438,11 @@ def _gravar(
         or repo.ativo_existente(s, d.ticker, d.data)
         or repo.ativo_pelo_codigo_antigo(s, d.ticker, d.data)
     )
-    if ativo is None and d.tipo is TipoEvento.CUSTODIA_INICIAL:
-        # quem começa sem as notas antigas lança ativos que ainda não têm negócio no banco
+    outra_classe = d.origem == "b3" and d.natureza is NaturezaEvento.OUTRA_CLASSE
+    if ativo is None and (outra_classe or d.tipo in (TipoEvento.CUSTODIA_INICIAL,
+                                                     TipoEvento.OFERTA_PUBLICA)):  # fmt: skip
+        # quem começa sem as notas antigas, compra na oferta ou recebe outra classe da companhia
+        # lança ativo ainda sem negócio no banco
         if not RE_TICKER_CUSTODIA.match(d.ticker):
             raise ImportacaoError(f"{d.ticker}: código de negociação inválido (ex.: PETR4)")
         ativo = repo.Ativos(s).ativo_id(atual, d.data)
@@ -515,19 +530,35 @@ def excluir(
 ) -> None:  # fmt: skip
     """Apaga o evento se o livro continuar fechando sem ele (ex.: venda que dependia de um
     desdobramento impede apagar o desdobramento)."""
+    excluir_lote(banco, titular, [evento_id], refs, fiscais)
+
+
+def excluir_lote(
+    banco: Path, titular: int, ids: Sequence[int], refs: Referencias, fiscais: ReferenciasFiscais,
+    ignorar_ausentes: bool = False,
+) -> None:  # fmt: skip
+    """Apaga os eventos numa transação, conferidos juntos pelo motor no fim (desfaz um lote; um
+    evento do lote pode já ter sido excluído na tela: ``ignorar_ausentes``)."""
     with conectar(banco) as fabrica, fabrica.begin() as s:
-        registro = s.get(EventoCorporativo, evento_id)
-        if registro is None or registro.conta.titular_id != titular:
-            raise ImportacaoError(f"evento {evento_id} não encontrado")
         antes = _pendencia_antes(s, titular, refs, fiscais)
-        s.delete(registro)
+        registros: list[EventoCorporativo] = []
+        for evento_id in ids:
+            registro = s.get(EventoCorporativo, evento_id)
+            if registro is None and ignorar_ausentes:
+                continue
+            if registro is None or registro.conta.titular_id != titular:
+                raise ImportacaoError(f"evento {evento_id} não encontrado")
+            registros.append(registro)
+        for registro in registros:
+            s.delete(registro)
         s.flush()
         try:
             _conferir_no_motor(s, titular, refs, fiscais, antes)
         except ImportacaoError as erro:
             raise ImportacaoError(f"sem este evento o livro não fecha: {erro.__cause__}") from erro
-        auditoria.evento("eventos.excluido", titular=titular, tipo=str(registro.tipo),
-                         data=registro.data, origem=registro.origem)  # fmt: skip
+        for registro in registros:
+            auditoria.evento("eventos.excluido", titular=titular, tipo=str(registro.tipo),
+                             data=registro.data, origem=registro.origem)  # fmt: skip
 
 
 # movimentação da B3 (minúsculas) -> tipo e C/V do evento proposto
@@ -565,8 +596,10 @@ def propostas(
                                   .where(PropostaIgnorada.titular_id == titular)))  # fmt: skip
         contas = list(s.scalars(select(Conta).where(Conta.titular_id == titular)
                                 .options(selectinload(Conta.corretora))))  # fmt: skip
+        # a compra numa oferta não é o evento proposto: não esconde uma bonificação de dias depois
         lancados = [(e.ativo_id, e.ativo_destino_id, e.data) for e in s.scalars(
-            select(EventoCorporativo).where(EventoCorporativo.conta_id.in_([c.id for c in contas]))
+            select(EventoCorporativo).where(EventoCorporativo.conta_id.in_([c.id for c in contas]),
+                                            EventoCorporativo.tipo != TipoEvento.OFERTA_PUBLICA)
         )]  # fmt: skip
         saida: list[Proposta] = []
         for m in s.scalars(select(MovimentacaoB3).where(MovimentacaoB3.titular_id == titular)
@@ -604,7 +637,7 @@ def propostas(
                                   m.valor, corretora, situacao, dados, nota))  # fmt: skip
         if fiscais is None or pasta is None:
             trilha.propostas(titular, saida)
-            return saida
+            return _sem_pendencia_antes(saida)
         do_pacote = _do_pacote(s, titular, refs, fiscais, pasta, contas, ignoradas, lancados)
     perto = timedelta(days=JANELA)
 
@@ -622,7 +655,7 @@ def propostas(
     lista = sorted([*do_pacote, *(m for m in saida if m not in repetidas)],
                    key=lambda p: p.data, reverse=True)  # fmt: skip
     trilha.propostas(titular, lista)
-    return lista
+    return _sem_pendencia_antes(lista)
 
 
 # eventos do pacote público (eventos_b3.csv: rótulos como a B3 escreve) -> tipo do evento
@@ -639,6 +672,9 @@ JANELA_RESGATE = 31  # dias entre a data ex e o pagamento em dinheiro que a B3 m
 AJUSTA_SERIE = {t: t for t in (TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO,
                                 TipoEvento.BONIFICACAO)}  # fmt: skip
 GRUPAMENTO_EXTREMO = Decimal("0.01")  # 100 viram 1 ou mais forte
+TIPOS_SEGUROS = frozenset({TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO})
+AVISO_ANTERIOR = "lance antes o evento anterior deste ativo: a quantidade pode mudar"
+FONTE_CUSTO_SEGURA = "cvm_ipe"  # coluna origem de eventos_b3.csv: comunicado da companhia na CVM
 AVISO_GRUPAMENTO_EXTREMO = (
     "confira o aviso aos acionistas: grupamento tão forte costuma vir seguido de desdobramento "
     "no mesmo dia (ex.: Itaú em 2011), sem mudar a quantidade; a B3 publica só o grupamento"
@@ -770,8 +806,77 @@ def _do_pacote(
                 chave, dados.data, f"{ev['tipo'].capitalize()} (eventos da B3)", dados.ticker, q,
                 None, nome_conta[conta], situacao, dados,
                 "; ".join(x for x in (NOTA_PACOTE.format(data_com=f"{data_com:%d/%m/%Y}"), nota)
-                          if x)))  # fmt: skip
+                          if x),
+                segura=(serie is None and ev["isin_emitido"] in ("", ev["isin"])
+                        and _segura(dados, fator, ev.get("origem", ""))),
+                custo_por_acao=(Decimal(ev["custo_atribuido"]) if serie is None
+                                and dados.tipo is TipoEvento.BONIFICACAO
+                                and ev.get("custo_atribuido") else None),
+                referencia=ev.get("referencia", "")))  # fmt: skip
     return saida
+
+
+def _sem_pendencia_antes(lista: list[Proposta]) -> list[Proposta]:
+    """A quantidade de uma proposta é calculada sem os eventos pendentes (100 ações, bonificação de
+    10% e depois desdobramento de 100%: o desdobramento são 110, não 100). Por isso só a mais antiga
+    de cada ativo é segura, e o número que o usuário confere é o que entra; lançada ela, a seguinte
+    passa a ser a mais antiga, já com a quantidade certa. Empate na data também pede conferência."""
+    pendentes = [p for p in lista if p.situacao == "pendente"]
+    saida: list[Proposta] = []
+    for p in lista:
+        if p.situacao == "pendente":
+            mesmas = [o for o in pendentes if o is not p and o.codigo == p.codigo]
+            if any(o.data < p.data for o in mesmas):
+                p = replace(p, segura=False, nota=f"{p.nota}; {AVISO_ANTERIOR}")
+            elif any(o.data == p.data and (not o.segura or o.dados.conta == p.dados.conta)
+                     for o in mesmas):  # fmt: skip
+                p = replace(p, segura=False)
+        saida.append(p)
+    return saida
+
+
+def _segura(d: DadosEvento, fator: Decimal, origem: str) -> bool:
+    """Proposta do pacote público (já com a data ex) que não pede nada ao usuário: desdobramento e
+    grupamento de ação, na conta certa, com quantidade, e bonificação com o custo por ação lido do
+    documento da companhia na CVM. Fica de fora o grupamento extremo, que costuma vir seguido de
+    desdobramento no mesmo dia (ex.: Itaú em 2011)."""
+    if d.conta is None or not d.quantidade:
+        return False
+    if d.tipo is TipoEvento.BONIFICACAO:
+        return bool(d.valor) and FONTE_CUSTO_SEGURA in origem
+    if d.tipo not in TIPOS_SEGUROS:
+        return False
+    return d.tipo is not TipoEvento.GRUPAMENTO or fator > GRUPAMENTO_EXTREMO
+
+
+@dataclass(frozen=True)
+class ResultadoLote:
+    ids: tuple[int, ...]
+    recusadas: tuple[tuple[str, str], ...]  # (ativo, motivo)
+
+
+def lancar_seguras(
+    banco: Path, titular: int, chaves: Sequence[str], refs: Referencias,
+    fiscais: ReferenciasFiscais, pasta: Path,
+) -> ResultadoLote:  # fmt: skip
+    """Lança de uma vez as propostas escolhidas que continuam seguras e pendentes (a tela pode estar
+    atrás do banco). A que o motor recusa volta com o motivo e não trava as outras."""
+    faltam = set(chaves)
+    lista = [p for p in propostas(banco, titular, refs, fiscais, pasta) if p.chave in faltam]
+    lote = [p for p in lista if p.segura and p.situacao == "pendente"]
+    recusadas = [(p.codigo, "agora precisa de conferência: lance na lista") for p in lista
+                 if p not in lote]  # fmt: skip
+    ids: list[int] = []
+    try:
+        pedidos: list[tuple[DadosEvento, int | None]] = [(p.dados, None) for p in lote]
+        ids.extend(salvar_lote(banco, titular, pedidos, refs, fiscais))
+    except CoirError:  # uma não fecha: as outras entram uma a uma, e ela sai com o motivo
+        for p in lote:
+            try:
+                ids.append(salvar(banco, titular, p.dados, refs, fiscais))
+            except CoirError as erro:
+                recusadas.append((p.codigo, str(erro)))
+    return ResultadoLote(tuple(ids), tuple(recusadas))
 
 
 def _fator(ev: dict[str, str], tipo: TipoEvento | None) -> str:
@@ -819,9 +924,20 @@ def _evento_acao(
 ) -> tuple[DadosEvento | None, str]:  # fmt: skip
     if q < 0:
         return None, ""  # venda a descoberto na data com: sem proposta (o motor falha alto)
+    # subscrição e bonificação podem entregar outra classe (quem tem PN recebe ON): o crédito é na
+    # classe emitida, não na ação que o titular tem
+    outra = (tipo in (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO)
+             and ev["isin_emitido"] not in ("", ev["isin"]))  # fmt: skip
+    emitida = por_isin.get(ev["isin_emitido"]) if outra else None
+    classe = ""
+    if outra:
+        classe = (f"a companhia entrega {emitida}, outra classe da ação que você tem" if emitida
+                  else "a companhia entrega outra classe, que o COIR não identificou: confira o "
+                       "ativo")  # fmt: skip
     base = DadosEvento(
-        tipo=tipo or TipoEvento.DESDOBRAMENTO, data=data_ex, conta=conta, ticker=ticker,
+        tipo=tipo or TipoEvento.DESDOBRAMENTO, data=data_ex, conta=conta, ticker=emitida or ticker,
         cv="C", origem="b3",
+        natureza=NaturezaEvento.OUTRA_CLASSE if emitida else None,
         observacao=f"pacote público da B3: {ev['tipo']} {_fator(ev, tipo)} (data com "
                    f"{ev['data_com']})",
     )  # fmt: skip
@@ -844,8 +960,9 @@ def _evento_acao(
         dia = date.fromisoformat(ev["data_subscricao"]) if ev["data_subscricao"] else data_ex
         return replace(base, data=dia, quantidade=inteiro,
                        valor=(inteiro * preco).quantize(Decimal("0.01"))), (
-            f"subscrição é opcional (preço {preco}, período {ev['periodo']}): lance só o que "
-            "você exerceu")  # fmt: skip
+            "; ".join(x for x in (classe, f"subscrição é opcional (preço {preco}, período "
+                                          f"{ev['periodo']}): lance só o que você exerceu")
+                      if x))  # fmt: skip
     if tipo is TipoEvento.BONIFICACAO:
         # o pacote traz o custo por ação quando o aviso aos acionistas informa: a proposta já sai
         # com o custo total; sem ele, o usuário informa (com custo zero o PM da venda fica errado)
@@ -854,9 +971,10 @@ def _evento_acao(
             valor = (inteiro * custo).quantize(Decimal("0.01"), ROUND_HALF_UP)
             pedido = (f"custo atribuído de R$ {custo} por ação, do aviso aos acionistas "
                       "(confira)")  # fmt: skip
-            nota = "; ".join(x for x in (pedido, nota) if x)
+            nota = "; ".join(x for x in (classe, pedido, nota) if x)
             return replace(base, quantidade=inteiro, valor=valor), nota
-        nota = "; ".join(x for x in ("informe o custo atribuído (aviso aos acionistas)", nota) if x)
+        nota = "; ".join(x for x in (classe, "informe o custo atribuído (aviso aos acionistas)",
+                                     nota) if x)  # fmt: skip
     return replace(base, quantidade=inteiro), nota
 
 

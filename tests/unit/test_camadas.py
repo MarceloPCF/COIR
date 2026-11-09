@@ -36,7 +36,7 @@ INTERNOS_PERMITIDOS = {
     ),
     # interface: só apresenta; dados e cálculos vêm dos serviços (nunca motor ou banco direto)
     "ui": ("coir.ui", "coir.servicos", "coir.reports", "coir.domain", "coir.config", "coir.erros",
-           "coir.auditoria"),
+           "coir.auditoria", "coir.recursos"),
 }  # fmt: skip
 EXTERNOS_LIBERADOS = {
     "gabarito": ("pyxlsb", "openpyxl"),

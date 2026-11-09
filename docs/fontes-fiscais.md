@@ -11,7 +11,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 7.713/1988 | 2 |
 | Lei 8.668/1993 | 1 |
 | Lei 8.981/1995 | 10 |
-| Lei 9.249/1995 | 15 |
+| Lei 9.249/1995 | 17 |
 | Lei 9.250/1995 | 4 |
 | Lei 9.430/1996 | 17 |
 | Lei 9.779/1999 | 1 |
@@ -19,22 +19,23 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 11.033/2004 | 25 |
 | Lei 11.051/2004 | 5 |
 | Lei 12.350/2010 | 1 |
-| Lei 13.043/2014 | 26 |
+| Lei 13.043/2014 | 29 |
 | Lei 14.754/2023 | 3 |
-| Lei 15.265/2025 | 11 |
+| Lei 15.265/2025 | 15 |
 | Lei 15.270/2025 | 10 |
 | MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 78 |
+| IN RFB 1.585/2015 | 84 |
 | IN RFB 1.700/2017 | 2 |
 | IN RFB 1.916/2019 | 1 |
 | Res. CMN 4.880/2020 | 1 |
 | SC Cosit 37/2020 | 3 |
+| SC Cosit 42/2020 | 2 |
 | SC Cosit 63/2020 | 2 |
 | SC Cosit 67/2024 | 1 |
 | SC Cosit 145/2021 | 1 |
 | SC Cosit 224/2014 | 4 |
 | P&R IRPF | 5 |
-| P&R IRPF 2026 | 18 |
+| P&R IRPF 2026 | 19 |
 | Manual MIR 2026 | 3 |
 | Programa IRPF | 8 |
 | CTN | 5 |
@@ -178,9 +179,11 @@ Companhias que saíram da bolsa:
 - `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/parametros_fiscais.csv` — aliquota_irrf_jcp: Lei 9.249/1995 art. 9º §2º (15% na data do pagamento ou crédito)
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): como crédito contra a companhia (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art.
+- `docs/regras-fiscais.md` — Oferta pública (IPO e follow-on; parecer do especialista, 08/11/2026): com o custo por ação lido do comunicado da companhia na CVM (`cvm_ipe`), mostrado antes de lançar (Lei 9.249
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09. BDR, ETF e FII com
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_bonificacao_ajusta_a_quantidade_da_serie_sem_custo: R8 (Lei 9.249/1995 art. 10 parágrafo único e IN RFB 1.585/2015 art. 58: o custo atribuído da bonificação vai para as…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos do capital); data/irpf/2026.yaml.
+- `tests/fiscal_cases/test_oferta_publica.py` — test_bonificacao_noutra_classe_abre_posicao_com_o_custo: Lei 9.249/1995 art. 10 §1º: o custo é a parcela capitalizada que corresponde ao acionista. Quem tem PN recebe 100…
 - `tests/fiscal_cases/test_proventos.py` — módulo: Proventos a partir da movimentação da B3 (casos fictícios conferidos à mão, 19/10/2026). Fontes: Lei 9.249/1995 arts. 9º e 10 (JCP exclusivo; dividendos isentos); LC 224/2025 art. 8º e art. 14 III (JCP a 17,5%…
 - `tests/fiscal_cases/test_proventos.py` — test_jcp_creditado_no_ano_anterior_com_a_mesma_aliquota: …B3 ou informe), declarado em 2024 e a receber em 31/12/2024 (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art. 9º §2º).
 
@@ -285,9 +288,12 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): isenta, com aviso de que a compra antes de 10/07/2014 não é isenta (Lei 13.043 art. 17 caput);
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): nos 30 pregões anteriores a 31/12/2023 (Lei 13.043 art. 17 §6º; IN art. 68; texto A), e os lotes
 - `docs/regras-fiscais.md` — Decisões da validação da extração (F2, 14/10/2026): **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte (Lei 13.043/2014 art. 2º §4º). Na
+- `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): **Corretagem e emolumentos do tomador:** até 2025, custo da operação (Lei 13.043/2014 art. 9º par. único; IN 1.585
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Reembolso de BTC ao doador: isento até 2025 (Lei 13.043/2014 art. 7º, reproduzido na IN 1.585
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_etf_de_renda_fixa_fica_fora_da_apuracao: Lei 13.043/2014 arts. 2º a 4º: ETF de renda fixa tem tributação exclusiva na fonte; o ganho vai para a lista da DIRPF, não para o DARF nem para a isenção.
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_pme_ganho_isento_e_fora_do_limite: Lei 13.043/2014 art. 16; IN 1.585 arts. 66 e 67 §3º: ganho na venda de ações de PME é isento e o valor não entra…
+- `tests/fiscal_cases/test_oferta_publica.py` — test_oferta_de_pme_tem_o_ganho_isento_e_fora_do_limite: IN RFB 1.585/2015 art. 67 I e Lei 13.043/2014 art. 16: ações de PME adquiridas em oferta. 1.000 a 27,00 (27.000,00) vendidas a 30,00: ganho de…
+- `tests/fiscal_cases/test_outros_custos.py` — módulo: …ao doador não é dedutível por pessoa física (SC Cosit 42/2020); corretagem e emolumentos do tomador: Lei 13.043/2014 art. 9º par. único, IN RFB 1.585/2015 art. 76 par. único e, desde 2026, art. 56 §3º.
 - `tests/fiscal_cases/test_pme_lotes.py` — módulo: Lotes isento e tributado de ações de PME (parecer do especialista de 08/11/2026). Norma lida: - Lei 13.043/2014 art. 16 caput (isenção até 31/12/2023, mercado à vista de bolsa) e art. 17: caput (aquisição a…
 - `tests/fiscal_cases/test_proventos.py` — test_reembolso_com_origem_informada_pelo_usuario: …usuário, pelo informe ou extrato, prevalece sobre a identificada pelo valor; o tratamento é o da origem (Lei 13.043/2014 art. 7º; Lei 15.265/2025 arts. 20 e 21). Mesmo caso do JCP de 0,520530743 por ação (442,45 =…
 - `tests/fiscal_cases/test_proventos.py` — test_reembolso_de_jcp_identificado_pelo_valor_por_acao: …o reembolso é a quantidade emprestada vezes o valor por ação do provento do dia, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II). JCP de 0,520530743 por ação pago em 14/03/2025 (pacote da B3), 1.000 ações…
@@ -304,6 +310,10 @@ Companhias que saíram da bolsa:
 - `coir/engine/proventos.py` — módulo: …com aviso. - Reembolso de BTC (doador): isento até 2025 (IN RFB 1.585/2015 art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com aviso (parâmetro). - Restituição de…
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: isento por equivalência (decisão do usuário 19/10/2026; rever se a RFB se manifestar)
 - `data/parametros_fiscais.csv` — reembolso_btc_norma_omissa: Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: a tela de proventos avisa (isento por equivalência)
+- `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): **Doador:** não lança nada; a remuneração tem IRRF definitivo (Lei 15.265 art. 19 caput e §4º I).
+- `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): **Mês:** o da recompra, ou o da liquidação do empréstimo sem recompra (Lei 15.265 art. 29 §§2º a 4º); estender ao custo é
+- `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): **Remuneração paga ao doador:** não dedutível por pessoa física (SC Cosit 42/2020; o art. 19 §2º da Lei 15.265/2025
+- `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): art. 76 par. único). Desde 2026 a Lei 15.265 revogou essa frase; decisão: manter pela regra geral (IN 1.585 art. 56 §3º).
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): 2025 e, desde 2026, sem incidência expressa (Lei 15.265 art. 21 I). Declarado no ano do
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): reteria (art. 7º §1º II; Lei 15.265 art. 20), mas o desconto não é IRRF do doador; é isento até
@@ -338,6 +348,7 @@ Companhias que saíram da bolsa:
 - `coir/engine/apuracao.py` — módulo: …a fonte de cada um): - Alíquotas: 15% comum (Lei 11.033/2004 art. 2º II), 20% day trade e 20% FII (IN RFB 1.585/2015, arts. 56 a 65). - Isenção: ganho líquido em ações no mercado à vista quando as alienações do mês…
 - `coir/engine/fichas.py` — módulo: …com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §8º; decisão do usuário de 16/10/2026: separar só na declaração). O programa…
 - `coir/engine/futuros.py` — módulo: …"serão reconhecidos por ocasião da liquidação do contrato, cessão ou encerramento da posição". IN RFB 1.585/2015 art. 61 e P&R IRPF 2026 pergunta 728: resultado de cada contrato = soma algébrica dos ajustes…
+- `coir/engine/movimentos.py` — _antecipar_ofertas: …entra antes dela, e o ganho fica no mês do pregão da venda (decisão do usuário de 08/11/2026; IN RFB 1.585/2015 art. 58). Antecipa só o que cobre a venda, da oferta mais próxima para a mais distante. A posição…
 - `coir/engine/movimentos.py` — _cisao: Cisão: o percentual do custo de A divulgado pela companhia vai para B, sem resultado (IN RFB 1.585/2015 art. 58 §6º: na proporção fixada pela assembleia). A quantidade de A não muda. Os eventos das…
 - `coir/engine/movimentos.py` — _day_trade: …marcou D formam o day trade quando a marcação é consistente; senão, a ordem dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º).
 - `coir/engine/movimentos.py` — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…
@@ -365,6 +376,7 @@ Companhias que saíram da bolsa:
 - `data/isencao_pme.csv` — PRNR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; fora da tabela de 2014 da B3; citada por fontes secundárias como enquadrada; sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
 - `data/isencao_pme.csv` — SQIA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Senior Solution, SNSL3); RI Sinqia, citado por fontes secundárias: isentas as compradas entre 10/07/2014 e 05/09/2019 (oferta deliberada em 05/09/2019, Formulário de Referência 2019); sem negócio nos 30 pregões finais de 2023
 - `data/parametros_fiscais.csv` — day_trade_criterio: IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (decisão do usuário de 25/10/2026, parecer do especialista). Alternativa: ordem_impressa
+- `data/parametros_fiscais.csv` — janela_liquidacao_oferta_dias: Sem norma: critério do COIR para venda antes da liquidação da oferta (decisão do usuário de 08/11/2026); a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)
 - `data/parametros_fiscais.csv` — leilao_fracao_isentavel: sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (decisão do usuário 19/10/2026)
 - `data/parametros_fiscais.csv` — pme_lote_ordem_venda: IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; isento_primeiro ou tributado_primeiro (decisão do usuário de 08/11/2026)
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: IN RFB 1.585/2015 art. 74 §1º I a (Lei 13.043/2014 art. 7º)
@@ -375,6 +387,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Bens e Direitos pelo custo de aquisição (IN RFB 1.585/2015 art. 58), também no ano da compra; a
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Termo (IN RFB 1.585/2015 art. 62 I e §1º): a venda à vista na data da liquidação vai para
 - `docs/regras-fiscais.md` — Futuros de commodities e conferência das notas BM&F (F7a, 19/10/2026): O resultado vem dos ajustes em R$ impressos na nota (IN RFB 1.585/2015 art. 61). O multiplicador só
+- `docs/regras-fiscais.md` — Oferta pública (IPO e follow-on; parecer do especialista, 08/11/2026): efetivamente pago, com preço médio ponderado, sem resultado e sem IRRF (IN RFB 1.585/2015 art. 58
 - `docs/regras-fiscais.md` — R1: R1 | Operações comuns (ações, units, ETF, BDR, opções, futuros, termo): 15% sobre ganho líquido mensal | Categoria COMUM, base única com subtotais por mercado | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R10: R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R11: …por contrato e realizados no encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A
@@ -407,6 +420,9 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_irrf_fichas.py` — módulo: …Casos do especialista fiscal, conferidos à mão. Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º; fichas "Renda variável - operações comuns/day trade" e "Operações -…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_day_trade_usado_no_imposto_de_fii_gera_aviso: IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês (saldo único da DARF), mas a ficha FII…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_irrf_de_day_trade_nao_abate_fii_antes_do_0005: IN RFB 1.585/2015 art. 65 §8º I e ficha FII sem linha de day trade: dezembro/2026 com imposto só de FII (V 100…
+- `tests/fiscal_cases/test_oferta_publica.py` — módulo: Compra em oferta pública (IPO e follow-on), que não aparece em nota de corretagem. IN RFB 1.585/2015 art. 58 caput: o custo é o valor pago, com preço médio ponderado; art. 56 §5º: ganho apurado na…
+- `tests/fiscal_cases/test_oferta_publica.py` — test_oferta_de_pme_tem_o_ganho_isento_e_fora_do_limite: IN RFB 1.585/2015 art. 67 I e Lei 13.043/2014 art. 16: ações de PME adquiridas em oferta. 1.000 a 27,00 (27.000,00)…
+- `tests/fiscal_cases/test_outros_custos.py` — módulo: …física (SC Cosit 42/2020); corretagem e emolumentos do tomador: Lei 13.043/2014 art. 9º par. único, IN RFB 1.585/2015 art. 76 par. único e, desde 2026, art. 56 §3º.
 - `tests/fiscal_cases/test_petz_auau.py` — módulo: …em 23/01/2026. Valor exato pago: R$ 0,7109 por ação (imprensa, sobre o resultado do 4T25). Regra: - IN RFB 1.585/2015 art. 58 §6º: o custo das ações originais vai para as recebidas, e a ON e a PN foram recebidas.…
 - `tests/fiscal_cases/test_pme_lotes.py` — módulo: …pelo volume negociado nos últimos 30 (trinta) pregões anteriores a 31 de dezembro de 2023"). - IN RFB 1.585/2015 art. 58 caput (média ponderada), arts. 66 a 68 (repetem a lei) e art. 69-A (incluído pela IN RFB…
 - `tests/fiscal_cases/test_pme_lotes.py` — test_data_de_corte_das_ofertas_subsequentes: IN RFB 1.585/2015 art. 69-A: compras a partir da oferta subsequente são tributadas; §2º: as anteriores continuam isentas. A data é a que a companhia publicou, quando há.
@@ -432,6 +448,11 @@ Companhias que saíram da bolsa:
 - `data/trocas_ticker.csv` — PETZ3: B3 COTAHIST: último negócio de PETZ3 em 02/01/2026; AUAU3 desde 05/01/2026 (RI: relação 1:1, abertura deduzida de R$ 0,71); CNPJ muda (18328118000109 -> 53153938000108): incorporação tratada como troca curada, custo mantido (IN RFB 1.585/2015 art. 58 §6º); R$ 0,71 por ação à parte: resgate de PN, SC Cosit 37/2020
 - `docs/regras-fiscais.md` — R8: …custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026).…
 - `tests/fiscal_cases/test_petz_auau.py` — módulo: …- O resgate da PN é alienação: dinheiro menos o custo da PN (Lei 7.713/1988 art. 3º §3º; SC Cosit 37/2020, CETIP/BM&FBOVESPA, com a mesma estrutura de ON + PN resgatável). Fora de bolsa, vai para o GCAP e…
+
+## SC Cosit 42/2020
+
+- `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): **Remuneração paga ao doador:** não dedutível por pessoa física (SC Cosit 42/2020; o art. 19 §2º da Lei 15.265/2025
+- `tests/fiscal_cases/test_outros_custos.py` — módulo: …"Outros custos dedutíveis"). A remuneração paga ao doador não é dedutível por pessoa física (SC Cosit 42/2020); corretagem e emolumentos do tomador: Lei 13.043/2014 art. 9º par. único, IN RFB 1.585/2015 art. 76…
 
 ## SC Cosit 63/2020
 
@@ -477,6 +498,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): P&R IRPF 2026 pergunta 723, que trata de lote isolado).
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): `opcoes_linha_acoes_tipos_objeto`; P&R IRPF 2026 pergunta 707 separa cotas de fundo de índice de
+- `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): **A conferir:** o PDF oficial da SC 42/2020 e o P&R IRPF 2026 não puderam ser lidos; as leis foram lidas em compiladores.
 - `docs/regras-fiscais.md` — R11: …encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A
 - `docs/regras-fiscais.md` — R6: …| Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT:…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Direitos, rendimentos e fichas mês a mês que o COIR preenche. Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero. Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das…

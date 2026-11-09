@@ -1,4 +1,4 @@
-"""Outros custos dedutíveis lançados pelo usuário (ex.: taxas de aluguel de ações - BTC): um valor
+"""Outros custos dedutíveis lançados pelo usuário (ex.: corretagem e tarifas do BTC): um valor
 por titular, mês e categoria, que reduz o resultado do mês (engine/apuracao)."""
 
 from decimal import Decimal

@@ -242,7 +242,8 @@ def entradas(
     return notas, eventos
 
 
-EVENTOS_DO_LOTE_PME = (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO, TipoEvento.CUSTODIA_INICIAL)
+EVENTOS_DO_LOTE_PME = (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO, TipoEvento.CUSTODIA_INICIAL,
+                       TipoEvento.OFERTA_PUBLICA)  # fmt: skip
 
 
 def _aviso_custodia_pme(ticker: str, dia: date, isencao: IsencaoPME) -> str:

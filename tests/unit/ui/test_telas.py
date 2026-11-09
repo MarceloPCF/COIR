@@ -375,6 +375,15 @@ async def test_operacoes_finalizadas_numa_grade_com_filtros_e_resumo(demo: Path)
         meses = [g for g in user.find(marker="finalizadas-por-ativo").elements
                  if isinstance(g, ui.aggrid)]  # fmt: skip
         assert meses and {r["c0"] for g in meses for r in g.options["rowData"]} == {ativo}
+        # clicar numa linha do mês abre só as operações daquele ativo naquele dia
+        linha = meses[0].options["rowData"][0]
+        total = len(grade.options["rowData"])
+        if len(meses) == 1:
+            user.find(marker="finalizadas-por-ativo").trigger("rowClicked", {"data": linha})
+            await user.should_see(marker="finalizadas")
+            assert vista.value == "operacao"
+            assert 0 < len(grade.options["rowData"]) <= total
+            assert {r["c1"] for r in grade.options["rowData"]} == {linha["c0"]}
 
 
 @pytest.mark.asyncio

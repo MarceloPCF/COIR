@@ -27,8 +27,36 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R18 | Termo: custo/alienação pelo preço a termo; ganho apurado na liquidação/encerramento (operação comum) | Contrato a termo vinculado à liquidação | IN RFB 1.585/2015 | M (validar com as operações a termo da planilha) |
 
 ## Outros custos dedutíveis (aba BTC_Outros do v2)
-Lançamento manual mensal (ex.: custos de BTC) que reduz o resultado tributável do mês, como no v2.02. BTC como
-operação está fora do escopo.
+Lançamento manual mensal que reduz o resultado do mês, como no v2.02. BTC como operação está fora do escopo.
+
+Parecer do especialista e decisões do usuário (08/11/2026):
+- **Remuneração paga ao doador:** não dedutível por pessoa física (SC Cosit 42/2020; o art. 19 §2º da Lei 15.265/2025
+  segue tratando-a como despesa só no lucro real). O COIR só avisa, porque o valor é digitado à mão.
+- **Corretagem e emolumentos do tomador:** até 2025, custo da operação (Lei 13.043/2014 art. 9º par. único; IN 1.585
+  art. 76 par. único). Desde 2026 a Lei 15.265 revogou essa frase; decisão: manter pela regra geral (IN 1.585 art. 56 §3º).
+- **Tarifas da B3:** tratadas como emolumento (inferência; nenhuma norma usa o termo).
+- **Mês:** o da recompra, ou o da liquidação do empréstimo sem recompra (Lei 15.265 art. 29 §§2º a 4º); estender ao custo é
+  inferência.
+- **Mês de ganho isento:** o custo reduz primeiro o isento; só o que sobra reduz o resultado (decisão do usuário: sem isso, o
+  ganho ficaria isento e o custo ainda viraria prejuízo compensável).
+- **Doador:** não lança nada; a remuneração tem IRRF definitivo (Lei 15.265 art. 19 caput e §4º I).
+- **A conferir:** o PDF oficial da SC 42/2020 e o P&R IRPF 2026 não puderam ser lidos; as leis foram lidas em compiladores.
+
+## Oferta pública (IPO e follow-on; parecer do especialista, 08/11/2026)
+A compra em oferta não aparece em nota de corretagem e entra como `OFERTA_PUBLICA`: o custo é o valor
+efetivamente pago, com preço médio ponderado, sem resultado e sem IRRF (IN RFB 1.585/2015 art. 58
+caput). Pode abrir posição de ativo ainda sem nota. O lock-up não muda imposto nem custo. A data é a da
+liquidação (sem norma expressa; recomendação do especialista). A negociação pode começar antes da
+liquidação: a venda que deixaria a posição vendida, até 7 dias antes da data da oferta (critério do COIR, sem
+norma; parâmetro `janela_liquidacao_oferta_dias`), faz a compra entrar no dia dela, e o ganho fica no mês do
+pregão da venda (decisão do usuário de 08/11/2026). Posição vendida há mais tempo falha alto, como na
+subscrição, em vez de zerar a posição e perder o ganho. A oferta de PME
+elegível grava a isenção (IN 1.585 art. 67 I; `data/isencao_pme.csv`).
+
+Subscrição e bonificação do pacote público que entregam outra classe creditam a classe emitida; a bonificação
+noutra classe (`NaturezaEvento.OUTRA_CLASSE`) pode abrir posição. Bonificação entra em "Lançar as seguras" só
+com o custo por ação lido do comunicado da companhia na CVM (`cvm_ipe`), mostrado antes de lançar (Lei 9.249
+art. 10 §1º; IN 1.585 art. 58 §1º).
 
 ## Decisões da validação do gabarito (F1, 14/10/2026)
 Respostas do usuário aos pontos do `resumo.md`. Onde o gabarito difere da regra por desenho, a comparação

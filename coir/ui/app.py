@@ -14,7 +14,7 @@ from coir import auditoria
 from coir.config import ARQUIVO_REGISTRO
 from coir.erros import CoirError
 from coir.servicos.estado import Estado, Pendencia
-from coir.ui import preferencias, tema
+from coir.ui import ajuda, preferencias, tema
 from coir.ui.telas import (
     apuracao,
     assistente,
@@ -93,6 +93,7 @@ def _construtor(tela: Tela, estado: Estado, avisar: Avisar) -> Callable[[], None
         if tela.exige_dados and not estado.pronto:
             assistente.montar(estado, avisar)
         else:
+            ajuda.botao(tela.rota)
             tela.montar(estado, avisar)
 
     return construir
@@ -284,4 +285,4 @@ def montar(estado: Estado) -> None:
             t.rota: _construtor(t, estado, mudou) for t in (*TELAS, INICIO)
         }
         rotas["/notas/{nota}"] = _nota(estado, mudou)
-        paginas = ui.sub_pages(rotas).classes("w-full")
+        paginas = ui.sub_pages(rotas).classes("w-full relative")
