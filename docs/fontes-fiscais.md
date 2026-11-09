@@ -16,7 +16,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 9.430/1996 | 17 |
 | Lei 9.779/1999 | 1 |
 | Lei 9.959/2000 | 5 |
-| Lei 11.033/2004 | 25 |
+| Lei 11.033/2004 | 27 |
 | Lei 11.051/2004 | 5 |
 | Lei 12.350/2010 | 1 |
 | Lei 13.043/2014 | 29 |
@@ -32,7 +32,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | SC Cosit 42/2020 | 2 |
 | SC Cosit 63/2020 | 2 |
 | SC Cosit 67/2024 | 1 |
-| SC Cosit 145/2021 | 2 |
+| SC Cosit 145/2021 | 1 |
 | SC Cosit 224/2014 | 4 |
 | P&R IRPF | 5 |
 | P&R IRPF 2026 | 19 |
@@ -238,12 +238,14 @@ Companhias que saíram da bolsa:
 - `data/parametros_fiscais.csv` — aliquota_day_trade: Lei 11.033/2004 art. 2º I
 - `data/parametros_fiscais.csv` — limite_isencao_acoes: Lei 11.033/2004 art. 3º I (valor bruto das alienações de ações à vista no mês)
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): saldo único (a lei e a IN não separam o IRRF de FII; Lei 11.033/2004 art. 2º §7º). As fichas do
+- `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): venda de ação no limite (Lei 11.033/2004 art. 3º I; parecer do especialista de 09/11/2026,
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Rendimento de FII/Fiagro: isento (Lei 11.033 art. 3º III).
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): §4º c; Lei 11.033 art. 1º), como as fontes retêm (22,5% nos dados reais); código 06 ou 12 conforme
 - `docs/regras-fiscais.md` — R16: R16 | Rendimentos de FII isentos se o fundo cumpre requisitos | Usuário marca conforme informe do fundo | Lei 11.033/2004 art. 3º (alt. Lei 14.754/2023) | M
 - `docs/regras-fiscais.md` — R4: …e venda por exercício incluídos); fora: units, ETF, BDR, FII, opções, futuros, termo e day trade | Lei 11.033/2004 art. 3º I | A
 - `docs/regras-fiscais.md` — Relatórios (F5, 16/10/2026): abatimento (day trade antes da Lei 11.033) na ficha de comuns.
 - `docs/regras-fiscais.md` — Relatórios (F5, 16/10/2026): duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é
+- `tests/fiscal_cases/test_ativo_isolado.py` — test_venda_do_ativo_sem_tipo_conta_no_limite_e_avisa_quando_decide: …conta como venda de ação no limite (parecer do especialista de 09/11/2026, seguido pelo usuário; Lei 11.033/2004 art. 3º I): se for ação, não contar isentaria vendas acima do limite. Vendas de fevereiro: 19.000…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t2_limite_pelo_valor_bruto_das_vendas: R4: o limite de R$ 20 mil é sobre o valor bruto das alienações (Lei 11.033/2004 art. 3º I); custos de venda não reduzem o valor para o limite. 20.000,00 com custos 10 é isento; 20.000,01 é tributável.
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …(decisão do usuário de 19/10/2026: entra no limite de R$ 20 mil do mês do crédito, Lei 11.033/2004 art. 3º I).
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos…
@@ -466,7 +468,6 @@ Companhias que saíram da bolsa:
 ## SC Cosit 145/2021
 
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Units fora da isenção: coincide com a RFB (SC Cosit 145/2021: só "ativos da espécie ações").
-- `tests/fiscal_cases/test_ativo_isolado.py` — test_venda_do_ativo_sem_tipo_nao_conta_como_venda_de_acao: O que não é ação não entra no limite (SC Cosit 145/2021): 20 mil de ações seguem isentos.
 
 ## SC Cosit 224/2014
 

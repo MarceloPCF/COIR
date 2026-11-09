@@ -150,6 +150,11 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - O valor das vendas do ativo isolado continua na soma do limite de R$ 20 mil (só o custo é
     desconhecido; tirar a venda poderia isentar um mês tributável). O IRRF da nota continua
     crédito.
+  - Ativo sem tipo nas tabelas (`SEM_TIPO`, isolado do mesmo jeito): a venda à vista conta como
+    venda de ação no limite (Lei 11.033/2004 art. 3º I; parecer do especialista de 09/11/2026,
+    seguido pelo usuário). Se for ação e não contar, vendas acima do limite sairiam isentas (imposto
+    a menos, multa de ofício); se não for e contar, o contribuinte paga a mais e restitui. Quando
+    só essa venda faz o mês passar do limite, a apuração avisa.
   - Meses incompletos: os do ativo desde a última vez que a posição zerou (o evento que falta pode
     ser anterior ao dia em que o livro parou). Meses dependentes: os seguintes, na categoria do
     ativo (comum e day trade; FII), com resultado, imposto ou prejuízo a compensar, porque o

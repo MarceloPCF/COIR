@@ -23,7 +23,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **Notas da Clear de 2018 a 2020:** eram recusadas com "rótulo 'Data pregão' não encontrado". O COIR agora lê esse layout, com negócios "B3 RV LISTADO" e o resumo em blocos, em qualquer corretora.
 - **Fundos imobiliários sem tipo:** mais de 300 FII e Fiagro, como HGBS11 e BRCR11, estavam fora da tabela de tipos porque o nome abreviado não dizia "imobiliário". A tabela agora usa a lista oficial de fundos da B3 e o COTAHIST.
 - **Aviso de venda maior que a posição:** só falava em evento corporativo; agora lembra também da nota de compra que falta (de outra corretora ou anterior às notas importadas) e da custódia inicial.
-- **Ativo sem tipo não para mais o programa:** ele sai do cálculo, com aviso e os meses marcados como incompletos, e o resto da carteira segue apurado.
+- **Ativo sem tipo não para mais o programa:** ele sai do cálculo, com aviso e os meses marcados como incompletos, e o resto da carteira segue apurado. A venda dele conta no limite de R$ 20 mil como se fosse ação, o lado seguro, e o mês em que isso decide a isenção ganha um aviso.
 - **Aluguel de ações (BTC):** a tela Outros custos mandava deduzir a taxa de aluguel, que, segundo a Receita, pessoa física não pode abater (Solução de Consulta Cosit 42/2020). Se você lançou essa taxa, revise: ficam só a corretagem e as tarifas da B3 do empréstimo, no mês da recompra. A tela avisa quando a descrição fala em aluguel.
 - **Custo em mês de ganho isento:** reduz primeiro o ganho isento, em vez de virar prejuízo a compensar.
 - **Subscrição com posição vendida:** agora dá erro, em vez de zerar a posição e perder o ganho da venda.

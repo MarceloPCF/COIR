@@ -123,6 +123,8 @@ def apurar(
         meses += m
         anuais += a
     meses = [_marcar(m, isolados) for m in meses]
+    for titular, texto in _limite_pelo_sem_tipo(movimentos, meses, parametros):
+        avisos[titular].append(texto)
     for i in isolados:
         quando = ", ".join(f"{mes:02d}/{ano}" for ano, mes in i.meses) or "nenhum mês"
         avisos[i.titular].append(
@@ -159,6 +161,37 @@ def _marcar(m: MesApurado, isolados: Sequence[AtivoIsolado]) -> MesApurado:
         return m
     return m.model_copy(update={"incompletos": tuple(sorted(set(incompletos))),
                                 "dependentes": tuple(sorted(set(dependentes)))})  # fmt: skip
+
+
+def _limite_pelo_sem_tipo(
+    movimentos: Sequence[Movimento], meses: Sequence[MesApurado], params: ParametrosFiscais
+) -> list[tuple[int, str]]:
+    """Meses em que a venda de ativo sem tipo, somada como venda de ação, fez as vendas do mês
+    passarem do limite de isenção: se o ativo não for ação, o ganho de ações seria isento."""
+    sem: dict[tuple[int, int, int], Decimal] = defaultdict(lambda: ZERO)
+    tickers: dict[tuple[int, int, int], set[str]] = defaultdict(set)
+    for m in movimentos:
+        if m.tipo is TipoAtivo.SEM_TIPO and m.venda_acao_a_vista:
+            chave = (m.titular, m.data.year, m.data.month)
+            sem[chave] += m.venda_acao_a_vista
+            tickers[chave].add(m.ticker)
+    saida: list[tuple[int, str]] = []
+    for mes in meses:
+        chave = (mes.titular, mes.ano, mes.mes)
+        if chave not in sem:
+            continue
+        comum = next(r for r in mes.categorias if r.categoria is Categoria.COMUM)
+        limite = params.decimal("limite_isencao_acoes", fim_do_mes(mes.ano, mes.mes))
+        if comum.vendas_acoes - sem[chave] <= limite < comum.vendas_acoes:
+            nomes = ", ".join(sorted(tickers[chave]))
+            saida.append((mes.titular, (
+                f"{mes.mes:02d}/{mes.ano}: a venda de {nomes}, sem tipo de ativo nas tabelas, foi "
+                f"somada às vendas de ações e fez o mês passar do limite de isenção de R$ "
+                f"{limite:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                + ". Se não for ação, o ganho com ações deste mês seria isento: atualize as "
+                "tabelas em Configurações ou mande a nota pela tela Suporte"
+            )))  # fmt: skip
+    return saida
 
 
 def _exclusiva(m: Movimento) -> TributacaoExclusiva:

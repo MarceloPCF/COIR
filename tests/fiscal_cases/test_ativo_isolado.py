@@ -179,16 +179,35 @@ def test_ativo_sem_tipo_fica_isolado_e_nao_para_a_apuracao() -> None:
     assert mes(ap, 2025, 2).incompletos == ("ZZZZ12",)
 
 
-def test_venda_do_ativo_sem_tipo_nao_conta_como_venda_de_acao() -> None:
-    """O que não é ação não entra no limite (SC Cosit 145/2021): 20 mil de ações seguem isentos."""
+def test_venda_do_ativo_sem_tipo_conta_no_limite_e_avisa_quando_decide() -> None:
+    """Tipo desconhecido conta como venda de ação no limite (parecer do especialista de
+    09/11/2026, seguido pelo usuário; Lei 11.033/2004 art. 3º I): se for ação, não contar isentaria
+    vendas acima do limite. Vendas de fevereiro: 19.000 de PETR4 + 20.000 de ZZZZ12 = 39.000 >
+    20.000, então o ganho de 9.000 de PETR4 é tributável (15% = 1.350,00); sem o ZZZZ12 seria
+    isento, e o aviso diz isso."""
     livro = Livro()
     livro.nota(date(2025, 1, 10), livro.op("C", "ZZZZ12", 10, "5", tipo=TipoAtivo.SEM_TIPO),
                livro.op("C", "PETR4", 1000, "10"))  # fmt: skip
     livro.nota(date(2025, 2, 10), livro.op("V", "ZZZZ12", 10, "2000", tipo=TipoAtivo.SEM_TIPO),
                livro.op("V", "PETR4", 1000, "19"))  # fmt: skip
-    fevereiro = categoria(livro.apurar(date(2025, 2, 28)), 2025, 2, Categoria.COMUM)
-    assert fevereiro.vendas_acoes == D("19000")
-    assert (fevereiro.isento, fevereiro.imposto) == (D("9000"), 0)
+    ap = livro.apurar(date(2025, 2, 28))
+    fevereiro = categoria(ap, 2025, 2, Categoria.COMUM)
+    assert fevereiro.vendas_acoes == D("39000")
+    assert (fevereiro.isento, fevereiro.imposto) == (0, D("1350.00"))
+    [aviso] = [a for _, a in ap.avisos_titular if "limite de isenção de R$ 20.000,00" in a]
+    assert aviso.startswith("02/2025: a venda de ZZZZ12") and "seria isento" in aviso
+
+
+def test_venda_do_ativo_sem_tipo_que_nao_decide_o_limite_nao_avisa() -> None:
+    """Vendas de ações já acima do limite sem o ZZZZ12: o tipo dele não muda nada."""
+    livro = Livro()
+    livro.nota(date(2025, 1, 10), livro.op("C", "ZZZZ12", 10, "5", tipo=TipoAtivo.SEM_TIPO),
+               livro.op("C", "PETR4", 1000, "10"))  # fmt: skip
+    livro.nota(date(2025, 2, 10), livro.op("V", "ZZZZ12", 10, "100", tipo=TipoAtivo.SEM_TIPO),
+               livro.op("V", "PETR4", 1000, "25"))  # fmt: skip
+    ap = livro.apurar(date(2025, 2, 28))
+    assert categoria(ap, 2025, 2, Categoria.COMUM).vendas_acoes == D("26000")
+    assert not [a for _, a in ap.avisos_titular if "limite de isenção" in a]
 
 
 def test_evento_de_ativo_sem_tipo_tambem_isola() -> None:

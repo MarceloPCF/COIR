@@ -365,12 +365,17 @@ def _desde_zerado(livro: Livro, meses: Meses) -> None:
 def _venda_isolada(livro: Livro, dia: date, o: _Op) -> None:
     """Venda de ativo isolado: o resultado fica de fora (o custo não é conhecido), mas o valor
     da venda é: entra na soma do limite de isenção do mês e na base que reparte o IRRF (decisão
-    do usuário de 03/11/2026). O IRRF da nota continua crédito do mês."""
+    do usuário de 03/11/2026). O IRRF da nota continua crédito do mês. O ativo sem tipo conta
+    como ação: se for, não contar isentaria vendas de ações acima do limite (imposto a menos, com
+    multa de ofício); se não for, contar só faz pagar a mais, o que se restitui (parecer do
+    especialista de 09/11/2026, seguido pelo usuário). A apuração avisa o mês em que isso decide
+    o limite."""
     op = o.op
     if op.cv != "V" or op.mercado == "TERMO":
         return
     pme = op.pme_ate is not None and dia <= op.pme_ate
-    acao = op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT) and op.mercado in MERCADOS_ACAO_A_VISTA
+    acao = (op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT, TipoAtivo.SEM_TIPO)
+            and op.mercado in MERCADOS_ACAO_A_VISTA)  # fmt: skip
     base_irrf = op.total if (op.mercado not in MERCADOS_EXERCICIO and not pme
                              and op.tipo is not TipoAtivo.ETF_RF) else ZERO  # fmt: skip
     livro.movimentos.append(Movimento(
