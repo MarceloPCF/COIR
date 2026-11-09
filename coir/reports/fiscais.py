@@ -454,7 +454,14 @@ def irrf_exclusiva(d: DadosRelatorio) -> Relatorio:
         + ("" if anual else " Ano em curso: o saldo só fecha em dezembro."),
     )
     exclusivas = [
-        e for e in d.apuracao.exclusiva if e.titular == d.titular and e.data.year == d.ano
+        e
+        for e in d.apuracao.exclusiva
+        if e.titular == d.titular and e.data.year == d.ano and e.tipo is TipoAtivo.ETF_RF
+    ]
+    infra = [
+        e
+        for e in d.apuracao.exclusiva
+        if e.titular == d.titular and e.data.year == d.ano and e.tipo is TipoAtivo.FUNDO_INFRA
     ]
     colunas = (
         Coluna("Data", T.DATA),
@@ -476,11 +483,23 @@ def irrf_exclusiva(d: DadosRelatorio) -> Relatorio:
         "DARF. Resultado estimado pelo custo médio do COIR: confira com o informe de "
         "rendimentos da instituição.",
     )
+    linhas_infra: list[tuple[Valor, ...]] = [
+        (e.data, e.ticker, e.quantidade, e.alienacao, e.custo, e.resultado) for e in infra
+    ]
+    aliquota_zero = Secao(
+        "Alíquota zero (FI-Infra e FIP-IE)",
+        colunas,
+        tuple(linhas_infra),
+        _total(linhas_infra, colunas, {3, 4, 5}) if linhas_infra else None,
+        nota="Lei 12.431/2011 art. 3º e Lei 11.478/2007 art. 2º: ganho de pessoa física com "
+        "alíquota zero; fora da apuração mensal, do limite de R$ 20 mil e do DARF. O prejuízo "
+        "não compensa outros ganhos (IN RFB 1.585/2015 art. 64).",
+    )
     return Relatorio(
         "irrf-e-exclusiva",
         "IRRF do ano e tributação exclusiva",
         _cab(d),
-        (irrf, exclusiva),
+        (irrf, exclusiva, *((aliquota_zero,) if linhas_infra else ())),
         pdf=True,
     )
 
@@ -500,6 +519,8 @@ def _obs(m: Movimento, isento: bool) -> str:
         marcas.append("isento")
     if m.tipo is TipoAtivo.ETF_RF:
         marcas.append("trib. exclusiva")
+    if m.tipo is TipoAtivo.FUNDO_INFRA:
+        marcas.append("alíquota zero")
     if m.cv == "C" and m.custo_baixa:
         marcas.append("recompra")
     elif m.quantidade < 0:
@@ -744,6 +765,7 @@ BLOCOS_CARTEIRA: tuple[tuple[str, Callable[[PosicaoAtivo], bool]], ...] = (
         ),
     ),
     ("Fundos imobiliários e Fiagro", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.FII),
+    ("FI-Infra e FIP-IE", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.FUNDO_INFRA),
     ("Opções", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.OPCAO),
     (
         "Direitos, recibos e bônus de subscrição",

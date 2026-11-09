@@ -137,6 +137,12 @@ isentos:
       descricao: "Outros (rendimentos de FII e Fiagro)"
       por_fonte: true
       parcial: true  # o código também recebe rendimentos fora da bolsa
+    - chave: ganho_fundo_infra
+      codigo: "99"
+      descricao: "Outros (ganho em cotas de FI-Infra e FIP-IE, alíquota zero)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+      nota: "Lei 12.431/2011 art. 3º; Lei 11.478/2007 art. 2º; código a confirmar (parecer de 09/11/2026, confiança baixa)"
     - chave: reembolso_btc
       codigo: "99"
       descricao: "Outros (reembolso de proventos de ações emprestadas)"

@@ -69,7 +69,7 @@ class TiposAtivo(Modelo):
             return TipoAtivo.BDR
         raise ReferenciaError(
             f"ticker {ticker} sem tipo de ativo: cadastre em data/tipos_ativo.csv "
-            "(UNIT, ETF, ETF_RF, BDR, FII ou ACAO)"
+            "(UNIT, ETF, ETF_RF, BDR, FII, ACAO, DIREITO ou FUNDO_INFRA)"
         )
 
     def tipo_ou_sem(self, ticker: str) -> TipoAtivo:

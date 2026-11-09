@@ -47,6 +47,9 @@ from coir.erros import MotorError
 MERCADOS_DT = frozenset({"VISTA", "FRACIONARIO", "CALL", "PUT"})
 MERCADOS_ACAO_A_VISTA = frozenset({"VISTA", "FRACIONARIO", "EXERC CALL", "EXERC PUT"})
 MERCADOS_EXERCICIO = frozenset({"EXERC CALL", "EXERC PUT"})
+# a venda não entra na base que reparte o IRRF de 0,005% entre as fichas: o imposto desses é
+# exclusivo na fonte (ETF de renda fixa) ou de alíquota zero (FI-Infra e FIP-IE)
+SEM_IRRF_DA_VENDA = frozenset({TipoAtivo.ETF_RF, TipoAtivo.FUNDO_INFRA})
 ABREM_POSICAO = frozenset(
     {TipoEvento.SUBSCRICAO, TipoEvento.OFERTA_PUBLICA, TipoEvento.CUSTODIA_INICIAL}
 )
@@ -377,7 +380,7 @@ def _venda_isolada(livro: Livro, dia: date, o: _Op) -> None:
     acao = (op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT, TipoAtivo.SEM_TIPO)
             and op.mercado in MERCADOS_ACAO_A_VISTA)  # fmt: skip
     base_irrf = op.total if (op.mercado not in MERCADOS_EXERCICIO and not pme
-                             and op.tipo is not TipoAtivo.ETF_RF) else ZERO  # fmt: skip
+                             and op.tipo not in SEM_IRRF_DA_VENDA) else ZERO  # fmt: skip
     livro.movimentos.append(Movimento(
         data=dia, titular=o.nota.titular, conta=o.nota.conta, corretora=o.nota.corretora,
         ativo=op.ativo, ticker=op.ticker, origem=f"op:{op.id}",
@@ -941,7 +944,7 @@ def _aplicar_parte(
     # base do IRRF 0,005% (Lei 11.033/2004 art. 2º §§1º e 2º): venda comum, sem exercício, PME
     # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas
     base_irrf = p.bruto if (o.op.cv == "V" and o.op.mercado not in MERCADOS_EXERCICIO and not pme
-                            and o.op.tipo is not TipoAtivo.ETF_RF) else ZERO  # fmt: skip
+                            and o.op.tipo not in SEM_IRRF_DA_VENDA) else ZERO  # fmt: skip
     termo = custo_termo is not None
     livro.registrar(chave, dia, f"op:{o.op.id}", p.regra, de=_de(o),
                     categoria=_categoria(o.op.tipo, day_trade=False), cv=o.op.cv,

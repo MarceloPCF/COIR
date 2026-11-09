@@ -33,6 +33,10 @@ class TipoAtivo(StrEnum):
     # sem isenção e fora do limite (SC Cosit 145 e 166/2021; recibo pela posição B do parecer do
     # especialista de 09/11/2026, seguido pelo usuário)
     DIREITO = "DIREITO"
+    # cota de FI-Infra (Lei 12.431/2011 art. 3º) ou de FIP-IE/FIP-PD&I (Lei 11.478/2007 art. 2º),
+    # pela lista de fundos da B3: alíquota zero para pessoa física, fora do limite e da
+    # compensação de prejuízo (parecer do especialista de 09/11/2026, seguido pelo usuário)
+    FUNDO_INFRA = "FUNDO_INFRA"
     SEM_TIPO = "SEM_TIPO"  # fora das tabelas: o motor isola o ativo, sem palpite de tributação
 
 
@@ -400,7 +404,9 @@ class MesApurado(Modelo):
 
 
 class TributacaoExclusiva(Modelo):
-    """Venda de ETF de renda fixa: imposto retido pelo administrador (vai para a DIRPF)."""
+    """Venda fora da apuração mensal: ETF de renda fixa (imposto retido pelo administrador, vai
+    para a DIRPF) ou cota de FI-Infra e FIP-IE (alíquota zero; o ganho vai para os isentos e o
+    prejuízo não compensa nada)."""
 
     data: date
     titular: int
@@ -410,6 +416,7 @@ class TributacaoExclusiva(Modelo):
     alienacao: Decimal
     custo: Decimal
     resultado: Decimal
+    tipo: TipoAtivo = TipoAtivo.ETF_RF
 
 
 class IrrfAnual(Modelo):

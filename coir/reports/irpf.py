@@ -146,6 +146,11 @@ def _bens(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]) -> list[Be
                 if p.titular == d.titular and p.quantidade > 0 and p.tipo in TIPO_BEM}  # fmt: skip
 
     atual, anterior = abertas(d.carteira_fiscal), abertas(d.carteira_fiscal_anterior)
+    for p in d.carteira_fiscal:
+        if (p.titular == d.titular and p.quantidade > 0 and p.tipo not in TIPO_BEM
+                and p.tipo is not TipoAtivo.FUTURO):  # fmt: skip
+            avisos.append(f"Bens e Direitos: {p.ticker} ({p.tipo.value}) sem código no mapeamento "
+                          f"do exercício {mapa.exercicio}: declare à mão")  # fmt: skip
     bens: list[BemIrpf] = []
     for ativo in sorted(atual.keys() | anterior.keys(),
                         key=lambda a: (atual.get(a) or anterior[a]).ticker):  # fmt: skip
@@ -293,8 +298,12 @@ def _rendimentos(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]
     linha("isentos", "rendimento_fii", proventos(TipoProvento.RENDIMENTO_FII))
     linha("isentos", "reembolso_btc", proventos(TipoProvento.REEMBOLSO_BTC))
     linha("exclusivos", "jcp", proventos(TipoProvento.JCP))
-    etf_rf = [(e.ticker, e.resultado) for e in d.apuracao.exclusiva
-              if e.titular == d.titular and e.data.year == d.ano and e.resultado > 0]  # fmt: skip
+    vendas = [e for e in d.apuracao.exclusiva if e.titular == d.titular and e.data.year == d.ano]
+    etf_rf = [(e.ticker, e.resultado) for e in vendas
+              if e.tipo is TipoAtivo.ETF_RF and e.resultado > 0]  # fmt: skip
+    infra = [(e.ticker, e.resultado) for e in vendas
+             if e.tipo is TipoAtivo.FUNDO_INFRA and e.resultado > 0]  # fmt: skip
+    linha("isentos", "ganho_fundo_infra", infra)
     if etf_rf:
         avisos.append("ETF de renda fixa: o COIR estima o ganho bruto; declare o valor líquido do "
                       "informe de rendimentos do administrador")  # fmt: skip

@@ -63,6 +63,15 @@ def test_recibo_de_cota_no_cadastro_e_direito_nao_fii() -> None:
     assert _tipos([recibo], emissores=[{"emissor": "XXXX", "tipo": "FII"}]) == {"XXXX15": "DIREITO"}
 
 
+@pytest.mark.parametrize("tipo_b3", ["FI-INFRA", "FIP-IE"])
+def test_fi_infra_e_fip_ie_pela_lista_da_b3(tipo_b3: str) -> None:
+    """Alíquota zero só pela lista oficial: o nome não basta (FIP comum paga 15%)."""
+    fundo = _fundo("JURO11", "SPARTA INFRA FIC FI INFRA RENDA FIXA CP", emissor="JURO")
+    assert _tipos([fundo], emissores=[{"emissor": "JURO", "tipo": tipo_b3}]) == {
+        "JURO11": "FUNDO_INFRA"}  # fmt: skip
+    assert _tipos([fundo]) == {}
+
+
 def test_fundo_fora_do_fii_nao_vira_fii_pelo_cotahist() -> None:
     """O COTAHIST põe FIP e FI-Infra junto dos FII (BDI 12): o cadastro decide."""
     assert _tipos([_fundo("AATH11", "FIP ATHON")], [_pregao("FIP ATHON CI", "AATH11", "FII")]) == {}
@@ -162,3 +171,29 @@ def test_tipo_e_estrito_e_a_apuracao_usa_a_versao_que_isola() -> None:
     assert tipos.tipo_ou_sem("ZZZZ11") is TipoAtivo.SEM_TIPO
     with pytest.raises(ReferenciaError):
         tipos.tipo("ZZZZ11")
+
+
+def test_coleta_de_fundos_guarda_so_o_fip_de_infraestrutura() -> None:
+    """A B3 lista os FIP com o tipo ("FIP IE", "FIP MT"): o comum paga 15% e fica de fora."""
+    import base64
+    import json
+
+    from tools.referencias import fontes
+
+    def obter(url: str) -> bytes:
+        consulta = json.loads(base64.b64decode(url.rsplit("/", 1)[1]))
+        tipo = consulta["typeFund"]
+        if "GetListFunds" in url:
+            fundos = {"FIP": [{"id": 1, "acronym": "XPIE", "fundName": "XP INFRA FIP IE",
+                               "typeName": "FIP IE"},
+                              {"id": 2, "acronym": "NVRP", "fundName": "NOVA RAPOSO FIP",
+                               "typeName": "FIP MT"}],
+                      "FI-INFRA": [{"id": 3, "acronym": "JURO", "fundName": "SPARTA INFRA",
+                                    "typeName": "FI-INFRA"}]}.get(tipo, [])  # fmt: skip
+            return json.dumps({"page": {"totalPages": 1}, "results": fundos}).encode()
+        return json.dumps({"cnpj": "1", "tradingName": consulta["idCEM"]}).encode()
+
+    lista, falhas = fontes.fundos(obter, pausa=0)
+    assert falhas == []
+    assert {(f["acronym"], f["typeName"]) for f in lista} == {
+        ("XPIE", "FIP-IE"), ("JURO", "FI-INFRA")}  # fmt: skip

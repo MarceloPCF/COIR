@@ -44,6 +44,12 @@ from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import movimentar
 from coir.erros import MotorError
 
+# fora da apuração mensal, do limite e da compensação: ETF de renda fixa (tributação exclusiva na
+# fonte, Lei 13.043/2014 art. 2º) e FI-Infra e FIP-IE (alíquota zero para pessoa física, Lei
+# 12.431/2011 art. 3º e Lei 11.478/2007 art. 2º; IN RFB 1.585/2015 art. 64 só compensa as perdas
+# dos arts. 27, 58 e 60 a 62)
+FORA_DA_APURACAO = frozenset({TipoAtivo.ETF_RF, TipoAtivo.FUNDO_INFRA})
+
 CENTAVO = Decimal("0.01")
 ALIQUOTAS = {
     Categoria.COMUM: "aliquota_comum",
@@ -98,7 +104,7 @@ def apurar(
     exclusiva: list[TributacaoExclusiva] = []
     pme: dict[tuple[int, int, int], Decimal] = defaultdict(lambda: ZERO)
     for m in movimentos:
-        if m.tipo is TipoAtivo.ETF_RF:
+        if m.tipo in FORA_DA_APURACAO:
             if m.origem.startswith("op:") and (m.cv == "V" or m.resultado):
                 exclusiva.append(_exclusiva(m))
             continue
@@ -197,7 +203,7 @@ def _limite_pelo_sem_tipo(
 def _exclusiva(m: Movimento) -> TributacaoExclusiva:
     return TributacaoExclusiva(data=m.data, titular=m.titular, ativo=m.ativo or 0, ticker=m.ticker,
                                quantidade=m.quantidade, alienacao=m.valor, custo=m.custo_baixa,
-                               resultado=m.resultado)  # fmt: skip
+                               resultado=m.resultado, tipo=m.tipo)  # fmt: skip
 
 
 def _outro_custo(c: OutroCusto) -> Movimento:

@@ -34,7 +34,9 @@ AGENTE = "COIR/3.0 (tabelas de referencia publicas; github.com/MarceloPCF/COIR)"
 B3_ARQUIVOS = "https://arquivos.b3.com.br/api/download"
 B3_EMPRESAS = "https://sistemaswebb3-listados.b3.com.br/listedCompaniesProxy/CompanyCall"
 B3_FUNDOS = "https://sistemaswebb3-listados.b3.com.br/fundsListedProxy/Search"
-TIPOS_FUNDO = ("FII", "FIAGRO", "ETF", "ETF-RF", "ETF-FII")  # os que viram ativo no COIR
+TIPOS_FUNDO = ("FII", "FIAGRO", "ETF", "ETF-RF", "ETF-FII", "FI-INFRA", "FIP")  # viram ativo
+# do FIP, só o de infraestrutura tem alíquota zero (Lei 11.478/2007 art. 2º); o comum paga 15%
+FIP_ALIQUOTA_ZERO = {"FIP IE": "FIP-IE", "FIP PD&I": "FIP-PDI", "FIP PDI": "FIP-PDI"}
 BCB_SELIC = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json"
 CVM_FRE = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FRE/DADOS/fre_cia_aberta_{ano}.zip"
 B3_COTAHIST = "https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_A{ano}.ZIP"
@@ -163,8 +165,9 @@ def _consultar(url: str, origem: str, obter: Baixar, pausa: float, tentativas: i
 def fundos(
     obter: Baixar = baixar, pausa: float = 0.2, tentativas: int = 2, por_pagina: int = 120
 ) -> tuple[list[Mapping[str, object]], list[str]]:
-    """Fundos listados (FII, Fiagro e ETF) com o CNPJ: a lista de cada tipo não traz o CNPJ, que
-    vem do detalhe de cada fundo (uma consulta por fundo, como a página de fundos da B3)."""
+    """Fundos listados (FII, Fiagro, ETF, FI-Infra e FIP-IE) com o CNPJ: a lista de cada tipo não
+    traz o CNPJ, que vem do detalhe de cada fundo (uma consulta por fundo, como a página de fundos
+    da B3). O FIP vem com o tipo da B3 ("FIP IE", "FIP MT"): só o de alíquota zero fica."""
     saida: list[Mapping[str, object]] = []
     falhas: list[str] = []
     seguidas = 0
@@ -185,6 +188,11 @@ def fundos(
             pagina += 1
         for f in lista:
             sigla = str(f.get("acronym") or "")
+            rotulo = tipo
+            if tipo == "FIP":
+                rotulo = FIP_ALIQUOTA_ZERO.get(str(f.get("typeName") or "").strip(), "")
+                if not rotulo:
+                    continue  # FIP comum (multiestratégia...): 15%, fica fora até ter regra
             consulta = {"language": "pt-br", "idFNET": str(f.get("id")), "idCEM": sigla,
                         "typeFund": tipo}  # fmt: skip
             detalhe = _consultar(f"{B3_FUNDOS}/GetDetailFund/{_b64(consulta)}", f"fundo {sigla}",
@@ -198,7 +206,7 @@ def fundos(
                 continue
             seguidas = 0
             d = cast(Mapping[str, object], detalhe)
-            saida.append({"acronym": sigla, "cnpj": d.get("cnpj"), "typeName": tipo,
+            saida.append({"acronym": sigla, "cnpj": d.get("cnpj"), "typeName": rotulo,
                           "fundName": f.get("fundName"), "tradingName": d.get("tradingName"),
                           "tradingCode": d.get("tradingCode")})  # fmt: skip
             time.sleep(pausa)

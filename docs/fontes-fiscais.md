@@ -18,13 +18,15 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 9.959/2000 | 5 |
 | Lei 11.033/2004 | 28 |
 | Lei 11.051/2004 | 5 |
+| Lei 11.478/2007 | 2 |
 | Lei 12.350/2010 | 1 |
+| Lei 12.431/2011 | 2 |
 | Lei 13.043/2014 | 29 |
 | Lei 14.754/2023 | 3 |
 | Lei 15.265/2025 | 15 |
 | Lei 15.270/2025 | 10 |
 | MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 88 |
+| IN RFB 1.585/2015 | 90 |
 | IN RFB 1.700/2017 | 2 |
 | IN RFB 1.916/2019 | 1 |
 | Res. CMN 4.880/2020 | 1 |
@@ -35,7 +37,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | SC Cosit 145/2021 | 3 |
 | SC Cosit 224/2014 | 4 |
 | P&R IRPF | 5 |
-| P&R IRPF 2026 | 19 |
+| P&R IRPF 2026 | 20 |
 | Manual MIR 2026 | 3 |
 | Programa IRPF | 8 |
 | CTN | 5 |
@@ -265,9 +267,19 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_futuros_inversao_de_posicao_e_falhas_altas: Lei 11.051/2004 art. 32: comprado em 1, a venda de 3 encerra 1 (resultado: ajuste acumulado 10 + 1/3 do ajuste do…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_futuros_resultado_no_encerramento_da_posicao: R11: Lei 11.051/2004 art. 32; IN 1.585 art. 61; P&R 728 (resultado na liquidação ou encerramento). Compra de 1 WINM24…
 
+## Lei 11.478/2007
+
+- `docs/regras-fiscais.md` — R20: …com o tipo) e para Rendimentos isentos, código 99 | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33, 34 e 64; P&R IRPF 2026 perguntas 736 e 738; parecer de…
+- `tests/fiscal_cases/test_fundo_infra.py` — módulo: FI-Infra (Lei 12.431/2011 art. 3º) e FIP-IE (Lei 11.478/2007 art. 2º §1º I), tipo FUNDO_INFRA pela lista de fundos da B3: o ganho de pessoa física tem…
+
 ## Lei 12.350/2010
 
 - `data/parametros_fiscais.csv` — day_trade_mesma_corretora: MP 497/2010 art. 21 (conv. Lei 12.350/2010): mesma corretora
+
+## Lei 12.431/2011
+
+- `docs/regras-fiscais.md` — R20: …vai para a lista à parte da apuração (`exclusiva`, com o tipo) e para Rendimentos isentos, código 99 | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33, 34 e 64;…
+- `tests/fiscal_cases/test_fundo_infra.py` — módulo: FI-Infra (Lei 12.431/2011 art. 3º) e FIP-IE (Lei 11.478/2007 art. 2º §1º I), tipo FUNDO_INFRA pela lista de fundos da B3: o…
 
 ## Lei 13.043/2014
 
@@ -399,6 +411,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — R18: R18 | Termo: custo/alienação pelo preço a termo; ganho apurado na liquidação/encerramento (operação comum) | Contrato a termo vinculado à liquidação | IN RFB 1.585/2015 | M (validar com as operações a termo da planilha)
 - `docs/regras-fiscais.md` — R19: …nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65; recibo: posição B do parecer de 09/11/2026,…
 - `docs/regras-fiscais.md` — R2: R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A
+- `docs/regras-fiscais.md` — R20: …isentos, código 99 | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33, 34 e 64; P&R IRPF 2026 perguntas 736 e 738; parecer de 09/11/2026 | A (alíquota); M…
 - `docs/regras-fiscais.md` — R3: R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R6: …o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da…
 - `docs/regras-fiscais.md` — R7: R7 | Custo de aquisição inclui corretagem, emolumentos e taxas; na venda os custos reduzem a alienação | Rateio proporcional ao valor da operação na nota | IN RFB 1.585/2015 | A
@@ -421,6 +434,7 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_day_trade_parcial.py` — módulo: …dela fecha no dia (parecer do especialista fiscal de 07/11/2026; números conferidos à mão). Fontes (IN RFB 1.585/2015): - art. 65 §1º: day trade é a operação iniciada e encerrada no mesmo dia, com o mesmo ativo, na…
 - `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com custo zero (IN 1.585 art. 58…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …de fração (números conferidos à mão no parecer do especialista fiscal de 19/10/2026). Fontes: - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o custo das ações…
+- `tests/fiscal_cases/test_fundo_infra.py` — módulo: …fora da apuração mensal, do limite de R$ 20 mil e do DARF, e o prejuízo não compensa outros ganhos (IN RFB 1.585/2015 art. 64 só admite as perdas dos arts. 27, 58 e 60 a 62). Parecer do especialista de 09/11/2026,…
 - `tests/fiscal_cases/test_futuros_commodities.py` — módulo: …e na conferência do câmbio implícito. Casos fechados à mão pelo especialista (19/10/2026). Fontes: IN RFB 1.585/2015 art. 61 (resultado = soma dos ajustes no encerramento), art. 65 (15% e 20% day trade, inclusive…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das corretoras, custo médio) e 715; IN RFB 1.585/2015 arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração)…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …"Mercado a termo - ações/ouro"); P&R IRPF 2026 pergunta 707 (cotas de fundo de índice não são ações); IN RFB 1.585/2015 art. 62 I e §1º (ganho do comprador a termo pela venda à vista na data da liquidação; vendido…
@@ -509,6 +523,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): `opcoes_linha_acoes_tipos_objeto`; P&R IRPF 2026 pergunta 707 separa cotas de fundo de índice de
 - `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): **A conferir:** o PDF oficial da SC 42/2020 e o P&R IRPF 2026 não puderam ser lidos; as leis foram lidas em compiladores.
 - `docs/regras-fiscais.md` — R11: …encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A
+- `docs/regras-fiscais.md` — R20: …art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33, 34 e 64; P&R IRPF 2026 perguntas 736 e 738; parecer de 09/11/2026 | A (alíquota); M (prejuízo); B (código da DIRPF)
 - `docs/regras-fiscais.md` — R6: …| Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT:…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Direitos, rendimentos e fichas mês a mês que o COIR preenche. Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero. Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …- operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (pareceres de 20 e 21/10/2026), conferidos à mão. Fontes: programa IRPF, ficha de renda variável (linhas "Mercado de opções -…
