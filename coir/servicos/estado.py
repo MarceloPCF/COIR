@@ -422,7 +422,8 @@ class Estado:
                       "arquivo(s) com nota rejeitada", "/importar"),
             Pendencia(len({i.ativo for i in apuracao.isolados if i.titular == titular}),
                       "ativo(s) fora do cálculo (falta evento)", "/eventos"),
-            Pendencia(sum(p.situacao == "pendente" for p in self.propostas()),
+            Pendencia(sum(p.situacao == "pendente" and not p.depois_da_ultima_nota
+                          for p in self.propostas()),
                       "proposta(s) de evento para conferir", "/eventos"),
             Pendencia(len(self.ativos_que_sairam()),
                       "ativo(s) na carteira que pararam de negociar", "/eventos"),
@@ -431,6 +432,24 @@ class Estado:
                       "/apuracao", anos_avisos[-1] if anos_avisos else None),
         ]  # fmt: skip
         return [p for p in itens if p.quantidade]
+
+    def lancar_eventos_automaticos(self, todos: bool = False) -> eventos.ResultadoLote:
+        """Lança os eventos que não pedem nada ao usuário (desdobramento, grupamento e bonificação
+        com custo publicado); com ``todos``, de todos os titulares (depois de uma importação)."""
+        if not self.existe or (self.titular is None and not todos):
+            return eventos.ResultadoLote((), ())
+        alvos = [t.id for t in self.titulares()] if todos else [self.titular]
+        ids: list[int] = []
+        recusadas: list[tuple[str, str]] = []
+        for titular in alvos:
+            if titular is not None:
+                r = eventos.lancar_automaticos(self.banco, titular, self.refs, self.fiscais,
+                                               self.pasta_refs)  # fmt: skip
+                ids.extend(r.ids)
+                recusadas.extend(r.recusadas)
+        if ids:
+            self.invalidar()
+        return eventos.ResultadoLote(tuple(ids), tuple(recusadas))
 
     def ativos_que_sairam(self) -> list[saidas.AtivoQueSaiu]:
         """Posições do titular em ativo que parou de negociar na bolsa (falta evento?)."""

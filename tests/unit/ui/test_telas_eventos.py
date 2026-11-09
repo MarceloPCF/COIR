@@ -102,8 +102,9 @@ async def test_transferencia_sem_cv_e_com_toda_a_posicao(demo: Path, tmp_path: P
 
 
 @pytest.mark.asyncio
-async def test_lancar_as_seguras_e_desfazer(demo: Path, tmp_path: Path) -> None:
-    """O botão mostra a lista antes, lança e deixa desfazer; a bonificação sem custo fica."""
+async def test_evento_seguro_entra_sozinho_e_da_para_desfazer(demo: Path, tmp_path: Path) -> None:
+    """Ao abrir a tela, o desdobramento entra sozinho e dá para desfazer; a bonificação sem custo
+    fica para conferir. Desfeito, ele fica ignorado e não volta ao abrir a tela de novo."""
     estado = _estado(demo)
     estado.titular, estado.ano = 1, 2023
     estado.pasta_refs = _pacote_eventos(tmp_path, [
@@ -112,11 +113,6 @@ async def test_lancar_as_seguras_e_desfazer(demo: Path, tmp_path: Path) -> None:
     ])  # fmt: skip
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/eventos")
-        await user.should_see("A conferir (2)", retries=ESPERA)
-        await user.should_see("Lançar as seguras (1)")
-        user.find(marker="lancar-seguras").click()
-        await user.should_see("Lançar 1 evento?")
-        user.find(marker="seguras-sim").click()
         await user.should_see("1 evento(s) lançado(s)", retries=ESPERA)
         await user.should_see("Eventos lançados (1)", retries=ESPERA)
         await user.should_see("A conferir (1)", retries=ESPERA)
@@ -124,6 +120,8 @@ async def test_lancar_as_seguras_e_desfazer(demo: Path, tmp_path: Path) -> None:
         user.find(marker="desfazer-lote").click()
         await user.should_see("Lançamento desfeito.", retries=ESPERA)
         await user.should_see("Eventos lançados (0)", retries=ESPERA)
+    assert eventos.listar(demo, 1) == []
+    assert estado.lancar_eventos_automaticos().ids == ()
     assert eventos.listar(demo, 1) == []
 
 

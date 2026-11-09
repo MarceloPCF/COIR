@@ -8,8 +8,12 @@ O que muda a sua posição sem passar por uma nota de corretagem. Cada evento é
 
 O que a B3 mostra e ainda não está no seu histórico, vindo das tabelas públicas da B3 e da movimentação importada.
 
+Desdobramentos, grupamentos e bonificações com custo publicado pela companhia na CVM **entram sozinhos** para as ações que estavam em carteira na data, ao importar notas e ao abrir esta tela. A tela mostra quantos entraram, com **Desfazer**; o que você apagar não volta. Eventos depois da sua última nota ficam de fora até você importar as notas seguintes, porque o COIR não sabe se você ainda tinha o ativo.
+
+Aqui fica o que depende de você:
+
 - **Uma a uma:** clique numa proposta, confira os campos e use **Gravar**, ou **Ignorar proposta** se ela não vale para você. A movimentação da B3 traz a data do crédito; troque pela data ex (primeiro pregão sem o direito).
-- **De uma vez:** **Lançar as seguras** lança os desdobramentos e os grupamentos das tabelas da B3, que já vêm com a data ex e a quantidade, e as bonificações com o custo publicado pela companhia na CVM. Antes, a tela mostra a lista para você conferir, com o custo por ação e a fonte. Depois, **Desfazer** tira todos de uma vez enquanto você estiver nesta tela; se sair, exclua um a um em **Lançados**. Se o mesmo ativo tiver mais de um evento, entra o mais antigo, e o botão volta a aparecer com o seguinte, já com a quantidade certa.
+- **De uma vez:** **Lançar as seguras** só aparece se algum lançamento automático não tiver entrado, com o motivo na tela.
 
 Ficam de fora das seguras o que pede algo seu (bonificação sem custo publicado, subscrição, cisão, incorporação), os ajustes de séries de opção, o evento que entrega outra classe da ação, e o grupamento muito forte, que costuma vir seguido de desdobramento no mesmo dia.
 

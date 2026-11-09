@@ -350,6 +350,63 @@ def test_custodia_com_codigo_antigo_sem_notas_nasce_com_o_codigo_novo(demo: Path
     assert _carteira(demo, date(2024, 1, 31))["ITUB3"] == (D(100), D(3000))
 
 
+def _automaticos(demo: Path) -> Path:
+    """GGBR4 em carteira: desdobramento e subscrição até a última nota e um desdobramento depois."""
+    from sqlalchemy import func, select
+
+    from coir.db.modelos import NotaCorretagem
+    from coir.db.sessao import conectar
+
+    with conectar(demo) as fabrica, fabrica() as s:
+        ultima = s.scalar(select(func.max(NotaCorretagem.data_pregao)))
+    assert ultima is not None and ultima < date(2027, 1, 1)
+    return _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,SUBSCRICAO,10,2023-05-31,2023-05-01,BRGGBRTESTE1,10,,2023-06-30",
+        "GGBR,BRGGBRTESTE1,GRUPAMENTO,0.5,2023-08-31,2023-08-01,BRGGBRTESTE1,,,",
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2027-03-31,2027-03-01,BRGGBRTESTE1,,,",
+    ])  # fmt: skip
+
+
+def test_lanca_sozinho_o_que_nao_pede_nada_e_deixa_a_subscricao(demo: Path) -> None:
+    """Pedido do usuário (09/11/2026): evento de ação em carteira é automático; a subscrição é
+    opcional e fica para conferir. 300 ações: desdobramento de 100% vira 600; grupamento 2:1, 300.
+    Só entra o que veio antes de a outra proposta do ativo depender dele; aqui a subscrição, que
+    precisa de conferência, trava o grupamento seguinte do mesmo ativo."""
+    pasta = _automaticos(demo)
+    r = eventos.lancar_automaticos(demo, 1, REFS, FISCAIS, pasta)
+    assert len(r.ids) == 1  # o desdobramento de 2023
+    lista = eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+    do_ativo = {p.dados.tipo: p for p in lista
+                if "eventos da B3" in p.movimentacao and p.codigo == "GGBR4"
+                and p.situacao == "pendente" and not p.depois_da_ultima_nota}  # fmt: skip
+    assert TipoEvento.SUBSCRICAO in do_ativo and not do_ativo[TipoEvento.SUBSCRICAO].segura
+    assert not do_ativo[TipoEvento.GRUPAMENTO].segura  # depende da subscrição, ainda sem decisão
+    # sem nada novo, rodar de novo não lança nada
+    assert eventos.lancar_automaticos(demo, 1, REFS, FISCAIS, pasta).ids == ()
+
+
+def test_evento_depois_da_ultima_nota_nao_e_lancado_nem_pendente(demo: Path) -> None:
+    """Pedido do usuário: com notas só até certa data, um evento posterior não vale: não se sabe se
+    a posição ainda existia. Marcado para a tela deixar de fora, e nunca lançado sozinho."""
+    pasta = _automaticos(demo)
+    eventos.lancar_automaticos(demo, 1, REFS, FISCAIS, pasta)
+    [depois] = [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                if p.data > date(2027, 1, 1) and p.codigo == "GGBR4"]  # fmt: skip
+    assert depois.depois_da_ultima_nota and not depois.segura
+
+
+def test_evento_automatico_apagado_nao_volta(demo: Path) -> None:
+    pasta = _automaticos(demo)
+    [evento] = eventos.lancar_automaticos(demo, 1, REFS, FISCAIS, pasta).ids
+    eventos.excluir(demo, 1, evento, REFS, FISCAIS, pasta)
+    assert eventos.lancar_automaticos(demo, 1, REFS, FISCAIS, pasta).ids == ()
+    [ignorada] = [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+                  if p.dados.tipo is TipoEvento.DESDOBRAMENTO
+                  and p.data == date(2023, 3, 1)]  # fmt: skip
+    assert ignorada.situacao == "ignorada"
+
+
 # ----------------------------------------------- pendência no livro (teste com notas reais, 3.0.1)
 def _pendencias(monkeypatch: pytest.MonkeyPatch, *erros: MotorError | None) -> None:
     """O motor para em `erros[0]` antes de gravar e em `erros[1]` depois."""

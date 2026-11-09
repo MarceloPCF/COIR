@@ -99,6 +99,15 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             return
         estado.invalidar()
         mostrar(rel)
+        if rel.mudou:  # as notas novas podem pôr ativos em carteira na data de um evento
+            try:
+                automaticos = await run.io_bound(estado.lancar_eventos_automaticos, True)
+            except CoirError as erro:
+                ui.notify(f"Eventos não lançados: {erro}", type="warning", multi_line=True)
+            else:
+                if automaticos and automaticos.ids:
+                    ui.notify(f"{len(automaticos.ids)} evento(s) lançado(s) automaticamente. Veja "
+                              "na tela Eventos.", type="positive", multi_line=True)  # fmt: skip
         if rel.mudou or rel.titulares_criados:
             ao_mudar()
 

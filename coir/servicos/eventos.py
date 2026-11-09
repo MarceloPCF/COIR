@@ -20,7 +20,7 @@ from datetime import date, datetime, timedelta
 from decimal import ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from coir import auditoria, referencias
@@ -30,6 +30,7 @@ from coir.db.modelos import (
     Corretora,
     EventoCorporativo,
     MovimentacaoB3,
+    NotaCorretagem,
     PropostaIgnorada,
     SerieOpcao,
     TickerHistorico,
@@ -265,7 +266,9 @@ class Proposta:
     situacao: str
     dados: DadosEvento
     nota: str
-    segura: bool = False  # pode entrar pelo botão "Lançar as seguras" (ver _segura)
+    segura: bool = False  # lançada sozinha, sem pedir nada ao usuário (ver _segura)
+    # depois da última nota: sem saber se o titular ainda tinha o ativo, fica fora da conferência
+    depois_da_ultima_nota: bool = False
     custo_por_acao: Decimal | None = None  # bonificação: como veio do aviso aos acionistas
     referencia: str = ""  # de onde veio o custo (documento na CVM)
 
@@ -526,19 +529,22 @@ def _conferir_no_motor(
 
 
 def excluir(
-    banco: Path, titular: int, evento_id: int, refs: Referencias, fiscais: ReferenciasFiscais
+    banco: Path, titular: int, evento_id: int, refs: Referencias, fiscais: ReferenciasFiscais,
+    pasta: Path | None = None,
 ) -> None:  # fmt: skip
     """Apaga o evento se o livro continuar fechando sem ele (ex.: venda que dependia de um
     desdobramento impede apagar o desdobramento)."""
-    excluir_lote(banco, titular, [evento_id], refs, fiscais)
+    excluir_lote(banco, titular, [evento_id], refs, fiscais, pasta=pasta)
 
 
 def excluir_lote(
     banco: Path, titular: int, ids: Sequence[int], refs: Referencias, fiscais: ReferenciasFiscais,
-    ignorar_ausentes: bool = False,
+    ignorar_ausentes: bool = False, pasta: Path | None = None,
 ) -> None:  # fmt: skip
     """Apaga os eventos numa transação, conferidos juntos pelo motor no fim (desfaz um lote; um
-    evento do lote pode já ter sido excluído na tela: ``ignorar_ausentes``)."""
+    evento do lote pode já ter sido excluído na tela: ``ignorar_ausentes``). Com ``pasta``, a
+    proposta do evento apagado fica ignorada: o lançamento automático não o traz de volta."""
+    apagados: list[tuple[int, str, date]] = []
     with conectar(banco) as fabrica, fabrica.begin() as s:
         antes = _pendencia_antes(s, titular, refs, fiscais)
         registros: list[EventoCorporativo] = []
@@ -559,6 +565,24 @@ def excluir_lote(
         for registro in registros:
             auditoria.evento("eventos.excluido", titular=titular, tipo=str(registro.tipo),
                              data=registro.data, origem=registro.origem)  # fmt: skip
+            if registro.origem == "b3":
+                apagados.append((registro.ativo_id, str(registro.tipo), registro.data))
+    if pasta is not None and apagados:
+        _ignorar_as_apagadas(banco, titular, apagados, refs, fiscais, pasta)
+
+
+def _ignorar_as_apagadas(
+    banco: Path, titular: int, apagados: list[tuple[int, str, date]], refs: Referencias,
+    fiscais: ReferenciasFiscais, pasta: Path,
+) -> None:  # fmt: skip
+    lista = propostas(banco, titular, refs, fiscais, pasta)
+    with conectar(banco) as fabrica, fabrica.begin() as s:
+        for ativo, tipo, dia in apagados:
+            for p in lista:
+                if (p.situacao == "pendente" and p.data == dia and str(p.dados.tipo) == tipo
+                        and ativo in _ativos_do_ticker(s, p.dados.ticker)):  # fmt: skip
+                    s.add(PropostaIgnorada(titular_id=titular, chave=p.chave,
+                                           ignorada_em=datetime.now()))  # fmt: skip
 
 
 # movimentação da B3 (minúsculas) -> tipo e C/V do evento proposto
@@ -639,6 +663,11 @@ def propostas(
             trilha.propostas(titular, saida)
             return _sem_pendencia_antes(saida)
         do_pacote = _do_pacote(s, titular, refs, fiscais, pasta, contas, ignoradas, lancados)
+        ultima = s.scalar(select(func.max(NotaCorretagem.data_pregao)).join(Conta)
+                          .where(Conta.titular_id == titular))  # fmt: skip
+    if ultima is not None:
+        do_pacote = [replace(p, depois_da_ultima_nota=True, segura=False) if p.data > ultima else p
+                     for p in do_pacote]  # fmt: skip
     perto = timedelta(days=JANELA)
 
     def mesma(p: Proposta, m: Proposta) -> bool:
@@ -877,6 +906,26 @@ def lancar_seguras(
             except CoirError as erro:
                 recusadas.append((p.codigo, str(erro)))
     return ResultadoLote(tuple(ids), tuple(recusadas))
+
+
+def lancar_automaticos(
+    banco: Path, titular: int, refs: Referencias, fiscais: ReferenciasFiscais, pasta: Path
+) -> ResultadoLote:
+    """Lança sozinho o que não pede nada ao usuário: as propostas seguras de ativos em carteira até
+    a última nota dele. Em rodadas, porque só a mais antiga de cada ativo é segura (a seguinte
+    depende da quantidade depois dela). O que o usuário apagou fica ignorado e não volta."""
+    ids: list[int] = []
+    recusadas: list[tuple[str, str]] = []
+    tentadas: set[str] = set()
+    while True:
+        lista = [p.chave for p in propostas(banco, titular, refs, fiscais, pasta)
+                 if p.segura and p.situacao == "pendente" and p.chave not in tentadas]  # fmt: skip
+        if not lista:
+            return ResultadoLote(tuple(ids), tuple(recusadas))
+        tentadas.update(lista)
+        rodada = lancar_seguras(banco, titular, lista, refs, fiscais, pasta)
+        ids.extend(rodada.ids)
+        recusadas.extend(rodada.recusadas)
 
 
 def _fator(ev: dict[str, str], tipo: TipoEvento | None) -> str:

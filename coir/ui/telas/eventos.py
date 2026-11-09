@@ -402,7 +402,7 @@ class _Painel:
             return
         try:
             await run.io_bound(eventos.excluir, t.estado.banco, t.titular, self.form.evento_id,
-                               t.estado.refs, t.estado.fiscais)  # fmt: skip
+                               t.estado.refs, t.estado.fiscais, t.estado.pasta_refs)  # fmt: skip
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return
@@ -611,8 +611,9 @@ class _Conferir:
         self.recusadas: tuple[tuple[str, str], ...] = ()
         self.propostas: list[Proposta] = []
         ui.label(
-            "O que a B3 mostra e ainda não está no seu histórico. Confira uma a uma, ou lance de "
-            "uma vez as que não pedem nada de você."
+            "Desdobramentos, grupamentos e bonificações com custo publicado entram sozinhos para "
+            "as ações que estavam em carteira. Aqui fica o que depende de você, como subscrição "
+            "e bonificação sem custo."
         ).classes("coir-subtitulo")
         self.secao_saidas = ui.column().classes("w-full gap-1")
         self.secao_lote = ui.column().classes("w-full gap-1")
@@ -625,7 +626,8 @@ class _Conferir:
 
     @property
     def pendentes(self) -> list[Proposta]:
-        return [p for p in self.propostas if p.situacao == "pendente"]
+        return [p for p in self.propostas
+                if p.situacao == "pendente" and not p.depois_da_ultima_nota]  # fmt: skip
 
     def mostrar(self, propostas: list[Proposta]) -> None:
         self.propostas = propostas
@@ -665,6 +667,8 @@ class _Conferir:
         propostas, pendentes = self.propostas, self.pendentes
         mostradas = propostas if self.ver_todas else pendentes
         seguras = [p for p in pendentes if p.segura]
+        posteriores = [p for p in propostas
+                       if p.situacao == "pendente" and p.depois_da_ultima_nota]  # fmt: skip
         self.lista.clear()
         with self.lista:
             with ui.row().classes("w-full items-center gap-3"):
@@ -675,9 +679,14 @@ class _Conferir:
                         "Desdobramentos e grupamentos das tabelas da B3, e bonificações com o "
                         "custo publicado pela companhia na CVM.")  # fmt: skip
                 ui.space()
-                ui.checkbox("mostrar lançadas e ignoradas", value=self.ver_todas,
+                ui.checkbox("mostrar lançadas, ignoradas e posteriores", value=self.ver_todas,
                             on_change=lambda e: self._ver_todas(bool(e.value))
                             ).mark("ver-propostas")  # fmt: skip
+            if posteriores and not self.ver_todas:
+                ui.label(f"{len(posteriores)} evento(s) depois da sua última nota ficaram de fora: "
+                         "o COIR não sabe se você ainda tinha o ativo. Importe as notas seguintes, "
+                         "ou marque a opção acima para ver.").classes(
+                    "coir-subtitulo text-sm w-full").mark("eventos-posteriores")  # fmt: skip
             if not propostas:
                 ui.label("Nada a conferir: nenhum evento público da B3 atinge as suas posições. A "
                          "movimentação da B3 (Importar > Planilhas da B3) pode trazer mais "
@@ -690,7 +699,8 @@ class _Conferir:
                 tabela.grade(
                     COLUNAS_PROPOSTAS,
                     [(p.data, TIPOS[p.dados.tipo], p.codigo, p.corretora or "", p.quantidade,
-                      p.valor, p.situacao) for p in mostradas],
+                      p.valor, "depois da última nota" if p.situacao == "pendente"
+                      and p.depois_da_ultima_nota else p.situacao) for p in mostradas],
                     chaves=list(range(len(mostradas))), altura="h-[420px]",
                     ao_clicar=lambda i: self.painel.abrir_proposta(mostradas[int(str(i))]),
                 ).mark("grade-propostas")  # fmt: skip
@@ -753,8 +763,9 @@ class _Conferir:
         with self.secao_lote:
             if self.lote:
                 with ui.row().classes("w-full items-center gap-3"):
-                    ui.label(f"{len(self.lote)} evento(s) lançado(s). Carteira e apuração "
-                             "refeitas.").classes("coir-positivo").mark("lote-lancado")  # fmt: skip
+                    ui.label(f"{len(self.lote)} evento(s) lançado(s) sem precisar de conferência. "
+                             "Carteira e apuração refeitas.").classes(
+                        "coir-positivo").mark("lote-lancado")  # fmt: skip
                     ui.button("Desfazer", icon="undo", on_click=self._desfazer).props(
                         "flat dense").mark("desfazer-lote")  # fmt: skip
             for ativo, motivo in self.recusadas:
@@ -764,7 +775,8 @@ class _Conferir:
         t = self.tela
         try:
             await run.io_bound(eventos.excluir_lote, t.estado.banco, t.titular, list(self.lote),
-                               t.estado.refs, t.estado.fiscais, True)  # fmt: skip
+                               t.estado.refs, t.estado.fiscais, True,
+                               t.estado.pasta_refs)  # fmt: skip
         except CoirError as erro:
             ui.notify(f"Não foi possível desfazer: {erro}", type="negative", multi_line=True,
                       timeout=12000)  # fmt: skip
@@ -848,4 +860,19 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         for a in ABAS:
             with ui.tab_panel(guia[a.chave]).classes("p-0 pt-3 gap-3"):
                 tarefas.append(_AbaEventos(tela, a))
-    ui.timer(0.01, recarregar, once=True)
+
+    async def abrir() -> None:
+        """Ao abrir a tela, lança o que não pede nada (notas importadas, tabelas novas)."""
+        try:
+            automaticos = await run.io_bound(estado.lancar_eventos_automaticos)
+        except CoirError as erro:
+            ui.notify(f"Eventos não lançados: {erro}", type="warning", multi_line=True)
+        else:
+            if automaticos and (automaticos.ids or automaticos.recusadas):
+                conferir.lote = (*conferir.lote, *automaticos.ids)
+                conferir.recusadas = automaticos.recusadas
+                if automaticos.ids:
+                    ao_mudar()
+        await recarregar()
+
+    ui.timer(0.01, abrir, once=True)
