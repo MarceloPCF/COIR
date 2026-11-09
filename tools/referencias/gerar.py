@@ -64,7 +64,7 @@ SUBSCRICAO = {
     "DIR",
     "REC",
     "BNS",
-}  # direito, recibo e bônus: tratamento à parte, nunca como o papel
+}  # direito, recibo e bônus: tipo DIREITO, nunca o do papel (o direito de FII não é FII)
 # ação com final fora do padrão (RAIZ55 "PNA P N2": lote de cotação): a classe da B3 diz que é ação
 RE_ACAO_ESPECIAL = re.compile(r"^[A-Z0-9]{4}\d{2,3}$")
 CLASSES_ACAO = {"ON", "PN", "PNA", "PNB", "PNC", "PND", "PNE", "PNF", "PNG"}
@@ -597,11 +597,16 @@ def _tipo_do_fundo(r: Mapping[str, str], emissores: Mapping[str, str]) -> str | 
 def _tipo_pelo_nome(ticker: str, nome: str, tipo: str) -> str:
     """Código fora do cadastro ou sem tipo nele, pelo COTAHIST: a coluna ``tipo`` do histórico ou a
     especificação no fim do nome de pregão ("FII ALMIRANT CI", "3M DRN", "CEEE-D ON *"). A última
-    palavra separa o que é direito ou recibo ("AES TIETE E DIR UNT", "3R PETROLEUM ON REC")."""
+    palavra separa o que é direito, recibo ou bônus ("AES TIETE E DIR UNT", "3R PETROLEUM ON REC",
+    "BIOMM BNS ORD"), antes da coluna ``tipo``: o COTAHIST põe o direito de FII ("FII BC FUND DIR
+    CI") com os FII, e ele é tributado a 15%, não a 20% (SC Cosit 166/2021)."""
+    partes = nome.split()
+    marcas = SUBSCRICAO & set(partes[-2:])
+    if marcas and not (marcas == {"REC"} and partes[-1] == "CI"):
+        return "DIREITO"  # "FII BLUE REC CI": REC de recebíveis, a cota (CI) é a especificação
     if tipo:
         return tipo
-    partes = nome.split()
-    if not partes or SUBSCRICAO & set(partes[-2:]):
+    if not partes:
         return ""
     if partes[0] in ("FII", "FIAGRO") and "CI" in partes:
         return "FII"
@@ -628,7 +633,9 @@ def tipos(instrumentos: list[dict[str, str]], nomes: Iterable[Mapping[str, str]]
                 and (RE_ACAO_ESPECIAL.match(r["ticker"]) or RE_ACAO_BALCAO.match(r["ticker"]))
                 and (r["especificacao"].split() or [""])[0] in CLASSES_ACAO):  # fmt: skip
             tipo = "ACAO"
-        if r["categoria"] == "FUNDS":
+        if (r["especificacao"].split() or [""])[0] in SUBSCRICAO:
+            tipo = "DIREITO"  # SC Cosit 145 e 166/2021; recibo: parecer de 09/11/2026 (posição B)
+        elif r["categoria"] == "FUNDS":
             tipo = _tipo_do_fundo(r, tipo_emissor)
             if tipo is None:
                 nao_e_fii.add(r["ticker"])  # FIP, FI-Infra, FIDC: o COTAHIST os põe junto dos FII
@@ -644,6 +651,11 @@ def tipos(instrumentos: list[dict[str, str]], nomes: Iterable[Mapping[str, str]]
         tipo = _tipo_pelo_nome(n["ticker"], n.get("nome_pregao", ""), n.get("tipo") or "")
         if tipo:
             antigos[n["ticker"]].add(tipo)
+    for t, achados in antigos.items():
+        # a cota de FII é sempre final 11: "FII BC FUND CI" e "FII BC FUND DIR CI" no BRCR12 é
+        # o direito com o nome abreviado de dois jeitos
+        if achados == {"DIREITO", "FII"} and not t.endswith("11"):
+            antigos[t] = {"DIREITO"}
     saida += [{"ticker": t, "tipo": next(iter(antigos[t])), "observacao": "B3: COTAHIST"}
               for t in sorted(antigos) if len(antigos[t]) == 1]  # fmt: skip
     return saida

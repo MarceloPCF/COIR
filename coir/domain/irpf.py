@@ -33,7 +33,7 @@ class SecaoRendaVariavel(Modelo):
         return self
 
 
-TipoBem = Literal["ACAO", "UNIT", "BDR", "OPCAO", "ETF", "ETF_RF", "FII", "FIAGRO",
+TipoBem = Literal["ACAO", "UNIT", "BDR", "OPCAO", "ETF", "ETF_RF", "FII", "FIAGRO", "DIREITO",
                   "JCP_A_RECEBER"]  # fmt: skip
 
 

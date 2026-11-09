@@ -51,11 +51,16 @@ def test_fundo_imobiliario_ou_fiagro_e_fii(fundo: dict[str, str], emissores: tup
         _fundo("AATH11", "ATHON ENERGIA ESG I FDO INV PART EM INFRAESTRUTURA"),  # FIP-IE
         _fundo("BDIF11", "BTG PACTUAL DIVIDA INFRA FIC. FDO. INC. IE. RF."),  # FI-Infra
         _fundo("BBVH12", "FIDC BB VOTORANTIM HIGHLAND INFRA", "FIDC"),
-        _fundo("XXXX15", "ALGUM FII RESP LIM", "REC", "XXXX"),  # recibo de cota
     ],
 )
 def test_o_que_tem_tratamento_a_parte_nao_vira_fii(fundo: dict[str, str]) -> None:
     assert _tipos([fundo]) == {}
+
+
+def test_recibo_de_cota_no_cadastro_e_direito_nao_fii() -> None:
+    """Recibo de cota de FII: 15%, fora do limite (posição B do parecer de 09/11/2026)."""
+    recibo = _fundo("XXXX15", "ALGUM FII RESP LIM", "REC", "XXXX")
+    assert _tipos([recibo], emissores=[{"emissor": "XXXX", "tipo": "FII"}]) == {"XXXX15": "DIREITO"}
 
 
 def test_fundo_fora_do_fii_nao_vira_fii_pelo_cotahist() -> None:
@@ -88,11 +93,32 @@ def test_codigo_fora_do_cadastro_pelo_nome_de_pregao(nome: str, ticker: str, tip
         ("3R PETROLEUM ON REC", "RRRP9"),
         ("AES TIETE E DIR UNT", "TIET12"),
         ("AZEVEDO BNS", "AZEV11"),
+    ],
+)
+def test_direito_recibo_e_bonus_sao_direito(nome: str, ticker: str) -> None:
+    """SC Cosit 145 e 166/2021: 15%, sem isenção e fora do limite, nunca o tipo do papel."""
+    assert _tipos(nomes=[_pregao(nome, ticker)]) == {ticker: "DIREITO"}
+
+
+def test_direito_de_fii_nao_e_fii_mesmo_com_o_cotahist_dizendo_fii() -> None:
+    """O COTAHIST põe o direito de cota com os FII (BDI 12); a 20% seria imposto errado."""
+    assert _tipos(nomes=[_pregao("FII BC FUND DIR CI", "BRCR12", "FII")]) == {"BRCR12": "DIREITO"}
+    nomes = [_pregao("FII BC FUND CI", "BRCR12", "FII"), _pregao("FII BC FUND DIR CI", "BRCR12")]
+    assert _tipos(nomes=nomes) == {"BRCR12": "DIREITO"}  # cota de FII é sempre final 11
+
+
+def test_rec_de_recebiveis_no_nome_do_fii_nao_e_recibo() -> None:
+    assert _tipos(nomes=[_pregao("FII BLUE REC CI", "BLUR11", "FII")]) == {"BLUR11": "FII"}
+
+
+@pytest.mark.parametrize(
+    ("nome", "ticker"),
+    [
         ("FIP BKO BREI CI", "BKOI11"),
         ("TREND ASIA CI", "ASIA11"),  # ETF antigo: pode ser renda fixa, sem palpite
     ],
 )
-def test_direito_recibo_e_o_que_nao_se_sabe_ficam_de_fora(nome: str, ticker: str) -> None:
+def test_o_que_nao_se_sabe_fica_de_fora(nome: str, ticker: str) -> None:
     assert _tipos(nomes=[_pregao(nome, ticker)]) == {}
 
 
@@ -126,6 +152,7 @@ def test_nenhum_fundo_imobiliario_das_tabelas_fica_sem_tipo() -> None:
               and n["ticker"] not in com_tipo]  # fmt: skip
     assert faltam == []
     assert com_tipo["HGBS11"] == com_tipo["BRCR11"] == "FII"
+    assert com_tipo["BRCR12"] == com_tipo["HGBS12"] == "DIREITO"
 
 
 def test_tipo_e_estrito_e_a_apuracao_usa_a_versao_que_isola() -> None:

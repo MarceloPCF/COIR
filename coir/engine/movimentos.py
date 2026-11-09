@@ -568,6 +568,36 @@ def _avisar_suspeitas(livro: Livro) -> None:
             livro.avisos.append(aviso)
 
 
+def _direitos_recebidos(livro: Livro, dia: date, ops: Sequence[_Op]) -> None:
+    """Direito de subscrição vendido sem nota de compra: foi recebido da companhia ou do fundo,
+    sem pagar nada. A parte da venda que passa da posição (e das compras do dia) entra antes,
+    com custo zero (IN RFB 1.585/2015 art. 58 §7º, por analogia: a norma não trata do direito
+    recebido; parecer do especialista de 09/11/2026), em vez de virar venda a descoberto sem
+    resultado. Posição já vendida fica como está: aí a regra não se aplica."""
+    liquido: dict[Chave, Decimal] = defaultdict(lambda: ZERO)
+    venda: dict[Chave, _Op] = {}
+    for o in ops:
+        if o.op.tipo is not TipoAtivo.DIREITO or o.op.mercado not in MERCADOS_DT:
+            continue
+        chave = livro.chave(o.nota.titular, _de(o), o.op.ativo)
+        liquido[chave] += o.op.quantidade if o.op.cv == "C" else -o.op.quantidade
+        if o.op.cv == "V":
+            venda.setdefault(chave, o)
+    for chave, saldo in liquido.items():
+        pos = livro.posicoes[chave]
+        falta = -(pos.quantidade + saldo)
+        if pos.quantidade < 0 or falta <= 0:
+            continue
+        o = venda[chave]
+        livro.processando(o.nota.titular, o.op.ativo)
+        pos.comprar(falta, ZERO)
+        livro.registrar(chave, dia, f"direito:{o.op.id}",
+                        "direito recebido sem custo: entra antes da venda, com custo zero (IN RFB "
+                        "1.585/2015 art. 58 §7º, por analogia)", de=_de(o),
+                        categoria=Categoria.COMUM, cv="C", quantidade=falta,
+                        valor=ZERO)  # fmt: skip
+
+
 def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) -> None:
     if dia in livro.fins_pme:
         _fim_da_isencao(livro, dia)
@@ -618,6 +648,8 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
                         categoria=Categoria.COMUM, cv="C", quantidade=t.op.quantidade,
                         valor=t.valor, custos=t.custos, baixa=baixa, isentavel=False,
                         mes_limite=mes_limite)  # fmt: skip
+    if params.booleano("direito_recebido_custo_zero", dia):
+        _direitos_recebidos(livro, dia, d.operacoes)
     mesma_corretora = params.booleano("day_trade_mesma_corretora", dia)
     pela_marcacao = params.texto("day_trade_criterio", dia) == "marcacao_corretora"
     livro.em_curso = None

@@ -29,6 +29,10 @@ class TipoAtivo(StrEnum):
     FII = "FII"  # inclui Fiagro
     OPCAO = "OPCAO"
     FUTURO = "FUTURO"
+    # direito, recibo e bônus de subscrição (de ação ou de cota de FII): 15% ou 20% em day trade,
+    # sem isenção e fora do limite (SC Cosit 145 e 166/2021; recibo pela posição B do parecer do
+    # especialista de 09/11/2026, seguido pelo usuário)
+    DIREITO = "DIREITO"
     SEM_TIPO = "SEM_TIPO"  # fora das tabelas: o motor isola o ativo, sem palpite de tributação
 
 

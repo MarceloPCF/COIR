@@ -25,6 +25,7 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R16 | Rendimentos de FII isentos se o fundo cumpre requisitos | Usuário marca conforme informe do fundo | Lei 11.033/2004 art. 3º (alt. Lei 14.754/2023) | M |
 | R17 | Fichas/códigos da DIRPF mudam por ano | Mapeamento por ano em `data/irpf/<ano>.yaml` | programa IRPF do ano | revisar anualmente |
 | R18 | Termo: custo/alienação pelo preço a termo; ganho apurado na liquidação/encerramento (operação comum) | Contrato a termo vinculado à liquidação | IN RFB 1.585/2015 | M (validar com as operações a termo da planilha) |
+| R19 | Direito, recibo e bônus de subscrição (de ação ou de cota de FII): 15% (20% em day trade), sem isenção e fora da soma do limite de R$ 20 mil; o direito recebido sem nota de compra entra com custo zero | Tipo `DIREITO` (tabela de tipos pela especificação DIR/REC/BNS do cadastro e do COTAHIST, antes do tipo do papel); categoria COMUM ou DAY_TRADE, nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65; recibo: posição B do parecer de 09/11/2026, seguido pelo usuário | A (alíquota e limite); M (custo zero); B (recibo) |
 
 ## Outros custos dedutíveis (aba BTC_Outros do v2)
 Lançamento manual mensal que reduz o resultado do mês, como no v2.02. BTC como operação está fora do escopo.

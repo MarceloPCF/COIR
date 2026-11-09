@@ -60,6 +60,12 @@ bens:
       codigo: "04"
       descricao: "Ativos negociados em bolsa no Brasil, exceto ações e fundos"
       cnpj: nenhum
+    - tipo: DIREITO
+      grupo: "04"
+      codigo: "04"
+      descricao: "Ativos negociados em bolsa no Brasil, exceto ações e fundos"
+      cnpj: nenhum
+      nota: "direito, recibo ou bônus de subscrição: não é ação nem fundo (Lei 6.385/1976 art. 2º II; parecer do especialista de 09/11/2026)"
     - tipo: OPCAO
       grupo: "04"
       codigo: "04"

@@ -16,7 +16,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 9.430/1996 | 17 |
 | Lei 9.779/1999 | 1 |
 | Lei 9.959/2000 | 5 |
-| Lei 11.033/2004 | 27 |
+| Lei 11.033/2004 | 28 |
 | Lei 11.051/2004 | 5 |
 | Lei 12.350/2010 | 1 |
 | Lei 13.043/2014 | 29 |
@@ -24,7 +24,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 15.265/2025 | 15 |
 | Lei 15.270/2025 | 10 |
 | MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 84 |
+| IN RFB 1.585/2015 | 88 |
 | IN RFB 1.700/2017 | 2 |
 | IN RFB 1.916/2019 | 1 |
 | Res. CMN 4.880/2020 | 1 |
@@ -32,7 +32,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | SC Cosit 42/2020 | 2 |
 | SC Cosit 63/2020 | 2 |
 | SC Cosit 67/2024 | 1 |
-| SC Cosit 145/2021 | 1 |
+| SC Cosit 145/2021 | 3 |
 | SC Cosit 224/2014 | 4 |
 | P&R IRPF | 5 |
 | P&R IRPF 2026 | 19 |
@@ -247,6 +247,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — Relatórios (F5, 16/10/2026): duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é
 - `tests/fiscal_cases/test_ativo_isolado.py` — test_venda_do_ativo_sem_tipo_conta_no_limite_e_avisa_quando_decide: …conta como venda de ação no limite (parecer do especialista de 09/11/2026, seguido pelo usuário; Lei 11.033/2004 art. 3º I): se for ação, não contar isentaria vendas acima do limite. Vendas de fevereiro: 19.000…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t2_limite_pelo_valor_bruto_das_vendas: R4: o limite de R$ 20 mil é sobre o valor bruto das alienações (Lei 11.033/2004 art. 3º I); custos de venda não reduzem o valor para o limite. 20.000,00 com custos 10 é isento; 20.000,01 é tributável.
+- `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …sem isenção e fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …(decisão do usuário de 19/10/2026: entra no limite de R$ 20 mil do mês do crédito, Lei 11.033/2004 art. 3º I).
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — test_ficha_mes_a_mes_e_imposto_pago_de_dezembro: …1.000,00. Dezembro: V 4.000 PETR4 a 30 (resultado 0) com IRRF 6,00 que sobra: ficha "Imposto pago", Lei 11.033 = 6,00.
@@ -353,6 +354,7 @@ Companhias que saíram da bolsa:
 - `coir/engine/movimentos.py` — _antecipar_ofertas: …entra antes dela, e o ganho fica no mês do pregão da venda (decisão do usuário de 08/11/2026; IN RFB 1.585/2015 art. 58). Antecipa só o que cobre a venda, da oferta mais próxima para a mais distante. A posição…
 - `coir/engine/movimentos.py` — _cisao: Cisão: o percentual do custo de A divulgado pela companhia vai para B, sem resultado (IN RFB 1.585/2015 art. 58 §6º: na proporção fixada pela assembleia). A quantidade de A não muda. Os eventos das…
 - `coir/engine/movimentos.py` — _day_trade: …marcou D formam o day trade quando a marcação é consistente; senão, a ordem dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º).
+- `coir/engine/movimentos.py` — _direitos_recebidos: …pagar nada. A parte da venda que passa da posição (e das compras do dia) entra antes, com custo zero (IN RFB 1.585/2015 art. 58 §7º, por analogia: a norma não trata do direito recebido; parecer do especialista de…
 - `coir/engine/movimentos.py` — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…
 - `coir/engine/movimentos.py` — _incorporacao: …fusão, conversão ou ajuste de série: a quantidade de A sai sem resultado e B entra com o mesmo custo (IN RFB 1.585/2015 art. 58 §6º; ajuste de série da B3: sem efeito fiscal, o custo é o dos prêmios, art. 60 §2º). A…
 - `coir/engine/movimentos.py` — _leilao_fracao: Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro leilao_fracao_isentavel (decisão do usuário…
@@ -378,6 +380,7 @@ Companhias que saíram da bolsa:
 - `data/isencao_pme.csv` — PRNR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; fora da tabela de 2014 da B3; citada por fontes secundárias como enquadrada; sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
 - `data/isencao_pme.csv` — SQIA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Senior Solution, SNSL3); RI Sinqia, citado por fontes secundárias: isentas as compradas entre 10/07/2014 e 05/09/2019 (oferta deliberada em 05/09/2019, Formulário de Referência 2019); sem negócio nos 30 pregões finais de 2023
 - `data/parametros_fiscais.csv` — day_trade_criterio: IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (decisão do usuário de 25/10/2026, parecer do especialista). Alternativa: ordem_impressa
+- `data/parametros_fiscais.csv` — direito_recebido_custo_zero: IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); parecer do especialista de 09/11/2026 seguido pelo usuário
 - `data/parametros_fiscais.csv` — janela_liquidacao_oferta_dias: Sem norma: critério do COIR para venda antes da liquidação da oferta (decisão do usuário de 08/11/2026); a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)
 - `data/parametros_fiscais.csv` — leilao_fracao_isentavel: sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (decisão do usuário 19/10/2026)
 - `data/parametros_fiscais.csv` — pme_lote_ordem_venda: IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; isento_primeiro ou tributado_primeiro (decisão do usuário de 08/11/2026)
@@ -394,6 +397,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — R10: R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R11: …por contrato e realizados no encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A
 - `docs/regras-fiscais.md` — R18: R18 | Termo: custo/alienação pelo preço a termo; ganho apurado na liquidação/encerramento (operação comum) | Contrato a termo vinculado à liquidação | IN RFB 1.585/2015 | M (validar com as operações a termo da planilha)
+- `docs/regras-fiscais.md` — R19: …nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65; recibo: posição B do parecer de 09/11/2026,…
 - `docs/regras-fiscais.md` — R2: R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R3: R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R6: …o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da…
@@ -415,6 +419,7 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_termo_liquidado_depois_da_venda_das_acoes_realiza_o_resultado: R18 + venda a descoberto (leitura A1, decisão do usuário de 15/10/2026; IN RFB 1.585/2015 art. 58: custo médio): sem posição, compra a termo de 1.000 a 31,00 (custos 40) em 03/01 e venda…
 - `tests/fiscal_cases/test_day_trade_marcacao.py` — módulo: Day trade pela marcação D da corretora (F9, decisão do usuário de 25/10/2026). IN RFB 1.585/2015 art. 65 §3º: o day trade casa "pela ordem" a 1ª compra com a 1ª venda, isto é, na ordem…
 - `tests/fiscal_cases/test_day_trade_parcial.py` — módulo: …dela fecha no dia (parecer do especialista fiscal de 07/11/2026; números conferidos à mão). Fontes (IN RFB 1.585/2015): - art. 65 §1º: day trade é a operação iniciada e encerrada no mesmo dia, com o mesmo ativo, na…
+- `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com custo zero (IN 1.585 art. 58…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …de fração (números conferidos à mão no parecer do especialista fiscal de 19/10/2026). Fontes: - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o custo das ações…
 - `tests/fiscal_cases/test_futuros_commodities.py` — módulo: …e na conferência do câmbio implícito. Casos fechados à mão pelo especialista (19/10/2026). Fontes: IN RFB 1.585/2015 art. 61 (resultado = soma dos ajustes no encerramento), art. 65 (15% e 20% day trade, inclusive…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das corretoras, custo médio) e 715; IN RFB 1.585/2015 arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração)…
@@ -468,6 +473,8 @@ Companhias que saíram da bolsa:
 ## SC Cosit 145/2021
 
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Units fora da isenção: coincide com a RFB (SC Cosit 145/2021: só "ativos da espécie ações").
+- `docs/regras-fiscais.md` — R19: …tipo do papel); categoria COMUM ou DAY_TRADE, nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65;…
+- `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …15% sobre o ganho líquido, 20% em day trade, sem isenção e fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O…
 
 ## SC Cosit 224/2014
 

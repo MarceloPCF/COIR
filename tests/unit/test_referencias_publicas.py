@@ -314,6 +314,7 @@ def test_tipos_etf_rf_acao_de_lote_e_ticker_antigo_pelo_cotahist() -> None:
     )  # fmt: skip
     assert {r["ticker"]: r["tipo"] for r in linhas} == {
         "LFTB11": "ETF_RF", "RAIZ55": "ACAO", "AEFI11": "FII", "AEDU11": "UNIT",
+        "MGRI15": "DIREITO",  # recibo: parecer de 09/11/2026 (posição B)
     }  # fmt: skip
 
 

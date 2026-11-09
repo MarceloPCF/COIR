@@ -18,7 +18,8 @@ from coir.domain.fiscal import Movimento, PosicaoAtivo, TermoAberto, TipoAtivo, 
 TIPOS = {
     TipoAtivo.ACAO: "Ação", TipoAtivo.UNIT: "Unit", TipoAtivo.ETF: "ETF",
     TipoAtivo.ETF_RF: "ETF de renda fixa", TipoAtivo.BDR: "BDR", TipoAtivo.FII: "FII/Fiagro",
-    TipoAtivo.OPCAO: "Opção", TipoAtivo.FUTURO: "Futuro", TipoAtivo.SEM_TIPO: "Sem tipo",
+    TipoAtivo.OPCAO: "Opção", TipoAtivo.FUTURO: "Futuro",
+    TipoAtivo.DIREITO: "Direito/recibo/bônus de subscrição", TipoAtivo.SEM_TIPO: "Sem tipo",
 }  # fmt: skip
 RE_ORIGEM = re.compile(r"^(op|termo|nota):(\d+)")
 
