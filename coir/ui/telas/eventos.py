@@ -32,6 +32,7 @@ TIPOS = {
     TipoEvento.INCORPORACAO: "Incorporação / conversão / ajuste de série",
     TipoEvento.CISAO: "Cisão",
     TipoEvento.LEILAO_FRACAO: "Leilão de fração",
+    TipoEvento.DIREITO_NAO_EXERCIDO: "Direito não exercido",
 }
 NATUREZAS = {
     NaturezaEvento.CONVERSAO: "Conversão de classe (ex.: PN em ON)",
@@ -64,12 +65,18 @@ AJUDA = {
                       "A quantidade de origem é a posição da conta (lance cada conta).",
     TipoEvento.LEILAO_FRACAO: "Venda da fração pelo valor líquido creditado, na data do crédito. "
                               "Entra no limite de isenção do mês.",
+    TipoEvento.DIREITO_NAO_EXERCIDO: "Direito, recibo ou bônus de subscrição comprado que venceu "
+                                     "sem exercício nem venda: o custo pago vira perda em "
+                                     "operações comuns, fora do limite de isenção. Use o fim do "
+                                     "prazo de exercício. Os recebidos sem custo não dão "
+                                     "resultado.",
 }  # fmt: skip
 ROTULO_DATA = {
     TipoEvento.SUBSCRICAO: "Data da subscrição",
     TipoEvento.OFERTA_PUBLICA: "Data da liquidação",
     TipoEvento.TRANSFERENCIA: "Data da transferência",
     TipoEvento.LEILAO_FRACAO: "Data do crédito",
+    TipoEvento.DIREITO_NAO_EXERCIDO: "Fim do prazo de exercício",
     TipoEvento.CUSTODIA_INICIAL: "Data",
 }
 ROTULO_QUANTIDADE = {
@@ -81,6 +88,7 @@ ROTULO_QUANTIDADE = {
     TipoEvento.INCORPORACAO: "Quantidade de origem",
     TipoEvento.CISAO: "Quantidade de origem (posição da conta)",
     TipoEvento.LEILAO_FRACAO: "Fração vendida",
+    TipoEvento.DIREITO_NAO_EXERCIDO: "Direitos que venceram",
 }
 ROTULO_VALOR = {
     TipoEvento.BONIFICACAO: "Custo atribuído",
@@ -197,7 +205,7 @@ ABAS = (
     Aba(
         "lancados", "Lançados", "Eventos lançados", NOS_LANCADOS,
         (TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO, TipoEvento.BONIFICACAO,
-         TipoEvento.REDUCAO_CAPITAL, TipoEvento.LEILAO_FRACAO),
+         TipoEvento.REDUCAO_CAPITAL, TipoEvento.LEILAO_FRACAO, TipoEvento.DIREITO_NAO_EXERCIDO),
         "Outro evento",
         "Todos os eventos do titular. Clique num deles para corrigir ou excluir.",
         "Nenhum evento lançado.",
@@ -502,7 +510,8 @@ class _Painel:
                     .classes("flex-1")
                     .mark(m("quantidade-evento"))
                 )  # fmt: skip
-                sem_valor = (d.tipo in COM_DESTINO or d.tipo is TipoEvento.TRANSFERENCIA
+                sem_valor = (d.tipo in COM_DESTINO or d.tipo in (TipoEvento.TRANSFERENCIA,
+                                                                 TipoEvento.DIREITO_NAO_EXERCIDO)
                              or (d.tipo in SEM_CUSTO and not d.valor))  # fmt: skip
                 if not sem_valor:
                     c["valor"] = (

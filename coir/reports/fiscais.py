@@ -984,6 +984,7 @@ def livro_notas(d: DadosRelatorio) -> Relatorio:
 NOME_PROVENTO = {
     TipoProvento.DIVIDENDO: "Dividendo", TipoProvento.JCP: "JCP",
     TipoProvento.RENDIMENTO_FII: "Rendimento de FII", TipoProvento.REEMBOLSO_BTC: "Reembolso BTC",
+    TipoProvento.RENDIMENTO_FUNDO_INFRA: "Rendimento de FI-Infra/FIP-IE",
     TipoProvento.ATUALIZACAO: "Atualização (Selic)",
     TipoProvento.RESTITUICAO_CAPITAL: "Restituição de capital",
     TipoProvento.FORA_DO_ESCOPO: "Fora da v3.0",
@@ -1027,6 +1028,10 @@ def proventos(d: DadosRelatorio) -> Relatorio:
         (TipoProvento.RENDIMENTO_FII, "Rendimentos de FII e Fiagro (isentos)", False,
          "Lei 11.033/2004 art. 3º III: isentos para pessoa física se o fundo cumpre os "
          "requisitos."),
+        (TipoProvento.RENDIMENTO_FUNDO_INFRA,
+         "Rendimentos de FI-Infra e FIP-IE (tributação exclusiva, código 06)", False,
+         "Lei 12.431/2011 art. 3º §§1º e 2º; Lei 11.478/2007 art. 2º §3º: alíquota zero para "
+         "pessoa física, pelo valor líquido. Vale o informe do administrador."),
         (TipoProvento.ATUALIZACAO, "Atualização de proventos pela Selic (tributação exclusiva)",
          True, "Lei 8.981/1995 art. 65 §4º c; IRRF retido pela empresa (renda fixa). Código 06 ou "
          "12 na ficha exclusiva, conforme o informe da empresa."),

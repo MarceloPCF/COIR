@@ -69,3 +69,28 @@ def test_bens_e_direitos_e_ficha_do_ganho_na_dirpf() -> None:
     assert mapa.bens.item(_tipo_bem(pos, info("FIP-IE")) or "ACAO").codigo == "07"
     assert mapa.bens.item(_tipo_bem(pos, info("FI-INFRA")) or "ACAO").codigo == "10"
     assert mapa.exclusivos.linha("ganho_fundo_infra").codigo == "06"
+
+
+def test_rendimentos_distribuidos_vao_para_a_exclusiva_06() -> None:
+    """Parecer de 09/11/2026: rendimento de FI-Infra (Lei 12.431 art. 3º §§1º e 2º) e de FIP-IE
+    (Lei 11.478 art. 2º §3º diz isento, mas o programa só aceita a exclusiva 06) na exclusiva 06,
+    em linhas separadas; nunca em isentos de FII."""
+    from types import SimpleNamespace
+
+    from coir.domain.relatorio import InfoAtivo
+    from coir.referencias import carregar_irpf
+    from coir.reports.irpf import _rendimentos_fundo_infra  # pyright: ignore[reportPrivateUsage]
+
+    def info(tipo_b3: str) -> InfoAtivo:
+        return InfoAtivo(emissor="X", cnpj="1", razao_social="X", especificacao="CI",
+                         tipo_b3=tipo_b3)  # fmt: skip
+
+    d = SimpleNamespace(info_ativos={"XINF11": info("FI-INFRA"), "XPIE11": info("FIP-IE")})
+    feitas: list[tuple[str, str, list[tuple[str, D]]]] = []
+    mapa = carregar_irpf(2026)
+    _rendimentos_fundo_infra(d, [("XINF11", D(10)), ("XPIE11", D(20))],  # type: ignore[arg-type]
+                             lambda f, c, i: feitas.append((f, c, list(i))), mapa)  # fmt: skip
+    assert feitas == [("exclusivos", "rendimento_fundo_infra", [("XINF11", D(10))]),
+                      ("exclusivos", "rendimento_fip_ie", [("XPIE11", D(20))])]  # fmt: skip
+    assert mapa.exclusivos.linha("rendimento_fip_ie").codigo == "06"
+    assert not mapa.isentos.tem("rendimento_fip_ie")

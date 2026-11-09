@@ -284,3 +284,43 @@ def test_reembolso_com_origem_informada_pelo_usuario() -> None:
     c, avisos_c = com("JCP", {})
     assert c.reembolso_de == "JCP"
     assert any("não há JCP da empresa pagos no mesmo dia" in x for x in avisos_c)
+
+
+# ------------------------------------------------- FI-Infra e FIP-IE (parecer de 09/11/2026)
+TIPOS_INFRA = TiposAtivo(tabela={**TIPOS.tabela, "XINF11": TipoAtivo.FUNDO_INFRA})
+
+
+def _infra(*linhas: LinhaB3) -> tuple[list[Provento], list[str]]:
+    avisos: list[str] = []
+    return proventos(linhas, TIPOS_INFRA, REFS.parametros, avisos), avisos
+
+
+def test_rendimento_de_fi_infra_vai_para_a_exclusiva_sem_irrf() -> None:
+    """Lei 12.431/2011 art. 3º §§1º e 2º: alíquota zero, exclusivamente na fonte. 100 cotas x
+    1,2345 = 123,45 líquido = bruto; não é rendimento de FII (isentos)."""
+    [p], avisos = _infra(mov(date(2026, 5, 15), "Rendimento", "XINF11 - FUNDO INFRA", "100",
+                             "1.2345", "123.45"))  # fmt: skip
+    assert (p.tipo, p.liquido, p.bruto, p.irrf) == (
+        TipoProvento.RENDIMENTO_FUNDO_INFRA, D("123.45"), D("123.45"), 0)  # fmt: skip
+    assert not avisos
+
+
+def test_rendimento_de_fi_infra_com_retencao_avisa() -> None:
+    """Fundo desenquadrado retém na fonte (Lei 12.431 art. 3º §§5º e 6º): preço x quantidade
+    acima do líquido vira aviso; o lançamento continua pelo líquido."""
+    [p], avisos = _infra(mov(date(2026, 5, 15), "Rendimento", "XINF11 - FUNDO INFRA", "100",
+                             "1.50", "127.50"))  # fmt: skip
+    assert p.liquido == D("127.50")
+    assert any("retenção" in a for a in avisos)
+
+
+def test_amortizacao_de_fi_infra_reduz_o_custo_e_a_de_fii_fica_fora() -> None:
+    """Lei 11.478/2007 art. 2º §2º; IN 1.585 art. 16 §2º: a amortização reduz o custo das cotas.
+    A de FII continua fora (não foi objeto do parecer)."""
+    lista, _ = _infra(
+        mov(date(2026, 6, 15), "Amortização", "XINF11 - FUNDO INFRA", "100", "2", "200"),
+        mov(date(2026, 6, 15), "Amortização", "KNRI11 - KINEA RENDA", "100", "2", "200", i=2),
+    )
+    [p] = lista
+    assert (p.tipo, p.codigo, p.liquido) == (TipoProvento.RESTITUICAO_CAPITAL, "XINF11", D(200))
+    assert "reduz o custo" in p.observacao

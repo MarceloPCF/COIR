@@ -215,8 +215,10 @@ def importar_eventos(
 # ------------------------------------------------------------------------ tela 7 (Eventos)
 NOTA_DATA_EX = ("a B3 informa a data do crédito: use a data ex (primeiro pregão sem o direito), "
                 "como decidido para os eventos")  # fmt: skip
-SEM_CV = frozenset({TipoEvento.TRANSFERENCIA, *TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO})
-QUANTIDADE_OBRIGATORIA = EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO}
+SEM_CV = frozenset({TipoEvento.TRANSFERENCIA, *TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO,
+                    TipoEvento.DIREITO_NAO_EXERCIDO})  # fmt: skip
+QUANTIDADE_OBRIGATORIA = EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO,
+                                             TipoEvento.DIREITO_NAO_EXERCIDO}  # fmt: skip
 AVISO_INCORPORACAO_ACOES = (
     "incorporação de ações (Lei 6.404 art. 252): o COIR mantém o custo (posição do Judiciário); a "
     "Receita trata como alienação com ganho de capital (SC Cosit 224/2014). Avalie com o seu "
@@ -594,6 +596,8 @@ PROPOSTAS: dict[str, tuple[TipoEvento, str | None]] = {
     "incorporação": (TipoEvento.INCORPORACAO, None),
     "cisão": (TipoEvento.CISAO, None),
     "leilão de fração": (TipoEvento.LEILAO_FRACAO, None),
+    # só em cotas de FI-Infra e FIP-IE (ver _mapa_proposta)
+    "amortização": (TipoEvento.REDUCAO_CAPITAL, "V"),
 }
 NOTAS_PROPOSTA = {
     TipoEvento.BONIFICACAO: "informe o custo atribuído (aviso aos acionistas)",
@@ -601,7 +605,13 @@ NOTAS_PROPOSTA = {
     TipoEvento.INCORPORACAO: "a B3 mostra o ativo recebido: informe o de origem e a quantidade",
     TipoEvento.CISAO: "informe o ativo cindido e o percentual do custo",
     TipoEvento.LEILAO_FRACAO: "fração vendida pela companhia: venda comum no mês do crédito",
-}
+    TipoEvento.DIREITO_NAO_EXERCIDO: "o custo pago pelos direitos comprados vira perda em "
+                                     "operações comuns; os recebidos sem custo não dão resultado",
+}  # fmt: skip
+NAO_EXERCIDO = ("não exercid", "nao exercid")  # "Direitos de Subscrição - Não Exercido"
+AMORTIZACAO_FUNDO = ("amortização de cotas de FI-Infra ou FIP-IE: reduz o custo das cotas (Lei "
+                     "11.478/2007 art. 2º §2º; IN RFB 1.585/2015 art. 16 §2º); o que passar do "
+                     "custo é rendimento (confira o informe do administrador)")  # fmt: skip
 RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z]{4})(?P<classe>9|10)$")  # recibo de subscrição ON/PN
 JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data ex)
 
@@ -628,20 +638,25 @@ def propostas(
         saida: list[Proposta] = []
         for m in s.scalars(select(MovimentacaoB3).where(MovimentacaoB3.titular_id == titular)
                            .order_by(MovimentacaoB3.data.desc(), MovimentacaoB3.id)):  # fmt: skip
-            mapa = PROPOSTAS.get(m.movimentacao.strip().lower())
-            if mapa is None or (mapa[0] is TipoEvento.SUBSCRICAO and not m.entrada):
+            codigo = m.codigo or m.produto.split(" - ")[0].strip()
+            mapa = _mapa_proposta(m, codigo, fiscais)
+            if mapa is None:
                 continue
             tipo, cv = mapa
             corretora = refs.corretora_b3(m.instituicao)
             das_contas = [c for c in contas if c.corretora.nome == corretora]
             conta = das_contas[0].id if len(das_contas) == 1 else None
-            codigo = m.codigo or m.produto.split(" - ")[0].strip()
             recibo = RE_RECIBO.match(codigo) if tipo is TipoEvento.SUBSCRICAO else None
             ticker = (f"{recibo['raiz']}{3 if recibo['classe'] == '9' else 4}" if recibo
                       else codigo)  # fmt: skip
             recebido = tipo is TipoEvento.INCORPORACAO  # a B3 mostra o crédito de B
+            data, nota_data = m.data, NOTA_DATA_EX
+            if tipo is TipoEvento.DIREITO_NAO_EXERCIDO:
+                data, nota_data = _fim_do_prazo(codigo, m.data, fiscais, pasta)
+            elif m.movimentacao.strip().lower() == "amortização":
+                nota_data = AMORTIZACAO_FUNDO
             dados = DadosEvento(
-                tipo=tipo, data=m.data, conta=conta, ticker="" if recebido else ticker, cv=cv,
+                tipo=tipo, data=data, conta=conta, ticker="" if recebido else ticker, cv=cv,
                 quantidade=None if recebido else m.quantidade,
                 valor=(m.valor or Decimal(0)) if tipo in (TipoEvento.REDUCAO_CAPITAL,
                                                          TipoEvento.LEILAO_FRACAO) else Decimal(0),
@@ -652,11 +667,11 @@ def propostas(
             )  # fmt: skip
             if m.chave in ignoradas:
                 situacao = "ignorada"
-            elif _ja_lancado(s, refs, ticker, m.data, lancados):
+            elif _ja_lancado(s, refs, ticker, data, lancados):
                 situacao = "lançado"
             else:
                 situacao = "pendente"
-            nota = "; ".join(x for x in (NOTAS_PROPOSTA.get(tipo, ""), NOTA_DATA_EX) if x)
+            nota = "; ".join(x for x in (NOTAS_PROPOSTA.get(tipo, ""), nota_data) if x)
             saida.append(Proposta(m.chave, m.data, m.movimentacao, codigo, m.quantidade,
                                   m.valor, corretora, situacao, dados, nota))  # fmt: skip
         if fiscais is None or pasta is None:
@@ -685,6 +700,66 @@ def propostas(
                    key=lambda p: p.data, reverse=True)  # fmt: skip
     trilha.propostas(titular, lista)
     return _sem_pendencia_antes(lista)
+
+
+def _mapa_proposta(
+    m: MovimentacaoB3, codigo: str, fiscais: ReferenciasFiscais | None
+) -> tuple[TipoEvento, str | None] | None:
+    """Tipo e C/V do evento que a linha da movimentação sugere (None: nenhum). A baixa do direito
+    não exercido é uma saída; a amortização só reduz o custo em cotas de FI-Infra e FIP-IE (parecer
+    do especialista de 09/11/2026; nos outros fundos fica como estava)."""
+    movimentacao = m.movimentacao.strip().lower()
+    if any(x in movimentacao for x in NAO_EXERCIDO):
+        return None if m.entrada else (TipoEvento.DIREITO_NAO_EXERCIDO, None)
+    mapa = PROPOSTAS.get(movimentacao)
+    if mapa is None or (mapa[0] is TipoEvento.SUBSCRICAO and not m.entrada):
+        return None
+    if movimentacao == "amortização" and (
+        not m.entrada or fiscais is None
+        or fiscais.tipos.tipo_ou_sem(codigo) is not TipoAtivo.FUNDO_INFRA
+    ):  # fmt: skip
+        return None
+    return mapa
+
+
+JANELA_PRAZO_DIREITO = 60  # dias entre o fim do prazo de exercício e a baixa na custódia da B3
+
+
+def _fim_do_prazo(
+    codigo: str, baixa: date, fiscais: ReferenciasFiscais | None, pasta: Path | None
+) -> tuple[date, str]:  # fmt: skip
+    """Data do direito não exercido: o fim do prazo de exercício, que é decadencial (Lei 6.404
+    art. 171 §4º), pelo pacote da B3 (a data de subscrição da companhia; sem ela, o fim do período
+    de negociação do direito), nunca depois da baixa; senão, a data da baixa na B3. A data mais
+    tarde nunca antecipa a perda (parâmetro direito_vencido_data; parecer do especialista de
+    09/11/2026)."""
+    sem = (baixa, "data da baixa na B3: se souber o fim do prazo de exercício (aviso aos "
+                  "acionistas), use-o")  # fmt: skip
+    if fiscais is None or pasta is None:
+        return sem
+    if fiscais.parametros.texto("direito_vencido_data", baixa) != "fim_do_prazo":
+        return (baixa, "data da baixa na B3 (parâmetro direito_vencido_data)")
+    fins: list[date] = []
+    for ev in referencias.eventos_b3(pasta):
+        if ev["tipo"] != "SUBSCRICAO" or ev["emissor"] != codigo[:4]:
+            continue
+        datas = [ev["data_subscricao"]] if ev["data_subscricao"] else []
+        if " a " in ev["periodo"]:
+            datas.append(ev["periodo"].split(" a ")[1].strip())
+        try:
+            fim = max(date.fromisoformat(x) if "-" in x else datetime.strptime(x, "%d/%m/%Y").date()
+                      for x in datas)  # fmt: skip
+        except ValueError:
+            continue
+        # a subscrição que terminou até JANELA_PRAZO_DIREITO dias antes da baixa (a liquidação
+        # pode cair uns dias depois da baixa: a data fica na da baixa)
+        if timedelta(days=-JANELA) <= baixa - fim <= timedelta(days=JANELA_PRAZO_DIREITO):
+            fins.append(min(fim, baixa))
+    if not fins:
+        return sem
+    fim = max(fins)
+    return fim, (f"data: fim do prazo de subscrição pelo pacote da B3 ({fim:%d/%m/%Y}); a B3 "
+                 f"baixou em {baixa:%d/%m/%Y}")  # fmt: skip
 
 
 # eventos do pacote público (eventos_b3.csv: rótulos como a B3 escreve) -> tipo do evento

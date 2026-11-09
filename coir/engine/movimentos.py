@@ -616,6 +616,8 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
             _incorporacao(livro, evento, params)
         elif evento.tipo is TipoEvento.LEILAO_FRACAO:
             _leilao_fracao(livro, evento, params)
+        elif evento.tipo is TipoEvento.DIREITO_NAO_EXERCIDO:
+            _direito_nao_exercido(livro, evento)
         else:
             _evento(livro, evento)
     origens = [chave for chave, _ in cisoes]
@@ -1128,6 +1130,35 @@ def _leilao_fracao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
                     de=(e.conta, e.corretora), categoria=_categoria(e.tipo_ativo, False),
                     cv="V", quantidade=quantidade, valor=e.valor, baixa=baixa,
                     venda_acao=e.valor if isentavel else ZERO, isentavel=isentavel)  # fmt: skip
+
+
+def _direito_nao_exercido(livro: Livro, e: Evento) -> None:
+    """Direito, recibo ou bônus de subscrição comprado que venceu sem exercício nem venda: o custo
+    pago (com corretagem e emolumentos, pelo PM) vira perda em operações comuns na data do evento,
+    o fim do prazo de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira
+    pó; art. 64 caput; SC Cosit 166/2021; parecer do especialista de 09/11/2026). Fora do limite
+    de R$ 20 mil: não há valor de alienação. Baixa o menor entre a quantidade do evento e a
+    posição: o que passa da posição são direitos recebidos sem custo, que nunca entraram no livro
+    e não dão resultado; o que sobra da posição continua em aberto, com aviso."""
+    chave = _chave_evento(livro, e)
+    pos = livro.posicoes[chave]
+    if pos.quantidade < 0:
+        raise MotorError(f"{_nome(e)} em posição vendida")
+    pedida = e.quantidade or ZERO
+    quantidade = min(pedida, pos.quantidade)
+    if quantidade <= 0:
+        return  # só direitos recebidos sem custo: nada a baixar
+    baixa = pos.vender(quantidade, ZERO)
+    livro.registrar(chave, e.data, f"evento:{e.id}",
+                    "direito de subscrição não exercido no prazo: o custo pago vira perda (IN RFB "
+                    "1.585/2015 art. 60 §3º, por analogia)", de=(e.conta, e.corretora),
+                    categoria=Categoria.COMUM, cv=None, quantidade=quantidade, valor=ZERO,
+                    baixa=baixa, evento=e.tipo)  # fmt: skip
+    if pos.quantidade > 0 and livro.visao is Visao.TITULAR:
+        livro.avisos.append(
+            f"{e.data}: {e.ticker}: o evento de direito não exercido baixou {quantidade}, e "
+            f"{pos.quantidade} continuam na posição (confira a quantidade na movimentação da B3)"
+        )
 
 
 CUSTODIA = (

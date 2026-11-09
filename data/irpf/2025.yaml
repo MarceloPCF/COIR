@@ -175,6 +175,18 @@ exclusivos:
       por_fonte: true
       parcial: true  # o código também recebe rendimentos fora da bolsa
       nota: "Lei 12.431/2011 art. 3º §§2º e 2º-A (exclusivamente na fonte); Lei 11.478/2007 art. 2º §1º I; Manual MIR rendimentos do capital; parecer de 09/11/2026"
+    - chave: rendimento_fundo_infra
+      codigo: "06"
+      descricao: "Rendimentos de aplicações financeiras (rendimentos de FI-Infra, alíquota zero)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+      nota: "Lei 12.431/2011 art. 3º §§1º, 2º e 2º-A (alíquota zero, exclusivamente na fonte); Manual MIR rendimentos do capital; parecer de 09/11/2026"
+    - chave: rendimento_fip_ie
+      codigo: "06"
+      descricao: "Rendimentos de aplicações financeiras (rendimentos de FIP-IE e FIP-PD&I)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+      nota: "a Lei 11.478/2007 art. 2º §3º diz isento; o programa (Manual MIR) só aceita a ficha exclusiva 06. Para usar isentos, mova esta linha para a seção isentos (código 99, Outros); parecer de 09/11/2026"
     - chave: atualizacao_proventos
       codigo: "06"
       descricao: "Rendimentos de aplicações financeiras (atualização de proventos pela Selic)"

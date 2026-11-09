@@ -185,6 +185,8 @@ class TipoEvento(StrEnum):
     CISAO = "CISAO"  # parte do custo de A vai para B, pelo percentual da companhia
     LEILAO_FRACAO = "LEILAO_FRACAO"  # fração vendida em leilão pela companhia (alienação)
     OFERTA_PUBLICA = "OFERTA_PUBLICA"  # compra em IPO ou follow-on: não aparece em nota
+    # direito ou bônus de subscrição que venceu sem exercício nem venda: o custo pago vira perda
+    DIREITO_NAO_EXERCIDO = "DIREITO_NAO_EXERCIDO"
 
 
 class NaturezaEvento(StrEnum):

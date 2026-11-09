@@ -97,6 +97,9 @@ class SecaoRendimentos(Modelo):
             raise ValueError("chave repetida")
         return self
 
+    def tem(self, chave: str) -> bool:
+        return any(x.chave == chave for x in self.linhas)
+
     def linha(self, chave: str) -> LinhaRendimento:
         try:
             return next(x for x in self.linhas if x.chave == chave)
