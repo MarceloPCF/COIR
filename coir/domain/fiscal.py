@@ -285,6 +285,23 @@ class PosicaoAtivo(Modelo):
         return ZERO if self.quantidade == 0 else self.custo / self.quantidade
 
 
+class TermoAberto(Modelo):
+    """Compra a termo ainda não liquidada numa data: fica fora da carteira e do PM até a
+    liquidação, mas a tela a mostra numa linha própria, como a B3 (decisão do usuário, F2)."""
+
+    titular: int
+    corretora: str
+    conta: int
+    nota: int
+    ativo: int
+    ticker: str
+    tipo: TipoAtivo
+    pregao: date
+    liquidacao: date
+    quantidade: Decimal
+    custo: Decimal  # preço a termo x quantidade + custos da nota rateados (o que entra no PM)
+
+
 class AtivoIsolado(Modelo):
     """Ativo que o motor não conseguiu apurar a partir de `desde` (ex.: falta um evento
     corporativo): as operações e os eventos dele dessa data em diante ficam fora do cálculo, o

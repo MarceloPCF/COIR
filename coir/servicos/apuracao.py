@@ -29,6 +29,7 @@ from coir.domain.fiscal import (
     OperacaoMotor,
     PosicaoAtivo,
     SaldoInicial,
+    TermoAberto,
     TipoAjuste,
     TipoAtivo,
     TipoEvento,
@@ -41,7 +42,7 @@ from coir.engine.apuracao import apurar
 from coir.engine.apuracao import conta_na_isencao as conta_na_isencao  # para a tela
 from coir.engine.calendario import liquidacao_termo, vencimento_opcao
 from coir.engine.futuros import movimentos_futuros
-from coir.engine.movimentos import carteira, movimentar
+from coir.engine.movimentos import carteira, movimentar, termos_em_aberto
 from coir.erros import ReferenciaError
 from coir.parsing import futuros
 from coir.servicos import outros_custos, saldos_iniciais, trilha
@@ -278,6 +279,15 @@ def carteira_banco(
         notas, eventos = entradas(sessao, refs, fiscais)
         contas = {c.id: c.numero for c in sessao.scalars(select(Conta))}
     return carteira(notas, eventos, fiscais.parametros, ate, visao, isolados=[]), contas
+
+
+def termos_banco(
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date
+) -> list[TermoAberto]:
+    """Compras a termo ainda não liquidadas no fim de `ate` (só para mostrar na Carteira)."""
+    with conectar(banco) as fabrica, fabrica() as sessao:
+        notas, _ = entradas(sessao, refs, fiscais)
+    return termos_em_aberto(notas, ate)
 
 
 def carteiras_banco(

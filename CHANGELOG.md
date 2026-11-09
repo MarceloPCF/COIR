@@ -15,6 +15,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **Eventos em abas:** A conferir, Lançados, Subscrições, Transferências, Conversões e Ofertas (IPO), cada uma com um formulário curto e sem o C/V.
 - **Lançar as seguras:** lança de uma vez os desdobramentos e grupamentos das tabelas da B3 que não pedem nada do usuário, com lista para conferir antes e opção de desfazer.
 - **Oferta pública (IPO e follow-on):** a compra, que não aparece em nota, entra no preço médio, mesmo em ativo ainda sem nota.
+- **Termo em aberto na Carteira:** a compra a termo ainda não liquidada aparece numa linha própria, logo abaixo do ativo, com a data da liquidação; não entra na posição, no PM nem no total até liquidar, como na B3.
 - **Como faço?:** em cada tela, um botão abre a página do manual ao lado, sem cobrir o que você está preenchendo.
 
 ### Corrigido

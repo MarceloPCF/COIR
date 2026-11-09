@@ -34,6 +34,7 @@ from coir.domain.fiscal import (
     NotaMotor,
     OperacaoMotor,
     PosicaoAtivo,
+    TermoAberto,
     TipoAtivo,
     TipoEvento,
     Visao,
@@ -266,6 +267,30 @@ def carteira(
         )  # fmt: skip
     return sorted(saida, key=lambda p: (p.titular, p.corretora or "", p.conta or 0, p.ticker,
                                         p.vencimento or date.min))  # fmt: skip
+
+
+def termos_em_aberto(notas: Iterable[NotaMotor], ate: date) -> list[TermoAberto]:
+    """Compras a termo feitas até `ate` e ainda não liquidadas no fim desse dia. Não mudam a
+    carteira nem o PM (entram na liquidação, ver `carteira`): são só para mostrar. O custo é o
+    mesmo que entrará no PM: valor a termo + custos da nota rateados como em `_percorrer`."""
+    saida: list[TermoAberto] = []
+    for nota in notas:
+        if nota.data > ate or not nota.operacoes:
+            continue
+        custos = ratear(nota.custos, [o.total for o in nota.operacoes])
+        for op, custo in zip(nota.operacoes, custos, strict=True):
+            if (op.mercado != "TERMO" or op.cv != "C" or op.liquidacao_termo is None
+                    or op.liquidacao_termo <= ate):  # fmt: skip
+                continue
+            saida.append(
+                TermoAberto(
+                    titular=nota.titular, corretora=nota.corretora, conta=nota.conta,
+                    nota=nota.id, ativo=op.ativo, ticker=op.ticker, tipo=op.tipo,
+                    pregao=nota.data, liquidacao=op.liquidacao_termo, quantidade=op.quantidade,
+                    custo=op.total + custo,
+                )
+            )  # fmt: skip
+    return saida
 
 
 def _executar(

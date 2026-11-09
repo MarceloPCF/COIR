@@ -26,7 +26,7 @@ from coir.config import (
 from coir.db import repositorio as repo
 from coir.db.modelos import EventoCorporativo, NotaCorretagem, Titular
 from coir.db.sessao import NOME_BANCO, Migracao, conectar, migrar
-from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
+from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, TermoAberto, Visao
 from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.proventos import Provento
@@ -47,7 +47,13 @@ from coir.servicos import (
     operacoes,
     saidas,
 )
-from coir.servicos.apuracao import apurar_banco, carteira_banco, carteiras_banco, movimentos_banco
+from coir.servicos.apuracao import (
+    apurar_banco,
+    carteira_banco,
+    carteiras_banco,
+    movimentos_banco,
+    termos_banco,
+)
 from coir.servicos.b3 import PASTA_B3
 from coir.servicos.importacao import Extrator, aplicar_tabelas
 from coir.servicos.proventos import informar_creditos, proventos_banco
@@ -287,6 +293,12 @@ class Estado:
         return self._guardado(
             ("carteira", ate, visao),
             lambda: carteira_banco(self.banco, self.refs, self.fiscais, ate, visao),
+        )
+
+    def termos(self, ate: date) -> list[TermoAberto]:
+        """Compras a termo ainda não liquidadas no fim de `ate` (fora da carteira e do PM)."""
+        return self._guardado(
+            ("termos", ate), lambda: termos_banco(self.banco, self.refs, self.fiscais, ate)
         )
 
     def movimentos(self, ate: date, visao: Visao) -> list[Movimento]:
