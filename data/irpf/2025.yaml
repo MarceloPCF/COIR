@@ -85,6 +85,18 @@ bens:
       codigo: "08"
       descricao: "Fundos de índice de renda fixa"
       cnpj: fundo
+    - tipo: FIP_IE
+      grupo: "07"
+      codigo: "07"
+      descricao: "FIP-IE e FIP-PD&I"
+      cnpj: fundo
+      nota: "número pelo Guia IR 2026 do Itaú (o manual MIR dá só os nomes, na ordem 06 ETF, 07 FIP-IE, 08 ETF RF, 10 Infra); parecer de 09/11/2026, confiança média: confira no programa"
+    - tipo: FI_INFRA
+      grupo: "07"
+      codigo: "10"
+      descricao: "Fundos de Infraestrutura, FIDC e outros Fundos de Investimento (alíquota 0%)"
+      cnpj: fundo
+      nota: "FI-Infra e FIC-FI-Infra (Lei 12.431/2011 arts. 2º e 3º), com o CNPJ do próprio FIC; número pelo Guia IR 2026 do Itaú; parecer de 09/11/2026, confiança média: confira no programa"
     - tipo: FII
       grupo: "07"
       codigo: "03"
@@ -136,12 +148,6 @@ isentos:
       descricao: "Outros (rendimentos de FII e Fiagro)"
       por_fonte: true
       parcial: true  # o código também recebe rendimentos fora da bolsa
-    - chave: ganho_fundo_infra
-      codigo: "99"
-      descricao: "Outros (ganho em cotas de FI-Infra e FIP-IE, alíquota zero)"
-      por_fonte: true
-      parcial: true  # o código também recebe rendimentos fora da bolsa
-      nota: "Lei 12.431/2011 art. 3º; Lei 11.478/2007 art. 2º; código a confirmar (parecer de 09/11/2026, confiança baixa)"
     - chave: reembolso_btc
       codigo: "99"
       descricao: "Outros (reembolso de proventos de ações emprestadas)"
@@ -163,6 +169,12 @@ exclusivos:
       descricao: "Rendimentos de aplicações financeiras (ETF de renda fixa)"
       por_fonte: true
       parcial: true  # o código também recebe rendimentos fora da bolsa
+    - chave: ganho_fundo_infra
+      codigo: "06"
+      descricao: "Rendimentos de aplicações financeiras (ganho em cotas de FI-Infra e FIP-IE, alíquota zero)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+      nota: "Lei 12.431/2011 art. 3º §§2º e 2º-A (exclusivamente na fonte); Lei 11.478/2007 art. 2º §1º I; Manual MIR rendimentos do capital; parecer de 09/11/2026"
     - chave: atualizacao_proventos
       codigo: "06"
       descricao: "Rendimentos de aplicações financeiras (atualização de proventos pela Selic)"

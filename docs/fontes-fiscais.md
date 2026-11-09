@@ -20,7 +20,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | Lei 11.051/2004 | 5 |
 | Lei 11.478/2007 | 2 |
 | Lei 12.350/2010 | 1 |
-| Lei 12.431/2011 | 2 |
+| Lei 12.431/2011 | 3 |
 | Lei 13.043/2014 | 29 |
 | Lei 14.754/2023 | 3 |
 | Lei 15.265/2025 | 15 |
@@ -38,6 +38,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | SC Cosit 224/2014 | 4 |
 | P&R IRPF | 5 |
 | P&R IRPF 2026 | 20 |
+| Manual MIR | 2 |
 | Manual MIR 2026 | 3 |
 | Programa IRPF | 8 |
 | CTN | 5 |
@@ -269,7 +270,7 @@ Companhias que saíram da bolsa:
 
 ## Lei 11.478/2007
 
-- `docs/regras-fiscais.md` — R20: …com o tipo) e para Rendimentos isentos, código 99 | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33, 34 e 64; P&R IRPF 2026 perguntas 736 e 738; parecer de…
+- `docs/regras-fiscais.md` — R20: …e 07.07 (FIP-IE), CNPJ do fundo; sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&R IRPF…
 - `tests/fiscal_cases/test_fundo_infra.py` — módulo: FI-Infra (Lei 12.431/2011 art. 3º) e FIP-IE (Lei 11.478/2007 art. 2º §1º I), tipo FUNDO_INFRA pela lista de fundos da B3: o ganho de pessoa física tem…
 
 ## Lei 12.350/2010
@@ -278,8 +279,9 @@ Companhias que saíram da bolsa:
 
 ## Lei 12.431/2011
 
-- `docs/regras-fiscais.md` — R20: …vai para a lista à parte da apuração (`exclusiva`, com o tipo) e para Rendimentos isentos, código 99 | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33, 34 e 64;…
+- `docs/regras-fiscais.md` — R20: …código 06; cotas em Bens 07.10 (FI-Infra) e 07.07 (FIP-IE), CNPJ do fundo; sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33 (§8º: sem…
 - `tests/fiscal_cases/test_fundo_infra.py` — módulo: FI-Infra (Lei 12.431/2011 art. 3º) e FIP-IE (Lei 11.478/2007 art. 2º §1º I), tipo FUNDO_INFRA pela lista de fundos da B3: o…
+- `tests/fiscal_cases/test_fundo_infra.py` — test_bens_e_direitos_e_ficha_do_ganho_na_dirpf: …em 07.10 e FIP-IE em 07.07, com o CNPJ do fundo; o ganho na ficha Exclusiva/Definitiva, código 06 (Lei 12.431 art. 3º §2º: "exclusivamente na fonte"), não em isentos.
 
 ## Lei 13.043/2014
 
@@ -411,7 +413,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — R18: R18 | Termo: custo/alienação pelo preço a termo; ganho apurado na liquidação/encerramento (operação comum) | Contrato a termo vinculado à liquidação | IN RFB 1.585/2015 | M (validar com as operações a termo da planilha)
 - `docs/regras-fiscais.md` — R19: …nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65; recibo: posição B do parecer de 09/11/2026,…
 - `docs/regras-fiscais.md` — R2: R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A
-- `docs/regras-fiscais.md` — R20: …isentos, código 99 | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33, 34 e 64; P&R IRPF 2026 perguntas 736 e 738; parecer de 09/11/2026 | A (alíquota); M…
+- `docs/regras-fiscais.md` — R20: …sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&R IRPF 2026 perguntas 736 e 738;…
 - `docs/regras-fiscais.md` — R3: R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R6: …o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da…
 - `docs/regras-fiscais.md` — R7: R7 | Custo de aquisição inclui corretagem, emolumentos e taxas; na venda os custos reduzem a alienação | Rateio proporcional ao valor da operação na nota | IN RFB 1.585/2015 | A
@@ -523,10 +525,15 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): `opcoes_linha_acoes_tipos_objeto`; P&R IRPF 2026 pergunta 707 separa cotas de fundo de índice de
 - `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): **A conferir:** o PDF oficial da SC 42/2020 e o P&R IRPF 2026 não puderam ser lidos; as leis foram lidas em compiladores.
 - `docs/regras-fiscais.md` — R11: …encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A
-- `docs/regras-fiscais.md` — R20: …art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33, 34 e 64; P&R IRPF 2026 perguntas 736 e 738; parecer de 09/11/2026 | A (alíquota); M (prejuízo); B (código da DIRPF)
+- `docs/regras-fiscais.md` — R20: …11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&R IRPF 2026 perguntas 736 e 738; pareceres de 09/11/2026 | A (alíquota, retenção do FIP-IE); M (prejuízo, números…
 - `docs/regras-fiscais.md` — R6: …| Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT:…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Direitos, rendimentos e fichas mês a mês que o COIR preenche. Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero. Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …- operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (pareceres de 20 e 21/10/2026), conferidos à mão. Fontes: programa IRPF, ficha de renda variável (linhas "Mercado de opções -…
+
+## Manual MIR
+
+- `docs/regras-fiscais.md` — R20: …e 2º-A; Lei 11.478/2007 art. 2º §1º I; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&R IRPF 2026 perguntas 736 e 738; pareceres de 09/11/2026 | A (alíquota, retenção do FIP-IE); M…
+- `tests/fiscal_cases/test_fundo_infra.py` — test_bens_e_direitos_e_ficha_do_ganho_na_dirpf: Parecer de 09/11/2026 (Manual MIR; Guia IR 2026): FI-Infra em 07.10 e FIP-IE em 07.07, com o CNPJ do fundo; o ganho na ficha…
 
 ## Manual MIR 2026
 

@@ -47,3 +47,25 @@ def test_day_trade_de_fi_infra_tambem_fica_fora() -> None:
     ap = livro.apurar(date(2025, 5, 31))
     assert categoria(ap, 2025, 5, Categoria.DAY_TRADE).imposto == 0
     assert [e.resultado for e in ap.exclusiva] == [D(100)]
+
+
+def test_bens_e_direitos_e_ficha_do_ganho_na_dirpf() -> None:
+    """Parecer de 09/11/2026 (Manual MIR; Guia IR 2026): FI-Infra em 07.10 e FIP-IE em 07.07, com
+    o CNPJ do fundo; o ganho na ficha Exclusiva/Definitiva, código 06 (Lei 12.431 art. 3º §2º:
+    "exclusivamente na fonte"), não em isentos."""
+    from coir.domain.fiscal import PosicaoAtivo
+    from coir.domain.relatorio import InfoAtivo
+    from coir.referencias import carregar_irpf
+    from coir.reports.irpf import _tipo_bem  # pyright: ignore[reportPrivateUsage]
+
+    pos = PosicaoAtivo(titular=1, corretora=None, conta=None, ativo=1, ticker="XPIE11", tipo=INFRA,
+                       vencimento=None, quantidade=D(10), custo=D(1000))  # fmt: skip
+
+    def info(tipo_b3: str) -> InfoAtivo:
+        return InfoAtivo(emissor="XPIE", cnpj="1", razao_social="X", especificacao="CI",
+                         tipo_b3=tipo_b3)  # fmt: skip
+
+    mapa = carregar_irpf(2025)
+    assert mapa.bens.item(_tipo_bem(pos, info("FIP-IE")) or "ACAO").codigo == "07"
+    assert mapa.bens.item(_tipo_bem(pos, info("FI-INFRA")) or "ACAO").codigo == "10"
+    assert mapa.exclusivos.linha("ganho_fundo_infra").codigo == "06"

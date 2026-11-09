@@ -72,10 +72,10 @@ PERCENTUAIS = frozenset({ALIQUOTA})
 TIPO_BEM: dict[TipoAtivo, TipoBem] = {
     TipoAtivo.ACAO: "ACAO", TipoAtivo.UNIT: "UNIT", TipoAtivo.BDR: "BDR",
     TipoAtivo.OPCAO: "OPCAO", TipoAtivo.ETF: "ETF", TipoAtivo.ETF_RF: "ETF_RF",
-    TipoAtivo.FII: "FII", TipoAtivo.DIREITO: "DIREITO",
+    TipoAtivo.FII: "FII", TipoAtivo.DIREITO: "DIREITO", TipoAtivo.FUNDO_INFRA: "FI_INFRA",
 }  # fmt: skip
 QUANTIDADE_DE = {"UNIT": "units", "BDR": "BDRs", "ETF": "cotas", "ETF_RF": "cotas",
-                 "FII": "cotas", "FIAGRO": "cotas",
+                 "FII": "cotas", "FIAGRO": "cotas", "FI_INFRA": "cotas", "FIP_IE": "cotas",
                  "DIREITO": "direitos, recibos ou bônus de subscrição"}  # fmt: skip
 ART_58 = "(IN RFB 1.585/2015 art. 58)"
 
@@ -111,6 +111,8 @@ def _tipo_bem(p: PosicaoAtivo, info: InfoAtivo | None) -> TipoBem | None:
     tipo = TIPO_BEM.get(p.tipo)
     if tipo == "FII" and info is not None and info.tipo_b3 == "FIAGRO":
         return "FIAGRO"
+    if tipo == "FI_INFRA" and info is not None and info.tipo_b3 in ("FIP-IE", "FIP-PDI"):
+        return "FIP_IE"
     return tipo
 
 
@@ -303,7 +305,7 @@ def _rendimentos(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]
               if e.tipo is TipoAtivo.ETF_RF and e.resultado > 0]  # fmt: skip
     infra = [(e.ticker, e.resultado) for e in vendas
              if e.tipo is TipoAtivo.FUNDO_INFRA and e.resultado > 0]  # fmt: skip
-    linha("isentos", "ganho_fundo_infra", infra)
+    linha("exclusivos", "ganho_fundo_infra", infra)
     if etf_rf:
         avisos.append("ETF de renda fixa: o COIR estima o ganho bruto; declare o valor líquido do "
                       "informe de rendimentos do administrador")  # fmt: skip
