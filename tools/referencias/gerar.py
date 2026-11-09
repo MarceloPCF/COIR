@@ -9,8 +9,9 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
 - ``ativos_b3.csv``: nome de pregão (nome da companhia + classe) -> ticker, como as notas imprimem;
 - ``nomes_pregao_b3.csv``: nome de pregão -> ticker com o período, do COTAHIST (como as notas
   imprimem, de 2008 em diante) e da lista de ETF de renda fixa (fora do COTAHIST); nunca apaga;
-- ``tipos_ativo_b3.csv``: UNIT, BDR, ETF e FII pela categoria da B3 (fundo só com "imobiliário" ou
-  "Fiagro" no nome; FIP, FIDC e outros ficam de fora: sem palpite);
+- ``tipos_ativo_b3.csv``: UNIT, BDR, ETF e FII pela categoria da B3 (fundo pelo cadastro de fundos
+  da B3, pelo COTAHIST ou pelo nome; FIP, FI-Infra, FIDC, direitos e recibos ficam de fora: sem
+  palpite, o motor isola o ativo);
 - ``opcoes_raiz_b3.csv``: raiz de 4 letras -> ativo-objeto (só raiz com um objeto só);
 - ``eventos_b3.csv``: desdobramentos, grupamentos, bonificações, cisões e subscrições (nunca apaga),
   com a origem de cada linha (``b3``, ``cvm_fre``, ``cvm_ipe``; ``b3+cvm_fre`` quando as duas
@@ -58,6 +59,12 @@ RE_RAIZ = re.compile(r"^[A-Z0-9]{4}")
 # ação (final 3 a 8) e unit (11); recibos (9, 10), direitos (1, 2, 12...) e lotes especiais, fora
 RE_ACAO = re.compile(r"^[A-Z0-9]{4}[3-8]$")
 RE_UNIT = re.compile(r"^[A-Z0-9]{4}11$")
+RE_ACAO_BALCAO = re.compile(r"^[A-Z0-9]{4}[3-8]B$")
+SUBSCRICAO = {
+    "DIR",
+    "REC",
+    "BNS",
+}  # direito, recibo e bônus: tratamento à parte, nunca como o papel
 # ação com final fora do padrão (RAIZ55 "PNA P N2": lote de cotação): a classe da B3 diz que é ação
 RE_ACAO_ESPECIAL = re.compile(r"^[A-Z0-9]{4}\d{2,3}$")
 CLASSES_ACAO = {"ON", "PN", "PNA", "PNB", "PNC", "PND", "PNE", "PNF", "PNG"}
@@ -570,33 +577,75 @@ def ativos(instrumentos: list[dict[str, str]], nomes: Mapping[str, str],
     return saida
 
 
-def tipos(instrumentos: list[dict[str, str]],
-          nomes: Iterable[Mapping[str, str]] = ()) -> list[dict[str, str]]:  # fmt: skip
-    """Tipo pela categoria do cadastro; o ticker que já saiu do cadastro, pelo que o COTAHIST dizia
-    dele (``nomes``: FII, Fiagro, unit e BDR). Fundo fora disso fica sem tipo: nada de palpite."""
+def _tipo_do_fundo(r: Mapping[str, str], emissores: Mapping[str, str]) -> str | None:
+    """Fundo do cadastro de instrumentos. A lista oficial de fundos da B3 vale primeiro: o nome no
+    cadastro é abreviado ("HEDGE BRASIL SHOPPING FII RESP LIM") e pode nem dizer "imobiliário". O
+    Fiagro é FII em qualquer forma, inclusive a de FIDC (Lei 8.668/1993 art. 20-D). Recibo e direito
+    de cota não: parecer do especialista de 09/11/2026."""
+    classe = (r["especificacao"].split() or [""])[0]
+    if classe in SUBSCRICAO:
+        return None
+    emissor = emissores.get(r["emissor"])
+    if emissor == "FIAGRO" or (emissor == "FII" and classe == "CI"):
+        return "FII"
+    nome = _sem_acento(r["nome"])
+    if re.search(r"\bFII\b", nome):
+        return "FII"
+    return "FII" if ("IMOB" in nome or "FIAGRO" in nome) and " PART" not in nome else None
+
+
+def _tipo_pelo_nome(ticker: str, nome: str, tipo: str) -> str:
+    """Código fora do cadastro ou sem tipo nele, pelo COTAHIST: a coluna ``tipo`` do histórico ou a
+    especificação no fim do nome de pregão ("FII ALMIRANT CI", "3M DRN", "CEEE-D ON *"). A última
+    palavra separa o que é direito ou recibo ("AES TIETE E DIR UNT", "3R PETROLEUM ON REC")."""
+    if tipo:
+        return tipo
+    partes = nome.split()
+    if not partes or SUBSCRICAO & set(partes[-2:]):
+        return ""
+    if partes[0] in ("FII", "FIAGRO") and "CI" in partes:
+        return "FII"
+    if any(p.startswith("DR") and len(p) == 3 for p in partes[1:]):
+        return "BDR"
+    if RE_ACAO_BALCAO.match(ticker) and CLASSES_ACAO & {p.rstrip("*") for p in partes}:
+        return "ACAO"  # IN RFB 1.585/2015 art. 59 I: "bolsas de valores ou mercado de balcão"
+    return "UNIT" if partes[-1] == "UNT" and RE_UNIT.match(ticker) else ""
+
+
+def tipos(instrumentos: list[dict[str, str]], nomes: Iterable[Mapping[str, str]] = (),
+          emissores: Iterable[Mapping[str, str]] = ()) -> list[dict[str, str]]:  # fmt: skip
+    """Tipo pela categoria do cadastro; sem tipo por ele, pelo que o COTAHIST dizia do ticker
+    (``nomes``). Fundo sem tipo por nenhum dos dois fica de fora: nada de palpite. Nome de pregão
+    que dá dois tipos para o mesmo código também."""
     saida: list[dict[str, str]] = []
-    vistos = {r["ticker"] for r in instrumentos}
+    tipo_emissor = {e["emissor"]: e["tipo"] for e in emissores}
+    nao_e_fii = set()
     for r in instrumentos:
         tipo = TIPO_POR_CATEGORIA.get(r["categoria"])
         if r["ticker"] in FORA_DO_ETF_RF:
             continue
-        if (r["categoria"] == "SHARES" and RE_ACAO_ESPECIAL.match(r["ticker"])
+        if (r["categoria"] == "SHARES"
+                and (RE_ACAO_ESPECIAL.match(r["ticker"]) or RE_ACAO_BALCAO.match(r["ticker"]))
                 and (r["especificacao"].split() or [""])[0] in CLASSES_ACAO):  # fmt: skip
             tipo = "ACAO"
         if r["categoria"] == "FUNDS":
-            nome = _sem_acento(r["nome"])
-            imobiliario = "IMOB" in nome or "FIAGRO" in nome
-            tipo = "FII" if imobiliario and " PART" not in nome else None
+            tipo = _tipo_do_fundo(r, tipo_emissor)
+            if tipo is None:
+                nao_e_fii.add(r["ticker"])  # FIP, FI-Infra, FIDC: o COTAHIST os põe junto dos FII
         if tipo is not None:
             saida.append(
                 {"ticker": r["ticker"], "tipo": tipo, "observacao": "B3: " + r["categoria"]}
             )
-    antigos: dict[str, str] = {}
+    com_tipo = {r["ticker"] for r in saida}
+    antigos: dict[str, set[str]] = defaultdict(set)
     for n in nomes:
-        if n.get("tipo") and n["ticker"] not in vistos:
-            antigos[n["ticker"]] = n["tipo"]
-    saida += [{"ticker": t, "tipo": antigos[t], "observacao": "B3: COTAHIST"}
-              for t in sorted(antigos)]  # fmt: skip
+        if n["ticker"] in com_tipo or n["ticker"] in nao_e_fii or n["ticker"] in FORA_DO_ETF_RF:
+            continue
+        tipo = _tipo_pelo_nome(n["ticker"], n.get("nome_pregao", ""), n.get("tipo") or "")
+        if tipo:
+            antigos[n["ticker"]].add(tipo)
+    saida += [{"ticker": t, "tipo": next(iter(antigos[t])), "observacao": "B3: COTAHIST"}
+              for t in sorted(antigos) if len(antigos[t]) == 1]  # fmt: skip
     return saida
 
 
@@ -823,8 +872,9 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
                          [*coleta.nomes, *nomes_renda_fixa(coleta.fundos, coleta.data)],
                          resumo)  # fmt: skip
     arquivos["nomes_pregao_b3.csv"] = texto_csv(COLUNAS_NOMES, nomes)
-    arquivos["tipos_ativo_b3.csv"] = texto_csv(("ticker", "tipo", "observacao"),
-                                               tipos(historico, nomes))  # fmt: skip
+    arquivos["tipos_ativo_b3.csv"] = texto_csv(
+        ("ticker", "tipo", "observacao"),
+        tipos(historico, nomes, ler_csv(pasta / "emissores_b3.csv")))  # fmt: skip
     if (pasta / "trocas_ticker.csv").is_file():
         arquivos["trocas_ticker.csv"] = texto_csv(COLUNAS_TROCAS, juntar_trocas(
             ler_csv(pasta / "trocas_ticker.csv"), resumo.trocas_candidatas, historico,

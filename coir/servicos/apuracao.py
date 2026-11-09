@@ -118,7 +118,7 @@ def _nota_bovespa(
     ops: list[OperacaoMotor] = []
     for o, negocio in zip(registro.operacoes, nota.negocios_bovespa, strict=True):
         opcao = o.mercado in ("CALL", "PUT")
-        tipo = TipoAtivo.OPCAO if opcao else refs.tipos.tipo(o.papel)
+        tipo = TipoAtivo.OPCAO if opcao else refs.tipos.tipo_ou_sem(o.papel)
         exercida = None
         if o.mercado.startswith("EXERC") and o.ativo_objeto:
             exercida = tickers.ativo(o.ativo_objeto, registro.data_pregao) or tickers.papel(
@@ -266,7 +266,7 @@ def _aviso_custodia_pme(ticker: str, dia: date, isencao: IsencaoPME) -> str:
 def _tipo_evento(fiscais: ReferenciasFiscais, ticker: str) -> TipoAtivo:
     if RE_SERIE_OPCAO.match(ticker):  # evento na série (ajuste da B3 após provento)
         return TipoAtivo.OPCAO
-    return fiscais.tipos.tipo(ticker)
+    return fiscais.tipos.tipo_ou_sem(ticker)
 
 
 def carteira_banco(

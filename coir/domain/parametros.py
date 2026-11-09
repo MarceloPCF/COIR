@@ -72,6 +72,13 @@ class TiposAtivo(Modelo):
             "(UNIT, ETF, ETF_RF, BDR, FII ou ACAO)"
         )
 
+    def tipo_ou_sem(self, ticker: str) -> TipoAtivo:
+        """Para a apuração: um ativo sem tipo fica isolado, e os outros seguem apurados."""
+        try:
+            return self.tipo(ticker)
+        except ReferenciaError:
+            return TipoAtivo.SEM_TIPO
+
 
 class RegraVencimento(Modelo):
     """Vencimento de opções sobre ações: n-ésimo dia da semana do mês; sem pregão nesse dia,

@@ -29,6 +29,7 @@ class TipoAtivo(StrEnum):
     FII = "FII"  # inclui Fiagro
     OPCAO = "OPCAO"
     FUTURO = "FUTURO"
+    SEM_TIPO = "SEM_TIPO"  # fora das tabelas: o motor isola o ativo, sem palpite de tributação
 
 
 class Categoria(StrEnum):

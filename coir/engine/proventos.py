@@ -207,7 +207,9 @@ def _provento(
     x = item.linha
     if x.movimentacao == JCP:
         return _jcp(item, params)
-    tipo_ativo = tipos.tipo(x.codigo)
+    tipo_ativo = tipos.tipo_ou_sem(x.codigo)
+    nome_tipo = ("ativo sem tipo nas tabelas do COIR" if tipo_ativo is TipoAtivo.SEM_TIPO
+                 else tipo_ativo.value)  # fmt: skip
     tipo, obs = TipoProvento.FORA_DO_ESCOPO, ""
     if x.movimentacao == DIVIDENDO:
         if tipo_ativo in ISENTO_DIVIDENDO:
@@ -218,7 +220,7 @@ def _provento(
                 "versão futura"
             )
         else:
-            obs = f"dividendo de {tipo_ativo.value}: tratamento fora da v3.0"
+            obs = f"dividendo de {nome_tipo}: tratamento fora da v3.0"
     elif x.movimentacao == RENDIMENTO:
         if tipo_ativo is TipoAtivo.FII:
             tipo = TipoProvento.RENDIMENTO_FII
@@ -236,7 +238,7 @@ def _provento(
                 "(código 06 ou 12, conforme o informe da empresa)",
             )
         else:
-            obs = f"rendimento em {tipo_ativo.value} sem dividendo ou JCP no mesmo dia: fora"
+            obs = f"rendimento em {nome_tipo} sem dividendo ou JCP no mesmo dia: fora"
     elif x.movimentacao == REEMBOLSO:
         de, acoes = _origem_reembolso(x, params, candidatos)
         informada = ""

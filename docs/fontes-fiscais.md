@@ -32,7 +32,7 @@ corrija a citação na origem e gere de novo. O documento orienta; não substitu
 | SC Cosit 42/2020 | 2 |
 | SC Cosit 63/2020 | 2 |
 | SC Cosit 67/2024 | 1 |
-| SC Cosit 145/2021 | 1 |
+| SC Cosit 145/2021 | 2 |
 | SC Cosit 224/2014 | 4 |
 | P&R IRPF | 5 |
 | P&R IRPF 2026 | 19 |
@@ -466,6 +466,7 @@ Companhias que saíram da bolsa:
 ## SC Cosit 145/2021
 
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Units fora da isenção: coincide com a RFB (SC Cosit 145/2021: só "ativos da espécie ações").
+- `tests/fiscal_cases/test_ativo_isolado.py` — test_venda_do_ativo_sem_tipo_nao_conta_como_venda_de_acao: O que não é ação não entra no limite (SC Cosit 145/2021): 20 mil de ações seguem isentos.
 
 ## SC Cosit 224/2014
 

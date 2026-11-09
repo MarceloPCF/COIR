@@ -101,7 +101,8 @@ def main(argv: list[str] | None = None) -> int:
             "nomes_pregao_b3.csv": gerar.texto_csv(gerar.COLUNAS_NOMES, linhas),
             "tipos_ativo_b3.csv": gerar.texto_csv(
                 ("ticker", "tipo", "observacao"),
-                gerar.tipos(gerar.ler_csv(args.pasta / "instrumentos_b3.csv"), linhas),
+                gerar.tipos(gerar.ler_csv(args.pasta / "instrumentos_b3.csv"), linhas,
+                            gerar.ler_csv(args.pasta / "emissores_b3.csv")),
             ),
             "pacote.json": (args.pasta / "pacote.json").read_text(encoding="utf-8"),
         })  # fmt: skip

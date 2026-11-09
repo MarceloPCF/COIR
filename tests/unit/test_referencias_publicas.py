@@ -45,7 +45,7 @@ def test_instrumentos_tipos_e_nomes_de_pregao(tmp_path: Path) -> None:
         linha.split(",")[0]: linha.split(",")[1]
         for linha in _linhas(arquivos["tipos_ativo_b3.csv"])
     }
-    # FIP de infraestrutura (AATH11) fica sem tipo: sem palpite
+    # FIP de infraestrutura (AATH11) fica sem tipo: o motor isola, sem palpite
     assert tipos == {"AAPL34": "BDR", "BOVA11": "ETF", "HGLG11": "FII", "TAEE11": "UNIT"}
     assert _linhas(arquivos["opcoes_raiz_b3.csv"]) == ["ITSA,ITSA4"]
     assert len(resumo.ativos_novos) == 11 and not resumo.trocas_candidatas

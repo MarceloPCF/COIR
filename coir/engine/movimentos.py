@@ -148,6 +148,13 @@ class Livro:
 
     def processando(self, titular: int, *ativos: int | None) -> None:
         self.em_curso = (titular, frozenset(a for a in ativos if a is not None))
+        for ativo in self.em_curso[1]:
+            if self.tipos.get(ativo) is TipoAtivo.SEM_TIPO:
+                raise MotorError(
+                    f"{self.tickers.get(ativo, ativo)} não tem tipo de ativo nas tabelas do COIR, "
+                    "e sem o tipo não se sabe como ele é tributado. Atualize as tabelas em "
+                    "Configurações; se continuar, mande a nota pela tela Suporte"
+                )
 
     def _grupo(self, de: Origem) -> int | str | None:
         if self.visao is Visao.CONTA:
@@ -524,8 +531,9 @@ def _avisar_suspeitas(livro: Livro) -> None:
         if apos and apos[-1] < 0:
             aviso = (
                 f"{dia}: venda de {quantidade} {livro.tickers[ativo]} maior que a posição "
-                f"({antes}), que ficou vendida no fim do mês ({apos[-1]}). Pode faltar um "
-                "evento corporativo (desdobramento, bonificação); confira na tela Eventos"
+                f"({antes}), que ficou vendida no fim do mês ({apos[-1]}). Pode faltar uma "
+                "nota de compra (de outra corretora ou anterior às notas importadas), a custódia "
+                "inicial (Cadastros) ou um evento corporativo (tela Eventos)"
             )
             livro.avisos.append(aviso)
 

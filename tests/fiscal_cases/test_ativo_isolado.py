@@ -8,7 +8,7 @@ from datetime import date
 
 import pytest
 
-from coir.domain.fiscal import AtivoIsolado, Categoria
+from coir.domain.fiscal import AtivoIsolado, Categoria, TipoAtivo, TipoEvento
 from coir.engine.movimentos import carteira, movimentar
 from coir.erros import MotorError
 from coir.servicos.darf import pendencia_do_mes
@@ -156,3 +156,44 @@ def test_serie_puxada_herda_o_motivo_de_quem_a_puxou() -> None:
     assert "LRENC10" in por_ticker["LREN3"].motivo
     assert por_ticker["LRENF12"].motivo == por_ticker["LREN3"].motivo
     assert "ITSAC100" in por_ticker["ITSA4"].motivo
+
+
+def _com_ativo_sem_tipo() -> Livro:
+    """Um direito de subscrição (sem tipo nas tabelas) e ações que seguem apuradas."""
+    livro = Livro()
+    livro.nota(date(2025, 1, 10), livro.op("C", "ZZZZ12", 10, "5", tipo=TipoAtivo.SEM_TIPO),
+               livro.op("C", "PETR4", 1000, "20"))  # fmt: skip
+    livro.nota(date(2025, 2, 10), livro.op("V", "ZZZZ12", 10, "2000", tipo=TipoAtivo.SEM_TIPO))
+    livro.nota(date(2025, 3, 10), livro.op("V", "PETR4", 1000, "30"))  # 30.000: ganho tributável
+    return livro
+
+
+def test_ativo_sem_tipo_fica_isolado_e_nao_para_a_apuracao() -> None:
+    ap = _com_ativo_sem_tipo().apurar(date(2025, 3, 31))
+    [isolado] = ap.isolados
+    assert (isolado.ticker, isolado.desde) == ("ZZZZ12", date(2025, 1, 10))
+    assert "não tem tipo de ativo" in isolado.motivo
+    assert "data/tipos_ativo" not in isolado.motivo  # quem lê é o usuário
+    assert isolado.meses == ((2025, 1), (2025, 2))
+    assert categoria(ap, 2025, 3, Categoria.COMUM).resultado == D("10000")
+    assert mes(ap, 2025, 2).incompletos == ("ZZZZ12",)
+
+
+def test_venda_do_ativo_sem_tipo_nao_conta_como_venda_de_acao() -> None:
+    """O que não é ação não entra no limite (SC Cosit 145/2021): 20 mil de ações seguem isentos."""
+    livro = Livro()
+    livro.nota(date(2025, 1, 10), livro.op("C", "ZZZZ12", 10, "5", tipo=TipoAtivo.SEM_TIPO),
+               livro.op("C", "PETR4", 1000, "10"))  # fmt: skip
+    livro.nota(date(2025, 2, 10), livro.op("V", "ZZZZ12", 10, "2000", tipo=TipoAtivo.SEM_TIPO),
+               livro.op("V", "PETR4", 1000, "19"))  # fmt: skip
+    fevereiro = categoria(livro.apurar(date(2025, 2, 28)), 2025, 2, Categoria.COMUM)
+    assert fevereiro.vendas_acoes == D("19000")
+    assert (fevereiro.isento, fevereiro.imposto) == (D("9000"), 0)
+
+
+def test_evento_de_ativo_sem_tipo_tambem_isola() -> None:
+    livro = Livro()
+    livro.evento(date(2024, 12, 31), "ZZZZ12", TipoEvento.CUSTODIA_INICIAL, cv="C", quantidade="10",
+                 valor="50", tipo_ativo=TipoAtivo.SEM_TIPO)  # fmt: skip
+    livro.nota(date(2025, 1, 10), livro.op("C", "PETR4", 10, "20"))
+    assert [i.ticker for i in livro.apurar(date(2025, 1, 31)).isolados] == ["ZZZZ12"]
