@@ -195,6 +195,24 @@ def _com_ano(usos: dict[str, set[Uso]]) -> dict[str, set[Uso]]:
     return saida
 
 
+def _ficha(norma: str, raiz: Path) -> str:
+    """Arquivo da ficha da norma em docs/normas/ (base normativa), ou "" se não houver."""
+    especiais = {"CTN": "lei-5172-1966-ctn", "RIR/2018": "decreto-9580-2018-rir"}
+    if norma in especiais:
+        nome = especiais[norma]
+    elif norma.startswith("P&R IRPF"):
+        nome = "pr-irpf"
+    elif norma.startswith("Manual MIR"):
+        nome = "manual-mir"
+    else:
+        m = re.match(r"(.+?)\s+([\d.]+)/(\d{4})$", norma)
+        if not m:
+            return ""
+        sigla = m.group(1).replace("Instrução Normativa", "IN").replace("Res.", "Res")
+        nome = f"{sigla} {m.group(2).replace('.', '')} {m.group(3)}".lower().replace(" ", "-")
+    return f"{nome}.md" if (raiz / "docs" / "normas" / f"{nome}.md").is_file() else ""
+
+
 def gerar(raiz: Path = RAIZ) -> str:
     brutos: dict[str, set[Uso]] = defaultdict(set)
     for origem in (_csvs, _yamls, _regras, _docstrings):
@@ -207,11 +225,15 @@ def gerar(raiz: Path = RAIZ) -> str:
         "Gerado por `uv run python -m tools.fontes_fiscais` a partir das tabelas de `data/`, de",
         "`docs/regras-fiscais.md` e das docstrings dos casos fiscais e do motor. Não edite à mão:",
         "corrija a citação na origem e gere de novo. O documento orienta; não substitui a norma.",
+        "O que cada norma diz (vigência, artigos, pontos em aberto) está na base normativa:",
+        "[`docs/normas/`](normas/README.md).",
         "",
-        "| Norma | Usos |",
-        "|---|---|",
+        "| Norma | Usos | Ficha |",
+        "|---|---|---|",
     ]
-    partes += [f"| {n} | {len(usos[n])} |" for n in sorted(usos, key=_ordem)]
+    for n in sorted(usos, key=_ordem):
+        f = _ficha(n, raiz)
+        partes.append(f"| {n} | {len(usos[n])} | {f'[{f}](normas/{f})' if f else '—'} |")
     dados = raiz / FONTES_DADOS
     if dados.is_file():  # copiado como está (edite lá)
         partes += ["", *dados.read_text(encoding="utf-8").rstrip().splitlines()]

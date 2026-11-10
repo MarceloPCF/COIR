@@ -3,50 +3,52 @@
 Gerado por `uv run python -m tools.fontes_fiscais` a partir das tabelas de `data/`, de
 `docs/regras-fiscais.md` e das docstrings dos casos fiscais e do motor. Não edite à mão:
 corrija a citação na origem e gere de novo. O documento orienta; não substitui a norma.
+O que cada norma diz (vigência, artigos, pontos em aberto) está na base normativa:
+[`docs/normas/`](normas/README.md).
 
-| Norma | Usos |
-|---|---|
-| LC 224/2025 | 8 |
-| Lei 6.404/1976 | 7 |
-| Lei 7.713/1988 | 2 |
-| Lei 8.668/1993 | 1 |
-| Lei 8.981/1995 | 10 |
-| Lei 9.249/1995 | 17 |
-| Lei 9.250/1995 | 4 |
-| Lei 9.430/1996 | 17 |
-| Lei 9.779/1999 | 1 |
-| Lei 9.959/2000 | 5 |
-| Lei 11.033/2004 | 28 |
-| Lei 11.051/2004 | 5 |
-| Lei 11.478/2007 | 6 |
-| Lei 12.350/2010 | 1 |
-| Lei 12.431/2011 | 8 |
-| Lei 13.043/2014 | 29 |
-| Lei 14.754/2023 | 3 |
-| Lei 15.265/2025 | 15 |
-| Lei 15.270/2025 | 10 |
-| MP 497/2010 | 5 |
-| IN RFB 1.585/2015 | 94 |
-| IN RFB 1.700/2017 | 2 |
-| IN RFB 1.916/2019 | 1 |
-| Res. CMN 4.880/2020 | 1 |
-| SC Cosit 37/2020 | 3 |
-| SC Cosit 42/2020 | 2 |
-| SC Cosit 63/2020 | 2 |
-| SC Cosit 67/2024 | 1 |
-| SC Cosit 145/2021 | 3 |
-| SC Cosit 166/2021 | 3 |
-| SC Cosit 224/2014 | 4 |
-| P&R IRPF | 5 |
-| P&R IRPF 2026 | 21 |
-| Manual MIR | 2 |
-| Manual MIR 2026 | 3 |
-| Programa IRPF | 8 |
-| CTN | 5 |
-| Súmula STJ 360 | 1 |
-| REsp 1.149.022/SP | 1 |
-| RIR/2018 | 6 |
-| Instrução Normativa SRF 41/1998 | 5 |
+| Norma | Usos | Ficha |
+|---|---|---|
+| LC 224/2025 | 8 | [lc-224-2025.md](normas/lc-224-2025.md) |
+| Lei 6.404/1976 | 7 | [lei-6404-1976.md](normas/lei-6404-1976.md) |
+| Lei 7.713/1988 | 2 | [lei-7713-1988.md](normas/lei-7713-1988.md) |
+| Lei 8.668/1993 | 1 | [lei-8668-1993.md](normas/lei-8668-1993.md) |
+| Lei 8.981/1995 | 10 | [lei-8981-1995.md](normas/lei-8981-1995.md) |
+| Lei 9.249/1995 | 17 | [lei-9249-1995.md](normas/lei-9249-1995.md) |
+| Lei 9.250/1995 | 4 | [lei-9250-1995.md](normas/lei-9250-1995.md) |
+| Lei 9.430/1996 | 17 | [lei-9430-1996.md](normas/lei-9430-1996.md) |
+| Lei 9.779/1999 | 1 | [lei-9779-1999.md](normas/lei-9779-1999.md) |
+| Lei 9.959/2000 | 5 | [lei-9959-2000.md](normas/lei-9959-2000.md) |
+| Lei 11.033/2004 | 28 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
+| Lei 11.051/2004 | 5 | [lei-11051-2004.md](normas/lei-11051-2004.md) |
+| Lei 11.478/2007 | 6 | [lei-11478-2007.md](normas/lei-11478-2007.md) |
+| Lei 12.350/2010 | 1 | [lei-12350-2010.md](normas/lei-12350-2010.md) |
+| Lei 12.431/2011 | 8 | [lei-12431-2011.md](normas/lei-12431-2011.md) |
+| Lei 13.043/2014 | 29 | [lei-13043-2014.md](normas/lei-13043-2014.md) |
+| Lei 14.754/2023 | 3 | [lei-14754-2023.md](normas/lei-14754-2023.md) |
+| Lei 15.265/2025 | 15 | [lei-15265-2025.md](normas/lei-15265-2025.md) |
+| Lei 15.270/2025 | 10 | [lei-15270-2025.md](normas/lei-15270-2025.md) |
+| MP 497/2010 | 5 | [mp-497-2010.md](normas/mp-497-2010.md) |
+| IN RFB 1.585/2015 | 94 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
+| IN RFB 1.700/2017 | 2 | [in-rfb-1700-2017.md](normas/in-rfb-1700-2017.md) |
+| IN RFB 1.916/2019 | 1 | [in-rfb-1916-2019.md](normas/in-rfb-1916-2019.md) |
+| Res. CMN 4.880/2020 | 1 | [res-cmn-4880-2020.md](normas/res-cmn-4880-2020.md) |
+| SC Cosit 37/2020 | 3 | [sc-cosit-37-2020.md](normas/sc-cosit-37-2020.md) |
+| SC Cosit 42/2020 | 2 | [sc-cosit-42-2020.md](normas/sc-cosit-42-2020.md) |
+| SC Cosit 63/2020 | 2 | [sc-cosit-63-2020.md](normas/sc-cosit-63-2020.md) |
+| SC Cosit 67/2024 | 1 | [sc-cosit-67-2024.md](normas/sc-cosit-67-2024.md) |
+| SC Cosit 145/2021 | 3 | [sc-cosit-145-2021.md](normas/sc-cosit-145-2021.md) |
+| SC Cosit 166/2021 | 3 | [sc-cosit-166-2021.md](normas/sc-cosit-166-2021.md) |
+| SC Cosit 224/2014 | 4 | [sc-cosit-224-2014.md](normas/sc-cosit-224-2014.md) |
+| P&R IRPF | 5 | [pr-irpf.md](normas/pr-irpf.md) |
+| P&R IRPF 2026 | 21 | [pr-irpf.md](normas/pr-irpf.md) |
+| Manual MIR | 2 | [manual-mir.md](normas/manual-mir.md) |
+| Manual MIR 2026 | 3 | [manual-mir.md](normas/manual-mir.md) |
+| Programa IRPF | 8 | — |
+| CTN | 5 | [lei-5172-1966-ctn.md](normas/lei-5172-1966-ctn.md) |
+| Súmula STJ 360 | 1 | — |
+| REsp 1.149.022/SP | 1 | — |
+| RIR/2018 | 6 | [decreto-9580-2018-rir.md](normas/decreto-9580-2018-rir.md) |
+| Instrução Normativa SRF 41/1998 | 5 | [in-srf-41-1998.md](normas/in-srf-41-1998.md) |
 
 ## Fontes dos dados públicos (pacote de referências)
 
