@@ -262,8 +262,9 @@ def test_propostas_do_pacote_com_data_ex_e_quantidade_pela_posicao(demo: Path) -
     assert "custo atribuído" in do_pacote[TipoEvento.BONIFICACAO].nota
     grupamento = do_pacote[TipoEvento.GRUPAMENTO]  # 300 x 0,33 = 99: saem 201
     assert (grupamento.dados.cv, grupamento.dados.quantidade) == ("V", 201)
-    cisao = do_pacote[TipoEvento.CISAO]  # 300 x 28,29% = 84,87: 84 GOAU4, sem percentual
-    assert (cisao.dados.ticker_destino, cisao.dados.quantidade_destino) == ("GOAU4", 84)
+    # 300 x 28,29% = 84,87 GOAU4, sem percentual; a fração 0,87 fica na posição até o leilão
+    cisao = do_pacote[TipoEvento.CISAO]
+    assert (cisao.dados.ticker_destino, cisao.dados.quantidade_destino) == ("GOAU4", D("84.87"))
     assert cisao.dados.percentual_custo is None and "percentual" in cisao.nota
     assert len([p for p in lista if p.codigo == "GGBR4"]) == 4  # o de 2008 não atinge a posição
     eventos.salvar(demo, 1, desdobro.dados, REFS, FISCAIS)

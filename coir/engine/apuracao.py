@@ -131,6 +131,8 @@ def apurar(
     meses = [_marcar(m, isolados) for m in meses]
     for titular, texto in _limite_pelo_sem_tipo(movimentos, meses, parametros):
         avisos[titular].append(texto)
+    for titular, texto in _limite_pelo_day_trade(meses, parametros):
+        avisos[titular].append(texto)
     for i in isolados:
         quando = ", ".join(f"{mes:02d}/{ano}" for ano, mes in i.meses) or "nenhum mês"
         avisos[i.titular].append(
@@ -188,7 +190,7 @@ def _limite_pelo_sem_tipo(
             continue
         comum = next(r for r in mes.categorias if r.categoria is Categoria.COMUM)
         limite = params.decimal("limite_isencao_acoes", fim_do_mes(mes.ano, mes.mes))
-        if comum.vendas_acoes - sem[chave] <= limite < comum.vendas_acoes:
+        if comum.vendas_limite - sem[chave] <= limite < comum.vendas_limite:
             nomes = ", ".join(sorted(tickers[chave]))
             saida.append((mes.titular, (
                 f"{mes.mes:02d}/{mes.ano}: a venda de {nomes}, sem tipo de ativo nas tabelas, foi "
@@ -198,6 +200,31 @@ def _limite_pelo_sem_tipo(
                 "tabelas em Configurações ou mande a nota pela tela Suporte"
             )))  # fmt: skip
     return saida
+
+
+def _limite_pelo_day_trade(
+    meses: Sequence[MesApurado], params: ParametrosFiscais
+) -> list[tuple[int, str]]:
+    """Meses em que a venda de ações em day trade, somada às vendas comuns (parâmetro
+    day_trade_na_soma_limite), fez o mês passar do limite de isenção: o aviso explica por que o
+    ganho comum foi tributado."""
+    saida: list[tuple[int, str]] = []
+    for mes in meses:
+        comum = next(r for r in mes.categorias if r.categoria is Categoria.COMUM)
+        limite = params.decimal("limite_isencao_acoes", fim_do_mes(mes.ano, mes.mes))
+        if comum.vendas_acoes <= limite < comum.vendas_limite:
+            dt = comum.vendas_limite - comum.vendas_acoes
+            saida.append((mes.titular, (
+                f"{mes.mes:02d}/{mes.ano}: as vendas de ações em day trade ({_reais(dt)}) entram "
+                f"na soma do limite de isenção de {_reais(limite)} e fizeram o mês passar dele "
+                "(Lei 11.033/2004 art. 3º I; decisão de 10/11/2026): o ganho de ações em operações "
+                "comuns do mês, se houver, não é isento"
+            )))  # fmt: skip
+    return saida
+
+
+def _reais(v: Decimal) -> str:
+    return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _exclusiva(m: Movimento) -> TributacaoExclusiva:
@@ -236,10 +263,13 @@ def _apurar_titular(
     prejuizo = {c: ZERO for c in Categoria}
     # saldo inicial: substitui o prejuízo acumulado no primeiro mês apurado depois do 31/12 dele
     iniciais = sorted((s for s in saldos_iniciais if s.titular == titular), key=lambda s: s.ano)
-    vendas_mes: dict[tuple[int, int], Decimal] = defaultdict(lambda: ZERO)
+    vendas_mes: dict[tuple[int, int], Decimal] = defaultdict(lambda: ZERO)  # decide o limite
+    comuns_mes: dict[tuple[int, int], Decimal] = defaultdict(lambda: ZERO)  # só operações comuns
     for (t, ano, mes), movs in por_mes.items():
         if t == titular:
             vendas_mes[(ano, mes)] = sum((_vendas_no_limite(m, params) for m in movs), ZERO)
+            comuns_mes[(ano, mes)] = sum((_vendas_no_limite(m, params) for m in movs
+                                          if m.categoria is Categoria.COMUM), ZERO)  # fmt: skip
     saldo = SaldoPorFicha()
     acumulado_darf = ZERO
     irrf_ano = Retido()
@@ -258,7 +288,7 @@ def _apurar_titular(
         categorias: list[ResultadoCategoria] = []
         for cat in Categoria:
             r = _categoria(cat, [m for m in movs if m.categoria is cat], prejuizo[cat], params, dia,
-                           vendas_mes)  # fmt: skip
+                           vendas_mes, comuns_mes)  # fmt: skip
             prejuizo[cat] = r.prejuizo_a_compensar
             categorias.append(r)
         imposto = sum((r.imposto for r in categorias), ZERO)
@@ -322,8 +352,9 @@ def conta_na_isencao(m: Movimento, params: ParametrosFiscais) -> bool:
 
 
 def _vendas_no_limite(m: Movimento, params: ParametrosFiscais) -> Decimal:
-    """Valor bruto que entra na soma do limite de R$ 20 mil (units só com o parâmetro)."""
-    if m.categoria is not Categoria.COMUM:
+    """Valor bruto que entra na soma do limite de R$ 20 mil (units só com o parâmetro; a venda
+    em day trade só traz valor com o parâmetro ``day_trade_na_soma_limite``)."""
+    if m.categoria not in (Categoria.COMUM, Categoria.DAY_TRADE):
         return ZERO
     if m.tipo is TipoAtivo.UNIT and not params.booleano("units_na_isencao", m.data):
         return ZERO
@@ -337,15 +368,17 @@ def _categoria(
     params: ParametrosFiscais,
     dia: date,
     vendas_mes: dict[tuple[int, int], Decimal],
+    comuns_mes: dict[tuple[int, int], Decimal],
 ) -> ResultadoCategoria:
     por_grupo = {g: ZERO for g in Grupo}
     for m in movs:
         por_grupo[m.grupo] += m.resultado
     total = sum(por_grupo.values(), ZERO)
-    vendas = ZERO
+    vendas = no_limite = ZERO
     isento = ZERO
     if cat is Categoria.COMUM:
-        vendas = vendas_mes.get((dia.year, dia.month), ZERO)
+        vendas = comuns_mes.get((dia.year, dia.month), ZERO)
+        no_limite = vendas_mes.get((dia.year, dia.month), ZERO)
         # resultado isentável por mês de referência do limite (o da venda, na venda a descoberto)
         por_ref: dict[tuple[int, int], Decimal] = defaultdict(lambda: ZERO)
         for m in movs:
@@ -372,7 +405,8 @@ def _categoria(
     base = saldo if saldo > 0 else ZERO
     return ResultadoCategoria(
         categoria=cat, por_grupo={g: centavos(v) for g, v in por_grupo.items()},
-        resultado=resultado, vendas_acoes=centavos(vendas), isento=centavos(isento),
+        resultado=resultado, vendas_acoes=centavos(vendas), vendas_limite=centavos(no_limite),
+        isento=centavos(isento),
         prejuizo_anterior=prejuizo_anterior, base=base,
         prejuizo_a_compensar=saldo if saldo < 0 else ZERO, aliquota=aliquota,
         imposto=truncar(base * aliquota),

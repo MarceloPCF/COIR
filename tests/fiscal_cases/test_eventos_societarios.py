@@ -255,3 +255,19 @@ def test_c3c_quantidade_truncada_pela_b3_fica_com_o_custo_inteiro() -> None:
     [serie] = livro.carteira(date(2024, 12, 16))
     assert (serie.quantidade, serie.custo) == (1030, D(502))
     assert (serie.custo / serie.quantidade).quantize(D("0.00000001")) == D("0.48737864")
+
+
+def test_grupamento_com_fracao_guarda_a_fracao_ate_o_leilao() -> None:
+    """Decisão do usuário de 10/11/2026: a fração do evento fica na posição até o leilão, que a
+    vende pelo custo médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º).
+    105 AAAA3 a 10,00 (1.050,00); grupamento 10:1 -> 10,5 ações (V 94,5), PM 100,00. Leilão de
+    0,5 por 21,37: custo 50,00, perda 28,63; ficam 10 ações por 1.000,00."""
+    livro = Livro()
+    livro.nota(date(2025, 2, 3), livro.op("C", "AAAA3", 105, "10"))
+    livro.evento(date(2025, 4, 1), "AAAA3", TipoEvento.GRUPAMENTO, "V", "94.5")
+    assert _posicoes(livro.carteira(date(2025, 4, 1))) == {(None, "AAAA3"): (D("10.5"), D(1050))}
+    livro.evento(date(2025, 4, 15), "AAAA3", TipoEvento.LEILAO_FRACAO, quantidade="0.5",
+                 valor="21.37")  # fmt: skip
+    assert _posicoes(livro.carteira(date(2025, 4, 30))) == {(None, "AAAA3"): (D(10), D(1000))}
+    movs = livro.movimentos(date(2025, 4, 30))
+    assert [m.resultado for m in movs if m.origem.startswith("evento:")] == [0, D("-28.63")]

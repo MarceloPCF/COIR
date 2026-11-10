@@ -70,10 +70,12 @@ def test_nota_mista_reparte_o_irrf_pelas_vendas_comuns() -> None:
 
 def test_irrf_de_fii_usado_em_dezembro_nao_vai_para_a_declaracao() -> None:
     """10/12/2026: V 250 KNRI11 a 160 = 40.000 (PM 168, prejuízo FII -2.000), V 300 WEGE3 a 50 =
-    15.000 (ganho 1.200, isento: vendas <= 20.000) e day trade PETR4 1.000 a 30,00/30,50 (ganho
-    500; 20% = 100,00; IRRF 1% 5,00). IRRF 0,005% 2,75: FII 2,00 (40/55) e comuns 0,75. O saldo
-    único deduz 5,00 + 0,75 + 2,00: DARF 92,25 (vence 29/01/2027), nada para a declaração; os
-    2,00 de origem FII ficam na ficha de comuns (sem uso duplo)."""
+    15.000 (ganho 1.200) e day trade PETR4 1.000 a 30,00/30,50 (ganho 500; 20% = 100,00; IRRF 1%
+    5,00). A venda do day trade (30.500) entra na soma do limite (day_trade_na_soma_limite,
+    decisão de 10/11/2026): 45.500 > 20.000, e o ganho de WEGE3 paga 15% = 180,00. IRRF 0,005%
+    2,75: FII 2,00 (40/55) e comuns 0,75. O saldo único deduz 5,00 + 0,75 + 2,00: DARF
+    280,00 - 7,75 = 272,25 (vence 29/01/2027), nada para a declaração; os 2,00 de origem FII
+    ficam na ficha de comuns (sem uso duplo)."""
     livro = Livro()
     livro.nota(date(2026, 11, 3), livro.op("C", "KNRI11", 250, "168", tipo=FII),
                livro.op("C", "WEGE3", 300, "46"))  # fmt: skip
@@ -82,10 +84,10 @@ def test_irrf_de_fii_usado_em_dezembro_nao_vai_para_a_declaracao() -> None:
                livro.op("V", "PETR4", 1000, "30.50"), irrf="2.75", irrf_dt="5.00")  # fmt: skip
     ap = livro.apurar(date(2026, 12, 31))
     dez = mes(ap, 2026, 12)
-    assert (dez.darf, dez.vencimento) == (D("92.25"), date(2027, 1, 29))
+    assert (dez.darf, dez.vencimento) == (D("272.25"), date(2027, 1, 29))
     comuns, fii = dez.ficha(Ficha.COMUNS), dez.ficha(Ficha.FII)
     assert (comuns.irrf_day_trade_mes, comuns.irrf_mes, comuns.a_pagar) == (
-        D("5.00"), D("2.75"), D("92.25"))  # fmt: skip
+        D("5.00"), D("2.75"), D("272.25"))  # fmt: skip
     assert (fii.irrf_mes, fii.irrf_a_compensar) == (0, 0)
     [anual] = ap.irrf_anual
     assert anual.saldo == 0

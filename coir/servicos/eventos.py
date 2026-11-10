@@ -1010,10 +1010,14 @@ def _fator(ev: dict[str, str], tipo: TipoEvento | None) -> str:
 
 
 def _fracao(total: Decimal) -> tuple[Decimal, str]:
+    """Quantidade do evento com a fração: ela fica na posição até o leilão, que a vende pelo custo
+    médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º; decisão do usuário de
+    10/11/2026). Sem isso, o leilão tirava a fração das ações inteiras e a posição ficava
+    fracionada."""
     inteiro = total.to_integral_value(ROUND_FLOOR)
-    nota = (f"fração de {total - inteiro} vai a leilão: lance o leilão de fração quando for "
-            "creditado") if total != inteiro else ""  # fmt: skip
-    return inteiro, nota
+    nota = (f"fração de {total - inteiro} fica na posição até o leilão: lance o leilão de fração "
+            "quando for creditado") if total != inteiro else ""  # fmt: skip
+    return total, nota
 
 
 def _resgate(
@@ -1075,16 +1079,17 @@ def _evento_acao(
         return replace(base, tipo=TipoEvento.CISAO, cv=None, quantidade=q, ticker_destino=destino,
                        quantidade_destino=recebida), nota  # fmt: skip
     if tipo is TipoEvento.GRUPAMENTO:
-        inteiro, nota = _fracao(q * fator)
+        quantidade, nota = _fracao(q * fator)
         if fator <= GRUPAMENTO_EXTREMO:
             nota = "; ".join(x for x in (AVISO_GRUPAMENTO_EXTREMO, nota) if x)
-        return replace(base, cv="V", quantidade=q - inteiro), nota
-    inteiro, nota = _fracao(q * fator)
+        return replace(base, cv="V", quantidade=q - quantidade), nota
+    quantidade, nota = _fracao(q * fator)
     if tipo is TipoEvento.SUBSCRICAO:
+        quantidade = quantidade.to_integral_value(ROUND_FLOOR)  # só se subscrevem ações inteiras
         preco = Decimal(ev["preco"] or 0)
         dia = date.fromisoformat(ev["data_subscricao"]) if ev["data_subscricao"] else data_ex
-        return replace(base, data=dia, quantidade=inteiro,
-                       valor=(inteiro * preco).quantize(Decimal("0.01"))), (
+        return replace(base, data=dia, quantidade=quantidade,
+                       valor=(quantidade * preco).quantize(Decimal("0.01"))), (
             "; ".join(x for x in (classe, f"subscrição é opcional (preço {preco}, período "
                                           f"{ev['periodo']}): lance só o que você exerceu")
                       if x))  # fmt: skip
@@ -1093,14 +1098,14 @@ def _evento_acao(
         # com o custo total; sem ele, o usuário informa (com custo zero o PM da venda fica errado)
         custo = Decimal(ev.get("custo_atribuido") or 0)
         if custo:
-            valor = (inteiro * custo).quantize(Decimal("0.01"), ROUND_HALF_UP)
+            valor = (quantidade * custo).quantize(Decimal("0.01"), ROUND_HALF_UP)
             pedido = (f"custo atribuído de R$ {custo} por ação, do aviso aos acionistas "
                       "(confira)")  # fmt: skip
             nota = "; ".join(x for x in (classe, pedido, nota) if x)
-            return replace(base, quantidade=inteiro, valor=valor), nota
+            return replace(base, quantidade=quantidade, valor=valor), nota
         nota = "; ".join(x for x in (classe, "informe o custo atribuído (aviso aos acionistas)",
                                      nota) if x)  # fmt: skip
-    return replace(base, quantidade=inteiro), nota
+    return replace(base, quantidade=quantidade), nota
 
 
 def _ajuste_serie(

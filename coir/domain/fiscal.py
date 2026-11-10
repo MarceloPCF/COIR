@@ -330,7 +330,12 @@ class ResultadoCategoria(Modelo):
     categoria: Categoria
     por_grupo: dict[Grupo, Decimal]
     resultado: Decimal  # soma dos grupos tributáveis no mês (sem o isento)
-    vendas_acoes: Decimal = ZERO  # só COMUM: vendas de ações à vista no mês (limite)
+    # só COMUM: vendas de ações à vista em operações comuns no mês (campo "Total em alienações de
+    # ações (op. comuns)" do demonstrativo de renda variável)
+    vendas_acoes: Decimal = ZERO
+    # só COMUM: soma que decide o limite de R$ 20 mil (as comuns + as de day trade, com o parâmetro
+    # day_trade_na_soma_limite)
+    vendas_limite: Decimal = ZERO
     isento: Decimal = ZERO  # só COMUM: ganho de ações à vista isento
     prejuizo_anterior: Decimal = ZERO  # saldo (<= 0) de meses anteriores
     base: Decimal = ZERO  # resultado + prejuízo anterior, se positivo

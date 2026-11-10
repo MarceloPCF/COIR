@@ -9,11 +9,11 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R1 | Operações comuns (ações, units, ETF, BDR, opções, futuros, termo): 15% sobre ganho líquido mensal | Categoria COMUM, base única com subtotais por mercado | IN RFB 1.585/2015 | A |
 | R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A |
 | R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A |
-| R4 | Isenção: vendas de AÇÕES no mercado à vista ≤ R$ 20.000 no mês (todas as corretoras/contas do CPF) | Soma do valor **bruto** das alienações por titular/mês (fracionário e venda por exercício incluídos); fora: units, ETF, BDR, FII, opções, futuros, termo e day trade | Lei 11.033/2004 art. 3º I | A |
+| R4 | Isenção: vendas de AÇÕES no mercado à vista ≤ R$ 20.000 no mês (todas as corretoras/contas do CPF) | Soma do valor **bruto** das alienações por titular/mês (fracionário, venda por exercício, venda na liquidação do termo e venda em day trade incluídos; esta última pelo parâmetro `day_trade_na_soma_limite`, decisão de 10/11/2026); a isenção não alcança units, ETF, BDR, FII, opções, futuros, termo e day trade | Lei 11.033/2004 art. 3º I | A |
 | R4a | Units NÃO entram na isenção | Parâmetro `units_na_isencao = false` | decisão do usuário (05/10/2026) | A |
 | R5 | Prejuízo de mês isento continua compensável | Parâmetro `prejuizo_mes_isento_compensavel = true` | Lei 8.981/1995 art. 72 §4º; Manual MIR 2026; decisão do usuário (14/10/2026) | A |
 | R6 | IRRF 0,005% s/ vendas comuns (dispensado se ≤ R$ 1; não incide no exercício nem em PME) e 1% s/ ganho de DT | Ler da nota; os dois abatem o imposto total do mês (o de DT consumido primeiro); saldo aos meses seguintes do ano; em dezembro, o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT: divergência de orientação registrada | M |
-| R7 | Custo de aquisição inclui corretagem, emolumentos e taxas; na venda os custos reduzem a alienação | Rateio proporcional ao valor da operação na nota | IN RFB 1.585/2015 art. 56 §§3º e 4º; P&R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A |
+| R7 | Custo de aquisição inclui corretagem, emolumentos e taxas; na venda os custos reduzem a alienação | Rateio proporcional ao valor da operação na nota; a taxa de custódia fica fora (parâmetro `custodia_no_custo = false`, decisão de 10/11/2026) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A |
 | R8 | Bonificação: soma quantidade com custo atribuído; desdobramento/grupamento: só quantidade; redução de capital com restituição reduz o custo. Dinheiro junto de incorporação, por resgate de ações (PETZ3 -> AUAU3): o custo é repartido pelo valor atribuído pela companhia, a parte da ação resgatada sai por `REDUCAO_CAPITAL` na data ex (o valor é esse custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026). Incorporação/fusão/cisão/conversão: o custo das ações entregues vai para as recebidas na proporção da assembleia, sem resultado (cisão: percentual divulgado pela companhia, sobre o custo de antes do evento; sem percentual, bloqueia); incorporação de ações (art. 252): custo mantido, com aviso da divergência da RFB (parâmetro `incorporacao_acoes_tratamento`); ajuste de série de opção pela B3: sem efeito fiscal (código e quantidade mudam, custo e vencimento ficam); fração vendida em leilão: alienação pelo PM no mês do crédito, entra no limite de isenção (parâmetro `leilao_fracao_isentavel`). Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF 2022 pergunta 578 (substituição de ações; não consta das edições 2024 e 2026; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A |
 | R9 | Exercício de opções: prêmio integra custo (titular de call) / valor de venda (lançador de call); casos simétricos para put | Vincular opção, ativo-objeto e negócio de exercício; 4 casos com exemplo. A nota traz só o código da opção + "E" (ex.: KLBNO193E), às vezes + classe; ativo-objeto = 4 letras + classe (ON→3, PN→4, PNA→5, PNB→6, UNT→11); sem classe: classe da abertura da série, depois opcoes.csv | IN RFB 1.585/2015 | M |
 | R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A |
@@ -402,7 +402,10 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
   tela mostra a diferença (DARF complementar no Sicalc; restituição pelo PER/DCOMP), sem
   imputação automática.
 - A denúncia espontânea (CTN art. 138; STJ REsp 1.149.022/SP; Súmula 360) fica como nota na tela:
-  o COIR calcula como o Sicalc.
+  o COIR calcula como o Sicalc. A LC 236/2026 (vigor na publicação; 04/09/2026) deu ao art. 138 a
+  redação "inclusive em relação à multa de mora"; o Sicalc continuou cobrando a multa (caso C8b,
+  07/10/2026). Decisão do usuário de 10/11/2026 (leitura conservadora): o COIR mantém a multa até um
+  ato da RFB; reavaliar a cada release (ficha `docs/normas/lc-236-2026.md`).
 - Juros (art. 61 §3º c/c art. 5º §3º; F7a, 19/10/2026): soma simples da Selic mensal (BCB SGS 4390,
   a mesma do Sicalc, em `data/selic_mensal.csv`) dos meses entre o do vencimento e o do pagamento, sem
   contar nenhum dos dois, mais 1% no mês do pagamento; pago no mesmo mês do vencimento, zero. Base: o
@@ -472,6 +475,30 @@ corretoras diferentes, com código e contas próprios (decisão do usuário). Fi
 - Incorporação, cisão ou leilão de lote isento de PME dentro do prazo da isenção: falha alto (sem norma nem caso real).
 - Venda a termo: falha alto (só a compra a termo está implementada).
 - `data/feriados.csv` cobre até 2027: estender antes de apurar dezembro de 2027.
+
+## Decisões da revisão contra a base normativa (10/11/2026)
+
+Revisão completa em `docs/normas/revisao-2026-11-10.md`. O usuário pediu leitura conservadora nas
+cinco perguntas principais:
+
+1. Multa de mora depois da LC 236/2026: mantida como o Sicalc (ver a seção da DARF).
+2. Taxa de custódia: sai do custo e não reduz a alienação (SC Cosit 227/2018 §§17-18; parâmetro
+   `custodia_no_custo = false`; a conferência da nota continua somando todos os custos impressos).
+3. Fração de desdobramento, grupamento, bonificação e cisão propostos pelo pacote da B3: a proposta
+   leva a quantidade com a fração, que fica na posição até o leilão; o leilão a vende pelo custo
+   médio (IN 1.585 art. 58 caput; Lei 6.404 art. 169 §3º). A subscrição continua só com ações
+   inteiras. A proposta tirada só da movimentação da B3 (sem o pacote) traz a quantidade creditada,
+   sem a fração: aí o usuário lança a fração.
+4. Vencimento da DARF: pelo mês do pregão, como antes (IN 1.585 art. 56 §5º; IN 2.164/2023 art. 3º;
+   P&R pergunta 730). A pergunta 745 (mês da liquidação) dá um prazo maior; o COIR paga antes.
+5. Venda de ação em day trade: entra na soma do limite de R$ 20 mil do mês (Lei 11.033 art. 3º I;
+   IN 1.585 art. 59 §2º I só afasta a isenção do próprio day trade; P&R 2026 pergunta 707);
+   parâmetro `day_trade_na_soma_limite = true`. O campo "Total em alienações de ações (op.
+   comuns)" do demonstrativo continua só com as operações comuns (`vendas_acoes`); a soma do limite
+   fica em `vendas_limite`, e a apuração avisa quando o day trade fez o mês passar do limite. Ponto
+   em aberto: o rótulo do campo do programa da RFB sugere que ele mede o limite sem o day trade; o
+   gabarito real não mudou de imposto com a regra (os meses afetados já passavam do limite ou não
+   tinham venda comum).
 
 ## Pontos do v2.02 a corrigir (ver docs/PLANO.md, Diagnóstico)
 - Isenção inferida por "IRRF < R$ 1" (falha com 2+ corretoras; pode isentar ETF).
