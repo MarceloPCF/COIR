@@ -59,3 +59,14 @@ def test_baixa_menor_que_a_posicao_deixa_o_resto_com_aviso() -> None:
     ap = livro.apurar(date(2026, 3, 31))
     assert categoria(ap, 2026, 3, Categoria.COMUM).resultado == D(-40)
     assert [a for _, a in ap.avisos_titular if "continuam na posição" in a]
+
+
+def test_sem_quantidade_baixa_todo_o_saldo() -> None:
+    """A linha "Direitos de Subscrição - Não Exercido" da B3 vem sem quantidade: o evento sem ela
+    baixa todo o saldo comprado (80 por 0,50 = 40,00), sem aviso."""
+    livro = Livro()
+    livro.nota(date(2026, 3, 10), livro.op("C", "XPTO1", 80, "0.5", tipo=DIR))
+    livro.evento(date(2026, 3, 27), "XPTO1", VENCEU, tipo_ativo=DIR)
+    ap = livro.apurar(date(2026, 3, 31))
+    assert categoria(ap, 2026, 3, Categoria.COMUM).resultado == D(-40)
+    assert not [a for _, a in ap.avisos_titular if "continuam na posição" in a]

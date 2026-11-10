@@ -1139,13 +1139,13 @@ def _direito_nao_exercido(livro: Livro, e: Evento) -> None:
     pó; art. 64 caput; SC Cosit 166/2021; parecer do especialista de 09/11/2026). Fora do limite
     de R$ 20 mil: não há valor de alienação. Baixa o menor entre a quantidade do evento e a
     posição: o que passa da posição são direitos recebidos sem custo, que nunca entraram no livro
-    e não dão resultado; o que sobra da posição continua em aberto, com aviso."""
+    e não dão resultado; o que sobra da posição continua em aberto, com aviso. Sem quantidade (a
+    linha "não exercido" da B3 vem sem ela), baixa todo o saldo."""
     chave = _chave_evento(livro, e)
     pos = livro.posicoes[chave]
     if pos.quantidade < 0:
         raise MotorError(f"{_nome(e)} em posição vendida")
-    pedida = e.quantidade or ZERO
-    quantidade = min(pedida, pos.quantidade)
+    quantidade = pos.quantidade if e.quantidade is None else min(e.quantidade, pos.quantidade)
     if quantidade <= 0:
         return  # só direitos recebidos sem custo: nada a baixar
     baixa = pos.vender(quantidade, ZERO)

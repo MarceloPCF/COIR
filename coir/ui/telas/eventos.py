@@ -68,8 +68,8 @@ AJUDA = {
     TipoEvento.DIREITO_NAO_EXERCIDO: "Direito, recibo ou bônus de subscrição comprado que venceu "
                                      "sem exercício nem venda: o custo pago vira perda em "
                                      "operações comuns, fora do limite de isenção. Use o fim do "
-                                     "prazo de exercício. Os recebidos sem custo não dão "
-                                     "resultado.",
+                                     "prazo de exercício. Sem quantidade, baixa todo o saldo; "
+                                     "os recebidos sem custo não dão resultado.",
 }  # fmt: skip
 ROTULO_DATA = {
     TipoEvento.SUBSCRICAO: "Data da subscrição",
@@ -88,7 +88,7 @@ ROTULO_QUANTIDADE = {
     TipoEvento.INCORPORACAO: "Quantidade de origem",
     TipoEvento.CISAO: "Quantidade de origem (posição da conta)",
     TipoEvento.LEILAO_FRACAO: "Fração vendida",
-    TipoEvento.DIREITO_NAO_EXERCIDO: "Direitos que venceram",
+    TipoEvento.DIREITO_NAO_EXERCIDO: "Direitos que venceram (vazio: todo o saldo)",
 }
 ROTULO_VALOR = {
     TipoEvento.BONIFICACAO: "Custo atribuído",

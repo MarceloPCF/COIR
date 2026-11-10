@@ -217,8 +217,8 @@ NOTA_DATA_EX = ("a B3 informa a data do crédito: use a data ex (primeiro pregã
                 "como decidido para os eventos")  # fmt: skip
 SEM_CV = frozenset({TipoEvento.TRANSFERENCIA, *TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO,
                     TipoEvento.DIREITO_NAO_EXERCIDO})  # fmt: skip
-QUANTIDADE_OBRIGATORIA = EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO,
-                                             TipoEvento.DIREITO_NAO_EXERCIDO}  # fmt: skip
+# direito não exercido sem quantidade baixa todo o saldo: a linha "não exercido" da B3 vem sem ela
+QUANTIDADE_OBRIGATORIA = EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO}
 AVISO_INCORPORACAO_ACOES = (
     "incorporação de ações (Lei 6.404 art. 252): o COIR mantém o custo (posição do Judiciário); a "
     "Receita trata como alienação com ganho de capital (SC Cosit 224/2014). Avalie com o seu "
@@ -650,6 +650,9 @@ def propostas(
             ticker = (f"{recibo['raiz']}{3 if recibo['classe'] == '9' else 4}" if recibo
                       else codigo)  # fmt: skip
             recebido = tipo is TipoEvento.INCORPORACAO  # a B3 mostra o crédito de B
+            # restituição de capital e amortização: a quantidade da B3 é a posição sobre a qual o
+            # dinheiro foi pago, não ações ou cotas canceladas; levada ao evento, zeraria a posição
+            so_valor = tipo is TipoEvento.REDUCAO_CAPITAL
             data, nota_data = m.data, NOTA_DATA_EX
             if tipo is TipoEvento.DIREITO_NAO_EXERCIDO:
                 data, nota_data = _fim_do_prazo(codigo, m.data, fiscais, pasta)
@@ -657,7 +660,7 @@ def propostas(
                 nota_data = AMORTIZACAO_FUNDO
             dados = DadosEvento(
                 tipo=tipo, data=data, conta=conta, ticker="" if recebido else ticker, cv=cv,
-                quantidade=None if recebido else m.quantidade,
+                quantidade=None if recebido or so_valor else m.quantidade,
                 valor=(m.valor or Decimal(0)) if tipo in (TipoEvento.REDUCAO_CAPITAL,
                                                          TipoEvento.LEILAO_FRACAO) else Decimal(0),
                 ticker_destino=ticker if recebido else None,

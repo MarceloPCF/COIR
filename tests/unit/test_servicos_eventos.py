@@ -608,6 +608,27 @@ def test_so_o_evento_mais_antigo_do_ativo_e_seguro_e_o_numero_e_o_que_entra(demo
     assert eventos.listar(demo, 1) == []
 
 
+def test_restituicao_de_capital_proposta_so_com_o_valor(demo: Path) -> None:
+    """A quantidade da linha da B3 é a posição sobre a qual o dinheiro foi pago: levada ao evento
+    (que tira), zeraria a posição e a venda seguinte viraria venda a descoberto."""
+    movimentos = planilha(demo.parent / "movimentacao-2023.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "10/05/2023", "Restituição de Capital", "GGBR4 - GERDAU S.A.", AGORA_B3, 300,
+         0.1, 30],
+    ]})  # fmt: skip
+    importar_planilhas(demo, [movimentos], 1, AGORA)
+    [p] = eventos.propostas(demo, 1, REFS)
+    assert (p.dados.tipo, p.dados.cv, p.dados.quantidade, p.dados.valor) == (
+        TipoEvento.REDUCAO_CAPITAL,
+        "V",
+        None,
+        30,
+    )
+    eventos.salvar(demo, 1, p.dados, REFS, FISCAIS)
+    quantidade, custo = _carteira(demo, date(2023, 5, 10))["GGBR4"]
+    assert quantidade == 300 and custo < D(18687)
+
+
 def test_proposta_da_movimentacao_nunca_e_segura(demo: Path) -> None:
     """A movimentação traz a data do crédito, não a data ex: pede conferência."""
     movimentos = planilha(demo.parent / "movimentacao-2023.xlsx", {"Movimentação": [
