@@ -23,6 +23,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ### Corrigido
 
+- **Erro no Painel ao abrir**: trocar o titular ou o ano, ou a tela se refazer, enquanto o Painel ainda calculava dava "ValueError: list.remove(x): x not in list" no registro de atividades. O cálculo antigo agora termina sem mexer na tela nova; o mesmo vale para Apuração, Conciliação, Futuros, Proventos e Declaração.
 - **Restituição de capital e amortização propostas pela B3**: a proposta vinha com a quantidade da linha da B3, que é a posição, e o evento tirava essas ações da carteira; a venda seguinte virava venda a descoberto. Agora a proposta leva só o valor.
 - **Direito não exercido sem quantidade**: a linha "não exercido" da B3 vem sem quantidade; o evento sem ela baixa todo o saldo.
 - **Notas da Clear de 2018 a 2020:** eram recusadas com "rótulo 'Data pregão' não encontrado". O COIR agora lê esse layout, com negócios "B3 RV LISTADO" e o resumo em blocos, em qualquer corretora.

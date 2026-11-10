@@ -57,10 +57,14 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         try:
             dados = await run.io_bound(estado.futuros)
         except CoirError as erro:
+            if espera.is_deleted:
+                return
             corpo.clear()
             with corpo:
                 ui.label(f"Não foi possível calcular: {erro}").classes("coir-negativo")
             return
+        if espera.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante o cálculo
         espera.delete()
         with corpo:
             if dados is None or not (dados.abertas or dados.realizados):

@@ -2,16 +2,18 @@
 
 import asyncio
 import json
-from datetime import datetime
+import threading
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from nicegui import ui
+from nicegui import app, ui
 from nicegui.elements.upload_files import SmallFileUpload
 from nicegui.testing.user_simulation import user_simulation
 
 from coir import auditoria
+from coir.domain.fiscal import Apuracao
 from coir.parsing.extrair import ResultadoExtracao
 from coir.servicos import manutencao
 from coir.servicos.cadastros import adicionar_titular
@@ -431,6 +433,38 @@ async def test_painel_abre_a_darf_atrasada_de_outro_ano(demo: Path) -> None:
         user.find(marker="ver-darf").click()
         await user.should_see("Registrar o pagamento", retries=ESPERA)
     assert estado.ano == 2023 and estado.darf_escolhida is None
+
+
+@pytest.mark.asyncio
+async def test_painel_trocar_o_ano_durante_o_calculo_nao_da_erro(
+    demo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """O usuário troca o ano enquanto o Painel ainda calcula: a tela é refeita e o cálculo antigo
+    termina numa tela que não existe mais. Antes: "ValueError: list.remove(x): x not in list" ao
+    tirar o indicador de espera (relatado ao abrir o zip de 10/11/2026)."""
+    estado = _estado(demo)
+    liberar = threading.Event()
+    original = estado.apuracao
+
+    def apuracao_lenta(ate: date) -> Apuracao:
+        liberar.wait(10)
+        return original(ate)
+
+    estado.apuracao = apuracao_lenta  # type: ignore[method-assign]
+    erros: list[Exception] = []
+    tratar = app.handle_exception
+    monkeypatch.setattr(app, "handle_exception", lambda e: (erros.append(e), tratar(e)))
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/")
+        await user.should_see("Painel de 2026")
+        await asyncio.sleep(0.3)  # o cálculo do Painel começou e espera
+        ano = next(s for s in user.find(kind=ui.select).elements if s.props.get("label") == "Ano")
+        ano.set_value(2025)
+        await user.should_see("Painel de 2025")
+        liberar.set()
+        await user.should_see("DARF", retries=ESPERA)
+        await asyncio.sleep(0.3)  # o cálculo da tela antiga termina depois
+    assert erros == []
 
 
 @pytest.mark.asyncio

@@ -151,10 +151,14 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             apuracao = await run.io_bound(estado.apuracao, ate)
             mapa = await run.io_bound(estado.notas_das_operacoes)
         except CoirError as erro:
+            if espera.is_deleted:
+                return
             area.clear()
             with area:
                 ui.label(f"Não foi possível apurar: {erro}").classes("coir-negativo")
             return
+        if espera.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante o cálculo
         espera.delete()
         if apuracao is None or mapa is None:
             return
