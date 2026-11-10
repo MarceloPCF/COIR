@@ -160,13 +160,16 @@ class SaldoInicial(Modelo):
     """Prejuízo a compensar em 31/12 de ``ano`` (valores positivos), de quem começa a usar o COIR
     sem o histórico de notas: vale como o prejuízo anterior de janeiro seguinte, por categoria
     (comum, day trade e FII não se compensam entre si; IN RFB 1.585/2015 arts. 37 §2º, 64 e 65).
-    Vem da ficha de renda variável de dezembro da última declaração."""
+    Vem da ficha de renda variável de dezembro da última declaração. ``darf_acumulado`` é o imposto
+    devido e ainda não pago por ficar abaixo do mínimo da DARF: continua acumulando no ano seguinte
+    (Lei 9.430/1996 art. 68 §1º; decisão do usuário de 10/11/2026, leitura conservadora)."""
 
     titular: int
     ano: int
     comum: Decimal = ZERO
     day_trade: Decimal = ZERO
     fii: Decimal = ZERO
+    darf_acumulado: Decimal = ZERO
 
     def de(self, categoria: "Categoria") -> Decimal:
         return {Categoria.COMUM: self.comum, Categoria.DAY_TRADE: self.day_trade,
@@ -333,8 +336,8 @@ class ResultadoCategoria(Modelo):
     # só COMUM: vendas de ações à vista em operações comuns no mês (campo "Total em alienações de
     # ações (op. comuns)" do demonstrativo de renda variável)
     vendas_acoes: Decimal = ZERO
-    # só COMUM: soma que decide o limite de R$ 20 mil (as comuns + as de day trade, com o parâmetro
-    # day_trade_na_soma_limite)
+    # só COMUM: soma que decide o limite de R$ 20 mil (as comuns; o day trade só com o parâmetro
+    # day_trade_na_soma_limite, desligado desde a decisão de 10/11/2026)
     vendas_limite: Decimal = ZERO
     isento: Decimal = ZERO  # só COMUM: ganho de ações à vista isento
     prejuizo_anterior: Decimal = ZERO  # saldo (<= 0) de meses anteriores

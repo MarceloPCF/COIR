@@ -24,7 +24,8 @@ def do_banco(s: Session, titular: int | None = None) -> list[SaldoInicial]:
     if titular is not None:
         consulta = consulta.where(PrejuizoInicial.titular_id == titular)
     return [SaldoInicial(titular=r.titular_id, ano=r.ano, comum=r.comum, day_trade=r.day_trade,
-                         fii=r.fii) for r in s.scalars(consulta)]  # fmt: skip
+                         fii=r.fii, darf_acumulado=r.darf_acumulado)
+            for r in s.scalars(consulta)]  # fmt: skip
 
 
 def ler(banco: Path, titular: int) -> SaldoInicial | None:
@@ -36,10 +37,11 @@ def ler(banco: Path, titular: int) -> SaldoInicial | None:
 def gravar(banco: Path, saldo: SaldoInicial | None, titular: int, agora: datetime) -> None:
     """Grava o prejuízo em 31/12 (``None`` apaga). Valores positivos, em reais e centavos."""
     if saldo is not None:
-        for nome, valor in (("comum", saldo.comum), ("day trade", saldo.day_trade),
-                            ("FII", saldo.fii)):  # fmt: skip
+        for nome, valor in (("prejuízo comum", saldo.comum),
+                            ("prejuízo day trade", saldo.day_trade), ("prejuízo FII", saldo.fii),
+                            ("imposto acumulado", saldo.darf_acumulado)):  # fmt: skip
             if valor < 0 or valor != valor.quantize(Decimal("0.01")):
-                raise ImportacaoError(f"prejuízo {nome}: informe um valor positivo, em reais")
+                raise ImportacaoError(f"{nome}: informe um valor positivo, em reais")
     with conectar(banco) as fabrica, fabrica.begin() as s:
         atual = s.scalar(select(PrejuizoInicial).where(PrejuizoInicial.titular_id == titular))
         if saldo is None:
@@ -49,11 +51,12 @@ def gravar(banco: Path, saldo: SaldoInicial | None, titular: int, agora: datetim
             if atual is None:
                 atual = PrejuizoInicial(titular_id=titular)
                 s.add(atual)
-            atual.ano, atual.comum, atual.day_trade, atual.fii = (
+            atual.ano, atual.comum, atual.day_trade, atual.fii, atual.darf_acumulado = (
                 saldo.ano,
                 saldo.comum,
                 saldo.day_trade,
                 saldo.fii,
+                saldo.darf_acumulado,
             )
             atual.registrado_em = agora
     log.info("prejuízo inicial %s", "apagado" if saldo is None else f"em 31/12/{saldo.ano}")

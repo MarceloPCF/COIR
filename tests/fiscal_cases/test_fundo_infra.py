@@ -94,3 +94,22 @@ def test_rendimentos_distribuidos_vao_para_a_exclusiva_06() -> None:
                       ("exclusivos", "rendimento_fip_ie", [("XPIE11", D(20))])]  # fmt: skip
     assert mapa.exclusivos.linha("rendimento_fip_ie").codigo == "06"
     assert not mapa.isentos.tem("rendimento_fip_ie")
+
+
+def test_amortizacao_acima_do_custo_zera_o_custo_e_avisa_o_excedente() -> None:
+    """Decisão do usuário de 10/11/2026 (leitura conservadora): C 10 JURO11 a 100,00 (custo
+    1.000,00); amortização de 1.200,00 em 15/06/2025. O custo vai a zero e o excedente de 200,00 é
+    rendimento do fundo (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), com alíquota zero:
+    o COIR avisa e não o lança. Antes, o motor falhava."""
+    from coir.domain.fiscal import TipoEvento
+
+    livro = Livro()
+    livro.nota(date(2025, 1, 10), livro.op("C", "JURO11", 10, "100", tipo=INFRA))
+    livro.evento(date(2025, 6, 15), "JURO11", TipoEvento.REDUCAO_CAPITAL, "V", None, "1200",
+                 tipo_ativo=INFRA)  # fmt: skip
+    [posicao] = livro.carteira(date(2025, 6, 30))
+    assert (posicao.quantidade, posicao.custo) == (D(10), 0)
+    ap = livro.apurar(date(2025, 6, 30))
+    [aviso] = [a for a in ap.avisos if "amortização" in a]
+    assert aviso.startswith("15/06/2025: amortização de JURO11 acima do custo")
+    assert "R$ 200.00" in aviso

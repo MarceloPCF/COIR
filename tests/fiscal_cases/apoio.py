@@ -51,6 +51,7 @@ class Livro:
     eventos: list[Evento] = field(default_factory=lambda: list[Evento]())
     ativos: dict[str, int] = field(default_factory=lambda: dict[str, int]())
     _ids: count[int] = field(default_factory=lambda: count(1))
+    params: ParametrosFiscais | None = None  # None: os de data/ (REFS)
 
     def ativo(self, ticker: str) -> int:
         return self.ativos.setdefault(ticker, len(self.ativos) + 1)
@@ -112,13 +113,14 @@ class Livro:
         )  # fmt: skip
 
     def apurar(self, ate: date, params: ParametrosFiscais | None = None) -> Apuracao:
-        return apurar(self.notas, self.eventos, params or REFS.parametros, REFS.calendario, ate)
+        return apurar(self.notas, self.eventos, params or self.params or REFS.parametros,
+                      REFS.calendario, ate)  # fmt: skip
 
     def movimentos(self, ate: date, visao: Visao = Visao.TITULAR) -> list[Movimento]:
-        return movimentar(self.notas, self.eventos, REFS.parametros, ate, visao)
+        return movimentar(self.notas, self.eventos, self.params or REFS.parametros, ate, visao)
 
     def carteira(self, ate: date, visao: Visao = Visao.TITULAR) -> list[PosicaoAtivo]:
-        return carteira(self.notas, self.eventos, REFS.parametros, ate, visao)
+        return carteira(self.notas, self.eventos, self.params or REFS.parametros, ate, visao)
 
 
 def mes(ap: Apuracao, ano: int, m: int, titular: int = 1) -> MesApurado:

@@ -12,24 +12,26 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | LC 236/2026 | 2 | [lc-236-2026.md](normas/lc-236-2026.md) |
 | Lei 6.404/1976 | 9 | [lei-6404-1976.md](normas/lei-6404-1976.md) |
 | Lei 7.713/1988 | 2 | [lei-7713-1988.md](normas/lei-7713-1988.md) |
-| Lei 8.668/1993 | 1 | [lei-8668-1993.md](normas/lei-8668-1993.md) |
+| Lei 8.668/1993 | 2 | [lei-8668-1993.md](normas/lei-8668-1993.md) |
 | Lei 8.981/1995 | 10 | [lei-8981-1995.md](normas/lei-8981-1995.md) |
 | Lei 9.249/1995 | 18 | [lei-9249-1995.md](normas/lei-9249-1995.md) |
-| Lei 9.250/1995 | 4 | [lei-9250-1995.md](normas/lei-9250-1995.md) |
-| Lei 9.430/1996 | 17 | [lei-9430-1996.md](normas/lei-9430-1996.md) |
+| Lei 9.250/1995 | 8 | [lei-9250-1995.md](normas/lei-9250-1995.md) |
+| Lei 9.430/1996 | 19 | [lei-9430-1996.md](normas/lei-9430-1996.md) |
 | Lei 9.779/1999 | 1 | [lei-9779-1999.md](normas/lei-9779-1999.md) |
 | Lei 9.959/2000 | 5 | [lei-9959-2000.md](normas/lei-9959-2000.md) |
-| Lei 11.033/2004 | 31 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
+| Lei 11.033/2004 | 34 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
 | Lei 11.051/2004 | 5 | [lei-11051-2004.md](normas/lei-11051-2004.md) |
-| Lei 11.478/2007 | 6 | [lei-11478-2007.md](normas/lei-11478-2007.md) |
+| Lei 11.196/2005 | 1 | [lei-11196-2005.md](normas/lei-11196-2005.md) |
+| Lei 11.478/2007 | 7 | [lei-11478-2007.md](normas/lei-11478-2007.md) |
 | Lei 12.350/2010 | 1 | [lei-12350-2010.md](normas/lei-12350-2010.md) |
-| Lei 12.431/2011 | 9 | [lei-12431-2011.md](normas/lei-12431-2011.md) |
-| Lei 13.043/2014 | 29 | [lei-13043-2014.md](normas/lei-13043-2014.md) |
-| Lei 14.754/2023 | 1 | [lei-14754-2023.md](normas/lei-14754-2023.md) |
+| Lei 12.431/2011 | 10 | [lei-12431-2011.md](normas/lei-12431-2011.md) |
+| Lei 13.043/2014 | 30 | [lei-13043-2014.md](normas/lei-13043-2014.md) |
+| Lei 14.130/2021 | 5 | [lei-14130-2021.md](normas/lei-14130-2021.md) |
+| Lei 14.754/2023 | 2 | [lei-14754-2023.md](normas/lei-14754-2023.md) |
 | Lei 15.265/2025 | 15 | [lei-15265-2025.md](normas/lei-15265-2025.md) |
-| Lei 15.270/2025 | 10 | [lei-15270-2025.md](normas/lei-15270-2025.md) |
+| Lei 15.270/2025 | 16 | [lei-15270-2025.md](normas/lei-15270-2025.md) |
 | MP 497/2010 | 5 | [mp-497-2010.md](normas/mp-497-2010.md) |
-| IN RFB 1.585/2015 | 98 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
+| IN RFB 1.585/2015 | 100 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
 | IN RFB 1.700/2017 | 2 | [in-rfb-1700-2017.md](normas/in-rfb-1700-2017.md) |
 | IN RFB 1.916/2019 | 1 | [in-rfb-1916-2019.md](normas/in-rfb-1916-2019.md) |
 | Res. CMN 4.880/2020 | 1 | [res-cmn-4880-2020.md](normas/res-cmn-4880-2020.md) |
@@ -37,17 +39,20 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | SC Cosit 42/2020 | 2 | [sc-cosit-42-2020.md](normas/sc-cosit-42-2020.md) |
 | SC Cosit 63/2020 | 2 | [sc-cosit-63-2020.md](normas/sc-cosit-63-2020.md) |
 | SC Cosit 67/2024 | 1 | [sc-cosit-67-2024.md](normas/sc-cosit-67-2024.md) |
+| SC Cosit 130/2023 | 1 | [sc-cosit-130-2023.md](normas/sc-cosit-130-2023.md) |
 | SC Cosit 145/2021 | 3 | [sc-cosit-145-2021.md](normas/sc-cosit-145-2021.md) |
+| SC Cosit 148/2025 | 5 | [sc-cosit-148-2025.md](normas/sc-cosit-148-2025.md) |
+| SC Cosit 153/2016 | 1 | [sc-cosit-153-2016.md](normas/sc-cosit-153-2016.md) |
 | SC Cosit 166/2021 | 3 | [sc-cosit-166-2021.md](normas/sc-cosit-166-2021.md) |
 | SC Cosit 224/2014 | 4 | [sc-cosit-224-2014.md](normas/sc-cosit-224-2014.md) |
 | SC Cosit 227/2018 | 3 | [sc-cosit-227-2018.md](normas/sc-cosit-227-2018.md) |
 | P&R IRPF | 2 | [pr-irpf.md](normas/pr-irpf.md) |
 | P&R IRPF 2022 | 2 | [pr-irpf.md](normas/pr-irpf.md) |
-| P&R IRPF 2026 | 30 | [pr-irpf.md](normas/pr-irpf.md) |
+| P&R IRPF 2026 | 28 | [pr-irpf.md](normas/pr-irpf.md) |
 | Manual MIR | 2 | [manual-mir.md](normas/manual-mir.md) |
 | Manual MIR 2026 | 3 | [manual-mir.md](normas/manual-mir.md) |
-| Programa IRPF | 8 | — |
-| CTN | 5 | [lei-5172-1966-ctn.md](normas/lei-5172-1966-ctn.md) |
+| Programa IRPF | 11 | — |
+| CTN | 6 | [lei-5172-1966-ctn.md](normas/lei-5172-1966-ctn.md) |
 | Súmula STJ 360 | 1 | — |
 | REsp 1.149.022/SP | 1 | — |
 | RIR/2018 | 7 | [decreto-9580-2018-rir.md](normas/decreto-9580-2018-rir.md) |
@@ -171,6 +176,7 @@ Companhias que saíram da bolsa:
 
 ## Lei 8.668/1993
 
+- `coir/engine/fiagro.py` — módulo: …só autoriza compensar perda de FII com ganho de FII; nenhuma norma autoriza compensar Fiagro com FII (a Lei 8.668 art. 20-D só remete às regras gerais). Ano com resultado de sinais opostos entre os dois: aviso. -…
 - `data/parametros_fiscais.csv` — aliquota_fii: Lei 8.668/1993 art. 18 II (red. Lei 9.779/1999); inclui day trade de FII
 
 ## Lei 8.981/1995
@@ -209,8 +215,12 @@ Companhias que saíram da bolsa:
 
 ## Lei 9.250/1995
 
+- `coir/engine/obrigatoriedade.py` — aviso_irpf_minimo: Total informativo dos ganhos líquidos em bolsa que entram na base do IR mínimo (Lei 9.250/1995 art. 16-A §1º I, incluído pela Lei 15.270/2025, desde o ano-calendário 2026): os ganhos tributados…
+- `coir/engine/obrigatoriedade.py` — módulo: Avisos da declaração anual: obrigatoriedade pelos dados de bolsa e total informativo do IR mínimo (Lei 9.250 art. 16-A). Obrigatoriedade (decisão do usuário de 10/11/2026, leitura conservadora). Os critérios vêm…
 - `data/parametros_fiscais.csv` — aliquota_irrf_dividendos_acima_limite: Lei 15.270/2025 (Lei 9.250 art. 6º-A caput e §§1º e 2º)
 - `data/parametros_fiscais.csv` — dividendos_limite_mensal_mesma_pj: Lei 15.270/2025 (Lei 9.250 art. 6º-A): acima de R$ 50 mil no mês da mesma PJ há retenção de 10% sobre o total
+- `data/parametros_fiscais.csv` — irpf_minimo_renda_anual: Lei 9.250/1995 art. 16-A (incl. Lei 15.270/2025): IR mínimo de quem recebe mais de R$ 600 mil no ano; os ganhos líquidos em bolsa, inclusive os isentos, entram na base (§1º I); só aviso informativo (decisão do usuário de 10/11/2026)
+- `tests/fiscal_cases/test_obrigatoriedade_dirpf.py` — test_ir_minimo_informa_os_ganhos_de_bolsa_desde_2026: Lei 9.250 art. 16-A §1º I (Lei 15.270/2025), decisão do usuário de 10/11/2026: total informativo. 2026: C 1.000…
 - `tests/fiscal_cases/test_petz_auau.py` — módulo: …mensal; a perda não compensa ganhos da bolsa. - Isenção do resgate: até R$ 35 mil alienados no mês (Lei 9.250/1995 art. 22 II). - A incorporação em si segue o parâmetro incorporacao_acoes_tratamento (custo…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de capital reduz o custo); Lei 15.270/2025 (Lei 9.250 art. 6º-A: IRRF de 10% sobre o total dos dividendos da mesma PJ no mês acima de R$ 50 mil). Decisões do…
 
@@ -224,6 +234,7 @@ Companhias que saíram da bolsa:
 - `data/parametros_fiscais.csv` — multa_mora_dia: Lei 9.430/1996 art. 61 caput (0,33% por dia de atraso sobre o principal)
 - `data/parametros_fiscais.csv` — multa_mora_teto: Lei 9.430/1996 art. 61 §2º (limite de 20%)
 - `docs/regras-fiscais.md` — DARF paga em atraso: multa de mora (F6, 17/10/2026): 0,33% por dia de atraso sobre o principal, com teto de 20% (Lei 9.430/1996 art. 61 caput e
+- `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora (10/11/2026): acumulando no ano seguinte (Lei 9.430/1996 art. 68 §1º; migração 0010).
 - `docs/regras-fiscais.md` — R12: …(o último dia útil do ano não é útil: Res. CMN 4.880/2020 art. 3º) + acúmulo | RIR/2018 art. 915; Lei 9.430/1996 art. 68 caput e §1º | A
 - `docs/regras-fiscais.md` — R13: R13 | Atraso: multa 0,33%/dia limitada a 20% + juros Selic (do mês seguinte ao vencimento até o mês anterior ao pagamento + 1% no mês do pagamento) | `data/selic_mensal.csv` (BCB SGS 4390) | Lei 9.430/1996 art. 61 | A
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t4_darf_abaixo_de_10_acumula_e_vira_o_ano: R12: DARF abaixo de R$ 10 acumula, inclusive para o ano seguinte (Lei 9.430/1996 art. 68 §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915). Dez/23 7,00 + Jan/24 4,00 = 11,00, vencimento 29/02/2024.
@@ -233,6 +244,7 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_multa_mora.py` — módulo: Multa de mora da DARF 6015 paga em atraso (números conferidos à mão em 17/10/2026). Fontes: Lei 9.430/1996 art. 61 caput (0,33% por dia), §1º (contagem a partir do dia seguinte ao vencimento até o…
 - `tests/fiscal_cases/test_multa_mora.py` — test_contagem_literal_da_lei_por_parametro: Lei 9.430/1996 art. 61 §1º: do dia seguinte ao vencimento, em dias corridos.
 - `tests/fiscal_cases/test_multa_mora.py` — test_multa_de_mora_como_a_receita: Lei 9.430/1996 art. 61; contagem e centavos como decididos (rfb, ROUND_DOWN).
+- `tests/fiscal_cases/test_saldos_iniciais.py` — test_imposto_acumulado_abaixo_do_minimo_continua_no_ano_seguinte: …(leitura conservadora): o imposto abaixo de R$ 10 em 31/12 não some; acumula até o total chegar a R$ 10 (Lei 9.430/1996 art. 68 §1º). Saldo inicial em 31/12/2024: imposto acumulado de 6,00. Março/2025: venda de 1.000…
 
 ## Lei 9.779/1999
 
@@ -249,6 +261,7 @@ Companhias que saíram da bolsa:
 ## Lei 11.033/2004
 
 - `coir/engine/apuracao.py` — módulo: …e limites vêm de data/parametros_fiscais.csv, com a fonte de cada um): - Alíquotas: 15% comum (Lei 11.033/2004 art. 2º II), 20% day trade e 20% FII (IN RFB 1.585/2015, arts. 56 a 65). - Isenção: ganho líquido…
+- `coir/engine/fiagro.py` — módulo: …aviso. - Rendimento de Fiagro antes de 11/06/2021: sem isenção (parâmetro ``fiagro_rendimento_isento``; Lei 11.033/2004 art. 3º III, red. Lei 14.130/2021, veto derrubado no DOU de 11/06/2021). - Requisitos da isenção…
 - `coir/engine/fichas.py` — módulo: …IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §8º; decisão do usuário de 16/10/2026: separar…
 - `coir/engine/proventos.py` — módulo: …(1 - alíquota), centavos arredondados (estimativa: vale o informe). - Rendimento de FII/Fiagro: isento (Lei 11.033/2004 art. 3º III). "Rendimento" em ação pago junto com um dividendo ou JCP do mesmo código e dia: a…
 - `data/irpf/2025.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
@@ -256,22 +269,24 @@ Companhias que saíram da bolsa:
 - `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/parametros_fiscais.csv` — aliquota_comum: Lei 11.033/2004 art. 2º II; RIR/2018 art. 839
 - `data/parametros_fiscais.csv` — aliquota_day_trade: Lei 11.033/2004 art. 2º I
-- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: Lei 11.033/2004 art. 3º I (valor das alienações no mês); IN RFB 1.585/2015 art. 59 §2º I (afasta só a isenção do day trade); P&R IRPF 2026 pergunta 707; decisão do usuário (10/11/2026): leitura conservadora
+- `data/parametros_fiscais.csv` — fiagro_rendimento_isento: Lei 11.033/2004 art. 3º III (red. Lei 14.130/2021 art. 4º; veto derrubado, DOU 11/06/2021)
+- `data/parametros_fiscais.csv` — fiagro_rendimento_isento: Lei 14.130/2021 (cria o Fiagro em 29/03/2021; a extensão da isenção da Lei 11.033 art. 3º III foi vetada e o veto derrubado só no DOU de 11/06/2021); decisão do usuário (10/11/2026): leitura conservadora
+- `data/parametros_fiscais.csv` — fii_isencao_minimo_cotistas: Lei 11.033/2004 art. 3º parágrafo único I (red. Lei 11.196/2005 art. 125)
+- `data/parametros_fiscais.csv` — fii_isencao_minimo_cotistas: Lei 11.033/2004 art. 3º §1º I e III (red. Lei 14.754/2023 art. 41; enquadramento até 30/06/2024): 100 cotistas e o grupo de pessoas ligadas sem 30% ou mais das cotas
 - `data/parametros_fiscais.csv` — limite_isencao_acoes: Lei 11.033/2004 art. 3º I (valor bruto das alienações de ações à vista no mês)
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): saldo único (a lei e a IN não separam o IRRF de FII; Lei 11.033/2004 art. 2º §7º). As fichas do
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): venda de ação no limite (Lei 11.033/2004 art. 3º I; parecer do especialista de 09/11/2026,
-- `docs/regras-fiscais.md` — Decisões da revisão contra a base normativa (10/11/2026): 5. Venda de ação em day trade: entra na soma do limite de R$ 20 mil do mês (Lei 11.033 art. 3º I;
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Rendimento de FII/Fiagro: isento (Lei 11.033 art. 3º III).
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): §4º c; Lei 11.033 art. 1º), como as fontes retêm (22,5% nos dados reais); código 06 ou 12 conforme
-- `docs/regras-fiscais.md` — R16: R16 | Rendimentos de FII isentos se o fundo cumpre requisitos | Usuário marca conforme informe do fundo | Lei 11.033/2004 art. 3º (alt. Lei 14.754/2023) | M
+- `docs/regras-fiscais.md` — R16: …(`fii_isencao_minimo_cotistas`) e avisa o Fiagro antes de 11/06/2021 (`fiagro_rendimento_isento`) | Lei 11.033/2004 art. 3º (alt. Lei 14.130/2021 e Lei 14.754/2023) | M
 - `docs/regras-fiscais.md` — R4: …decisão de 10/11/2026); a isenção não alcança units, ETF, BDR, FII, opções, futuros, termo e day trade | Lei 11.033/2004 art. 3º I | A
 - `docs/regras-fiscais.md` — Relatórios (F5, 16/10/2026): abatimento (day trade antes da Lei 11.033) na ficha de comuns.
 - `docs/regras-fiscais.md` — Relatórios (F5, 16/10/2026): duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é
 - `tests/fiscal_cases/test_ativo_isolado.py` — test_venda_do_ativo_sem_tipo_conta_no_limite_e_avisa_quando_decide: …conta como venda de ação no limite (parecer do especialista de 09/11/2026, seguido pelo usuário; Lei 11.033/2004 art. 3º I): se for ação, não contar isentaria vendas acima do limite. Vendas de fevereiro: 19.000…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t2_limite_pelo_valor_bruto_das_vendas: R4: o limite de R$ 20 mil é sobre o valor bruto das alienações (Lei 11.033/2004 art. 3º I); custos de venda não reduzem o valor para o limite. 20.000,00 com custos 10 é isento; 20.000,01 é tributável.
-- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_em_day_trade_entra_na_soma_do_limite_de_isencao: …a venda de ação em day trade é alienação no mês e entra na soma do limite de R$ 20 mil (Lei 11.033/2004 art. 3º I, "valor das alienações, realizadas em cada mês"; IN RFB 1.585/2015 art. 59 §2º I só…
 - `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …sem isenção e fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …(decisão do usuário de 19/10/2026: entra no limite de R$ 20 mil do mês do crédito, Lei 11.033/2004 art. 3º I).
+- `tests/fiscal_cases/test_fii_fiagro_avisos.py` — módulo: …compensação cruzada sem norma (IN RFB 1.585/2015 art. 37 §2º), rendimento de Fiagro antes da isenção (Lei 11.033/2004 art. 3º III, red. Lei 14.130/2021, DOU 11/06/2021) e requisitos da isenção (art. 3º §1º: 50…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — test_ficha_mes_a_mes_e_imposto_pago_de_dezembro: …1.000,00. Dezembro: V 4.000 PETR4 a 30 (resultado 0) com IRRF 6,00 que sobra: ficha "Imposto pago", Lei 11.033 = 6,00.
 - `tests/fiscal_cases/test_irpf_linhas.py` — test_venda_no_dia_acima_do_termo_sai_das_antigas_pelo_pm: …das antigas pelo PM: 5.500,00 - 4.500,00 = 1.000,00, isento (vendas de 16.500,00, abaixo de R$ 20 mil; Lei 11.033/2004 art. 3º I). Imposto 150,00; posição zerada (decisão do usuário de 21/10/2026).
@@ -288,12 +303,17 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_futuros_inversao_de_posicao_e_falhas_altas: Lei 11.051/2004 art. 32: comprado em 1, a venda de 3 encerra 1 (resultado: ajuste acumulado 10 + 1/3 do ajuste do…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_futuros_resultado_no_encerramento_da_posicao: R11: Lei 11.051/2004 art. 32; IN 1.585 art. 61; P&R IRPF 2026 pergunta 728 (resultado na liquidação ou encerramento).…
 
+## Lei 11.196/2005
+
+- `data/parametros_fiscais.csv` — fii_isencao_minimo_cotistas: Lei 11.033/2004 art. 3º parágrafo único I (red. Lei 11.196/2005 art. 125)
+
 ## Lei 11.478/2007
 
 - `coir/engine/proventos.py` — _rendimento_fundo_infra: …do líquido indica retenção, o que só acontece com o fundo desenquadrado (Lei 12.431 art. 3º §§5º e 6º; Lei 11.478 art. 2º §§4º e 5º): a retenção é definitiva e a ficha continua a mesma, pelo líquido; o COIR avisa.
 - `coir/engine/proventos.py` — módulo: …e FIP-IE (tipo FUNDO_INFRA): alíquota zero, exclusiva na fonte (Lei 12.431/2011 art. 3º §§1º, 2º e 2º-A; Lei 11.478/2007 art. 2º §3º); ficha exclusiva 06 pelo valor líquido. Preço x quantidade acima do líquido sugere…
 - `docs/regras-fiscais.md` — R20: …de redução de capital); sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem…
 - `tests/fiscal_cases/test_fundo_infra.py` — módulo: FI-Infra (Lei 12.431/2011 art. 3º) e FIP-IE (Lei 11.478/2007 art. 2º §1º I), tipo FUNDO_INFRA pela lista de fundos da B3: o ganho de pessoa física tem…
+- `tests/fiscal_cases/test_fundo_infra.py` — test_amortizacao_acima_do_custo_zera_o_custo_e_avisa_o_excedente: …amortização de 1.200,00 em 15/06/2025. O custo vai a zero e o excedente de 200,00 é rendimento do fundo (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), com alíquota zero: o COIR avisa e não o lança. Antes, o…
 - `tests/fiscal_cases/test_fundo_infra.py` — test_rendimentos_distribuidos_vao_para_a_exclusiva_06: Parecer de 09/11/2026: rendimento de FI-Infra (Lei 12.431 art. 3º §§1º e 2º) e de FIP-IE (Lei 11.478 art. 2º §3º diz isento, mas o programa só aceita a exclusiva 06) na exclusiva 06, em linhas separadas;…
 - `tests/fiscal_cases/test_proventos.py` — test_amortizacao_de_fi_infra_reduz_o_custo_e_a_de_fii_fica_fora: Lei 12.431/2011 art. 3º e IN 1.585 art. 34 (FI-Infra; para FIP-IE, Lei 11.478/2007 art. 2º §2º e IN art. 33): a amortização reduz o custo das cotas. A de FII continua fora (não foi objeto do parecer).
 
@@ -307,6 +327,7 @@ Companhias que saíram da bolsa:
 - `coir/engine/proventos.py` — módulo: …(parâmetro). - Rendimento de FI-Infra e FIP-IE (tipo FUNDO_INFRA): alíquota zero, exclusiva na fonte (Lei 12.431/2011 art. 3º §§1º, 2º e 2º-A; Lei 11.478/2007 art. 2º §3º); ficha exclusiva 06 pelo valor líquido.…
 - `docs/regras-fiscais.md` — R20: …mostra retenção; amortização reduz o custo (proposta de redução de capital); sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16…
 - `tests/fiscal_cases/test_fundo_infra.py` — módulo: FI-Infra (Lei 12.431/2011 art. 3º) e FIP-IE (Lei 11.478/2007 art. 2º §1º I), tipo FUNDO_INFRA pela lista de fundos da B3: o…
+- `tests/fiscal_cases/test_fundo_infra.py` — test_amortizacao_acima_do_custo_zera_o_custo_e_avisa_o_excedente: …O custo vai a zero e o excedente de 200,00 é rendimento do fundo (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), com alíquota zero: o COIR avisa e não o lança. Antes, o motor falhava.
 - `tests/fiscal_cases/test_fundo_infra.py` — test_bens_e_direitos_e_ficha_do_ganho_na_dirpf: …em 07.10 e FIP-IE em 07.07, com o CNPJ do fundo; o ganho na ficha Exclusiva/Definitiva, código 06 (Lei 12.431 art. 3º §2º: "exclusivamente na fonte"), não em isentos.
 - `tests/fiscal_cases/test_fundo_infra.py` — test_rendimentos_distribuidos_vao_para_a_exclusiva_06: Parecer de 09/11/2026: rendimento de FI-Infra (Lei 12.431 art. 3º §§1º e 2º) e de FIP-IE (Lei 11.478 art. 2º §3º diz isento, mas o programa só aceita a…
 - `tests/fiscal_cases/test_proventos.py` — test_amortizacao_de_fi_infra_reduz_o_custo_e_a_de_fii_fica_fora: Lei 12.431/2011 art. 3º e IN 1.585 art. 34 (FI-Infra; para FIP-IE, Lei 11.478/2007 art. 2º §2º e IN art. 33): a amortização reduz o custo das cotas. A de FII continua fora (não foi objeto do parecer).
@@ -338,6 +359,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — Outros custos dedutíveis (aba BTC_Outros do v2): **Corretagem e emolumentos do tomador:** até 2025, custo da operação (Lei 13.043/2014 art. 9º par. único; IN 1.585
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Reembolso de BTC ao doador: isento até 2025 (Lei 13.043/2014 art. 7º, reproduzido na IN 1.585
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_etf_de_renda_fixa_fica_fora_da_apuracao: Lei 13.043/2014 arts. 2º a 4º: ETF de renda fixa tem tributação exclusiva na fonte; o ganho vai para a lista da DIRPF, não para o DARF nem para a isenção.
+- `tests/fiscal_cases/test_casos_fiscais.py` — test_pme_day_trade_isento: …Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): a Lei 13.043/2014 art. 17 §8º afasta o IRRF de 1% na venda isenta de PME; o IRRF de day trade da nota só confirma…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_pme_ganho_isento_e_fora_do_limite: Lei 13.043/2014 art. 16; IN 1.585 arts. 66 e 67 §3º: ganho na venda de ações de PME é isento e o valor não entra…
 - `tests/fiscal_cases/test_oferta_publica.py` — test_oferta_de_pme_tem_o_ganho_isento_e_fora_do_limite: IN RFB 1.585/2015 art. 67 I e Lei 13.043/2014 art. 16: ações de PME adquiridas em oferta. 1.000 a 27,00 (27.000,00) vendidas a 30,00: ganho de…
 - `tests/fiscal_cases/test_outros_custos.py` — módulo: …ao doador não é dedutível por pessoa física (SC Cosit 42/2020); corretagem e emolumentos do tomador: Lei 13.043/2014 art. 9º par. único, IN RFB 1.585/2015 art. 76 par. único e, desde 2026, art. 56 §3º.
@@ -345,9 +367,18 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_proventos.py` — test_reembolso_com_origem_informada_pelo_usuario: …usuário, pelo informe ou extrato, prevalece sobre a identificada pelo valor; o tratamento é o da origem (Lei 13.043/2014 art. 7º; Lei 15.265/2025 arts. 20 e 21). Mesmo caso do JCP de 0,520530743 por ação (442,45 =…
 - `tests/fiscal_cases/test_proventos.py` — test_reembolso_de_jcp_identificado_pelo_valor_por_acao: …o reembolso é a quantidade emprestada vezes o valor por ação do provento do dia, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II). JCP de 0,520530743 por ação pago em 14/03/2025 (pacote da B3), 1.000 ações…
 
+## Lei 14.130/2021
+
+- `coir/engine/fiagro.py` — módulo: …de 11/06/2021: sem isenção (parâmetro ``fiagro_rendimento_isento``; Lei 11.033/2004 art. 3º III, red. Lei 14.130/2021, veto derrubado no DOU de 11/06/2021). - Requisitos da isenção de rendimento de FII e Fiagro (Lei…
+- `data/parametros_fiscais.csv` — fiagro_rendimento_isento: Lei 11.033/2004 art. 3º III (red. Lei 14.130/2021 art. 4º; veto derrubado, DOU 11/06/2021)
+- `data/parametros_fiscais.csv` — fiagro_rendimento_isento: Lei 14.130/2021 (cria o Fiagro em 29/03/2021; a extensão da isenção da Lei 11.033 art. 3º III foi vetada e o veto derrubado só no DOU de 11/06/2021); decisão do usuário (10/11/2026): leitura conservadora
+- `docs/regras-fiscais.md` — R16: …e avisa o Fiagro antes de 11/06/2021 (`fiagro_rendimento_isento`) | Lei 11.033/2004 art. 3º (alt. Lei 14.130/2021 e Lei 14.754/2023) | M
+- `tests/fiscal_cases/test_fii_fiagro_avisos.py` — módulo: …RFB 1.585/2015 art. 37 §2º), rendimento de Fiagro antes da isenção (Lei 11.033/2004 art. 3º III, red. Lei 14.130/2021, DOU 11/06/2021) e requisitos da isenção (art. 3º §1º: 50 cotistas até 2023, 100 desde 2024).
+
 ## Lei 14.754/2023
 
-- `docs/regras-fiscais.md` — R16: R16 | Rendimentos de FII isentos se o fundo cumpre requisitos | Usuário marca conforme informe do fundo | Lei 11.033/2004 art. 3º (alt. Lei 14.754/2023) | M
+- `data/parametros_fiscais.csv` — fii_isencao_minimo_cotistas: Lei 11.033/2004 art. 3º §1º I e III (red. Lei 14.754/2023 art. 41; enquadramento até 30/06/2024): 100 cotistas e o grupo de pessoas ligadas sem 30% ou mais das cotas
+- `docs/regras-fiscais.md` — R16: …antes de 11/06/2021 (`fiagro_rendimento_isento`) | Lei 11.033/2004 art. 3º (alt. Lei 14.130/2021 e Lei 14.754/2023) | M
 
 ## Lei 15.265/2025
 
@@ -369,13 +400,19 @@ Companhias que saíram da bolsa:
 
 ## Lei 15.270/2025
 
+- `coir/engine/apuracao.py` — _bonificacao_lei_15270: Bonificação em ações com valor atribuído, no período da Lei 15.270/2025: a bonificação feita com lucros é emprego de lucros e conta no limite mensal de dividendos da…
+- `coir/engine/obrigatoriedade.py` — aviso_irpf_minimo: …ganhos líquidos em bolsa que entram na base do IR mínimo (Lei 9.250/1995 art. 16-A §1º I, incluído pela Lei 15.270/2025, desde o ano-calendário 2026): os ganhos tributados (resultado positivo do mês, por categoria) e…
 - `coir/engine/proventos.py` — módulo: …ignoradas, mas cada par tem de fechar (senão, aviso). Débito de provento fora desse padrão falha alto. - Lei 15.270/2025 (desde 2026): dividendos da mesma empresa no mês acima de R$ 50 mil têm IRRF de 10% sobre o…
 - `data/parametros_fiscais.csv` — aliquota_irrf_dividendos_acima_limite: Lei 15.270/2025 (Lei 9.250 art. 6º-A caput e §§1º e 2º)
 - `data/parametros_fiscais.csv` — dividendos_limite_mensal_mesma_pj: Lei 15.270/2025 (Lei 9.250 art. 6º-A): acima de R$ 50 mil no mês da mesma PJ há retenção de 10% sobre o total
+- `data/parametros_fiscais.csv` — irpf_minimo_renda_anual: Lei 9.250/1995 art. 16-A (incl. Lei 15.270/2025): IR mínimo de quem recebe mais de R$ 600 mil no ano; os ganhos líquidos em bolsa, inclusive os isentos, entram na base (§1º I); só aviso informativo (decisão do usuário de 10/11/2026)
+- `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora (10/11/2026): 12. Aviso da Lei 15.270: a bonificação em ações com valor atribuído, desde 2026, gera aviso
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): Lei 15.270/2025 (desde 2026): só aviso, somando os dividendos líquidos da mesma empresa (raiz do
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): com o fator 1 - alíquota no JCP; sem origem única, aviso. Desde 2026 o aviso da Lei 15.270
 - `docs/regras-fiscais.md` — R14: R14 | Dividendos > R$ 50 mil/mês da mesma PJ: IRRF 10% sobre o total; IRPFM para renda anual > R$ 600 mil | Registrar IRRF do provento; relatório informativo (IRPFM fora do escopo v3.0) | Lei 15.270/2025 | A
 - `docs/regras-fiscais.md` — Regras fiscais — renda variável pessoa física (base para coir/engine): anteriores. Novidade vigente desde 01/01/2026: Lei 15.270/2025 (dividendos e IRPF mínimo).
+- `tests/fiscal_cases/test_lei_15270_bonificacao.py` — módulo: Aviso da Lei 15.270/2025 para bonificação em ações (decisão do usuário de 10/11/2026, leitura conservadora): desde 2026, a…
+- `tests/fiscal_cases/test_obrigatoriedade_dirpf.py` — test_ir_minimo_informa_os_ganhos_de_bolsa_desde_2026: Lei 9.250 art. 16-A §1º I (Lei 15.270/2025), decisão do usuário de 10/11/2026: total informativo. 2026: C 1.000 PETR4 a 10,00; V 500 a 20,00…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …arts. 20 e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de capital reduz o custo); Lei 15.270/2025 (Lei 9.250 art. 6º-A: IRRF de 10% sobre o total dos dividendos da mesma PJ no mês acima de R$ 50…
 - `tests/fiscal_cases/test_proventos.py` — test_atualizacao_do_provento_pela_selic_e_tributacao_exclusiva: …8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º) -> líquido 4,40, IRRF 1,28. Não é dividendo: fora da Lei 15.270.
 - `tests/fiscal_cases/test_proventos.py` — test_reembolso_de_dividendo_pela_movimentacao_e_lei_15270: …(como JCP a 15% seriam 588,24 ações: não). Com outro dividendo de 5.000,00 no mês, em 2026 o aviso da Lei 15.270 soma os três (55.000,00 no mês, acima de R$ 50 mil; decisão do usuário de 21/10/2026).
@@ -391,6 +428,7 @@ Companhias que saíram da bolsa:
 ## IN RFB 1.585/2015
 
 - `coir/engine/apuracao.py` — módulo: …a fonte de cada um): - Alíquotas: 15% comum (Lei 11.033/2004 art. 2º II), 20% day trade e 20% FII (IN RFB 1.585/2015, arts. 56 a 65). - Isenção: ganho líquido em ações no mercado à vista quando as alienações do mês…
+- `coir/engine/fiagro.py` — módulo: …da B3 (tipo FIAGRO), então o que segue são avisos, sem mudar o cálculo. - Compensação cruzada: a IN RFB 1.585/2015 art. 37 §2º só autoriza compensar perda de FII com ganho de FII; nenhuma norma autoriza compensar…
 - `coir/engine/fichas.py` — módulo: …com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §8º; decisão do usuário de 16/10/2026: separar só na declaração). O programa…
 - `coir/engine/futuros.py` — módulo: …"serão reconhecidos por ocasião da liquidação do contrato, cessão ou encerramento da posição". IN RFB 1.585/2015 art. 61 e P&R IRPF 2026 pergunta 728: resultado de cada contrato = soma algébrica dos ajustes…
 - `coir/engine/movimentos.py` — _antecipar_ofertas: …entra antes dela, e o ganho fica no mês do pregão da venda (decisão do usuário de 08/11/2026; IN RFB 1.585/2015 art. 58). Antecipa só o que cobre a venda, da oferta mais próxima para a mais distante. A posição…
@@ -423,12 +461,12 @@ Companhias que saíram da bolsa:
 - `data/isencao_pme.csv` — PRNR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; fora da tabela de 2014 da B3; citada por fontes secundárias como enquadrada; sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
 - `data/isencao_pme.csv` — SQIA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Senior Solution, SNSL3); RI Sinqia, citado por fontes secundárias: isentas as compradas entre 10/07/2014 e 05/09/2019 (oferta deliberada em 05/09/2019, Formulário de Referência 2019); sem negócio nos 30 pregões finais de 2023
 - `data/parametros_fiscais.csv` — day_trade_criterio: IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (decisão do usuário de 25/10/2026, parecer do especialista). Alternativa: ordem_impressa
-- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: Lei 11.033/2004 art. 3º I (valor das alienações no mês); IN RFB 1.585/2015 art. 59 §2º I (afasta só a isenção do day trade); P&R IRPF 2026 pergunta 707; decisão do usuário (10/11/2026): leitura conservadora
+- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: IN RFB 1.585/2015 art. 59 §2º I (day trade fora da isenção); demonstrativo do programa IRPF (campo Total em alienações de ações (op. comuns)); decisão do usuário (10/11/2026): day trade não tem isenção e não entra nos R$ 20 mil
 - `data/parametros_fiscais.csv` — direito_recebido_custo_zero: IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); parecer do especialista de 09/11/2026 seguido pelo usuário
 - `data/parametros_fiscais.csv` — direito_vencido_data: IN RFB 1.585/2015 art. 60 §3º (analogia: perda na data do vencimento); Lei 6.404 art. 171 §4º (prazo decadencial): o direito comprado não exercido vira perda no fim do prazo de subscrição do pacote da B3, ou na data da baixa na B3 sem ele; alternativa baixa_b3 (parecer do especialista de 09/11/2026 seguido pelo usuário)
 - `data/parametros_fiscais.csv` — janela_liquidacao_oferta_dias: Sem norma: critério do COIR para venda antes da liquidação da oferta (decisão do usuário de 08/11/2026); a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)
 - `data/parametros_fiscais.csv` — leilao_fracao_isentavel: sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (decisão do usuário 19/10/2026)
-- `data/parametros_fiscais.csv` — pme_lote_ordem_venda: IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; isento_primeiro ou tributado_primeiro (decisão do usuário de 08/11/2026)
+- `data/parametros_fiscais.csv` — pme_lote_ordem_venda: IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; proporcional pela SC Cosit 148/2025 §§32-33 (analogia; decisão do usuário de 10/11/2026: leitura conservadora); opções isento_primeiro e tributado_primeiro (decisão de 08/11/2026)
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: IN RFB 1.585/2015 art. 74 caput e §1º I a (Lei 13.043/2014 art. 7º)
 - `data/parametros_fiscais.csv` — reembolso_btc_norma_omissa: IN RFB 1.585/2015 art. 74 caput e §1º I a (reembolso de dividendos de BTC expressamente isento)
 - `data/trocas_ticker.csv` — PETZ3: B3 COTAHIST: último negócio de PETZ3 em 02/01/2026; AUAU3 desde 05/01/2026 (RI: relação 1:1, abertura deduzida de R$ 0,71); CNPJ muda (18328118000109 -> 53153938000108): incorporação tratada como troca curada, custo mantido (IN RFB 1.585/2015 art. 58 §6º); R$ 0,71 por ação à parte: resgate de PN, SC Cosit 37/2020
@@ -467,11 +505,12 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_termo_liquidado_depois_da_venda_das_acoes_realiza_o_resultado: R18 + venda a descoberto (leitura A1, decisão do usuário de 15/10/2026; IN RFB 1.585/2015 art. 58: custo médio): sem posição, compra a termo de 1.000 a 31,00 (custos 40) em 03/01 e venda…
 - `tests/fiscal_cases/test_day_trade_marcacao.py` — módulo: Day trade pela marcação D da corretora (F9, decisão do usuário de 25/10/2026). IN RFB 1.585/2015 art. 65 §3º: o day trade casa "pela ordem" a 1ª compra com a 1ª venda, isto é, na ordem…
 - `tests/fiscal_cases/test_day_trade_parcial.py` — módulo: …dela fecha no dia (parecer do especialista fiscal de 07/11/2026; números conferidos à mão). Fontes (IN RFB 1.585/2015): - art. 65 §1º: day trade é a operação iniciada e encerrada no mesmo dia, com o mesmo ativo, na…
-- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_em_day_trade_entra_na_soma_do_limite_de_isencao: …do limite de R$ 20 mil (Lei 11.033/2004 art. 3º I, "valor das alienações, realizadas em cada mês"; IN RFB 1.585/2015 art. 59 §2º I só afasta a isenção do próprio day trade; P&R IRPF 2026 pergunta 707). Março/2026:…
+- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_em_day_trade_fica_fora_da_soma_do_limite_de_isencao: …do usuário de 10/11/2026 (parâmetro day_trade_na_soma_limite = false): o day trade não tem isenção (IN RFB 1.585/2015 art. 59 §2º I) e não entra na soma do limite de R$ 20 mil, como no campo "Total em alienações de…
 - `tests/fiscal_cases/test_direito_nao_exercido.py` — módulo: …vira perda em operações comuns na data do fim do prazo de exercício, fora do limite de R$ 20 mil (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei…
 - `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com custo zero (IN 1.585 art. 58…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …de fração (números conferidos à mão no parecer do especialista fiscal de 19/10/2026). Fontes: - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o custo das ações…
 - `tests/fiscal_cases/test_eventos_societarios.py` — test_grupamento_com_fracao_guarda_a_fracao_ate_o_leilao: …usuário de 10/11/2026: a fração do evento fica na posição até o leilão, que a vende pelo custo médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º). 105 AAAA3 a 10,00 (1.050,00); grupamento 10:1 -> 10,5…
+- `tests/fiscal_cases/test_fii_fiagro_avisos.py` — módulo: …declaração (decisões do usuário de 10/11/2026, leitura conservadora): compensação cruzada sem norma (IN RFB 1.585/2015 art. 37 §2º), rendimento de Fiagro antes da isenção (Lei 11.033/2004 art. 3º III, red. Lei…
 - `tests/fiscal_cases/test_fundo_infra.py` — módulo: …fora da apuração mensal, do limite de R$ 20 mil e do DARF, e o prejuízo não compensa outros ganhos (IN RFB 1.585/2015 art. 64 só admite as perdas dos arts. 27, 58 e 60 a 62). Parecer do especialista de 09/11/2026,…
 - `tests/fiscal_cases/test_futuros_commodities.py` — módulo: …e na conferência do câmbio implícito. Casos fechados à mão pelo especialista (19/10/2026). Fontes: IN RFB 1.585/2015 art. 61 (resultado = soma dos ajustes no encerramento), art. 65 (15% e 20% day trade, inclusive…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das corretoras, custo médio) e 715; IN RFB 1.585/2015 arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração)…
@@ -522,11 +561,27 @@ Companhias que saíram da bolsa:
 
 - `docs/regras-fiscais.md` — Proventos (F7a, 19/10/2026): o informe. Alternativa (acessório segue o principal, SC Cosit 67/2024) não adotada.
 
+## SC Cosit 130/2023
+
+- `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora (10/11/2026): compensa prejuízo de bolsa (SC Cosit 130/2023) e fica com o usuário.
+
 ## SC Cosit 145/2021
 
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): Units fora da isenção: coincide com a RFB (SC Cosit 145/2021: só "ativos da espécie ações").
 - `docs/regras-fiscais.md` — R19: …tipo do papel); categoria COMUM ou DAY_TRADE, nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65;…
 - `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …15% sobre o ganho líquido, 20% em day trade, sem isenção e fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O…
+
+## SC Cosit 148/2025
+
+- `coir/engine/movimentos.py` — _vender_por_lote: …Padrão ``proporcional``: a venda se reparte entre os lotes na proporção das quantidades, como na SC Cosit 148/2025 (analogia; decisão do usuário de 10/11/2026, leitura conservadora), com a parte isenta arredondada…
+- `data/parametros_fiscais.csv` — pme_lote_ordem_venda: IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; proporcional pela SC Cosit 148/2025 §§32-33 (analogia; decisão do usuário de 10/11/2026: leitura conservadora); opções isento_primeiro e tributado_primeiro (decisão de 08/11/2026)
+- `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora (10/11/2026): 11. Lotes de PME: padrão `proporcional` (SC Cosit 148/2025 §§32-33, por analogia), com a parte
+- `tests/fiscal_cases/test_pme_lotes.py` — módulo: …e `tributado_primeiro`; desde a decisão de 10/11/2026 o padrão é `proporcional`, pela SC Cosit 148/2025 §§32-33, por analogia); custódia inicial com data na janela é isenta, fora da janela é tributada, em…
+- `tests/fiscal_cases/test_pme_lotes.py` — test_padrao_proporcional_reparte_a_venda_entre_os_lotes: Padrão `proporcional` (SC Cosit 148/2025 §§32-33, por analogia; decisão do usuário de 10/11/2026, leitura conservadora). Isento: 1.000 a 20…
+
+## SC Cosit 153/2016
+
+- `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora (10/11/2026): 19/10/2026); a opção `reduz_custo` (SC Cosit 153/2016, confiança baixa) não foi criada.
 
 ## SC Cosit 166/2021
 
@@ -570,7 +625,6 @@ Companhias que saíram da bolsa:
 - `data/irpf/2027.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
 - `data/irpf/2027.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
 - `data/parametros_fiscais.csv` — darf_codigo: P&R IRPF 2026 pergunta 730; Agenda Tributária RFB (código de renda variável PF)
-- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: Lei 11.033/2004 art. 3º I (valor das alienações no mês); IN RFB 1.585/2015 art. 59 §2º I (afasta só a isenção do day trade); P&R IRPF 2026 pergunta 707; decisão do usuário (10/11/2026): leitura conservadora
 - `data/parametros_fiscais.csv` — opcoes_linha_acoes_tipos_objeto: programa IRPF, ficha Renda variável: "Mercado de opções - ações" para opção sobre ação; ETF, índice e outros em "Mercado de opções - outros" (P&R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, coerente com o Bens e Direitos do programa (código 03.01, ações inclusive units)
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): P&R IRPF 2026 pergunta 723, que trata de lote isolado).
@@ -584,9 +638,8 @@ Companhias que saíram da bolsa:
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_exercicio_parcial_e_sobra_vira_po_no_vencimento: R9/R10 (IN RFB 1.585/2015 arts. 58 e 60; P&R IRPF 2026, opções): titular de 1.000 calls exerce 600 no vencimento; as 400 restantes viram pó (perde 40% do prêmio de 1.000 = -400); o custo das ações leva 600 do prêmio.
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_futuros_resultado_no_encerramento_da_posicao: R11: Lei 11.051/2004 art. 32; IN 1.585 art. 61; P&R IRPF 2026 pergunta 728 (resultado na liquidação ou encerramento). Compra de 1 WINM24 em 25/03/2024; ajustes de 25…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_irrf_de_day_trade_e_consumido_primeiro: IRRF em saldo único (Lei 9.959/2000 art. 8º §4º; IN 1.585 art. 65 §8º; P&R IRPF 2026 pergunta 714): abate o imposto total do mês. Consome primeiro o de day trade (não vai para a…
-- `tests/fiscal_cases/test_casos_fiscais.py` — test_saldo_de_irrf_passa_no_ano_e_dezembro_vai_para_a_declaracao: …para a declaração (IN 1.585 art. 63 §8º III); o de day trade só restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715).
+- `tests/fiscal_cases/test_casos_fiscais.py` — test_saldo_de_irrf_passa_no_ano_e_dezembro_vai_para_a_declaracao: …para a declaração (IN 1.585 art. 63 §8º III); o de day trade só restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715). Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): IRRF em nota só de…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_venda_a_descoberto_resultado_na_recompra_e_limite_do_mes_da_venda: Venda a descoberto (sem norma específica; leitura A1 escolhida pelo usuário em 15/10/2026: resultado na recompra, por analogia com IN 1.585 art. 62 II e P&R IRPF 2026 pergunta 725; limite pelo…
-- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_em_day_trade_entra_na_soma_do_limite_de_isencao: Decisão do usuário de 10/11/2026 (leitura conservadora; parâmetro day_trade_na_soma_limite): a venda de ação em day trade é alienação no…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …Direitos, rendimentos e fichas mês a mês que o COIR preenche. Casos do especialista fiscal (parecer de 20/10/2026), conferidos à mão; custos zero. Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …- operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (pareceres de 20 e 21/10/2026), conferidos à mão. Fontes: programa IRPF, ficha de renda variável (linhas "Mercado de opções -…
 
@@ -605,19 +658,23 @@ Companhias que saíram da bolsa:
 
 - `coir/engine/apuracao.py` — módulo: …a declaração anual (IN RFB 1.585/2015; decisão do usuário). A DARF usa um saldo único; as fichas do programa IRPF recebem o IRRF que cada uma consumiu (`fichas.py`). - DARF 6015: abaixo de R$ 10 acumula, inclusive para…
 - `coir/engine/fichas.py` — módulo: IRRF por ficha do programa IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei…
+- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: IN RFB 1.585/2015 art. 59 §2º I (day trade fora da isenção); demonstrativo do programa IRPF (campo Total em alienações de ações (op. comuns)); decisão do usuário (10/11/2026): day trade não tem isenção e não entra nos R$ 20 mil
 - `data/parametros_fiscais.csv` — opcoes_linha_acoes_tipos_objeto: programa IRPF, ficha Renda variável: "Mercado de opções - ações" para opção sobre ação; ETF, índice e outros em "Mercado de opções - outros" (P&R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, coerente com o Bens e Direitos do programa (código 03.01, ações inclusive units)
 - `docs/regras-fiscais.md` — Decisões da F4 (motor fiscal, 14-15/10/2026): 03/11/2026):** um PDF por ano, na ordem da ficha de renda variável do programa IRPF, em
+- `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora (10/11/2026): 6. Fiagro e FII: o motor continua a apurá-los juntos, como a ficha única do programa IRPF. A
 - `docs/regras-fiscais.md` — R17: R17 | Fichas/códigos da DIRPF mudam por ano | Mapeamento por ano em `data/irpf/<ano>.yaml` | programa IRPF do ano | revisar anualmente
 - `docs/regras-fiscais.md` — Relatórios (F5, 16/10/2026): conferir no programa IRPF do ano: a ficha FII sem linha de IR fonte de day trade; ordem de
+- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_em_day_trade_fica_fora_da_soma_do_limite_de_isencao: …limite de R$ 20 mil, como no campo "Total em alienações de ações (op. comuns)" do demonstrativo do programa IRPF. Março/2026: venda comum de 1.000 AAAA3 a 15,00 = 15.000,00 (PM 10,00, ganho 5.000,00) e day trade de…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: Linha da ficha "Renda variável - operações comuns/day trade" do programa IRPF (F8). Casos do especialista fiscal (pareceres de 20 e 21/10/2026), conferidos à mão. Fontes: programa…
 - `tests/fiscal_cases/test_irrf_fichas.py` — módulo: IRRF por ficha do programa IRPF com a DARF no saldo único (decisão do usuário de 16/10/2026: separar o IRRF de FII só na declaração).…
 
 ## CTN
 
 - `docs/regras-fiscais.md` — DARF paga em atraso: multa de mora (F6, 17/10/2026): A denúncia espontânea (CTN art. 138; STJ REsp 1.149.022/SP; Súmula 360) fica como nota na tela:
-- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): crédito decaiu (CTN art. 150 §4º, havendo pagamento; art. 173 I se houver dolo) e não se retifica
-- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): nem se paga (seria pagamento indevido, CTN art. 156 V); restituição de pagamento a maior, 5 anos do
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): decaiu e não se retifica nem se paga. Prazo: 5 anos do mês quando houve DARF paga (CTN art. 150
+- `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): leitura conservadora; o IRRF não conta como pagamento) (seria pagamento indevido, CTN art. 156 V); restituição de pagamento a maior, 5 anos do
 - `docs/regras-fiscais.md` — Declaração anual (F8, 20/10/2026): pagamento (CTN art. 168 I). Decisão do usuário de 03/11/2026, com parecer do especialista, num
+- `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora (10/11/2026): 7. Decadência: no mês sem DARF paga, ainda que com IRRF retido, vale o CTN art. 173 I (5 anos de
 - `tests/fiscal_cases/test_pme_lotes.py` — test_data_da_custodia_decide_a_marca: A custódia inicial segue a janela do CSV pela data do evento. Dentro dela o COIR presume aquisição a partir de 10/07/2014 (com aviso); fora, não presume isenção (CTN art. 111 II).
 
 ## Súmula STJ 360

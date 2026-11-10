@@ -17,7 +17,8 @@ Norma lida:
 - SC Cosit 63/2020: o lote anterior continua isento mesmo com a companhia desenquadrada.
 
 Sem norma, escolhas do parecer, confirmadas pelo usuário em 08/11/2026: lote isento sai primeiro
-(parâmetro `pme_lote_ordem_venda`, valores `isento_primeiro` e `tributado_primeiro`); custódia
+(parâmetro `pme_lote_ordem_venda`, valores `isento_primeiro` e `tributado_primeiro`; desde a decisão
+de 10/11/2026 o padrão é `proporcional`, pela SC Cosit 148/2025 §§32-33, por analogia); custódia
 inicial com data na janela é isenta, fora da janela é tributada, em ambos os casos com aviso; o
 ajuste do §6º compara o PM do lote isento, vale só para ele e entra em 01/01/2024, de modo que a
 posição de 31/12/2023 fica pelo custo pago.
@@ -37,11 +38,15 @@ from decimal import Decimal
 import pytest
 
 from coir.domain.fiscal import Categoria, NaturezaEvento, OperacaoMotor, TipoEvento
+from coir.domain.parametros import ParametrosFiscais
 from coir.erros import MotorError
 from tests.fiscal_cases.apoio import REFS, D, Livro, categoria, mes, parametros
 
 PME_ATE = date(2023, 12, 31)
 MEDIA = D(44)  # média fictícia dos 30 pregões: a real vem de data/isencao_pme.csv
+# os casos do parecer de 08/11/2026 foram escritos com o lote isento saindo primeiro; o padrão
+# passou a ser a repartição proporcional (SC Cosit 148/2025; decisão do usuário de 10/11/2026)
+ISENTO_PRIMEIRO = parametros(pme_lote_ordem_venda="isento_primeiro")
 
 
 def _com_media(op: OperacaoMotor, media: Decimal = MEDIA) -> OperacaoMotor:
@@ -56,9 +61,9 @@ def _marcar_evento(livro: Livro, media: Decimal | None = None) -> None:
 
 
 def _dois_lotes(ticker: str = "PRIO3", qi: int = 100, pi: str = "20", qt: int = 100,
-                pt: str = "30") -> Livro:  # fmt: skip
+                pt: str = "30", params: ParametrosFiscais | None = None) -> Livro:  # fmt: skip
     """Compra isenta em 02/03/2020 e tributada em 01/04/2021 (depois da oferta de jan/2021)."""
-    livro = Livro()
+    livro = Livro(params=params)
     livro.nota(date(2020, 3, 2), livro.op("C", ticker, qi, pi, pme_ate=PME_ATE))
     livro.nota(date(2021, 4, 1), livro.op("C", ticker, qt, pt))
     return livro
@@ -125,7 +130,7 @@ def test_lote_anterior_a_2014_e_compra_na_janela() -> None:
     200 isentas: 2.400 - 1.600 = 800, isento de PME.
     50 tributadas: 600 - 250 = 350; vendas no limite 600, logo isento comum (art. 59 I).
     Sobra 50 por 250."""
-    livro = Livro()
+    livro = Livro(params=ISENTO_PRIMEIRO)
     livro.evento(date(2013, 12, 31), "PRIO3", TipoEvento.CUSTODIA_INICIAL, "C", "100", "500")
     livro.nota(date(2015, 2, 3), livro.op("C", "PRIO3", 200, "8", pme_ate=PME_ATE))
     livro.nota(date(2016, 3, 15), livro.op("V", "PRIO3", 250, "12"))
@@ -162,7 +167,7 @@ def test_cenario_b_vendas_parciais_com_pm_separado_e_irrf() -> None:
     ago/2021: V 1.000 a 40 = 40.000, só tributadas; custo 30.000; ganho 10.000; imposto 1.500.
     IRRF 2,00; saldo 4,45, todo deduzido. DARF 1.495,55, vence em 30/09/2021. Sobra 700 por
     21.000, PM 30."""
-    livro = _dois_lotes(qi=1000, qt=2000)
+    livro = _dois_lotes(qi=1000, qt=2000, params=ISENTO_PRIMEIRO)
     livro.nota(date(2021, 6, 1), livro.op("V", "PRIO3", 600, "35"), irrf="1.05")
     livro.nota(date(2021, 7, 1), livro.op("V", "PRIO3", 700, "40"), irrf="1.40")
     livro.nota(date(2021, 8, 2), livro.op("V", "PRIO3", 1000, "40"), irrf="2.00")
@@ -190,7 +195,7 @@ def test_cenario_b_agro3_usa_a_janela_propria() -> None:
     """AGRO3: isenta até 04/02/2021. Isento 100 a 20; tributado 100 a 30 (compra em 05/02/2021).
     V 150 a 40 = 6.000. 100 isentas: 4.000 - 2.000 = 2.000. 50 tributadas: 2.000 - 1.500 = 500,
     isento comum (vendas no limite 2.000)."""
-    livro = Livro()
+    livro = Livro(params=ISENTO_PRIMEIRO)
     livro.nota(date(2020, 3, 2), livro.op("C", "AGRO3", 100, "20", pme_ate=PME_ATE))
     livro.nota(date(2021, 2, 5), livro.op("C", "AGRO3", 100, "30"))
     livro.nota(date(2021, 6, 1), livro.op("V", "AGRO3", 150, "40"))
@@ -216,7 +221,7 @@ def test_perda_do_lote_isento_nao_compensa_e_a_do_tributado_compensa() -> None:
     """Art. 17 §2º. Isento 100 a 50; tributado 100 a 50. V 150 a 40 = 6.000.
     100 isentas: 4.000 - 5.000 = -1.000: perda de PME, só para consulta.
     50 tributadas: 2.000 - 2.500 = -500: prejuízo comum a compensar."""
-    livro = _dois_lotes(pi="50", pt="50")
+    livro = _dois_lotes(pi="50", pt="50", params=ISENTO_PRIMEIRO)
     livro.nota(date(2021, 6, 1), livro.op("V", "PRIO3", 150, "40"))
     ap = livro.apurar(date(2021, 6, 30))
     m = mes(ap, 2021, 6)
@@ -233,7 +238,7 @@ def test_limite_de_20_mil_soma_o_lote_tributado_e_nao_o_isento() -> None:
     Vendas no limite: 10.000 + 12.000 = 22.000 > 20.000; tributável 12.000; imposto 1.800.
     IRRF 2,10 (0,005% de 42.000, retido também sobre o lote isento); DARF 1.797,90, vence em
     30/07/2021."""
-    livro = _dois_lotes(qi=1000, pi="10", qt=1000, pt="10")
+    livro = _dois_lotes(qi=1000, pi="10", qt=1000, pt="10", params=ISENTO_PRIMEIRO)
     livro.nota(date(2021, 4, 1), livro.op("C", "VALE3", 100, "50"))
     livro.nota(date(2021, 6, 1), livro.op("V", "PRIO3", 1500, "20"),
                livro.op("V", "VALE3", 100, "120"), irrf="2.10")  # fmt: skip
@@ -366,7 +371,7 @@ def test_desdobramento_reparte_a_quantidade_e_nao_o_custo() -> None:
     """Não é aquisição (IN art. 58 §7º II): cada lote guarda o custo. Isento 100 por 2.000;
     tributado 100 por 3.000. Desdobramento 1:5 (+800, repartido pela quantidade): 500 por 2.000 e
     500 por 3.000. V 500 a 10 = 5.000, só isentas: 5.000 - 2.000 = 3.000. Sobra 500 por 3.000."""
-    livro = _dois_lotes()
+    livro = _dois_lotes(params=ISENTO_PRIMEIRO)
     livro.evento(date(2021, 6, 15), "PRIO3", TipoEvento.DESDOBRAMENTO, "C", "800")
     livro.nota(date(2021, 9, 1), livro.op("V", "PRIO3", 500, "10"))
     ap = livro.apurar(date(2021, 9, 30))
@@ -378,7 +383,7 @@ def test_desdobramento_reparte_a_quantidade_e_nao_o_custo() -> None:
 def test_grupamento_reparte_a_quantidade_e_nao_o_custo() -> None:
     """Isento 1.000 por 2.000; tributado 1.000 por 3.000. Grupamento 10:1 (-1.800): 100 por 2.000 e
     100 por 3.000. V 100 a 50 = 5.000, só isentas: 3.000 isento. Sobra 100 por 3.000."""
-    livro = _dois_lotes(qi=1000, pi="2", qt=1000, pt="3")
+    livro = _dois_lotes(qi=1000, pi="2", qt=1000, pt="3", params=ISENTO_PRIMEIRO)
     livro.evento(date(2021, 6, 15), "PRIO3", TipoEvento.GRUPAMENTO, "V", "1800")
     livro.nota(date(2021, 9, 1), livro.op("V", "PRIO3", 100, "50"))
     ap = livro.apurar(date(2021, 9, 30))
@@ -479,3 +484,26 @@ def test_sem_oferta_subsequente_a_compra_vale_ate_o_fim_do_prazo(ticker: str) ->
     isencao = REFS.pme[ticker]
     assert isencao.compra_elegivel(date(2014, 7, 10)) and isencao.compra_elegivel(PME_ATE)
     assert not isencao.compra_elegivel(date(2014, 7, 9))
+
+
+def test_padrao_proporcional_reparte_a_venda_entre_os_lotes() -> None:
+    """Padrão `proporcional` (SC Cosit 148/2025 §§32-33, por analogia; decisão do usuário de
+    10/11/2026, leitura conservadora). Isento: 1.000 a 20 (PM 20). Tributado: 2.000 a 30 (PM 30).
+    Junho/2021: V 600 a 35 = 21.000. Isentas: 600 x 1.000/3.000 = 200 (arredondado para baixo);
+    tributadas 400. Lote isento: 7.000 - 4.000 = 3.000 isento de PME. Lote tributado: 14.000 -
+    12.000 = 2.000; vendas no limite 14.000 (o lote isento fica fora, art. 17 §3º), logo isento
+    comum. Sobra isento 800 por 16.000 e tributado 1.600 por 48.000.
+    Com 100 sobre 3.000 (isento 1.000): 33,3 -> 33 isentas e 67 tributadas."""
+    livro = _dois_lotes(qi=1000, qt=2000)
+    livro.nota(date(2021, 6, 1), livro.op("V", "PRIO3", 600, "35"))
+    ap = livro.apurar(date(2021, 6, 30))
+    assert mes(ap, 2021, 6).isento_pme == D(3000)
+    comum = categoria(ap, 2021, 6, Categoria.COMUM)
+    assert (comum.vendas_acoes, comum.isento, comum.imposto) == (D(14000), D(2000), 0)
+    [p] = livro.carteira(date(2021, 6, 30))
+    assert (p.quantidade, p.custo) == (D(2400), D(64000))
+    livro = _dois_lotes(qi=1000, qt=2000)
+    livro.nota(date(2021, 6, 1), livro.op("V", "PRIO3", 100, "35"))
+    ap = livro.apurar(date(2021, 6, 30))
+    assert mes(ap, 2021, 6).isento_pme == D(33) * (35 - 20)
+    assert categoria(ap, 2021, 6, Categoria.COMUM).vendas_acoes == D(67) * 35

@@ -22,7 +22,7 @@ from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import ROUND_FLOOR, Decimal
 
 from coir.domain.fiscal import (
     ZERO,
@@ -810,9 +810,9 @@ def _movimento_day_trade(
     # day trade com ações de PME no período: isento (leitura literal do art. 59 §2º I, que só
     # afasta o limite de R$ 20 mil; decisão do usuário de 15/10/2026)
     pme = all(p.base.op.pme_ate is not None and dia <= p.base.op.pme_ate for p in compras)
-    # a venda de ação em day trade entra na soma do limite de R$ 20 mil do mês (Lei 11.033 art. 3º
-    # I: valor das alienações no mês; IN 1.585 art. 59 §2º I só afasta a isenção do day trade;
-    # parâmetro day_trade_na_soma_limite, decisão do usuário de 10/11/2026, leitura conservadora)
+    # a venda de ação em day trade só entra na soma do limite de R$ 20 mil com o parâmetro
+    # day_trade_na_soma_limite (desligado: decisão do usuário de 10/11/2026, o day trade não tem
+    # isenção e não entra nos R$ 20 mil, como no campo "op. comuns" do demonstrativo)
     acao = tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT) and primeiro.op.mercado in MERCADOS_ACAO_A_VISTA
     na_soma = acao and not pme and livro.parametros.booleano("day_trade_na_soma_limite", dia)
     livro.registrar(chave, dia, origem,
@@ -852,15 +852,29 @@ def _fatia(p: _Peca, quantidade: Decimal, regra: str) -> _Peca:
 
 
 def _vender_por_lote(livro: Livro, dia: date, chave: Chave, p: _Peca) -> None:
-    """IN 1.585 art. 69-A §4º: cada lote tem o seu PM. A norma não fixa qual sai primeiro
-    (parâmetro pme_lote_ordem_venda; decisão do usuário de 08/11/2026). O que passar da posição é
-    venda a descoberto, como em qualquer ativo; a venda inteira se reparte pela quantidade."""
+    """IN 1.585 art. 69-A §4º: cada lote tem o seu PM. A IN não fixa qual sai primeiro
+    (parâmetro pme_lote_ordem_venda). Padrão ``proporcional``: a venda se reparte entre os lotes na
+    proporção das quantidades, como na SC Cosit 148/2025 (analogia; decisão do usuário de
+    10/11/2026, leitura conservadora), com a parte isenta arredondada para baixo na unidade da
+    quantidade vendida. ``isento_primeiro`` e ``tributado_primeiro`` continuam como opções
+    (decisão de 08/11/2026). O que passar da posição é venda a descoberto, como em qualquer ativo;
+    a venda inteira se reparte pela quantidade."""
     pos = livro.posicoes[chave]
     antes = pos.quantidade
-    lotes = [("isento", pos.isento_quantidade),
-             ("tributado", pos.quantidade - pos.isento_quantidade)]  # fmt: skip
-    if livro.parametros.texto("pme_lote_ordem_venda", dia) == "tributado_primeiro":
-        lotes.reverse()
+    isento, tributado = pos.isento_quantidade, pos.quantidade - pos.isento_quantidade
+    ordem = livro.parametros.texto("pme_lote_ordem_venda", dia)
+    if ordem == "proporcional":
+        vendida = min(p.quantidade, antes)
+        inteira = p.quantidade == p.quantidade.to_integral_value()
+        unidade = Decimal(1) if inteira else Decimal("0.00000001")
+        parte = (vendida * isento / antes).quantize(unidade, rounding=ROUND_FLOOR)
+        lotes = [("isento", parte), ("tributado", min(vendida - parte, tributado))]
+    elif ordem in ("isento_primeiro", "tributado_primeiro"):
+        lotes = [("isento", isento), ("tributado", tributado)]
+        if ordem == "tributado_primeiro":
+            lotes.reverse()
+    else:
+        raise MotorError(f"parâmetro pme_lote_ordem_venda: valor {ordem!r} desconhecido")
     falta = p.quantidade
     for lote, tem in lotes:
         q = min(falta, tem)
@@ -1257,7 +1271,20 @@ def _evento(livro: Livro, e: Evento) -> None:
             f"posição está vendida em {pos.quantidade} (confira a data do evento e as vendas)"
         )
     if e.tipo is TipoEvento.REDUCAO_CAPITAL and pos.custo + custo < 0 < pos.quantidade:
-        raise MotorError(f"redução de capital de {e.ticker} ({e.data}) maior que o custo")
+        if e.tipo_ativo is not TipoAtivo.FUNDO_INFRA:
+            raise MotorError(f"redução de capital de {e.ticker} ({e.data}) maior que o custo")
+        # amortização de FI-Infra ou FIP-IE acima do custo: o custo vai a zero e o excedente é
+        # rendimento (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), de alíquota zero para
+        # a pessoa física; o COIR não o lança, só avisa (decisão do usuário de 10/11/2026)
+        excedente = -(pos.custo + custo)
+        custo = -pos.custo
+        if livro.visao is Visao.TITULAR:
+            livro.avisos.append(
+                f"{e.data:%d/%m/%Y}: amortização de {e.ticker} acima do custo: o custo foi a zero "
+                f"e o excedente de R$ {excedente:.2f} é rendimento do fundo (Lei 11.478/2007 art. "
+                "2º §2º; Lei 12.431/2011 art. 3º), com alíquota zero para a pessoa física: declare "
+                "na mesma linha dos rendimentos do fundo (exclusiva 06)"
+            )  # fmt: skip
     if pos.quantidade > 0 > pos.quantidade + quantidade or pos.quantidade < 0 < (
         pos.quantidade + quantidade
     ):

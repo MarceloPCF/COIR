@@ -81,7 +81,11 @@ def test_t2_units_fora_do_limite_e_tributadas() -> None:
 # ------------------------------------------------------------------------------------- T3 (R6)
 def test_t3_irrf_comum_e_day_trade_abatem_o_imposto_total() -> None:
     """R6: IRRF de 0,005% e de 1% abatem o imposto do mês (saldo único). DT ganho 1.000:
-    IR 200 - 10 (1%) - 2 (0,005%) = 188."""
+    IR 200 - 10 (1%) - 2 (0,005%) = 188.
+
+    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): na nota real só de day
+    trade não há o 0,005% (IN 1.585 art. 63 §1º; o day trade tem o 1% do art. 65 §8º); aqui ele
+    só exercita o saldo único."""
     livro = Livro()
     livro.nota(date(2024, 5, 2), livro.op("C", "AAAA3", 1000, "10"),
                livro.op("V", "AAAA3", 1000, "11"), irrf="2", irrf_dt="10")  # fmt: skip
@@ -326,7 +330,11 @@ def test_compensacao_separada_entre_comum_e_day_trade() -> None:
 def test_saldo_de_irrf_passa_no_ano_e_dezembro_vai_para_a_declaracao() -> None:
     """R6: saldo de IRRF transporta aos meses seguintes do ano e não passa para janeiro. O de
     0,005% vai para a declaração (IN 1.585 art. 63 §8º III); o de day trade só restituição
-    (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)."""
+    (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715).
+
+    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): IRRF em nota só de compra
+    não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
+    ele só exercita o saldo de IRRF."""
     livro = Livro()
     livro.nota(date(2023, 11, 1), livro.op("C", "TAEE11", 100, "10"), irrf="3")
     livro.nota(date(2023, 12, 1), livro.op("C", "AAAA3", 10, "10"), irrf_dt="2")
@@ -611,7 +619,11 @@ def test_irrf_de_day_trade_e_consumido_primeiro() -> None:
     """IRRF em saldo único (Lei 9.959/2000 art. 8º §4º; IN 1.585 art. 65 §8º; P&R IRPF 2026
     pergunta 714): abate o imposto total do mês. Consome primeiro o de day trade (não vai para a
     declaração). Nov: IRRF 0,005% 3 e day trade 2, imposto 4 -> sobra 1 de 0,005% e 0 de day
-    trade."""
+    trade.
+
+    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): IRRF em nota só de compra
+    não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
+    ele só exercita o saldo de IRRF."""
     livro = Livro()
     livro.nota(date(2023, 11, 1), livro.op("C", "TAEE11", 100, "10"), irrf="3", irrf_dt="2")
     livro.nota(date(2023, 11, 10), livro.op("V", "TAEE11", 100, "10.2667"))  # ganho 26,67: IR 4
@@ -685,7 +697,11 @@ def test_pme_compra_depois_de_2023_junta_ao_lote_antigo() -> None:
 
 def test_pme_day_trade_isento() -> None:
     """Day trade de PME no período: isento (art. 59 §2º I só afasta o inciso I; decisão do
-    usuário). Os lotes isento e tributado estão em tests/fiscal_cases/test_pme_lotes.py."""
+    usuário). Os lotes isento e tributado estão em tests/fiscal_cases/test_pme_lotes.py.
+
+    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): a Lei 13.043/2014 art. 17
+    §8º afasta o IRRF de 1% na venda isenta de PME; o IRRF de day trade da nota só confirma que a
+    isenção não depende dele."""
     livro = Livro()
     livro.nota(date(2020, 6, 16), livro.op("C", "PRIO3", 100, "20", pme_ate=PME_ATE),
                livro.op("V", "PRIO3", 100, "21"), irrf_dt="1")  # fmt: skip

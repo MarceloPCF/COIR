@@ -35,6 +35,7 @@ from coir.domain.fiscal import (
     ResultadoCategoria,
     SaldoInicial,
     TipoAtivo,
+    TipoEvento,
     TributacaoExclusiva,
 )
 from coir.domain.parametros import Calendario, ParametrosFiscais
@@ -133,6 +134,8 @@ def apurar(
         avisos[titular].append(texto)
     for titular, texto in _limite_pelo_day_trade(meses, parametros):
         avisos[titular].append(texto)
+    for titular, texto in _bonificacao_lei_15270(movimentos, parametros):
+        avisos[titular].append(texto)
     for i in isolados:
         quando = ", ".join(f"{mes:02d}/{ano}" for ano, mes in i.meses) or "nenhum mês"
         avisos[i.titular].append(
@@ -202,12 +205,37 @@ def _limite_pelo_sem_tipo(
     return saida
 
 
+def _bonificacao_lei_15270(
+    movimentos: Sequence[Movimento], params: ParametrosFiscais
+) -> list[tuple[int, str]]:
+    """Bonificação em ações com valor atribuído, no período da Lei 15.270/2025: a bonificação feita
+    com lucros é emprego de lucros e conta no limite mensal de dividendos da mesma empresa (P&R
+    Altas Rendas, perguntas 12 a 14). O COIR não sabe se a bonificação veio de lucros ou de
+    reservas de capital, então só avisa (decisão do usuário de 10/11/2026, leitura conservadora)."""
+    saida: list[tuple[int, str]] = []
+    for m in movimentos:
+        if m.evento is not TipoEvento.BONIFICACAO or m.valor <= 0:
+            continue
+        nome = "dividendos_limite_mensal_mesma_pj"
+        vigentes = [p for p in params.parametros if p.nome == nome and p.vigente(m.data)]
+        if len(vigentes) != 1:
+            continue
+        limite = Decimal(vigentes[0].valor)
+        saida.append((m.titular, (
+            f"{m.data:%m/%Y}: bonificação de {m.ticker} com valor atribuído de {_reais(m.valor)}. "
+            "Se foi feita com lucros, conta com os dividendos da mesma empresa no mês para o "
+            f"limite de {_reais(limite)} da Lei 15.270/2025 (P&R Altas Rendas, perguntas 12 a "
+            "14); confira no aviso da companhia"
+        )))  # fmt: skip
+    return saida
+
+
 def _limite_pelo_day_trade(
     meses: Sequence[MesApurado], params: ParametrosFiscais
 ) -> list[tuple[int, str]]:
-    """Meses em que a venda de ações em day trade, somada às vendas comuns (parâmetro
-    day_trade_na_soma_limite), fez o mês passar do limite de isenção: o aviso explica por que o
-    ganho comum foi tributado."""
+    """Meses em que a venda de ações em day trade, somada às vendas comuns (só com o parâmetro
+    day_trade_na_soma_limite ligado; o padrão é desligado), fez o mês passar do limite de isenção:
+    o aviso explica por que o ganho comum foi tributado."""
     saida: list[tuple[int, str]] = []
     for mes in meses:
         comum = next(r for r in mes.categorias if r.categoria is Categoria.COMUM)
@@ -217,7 +245,7 @@ def _limite_pelo_day_trade(
             saida.append((mes.titular, (
                 f"{mes.mes:02d}/{mes.ano}: as vendas de ações em day trade ({_reais(dt)}) entram "
                 f"na soma do limite de isenção de {_reais(limite)} e fizeram o mês passar dele "
-                "(Lei 11.033/2004 art. 3º I; decisão de 10/11/2026): o ganho de ações em operações "
+                "(parâmetro day_trade_na_soma_limite): o ganho de ações em operações "
                 "comuns do mês, se houver, não é isento"
             )))  # fmt: skip
     return saida
@@ -282,7 +310,9 @@ def _apurar_titular(
         while iniciais and (ano, mes) > (iniciais[0].ano, 12):
             inicial = iniciais.pop(0)
             prejuizo = {c: -inicial.de(c) for c in Categoria}
-            acumulado_darf = ZERO  # em 31/12 não fica imposto abaixo de R$ 10 para o ano seguinte
+            # o imposto abaixo do mínimo da DARF acumula também para o ano seguinte (Lei 9.430/1996
+            # art. 68 §1º): vem do saldo inicial, informado pelo usuário
+            acumulado_darf = inicial.darf_acumulado
         dia = fim_do_mes(ano, mes)
         movs = por_mes.get((titular, ano, mes), [])
         categorias: list[ResultadoCategoria] = []
