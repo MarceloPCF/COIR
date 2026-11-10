@@ -14,6 +14,7 @@ habilitado.
   [`sc-cosit-lidas-sem-relevancia.md`](sc-cosit-lidas-sem-relevancia.md).
 - Lacunas: os Perguntas e Respostas IRPF 2023 e 2025 não estão publicados na página da Receita
   (as URLs devolvem 404 em 10/11/2026); a correspondência de perguntas pula esses anos.
+- Revisão do projeto contra a base: [`revisao-2026-11-10.md`](revisao-2026-11-10.md).
 - Mantida na rotina semanal do especialista (`.claude/agents/especialista-fiscal-b3.md`).
 - [`docs/fontes-fiscais.md`](../fontes-fiscais.md) lista onde cada norma é citada no código; as fichas
   dizem o que a norma diz.
