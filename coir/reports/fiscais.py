@@ -6,8 +6,9 @@ usam o mesmo objeto. Nenhum cálculo fiscal novo aqui: os valores vêm da apura�
 """
 
 from collections import defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import replace
+from datetime import date
 from decimal import Decimal
 
 from coir.domain.fiscal import (
@@ -26,6 +27,7 @@ from coir.domain.fiscal import (
 from coir.domain.nota import CategoriaCusto
 from coir.domain.proventos import Provento, TipoProvento
 from coir.domain.relatorio import DadosRelatorio
+from coir.reports.agrupar import COLUNAS_POR_ATIVO, ItemOperacao, por_mes, total_por_ativo
 from coir.reports.irpf import declaracao
 from coir.reports.modelo import (
     Cabecalho,
@@ -452,7 +454,14 @@ def irrf_exclusiva(d: DadosRelatorio) -> Relatorio:
         + ("" if anual else " Ano em curso: o saldo só fecha em dezembro."),
     )
     exclusivas = [
-        e for e in d.apuracao.exclusiva if e.titular == d.titular and e.data.year == d.ano
+        e
+        for e in d.apuracao.exclusiva
+        if e.titular == d.titular and e.data.year == d.ano and e.tipo is TipoAtivo.ETF_RF
+    ]
+    infra = [
+        e
+        for e in d.apuracao.exclusiva
+        if e.titular == d.titular and e.data.year == d.ano and e.tipo is TipoAtivo.FUNDO_INFRA
     ]
     colunas = (
         Coluna("Data", T.DATA),
@@ -474,11 +483,23 @@ def irrf_exclusiva(d: DadosRelatorio) -> Relatorio:
         "DARF. Resultado estimado pelo custo médio do COIR: confira com o informe de "
         "rendimentos da instituição.",
     )
+    linhas_infra: list[tuple[Valor, ...]] = [
+        (e.data, e.ticker, e.quantidade, e.alienacao, e.custo, e.resultado) for e in infra
+    ]
+    aliquota_zero = Secao(
+        "Alíquota zero (FI-Infra e FIP-IE)",
+        colunas,
+        tuple(linhas_infra),
+        _total(linhas_infra, colunas, {3, 4, 5}) if linhas_infra else None,
+        nota="Lei 12.431/2011 art. 3º e Lei 11.478/2007 art. 2º: ganho de pessoa física com "
+        "alíquota zero; fora da apuração mensal, do limite de R$ 20 mil e do DARF. O prejuízo "
+        "não compensa outros ganhos (IN RFB 1.585/2015 art. 64).",
+    )
     return Relatorio(
         "irrf-e-exclusiva",
         "IRRF do ano e tributação exclusiva",
         _cab(d),
-        (irrf, exclusiva),
+        (irrf, exclusiva, *((aliquota_zero,) if linhas_infra else ())),
         pdf=True,
     )
 
@@ -498,11 +519,52 @@ def _obs(m: Movimento, isento: bool) -> str:
         marcas.append("isento")
     if m.tipo is TipoAtivo.ETF_RF:
         marcas.append("trib. exclusiva")
+    if m.tipo is TipoAtivo.FUNDO_INFRA:
+        marcas.append("alíquota zero")
     if m.cv == "C" and m.custo_baixa:
         marcas.append("recompra")
     elif m.quantidade < 0:
         marcas.append("lançada")
     return ", ".join(marcas)
+
+
+def itens_finalizadas(
+    colunas: Sequence[Coluna], linhas: Iterable[Sequence[Valor]]
+) -> list[ItemOperacao]:
+    """Linhas de operações finalizadas -> itens do agrupamento por mês e ativo."""
+    nomes = [c.nome for c in colunas]
+
+    def numero(x: Sequence[Valor], nome: str) -> Decimal | None:
+        v = x[nomes.index(nome)]
+        return v if isinstance(v, Decimal) else None
+
+    def texto(x: Sequence[Valor], nome: str) -> str:
+        return str(x[nomes.index(nome)] or "")
+
+    saida: list[ItemOperacao] = []
+    for x in linhas:
+        dia = x[nomes.index("Data")]
+        if isinstance(dia, date):
+            saida.append(ItemOperacao(
+                data=dia, ativo=texto(x, "Ativo"), corretora=texto(x, "Corretora"),
+                categoria=texto(x, "Categoria"), sentido=texto(x, "C/V"),
+                quantidade=numero(x, "Quantidade") or Decimal(0),
+                abertura=numero(x, "Abertura"), encerramento=numero(x, "Encerramento"),
+                resultado=numero(x, "Resultado") or Decimal(0), obs=texto(x, "Obs."),
+            ))  # fmt: skip
+    return saida
+
+
+def _por_ativo_mes_a_mes(secoes: tuple[Secao, ...]) -> tuple[Secao, ...]:
+    """Cada mês com uma linha por dia e ativo, para conferir com outro controle (e nos arquivos)."""
+    if not secoes:
+        return ()
+    itens = itens_finalizadas(secoes[0].colunas, [x for s in secoes for x in s.linhas])
+    return tuple(
+        Secao(f"{ano} - {MESES[mes - 1]} - {mercado} - por ativo", COLUNAS_POR_ATIVO, tuple(linhas),
+              total_por_ativo(linhas))
+        for (ano, mes, mercado), linhas in por_mes(itens).items()
+    )  # fmt: skip
 
 
 def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
@@ -513,6 +575,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
         Coluna("Corretora"),
         Coluna("Categoria"),
         Coluna("Tipo"),
+        Coluna("C/V"),
         Coluna("Quantidade", T.QUANTIDADE),
         Coluna("Custo médio", T.PM),
         _dinheiro("Abertura"),
@@ -538,6 +601,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
                 m.corretora or "",
                 CATEGORIA_CURTA[m.categoria],
                 NOME_GRUPO[m.grupo],
+                {"V": "C/V", "C": "V/C"}.get(m.cv or "", ""),  # o que abriu / o que encerrou
                 quantidade or None,
                 unit,
                 None if futuro else abertura,
@@ -552,7 +616,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
             f"{d.ano} - {MESES[mes - 1]} - {mercado}",
             colunas,
             tuple(linhas),
-            _total(linhas, colunas, {9}),
+            _total(linhas, colunas, {10}),
         )
         for (mes, mercado), linhas in sorted(
             blocos.items(), key=lambda x: (x[0][0], x[0][1] != "Bovespa")
@@ -562,7 +626,7 @@ def operacoes_finalizadas(d: DadosRelatorio) -> Relatorio:
         "operacoes-finalizadas",
         "Operações finalizadas",
         _cab(d),
-        secoes,
+        (*secoes, *_por_ativo_mes_a_mes(secoes)),
         pdf=True,
         notas=(
             "Abertura: custo médio baixado (ou receita da venda, na recompra de "
@@ -701,7 +765,12 @@ BLOCOS_CARTEIRA: tuple[tuple[str, Callable[[PosicaoAtivo], bool]], ...] = (
         ),
     ),
     ("Fundos imobiliários e Fiagro", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.FII),
+    ("FI-Infra e FIP-IE", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.FUNDO_INFRA),
     ("Opções", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.OPCAO),
+    (
+        "Direitos, recibos e bônus de subscrição",
+        lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.DIREITO,
+    ),
     ("Posições vendidas", lambda p: p.quantidade < 0),
 )
 
@@ -915,6 +984,7 @@ def livro_notas(d: DadosRelatorio) -> Relatorio:
 NOME_PROVENTO = {
     TipoProvento.DIVIDENDO: "Dividendo", TipoProvento.JCP: "JCP",
     TipoProvento.RENDIMENTO_FII: "Rendimento de FII", TipoProvento.REEMBOLSO_BTC: "Reembolso BTC",
+    TipoProvento.RENDIMENTO_FUNDO_INFRA: "Rendimento de FI-Infra/FIP-IE",
     TipoProvento.ATUALIZACAO: "Atualização (Selic)",
     TipoProvento.RESTITUICAO_CAPITAL: "Restituição de capital",
     TipoProvento.FORA_DO_ESCOPO: "Fora da v3.0",
@@ -958,6 +1028,10 @@ def proventos(d: DadosRelatorio) -> Relatorio:
         (TipoProvento.RENDIMENTO_FII, "Rendimentos de FII e Fiagro (isentos)", False,
          "Lei 11.033/2004 art. 3º III: isentos para pessoa física se o fundo cumpre os "
          "requisitos."),
+        (TipoProvento.RENDIMENTO_FUNDO_INFRA,
+         "Rendimentos de FI-Infra e FIP-IE (tributação exclusiva, código 06)", False,
+         "Lei 12.431/2011 art. 3º §§1º e 2º; Lei 11.478/2007 art. 2º §3º: alíquota zero para "
+         "pessoa física, pelo valor líquido. Vale o informe do administrador."),
         (TipoProvento.ATUALIZACAO, "Atualização de proventos pela Selic (tributação exclusiva)",
          True, "Lei 8.981/1995 art. 65 §4º c; IRRF retido pela empresa (renda fixa). Código 06 ou "
          "12 na ficha exclusiva, conforme o informe da empresa."),

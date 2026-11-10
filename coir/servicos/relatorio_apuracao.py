@@ -10,6 +10,7 @@ from coir.domain.fiscal import (
     MesApurado,
     Movimento,
     PosicaoAtivo,
+    TipoAtivo,
     Visao,
 )
 
@@ -117,6 +118,7 @@ def resumo_ano(ap: Apuracao, ano: int) -> str:
             f"{_r(i.comum)}; day trade {_r(i.day_trade)}"
         )
     for e in (x for x in ap.exclusiva if x.data.year == ano):
-        linhas.append(f"Tributação exclusiva (ETF de renda fixa): {e.data:%d/%m} {e.ticker} "
-                      f"resultado {_r(e.resultado)}")  # fmt: skip
+        rotulo = ("Tributação exclusiva (ETF de renda fixa)" if e.tipo is TipoAtivo.ETF_RF
+                  else "Alíquota zero (FI-Infra e FIP-IE)")  # fmt: skip
+        linhas.append(f"{rotulo}: {e.data:%d/%m} {e.ticker} resultado {_r(e.resultado)}")
     return "\n".join(linhas)

@@ -33,7 +33,8 @@ class SecaoRendaVariavel(Modelo):
         return self
 
 
-TipoBem = Literal["ACAO", "UNIT", "BDR", "OPCAO", "ETF", "ETF_RF", "FII", "FIAGRO",
+TipoBem = Literal["ACAO", "UNIT", "BDR", "OPCAO", "ETF", "ETF_RF", "FII", "FIAGRO", "DIREITO",
+                  "FI_INFRA", "FIP_IE",
                   "JCP_A_RECEBER"]  # fmt: skip
 
 
@@ -95,6 +96,9 @@ class SecaoRendimentos(Modelo):
         if len(chaves) != len(set(chaves)):
             raise ValueError("chave repetida")
         return self
+
+    def tem(self, chave: str) -> bool:
+        return any(x.chave == chave for x in self.linhas)
 
     def linha(self, chave: str) -> LinhaRendimento:
         try:

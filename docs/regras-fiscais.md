@@ -14,7 +14,7 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R5 | Prejuízo de mês isento continua compensável | Parâmetro `prejuizo_mes_isento_compensavel = true` | Lei 8.981/1995 art. 72 §8º; Manual MIR 2026; decisão do usuário (14/10/2026) | A |
 | R6 | IRRF 0,005% s/ vendas comuns (dispensado se ≤ R$ 1; não incide no exercício nem em PME) e 1% s/ ganho de DT | Ler da nota; os dois abatem o imposto total do mês (o de DT consumido primeiro); saldo aos meses seguintes do ano; em dezembro, o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT: divergência de orientação registrada | M |
 | R7 | Custo de aquisição inclui corretagem, emolumentos e taxas; na venda os custos reduzem a alienação | Rateio proporcional ao valor da operação na nota | IN RFB 1.585/2015 | A |
-| R8 | Bonificação: soma quantidade com custo atribuído; desdobramento/grupamento: só quantidade; redução de capital com restituição reduz o custo. Incorporação/fusão/cisão/conversão: o custo das ações entregues vai para as recebidas na proporção da assembleia, sem resultado (cisão: percentual divulgado pela companhia, sobre o custo de antes do evento; sem percentual, bloqueia); incorporação de ações (art. 252): custo mantido, com aviso da divergência da RFB (parâmetro `incorporacao_acoes_tratamento`); ajuste de série de opção pela B3: sem efeito fiscal (código e quantidade mudam, custo e vencimento ficam); fração vendida em leilão: alienação pelo PM no mês do crédito, entra no limite de isenção (parâmetro `leilao_fracao_isentavel`). Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); Lei 6.404 arts. 227-229 e 252 | A |
+| R8 | Bonificação: soma quantidade com custo atribuído; desdobramento/grupamento: só quantidade; redução de capital com restituição reduz o custo. Dinheiro junto de incorporação, por resgate de ações (PETZ3 -> AUAU3): o custo é repartido pelo valor atribuído pela companhia, a parte da ação resgatada sai por `REDUCAO_CAPITAL` na data ex (o valor é esse custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026). Incorporação/fusão/cisão/conversão: o custo das ações entregues vai para as recebidas na proporção da assembleia, sem resultado (cisão: percentual divulgado pela companhia, sobre o custo de antes do evento; sem percentual, bloqueia); incorporação de ações (art. 252): custo mantido, com aviso da divergência da RFB (parâmetro `incorporacao_acoes_tratamento`); ajuste de série de opção pela B3: sem efeito fiscal (código e quantidade mudam, custo e vencimento ficam); fração vendida em leilão: alienação pelo PM no mês do crédito, entra no limite de isenção (parâmetro `leilao_fracao_isentavel`). Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A |
 | R9 | Exercício de opções: prêmio integra custo (titular de call) / valor de venda (lançador de call); casos simétricos para put | Vincular opção, ativo-objeto e negócio de exercício; 4 casos com exemplo. A nota traz só o código da opção + "E" (ex.: KLBNO193E), às vezes + classe; ativo-objeto = 4 letras + classe (ON→3, PN→4, PNA→5, PNB→6, UNT→11); sem classe: classe da abertura da série, depois opcoes.csv | IN RFB 1.585/2015 | M |
 | R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A |
 | R11 | Futuros: resultado no encerramento ou liquidação da posição = soma dos ajustes desde a abertura − custos; encerramento parcial pelo preço médio; day trade no dia | Ajustes da posição aberta acumulados por contrato e realizados no encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A |
@@ -25,10 +25,41 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R16 | Rendimentos de FII isentos se o fundo cumpre requisitos | Usuário marca conforme informe do fundo | Lei 11.033/2004 art. 3º (alt. Lei 14.754/2023) | M |
 | R17 | Fichas/códigos da DIRPF mudam por ano | Mapeamento por ano em `data/irpf/<ano>.yaml` | programa IRPF do ano | revisar anualmente |
 | R18 | Termo: custo/alienação pelo preço a termo; ganho apurado na liquidação/encerramento (operação comum) | Contrato a termo vinculado à liquidação | IN RFB 1.585/2015 | M (validar com as operações a termo da planilha) |
+| R19 | Direito, recibo e bônus de subscrição (de ação ou de cota de FII): 15% (20% em day trade), sem isenção e fora da soma do limite de R$ 20 mil; o direito recebido sem nota de compra entra com custo zero | Tipo `DIREITO` (tabela de tipos pela especificação DIR/REC/BNS do cadastro e do COTAHIST, antes do tipo do papel); categoria COMUM ou DAY_TRADE, nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65; recibo: posição B do parecer de 09/11/2026, seguido pelo usuário | A (alíquota e limite); M (custo zero); B (recibo) |
+| R20 | FI-Infra e FIP-IE/FIP-PD&I: ganho de pessoa física com alíquota zero, em bolsa ou fora; fora da apuração mensal, do limite de R$ 20 mil e do DARF; prejuízo não compensa outros ganhos | Tipo `FUNDO_INFRA` só pela lista de fundos da B3 (typeName FI-INFRA e FIP IE em `emissores_b3.csv`), nunca pelo nome; vai para a lista à parte da apuração (`exclusiva`, com o tipo); DIRPF: ganho em Tributação exclusiva, código 06; cotas em Bens 07.10 (FI-Infra) e 07.07 (FIP-IE), CNPJ do fundo; rendimento distribuído (linha "Rendimento" da B3) em Tributação exclusiva, código 06, pelo líquido, FI-Infra e FIP-IE em linhas próprias (`rendimento_fundo_infra` e `rendimento_fip_ie` no mapa do exercício), com aviso quando preço x quantidade mostra retenção; amortização reduz o custo (proposta de redução de capital); sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&R IRPF 2026 perguntas 736 e 738; pareceres de 09/11/2026 | A (alíquota, retenção do FIP-IE, rendimento do FI-Infra na 06, números 07.07 e 07.10 conferidos no programa); M (prejuízo, retenção do FI-Infra, ficha do rendimento do FIP-IE, amortização do FI-Infra) |
+| R21 | Direito, recibo ou bônus de subscrição comprado que vence sem exercício nem venda: o custo pago, com corretagem e emolumentos, vira perda em operações comuns na data do fim do prazo de exercício; fora do limite de R$ 20 mil; o recebido sem custo não dá resultado | Evento `DIREITO_NAO_EXERCIDO` (sem valor): proposto pela baixa "não exercido" da movimentação da B3, com a data do fim do prazo de subscrição do pacote da B3 (a data de subscrição; sem ela, o fim do período de negociação; nunca depois da baixa) ou a da baixa; parâmetro `direito_vencido_data` (`fim_do_prazo` ou `baixa_b3`); baixa o menor entre a quantidade e a posição, com aviso se sobrar posição; sem quantidade (a linha da B3 vem sem ela), baixa todo o saldo | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art. 171 §4º; P&R IRPF 2026 pergunta 727; parecer de 09/11/2026, seguido pelo usuário | M (sem norma específica) |
 
 ## Outros custos dedutíveis (aba BTC_Outros do v2)
-Lançamento manual mensal (ex.: custos de BTC) que reduz o resultado tributável do mês, como no v2.02. BTC como
-operação está fora do escopo.
+Lançamento manual mensal que reduz o resultado do mês, como no v2.02. BTC como operação está fora do escopo.
+
+Parecer do especialista e decisões do usuário (08/11/2026):
+- **Remuneração paga ao doador:** não dedutível por pessoa física (SC Cosit 42/2020; o art. 19 §2º da Lei 15.265/2025
+  segue tratando-a como despesa só no lucro real). O COIR só avisa, porque o valor é digitado à mão.
+- **Corretagem e emolumentos do tomador:** até 2025, custo da operação (Lei 13.043/2014 art. 9º par. único; IN 1.585
+  art. 76 par. único). Desde 2026 a Lei 15.265 revogou essa frase; decisão: manter pela regra geral (IN 1.585 art. 56 §3º).
+- **Tarifas da B3:** tratadas como emolumento (inferência; nenhuma norma usa o termo).
+- **Mês:** o da recompra, ou o da liquidação do empréstimo sem recompra (Lei 15.265 art. 29 §§2º a 4º); estender ao custo é
+  inferência.
+- **Mês de ganho isento:** o custo reduz primeiro o isento; só o que sobra reduz o resultado (decisão do usuário: sem isso, o
+  ganho ficaria isento e o custo ainda viraria prejuízo compensável).
+- **Doador:** não lança nada; a remuneração tem IRRF definitivo (Lei 15.265 art. 19 caput e §4º I).
+- **A conferir:** o PDF oficial da SC 42/2020 e o P&R IRPF 2026 não puderam ser lidos; as leis foram lidas em compiladores.
+
+## Oferta pública (IPO e follow-on; parecer do especialista, 08/11/2026)
+A compra em oferta não aparece em nota de corretagem e entra como `OFERTA_PUBLICA`: o custo é o valor
+efetivamente pago, com preço médio ponderado, sem resultado e sem IRRF (IN RFB 1.585/2015 art. 58
+caput). Pode abrir posição de ativo ainda sem nota. O lock-up não muda imposto nem custo. A data é a da
+liquidação (sem norma expressa; recomendação do especialista). A negociação pode começar antes da
+liquidação: a venda que deixaria a posição vendida, até 7 dias antes da data da oferta (critério do COIR, sem
+norma; parâmetro `janela_liquidacao_oferta_dias`), faz a compra entrar no dia dela, e o ganho fica no mês do
+pregão da venda (decisão do usuário de 08/11/2026). Posição vendida há mais tempo falha alto, como na
+subscrição, em vez de zerar a posição e perder o ganho. A oferta de PME
+elegível grava a isenção (IN 1.585 art. 67 I; `data/isencao_pme.csv`).
+
+Subscrição e bonificação do pacote público que entregam outra classe creditam a classe emitida; a bonificação
+noutra classe (`NaturezaEvento.OUTRA_CLASSE`) pode abrir posição. Bonificação entra em "Lançar as seguras" só
+com o custo por ação lido do comunicado da companhia na CVM (`cvm_ipe`), mostrado antes de lançar (Lei 9.249
+art. 10 §1º; IN 1.585 art. 58 §1º).
 
 ## Decisões da validação do gabarito (F1, 14/10/2026)
 Respostas do usuário aos pontos do `resumo.md`. Onde o gabarito difere da regra por desenho, a comparação
@@ -60,10 +91,12 @@ da F4 trata como divergência conhecida, nunca ajusta o motor para bater.
   (14/10/2026): data da liquidação = data do pregão + prazo do contrato; os custos da nota de compra
   (corretagem, emolumentos, taxa de termo) entram no custo das ações liquidadas. Validar com o
   `especialista-fiscal-b3` na F4.
-- **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte, retida pelo administrador na venda
-  com lucro. Registrar a posição e o custo, mas fora da apuração mensal e do DARF; vai para a DIRPF
-  como rendimento de tributação exclusiva. Precisa de tipo de ativo próprio em `data/` (F4, confirmar
-  alíquotas e base com o `especialista-fiscal-b3`).
+- **ETF de renda fixa (ex.: B5P211):** tributação exclusiva na fonte (Lei 13.043/2014 art. 2º §4º). Na
+  venda em bolsa, retém a instituição que paga o ganho ao investidor; o administrador só retém no
+  resgate e na distribuição (art. 4º I e II). Registrar a posição e o custo, mas fora da apuração
+  mensal e do DARF; vai para a DIRPF como rendimento de tributação exclusiva. Tipo `ETF_RF` em `data/`.
+  O COIR não calcula esse imposto: a alíquota é do fundo e muda com o prazo médio da carteira (25%, 20%
+  ou 15%, art. 2º I a III).
 - **Transferência de custódia entre corretoras do mesmo titular:**
   evento próprio que move quantidade e PM de uma conta para outra, sem resultado. A nota continua na
   corretora que a emitiu; a planilha v2 relabelava as notas.
@@ -77,8 +110,10 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   divergência ou ambiguidade, o usuário é consultado antes de aplicar.
 - **Day trade:** casamento pela ordem dos negócios (IN 1.585 art. 65 §3º: 1ª compra com a 1ª venda),
   que é a ordem cronológica. A nota não traz horário; a corretora, que o tem e retém o IRRF de 1%,
-  marca os negócios de day trade com "D". Vale a marcação D quando consistente (quantidade D de
-  compra = de venda = a menor das duas no dia); sem marcação ou com marcação inconsistente (aviso),
+  marca os negócios de day trade com "D". Vale a marcação D quando cobre o day trade do dia (quantidade
+  D de compra e de venda maior ou igual à menor das duas no dia). A corretora pode marcar a linha
+  inteira de um negócio que só em parte fechou no dia: 500 D x 200 D são 200 de day trade e 300 comuns
+  (IN 1.585 art. 65 §§1º a 3º). Sem marcação ou com marcação insuficiente (aviso), vale
   a ordem impressa nas notas do dia (número da nota e linha). Parâmetro `day_trade_criterio`
   (decisão do usuário de 25/10/2026, parecer do especialista; antes, só a ordem impressa). O
   excedente vira comum pelo preço do próprio negócio. Substitui a "média do dia". Antes de
@@ -118,6 +153,11 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - O valor das vendas do ativo isolado continua na soma do limite de R$ 20 mil (só o custo é
     desconhecido; tirar a venda poderia isentar um mês tributável). O IRRF da nota continua
     crédito.
+  - Ativo sem tipo nas tabelas (`SEM_TIPO`, isolado do mesmo jeito): a venda à vista conta como
+    venda de ação no limite (Lei 11.033/2004 art. 3º I; parecer do especialista de 09/11/2026,
+    seguido pelo usuário). Se for ação e não contar, vendas acima do limite sairiam isentas (imposto
+    a menos, multa de ofício); se não for e contar, o contribuinte paga a mais e restitui. Quando
+    só essa venda faz o mês passar do limite, a apuração avisa.
   - Meses incompletos: os do ativo desde a última vez que a posição zerou (o evento que falta pode
     ser anterior ao dia em que o livro parou). Meses dependentes: os seguintes, na categoria do
     ativo (comum e day trade; FII), com resultado, imposto ou prejuízo a compensar, porque o
@@ -125,14 +165,55 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - Venda que passa de comprado a vendido e a posição continua vendida no fim do mês: só aviso
     (possível evento faltando), sem mudar o cálculo. Venda a descoberto desde zero, sem aviso.
   - Isenção de PME (Lei 13.043/2014 art. 16; IN arts. 59 III e 66 a 69-A), `data/isencao_pme.csv`:
-    PRIO3 (compras de 10/07/2014 a 29/01/2021) e AGRO3 (até 03/02/2021), vendas até 31/12/2023;
+    PRIO3 (compras de 10/07/2014 a 29/01/2021, RI da companhia), AGRO3 (até 04/02/2021), SQIA3 (até
+    05/09/2019), e CRDE3, FRTA3, GSHP3, NUTR3 e PRNR3 sem oferta subsequente conhecida, vendas até
+    31/12/2023;
     ganho isento, fora do limite, perdas não compensam (art. 67 §2º); as vendas de PME do mês se
     somam e o líquido positivo é o lucro isento, o negativo fica só para consulta, sem abater
     ganho isento de outro mês (critério do usuário de 03/11/2026, parecer do especialista: a
     norma não decide entre somar por operação ou no mês); day trade dessas ações também isento
-    (leitura literal: o art. 59 §2º I só afasta o inciso I). Lotes isento e tributado juntos
-    falham alto (controle separado do art. 69-A §4º não implementado; não ocorre no livro). Depois
-    de 31/12/2023 a isenção acabou e o lote antigo se junta às compras novas.
+    (leitura literal: o art. 59 §2º I só afasta o inciso I).
+  - Lotes de PME (parecer do especialista, decisões do usuário de 08/11/2026). Casos em
+    `tests/fiscal_cases/test_pme_lotes.py`.
+    - Dois lotes por titular e ativo, cada um com seu PM (A). IN art. 69-A §4º: "controlar, de forma
+      separada" as ações de antes da oferta subsequente, "que ainda gozem da isenção", das adquiridas
+      a partir dela, "que serão tributadas"; §2º e SC Cosit 63/2020: as de antes continuam isentas. A
+      norma manda só separar: não há ticker, código ou informação da corretora por lote (não localizei).
+    - Ordem na venda: **a norma não fixa**. Padrão: o lote isento sai primeiro (coincide com o mais
+      antigo primeiro nos casos comuns), e a venda que atravessa os lotes reparte valor e custos pela
+      quantidade. Parâmetro `pme_lote_ordem_venda` (`isento_primeiro`, `tributado_primeiro`), com
+      vigência. Confiança baixa: é escolha, não regra.
+    - Custódia inicial (a data de aquisição não é conhecida), pela data do evento (M): na janela,
+      isenta, com aviso de que a compra antes de 10/07/2014 não é isenta (Lei 13.043 art. 17 caput);
+      antes da janela, tributada; depois da janela, tributada, com aviso para o usuário separar a
+      parte comprada antes da oferta. O usuário pode informar o contrário em qualquer caso.
+    - Comprada até 10/07/2014: tributada, com custo pelo maior entre o pago e a média dos 30 pregões
+      anteriores a essa data (art. 17 §5º; IN art. 67 §5º). O COIR não tem essa média; o usuário
+      informa o custo já ajustado.
+    - Limite de R$ 20 mil: só o lote isento fica fora (IN art. 67 §3º); o lote tributado soma e pode
+      ter o ganho isento pelo limite (A).
+    - IRRF 0,005%: não há retenção enquanto a companhia cumpre os requisitos (IN art. 67 §6º). Depois
+      da oferta a retenção pode alcançar também a venda isenta, e o valor é crédito (IN art. 69-A §3º,
+      que remete ao art. 64, embora a dedução esteja no art. 63 §8º) (M). O motor já credita todo o
+      IRRF da nota.
+    - Eventos, pela data do evento: bonificação e subscrição na janela vão para o lote isento (art.
+      17 III e IV); a partir da oferta, para o tributado, ainda que a ação de origem seja isenta (IN
+      art. 69-A §1º, A). Desdobramento e grupamento repartem a quantidade pelos lotes sem mudar o
+      custo (IN art. 58 §7º II). Transferência entre contas não muda nada na visão fiscal (art. 17 §1º
+      só exige ficar no depositário central). Incorporação, cisão e leilão de fração com lote isento
+      no prazo seguem falhando alto (sem norma nem caso real). Empréstimo não tira a isenção do
+      emprestador (art. 17 §4º); a venda a descoberto do tomador não é de ação adquirida: tributada.
+    - Day trade não toca nos lotes: a data da compra decide (na janela, isento; depois, tributado).
+      Exercício: a data de aquisição é a do exercício, e o prêmio entra no lote que recebe a ação.
+    - Fim da isenção: a venda até 31/12/2023 segue as regras acima. Em 01/01/2024, o custo do lote
+      isento vai ao maior entre o custo pago e a quantidade x média de fechamento ponderada pelo volume
+      nos 30 pregões anteriores a 31/12/2023 (Lei 13.043 art. 17 §6º; IN art. 68; texto A), e os lotes
+      se fundem no PM único do art. 58. Antes dessa regra o COIR só juntava os lotes pelo custo pago,
+      o que apura ganho a maior. Decisões do parecer (M): o ajuste compara o PM do lote; alcança só o
+      lote isento (o art. 69-A tira o outro do regime, embora o §6º não o exclua em palavras); a
+      posição de 31/12/2023 fica pelo custo pago. A média entra em coluna nova de
+      `data/isencao_pme.csv`, calculada do COTAHIST até o pregão de 28/12/2023; não localizei valor
+      publicado pela RFB ou pela B3, e, se houver, ele prevalece.
 - **PM e carteira (princípios do usuário, 15/10/2026; IN 1.585 art. 58):**
   - PM fiscal consolidado por titular e ativo, somando todas as corretoras e contas, na posição
     da categoria de operação aplicável: carteira comum à vista; opção por série e vencimento;
@@ -183,9 +264,10 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   carteira zerada), quando o PM inicial lançado à mão no outro sistema não é confiável. Desde o marco,
   as diferenças encontradas foram:
   - centavos: o outro sistema rateia os custos da nota sem arredondar a parcela (com rateio exato, confere).
-    Nenhuma norma fixa o critério de rateio nem o arredondamento da parcela (a IN RFB 1.585/2015 só
-    manda somar os custos ao custo de aquisição e deduzi-los da alienação); o COIR mantém
-    centavos com maiores restos, que somam exatamente a nota (decisão de 16/10/2026);
+    A IN RFB 1.585/2015 art. 56 §§3º e 4º admite deduzir os custos necessários e permite ratear os do
+    dia proporcionalmente ao valor financeiro de cada operação, mas não fixa o arredondamento da
+    parcela; o COIR mantém centavos com maiores restos, que somam exatamente a nota (decisão de
+    16/10/2026);
   - futuros: o outro sistema distribui os custos de cada nota BM&F entre as linhas por outro critério; a
     soma de todos os futuros é igual (diferença total R$ 0,00 fora a opção flexível). Pendência
     pós-v3.0: ratear os custos de futuros por contrato e por categoria (a B3 cobra emolumentos e
@@ -373,7 +455,7 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
   da empresa ou extrato da corretora) prevalece sobre a do valor, com aviso quando a contradiz ou
   quando não há provento dessa origem no dia; a quantidade só fica quando as duas coincidem
   (parecer do especialista, F9, 21/10/2026).
-- Restituição de capital: reduz o custo (IN 1.585 art. 58 §8º), proposta como evento; não é
+- Restituição de capital: reduz o custo (IN 1.585 art. 58 §8º), proposta como evento só com o valor (a quantidade da linha da B3 é a posição, não ações canceladas); não é
   rendimento. Acima do custo: o motor falha alto.
 - "- Transferido": pares que se anulam (provento acompanhando a transferência de custódia).
 - Lei 15.270/2025 (desde 2026): só aviso, somando os dividendos líquidos da mesma empresa (raiz do
@@ -387,7 +469,7 @@ corretoras diferentes, com código e contas próprios (decisão do usuário). Fi
 - Rateio dos custos de futuros por contrato e por categoria, configurável (hoje pelo volume).
 - Day trade entre corretoras antes de 28/07/2010: a ordem dos negócios entre notas de corretoras
   diferentes segue o número da nota (as notas não trazem horário).
-- Controle separado de lote de PME isento e tributado (IN 1.585 art. 69-A §4º): falha alto.
+- Incorporação, cisão ou leilão de lote isento de PME dentro do prazo da isenção: falha alto (sem norma nem caso real).
 - Venda a termo: falha alto (só a compra a termo está implementada).
 - `data/feriados.csv` cobre até 2027: estender antes de apurar dezembro de 2027.
 

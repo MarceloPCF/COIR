@@ -33,6 +33,7 @@ CARTOES = (
     (TipoProvento.DIVIDENDO, "Dividendos · isentos (09)"),
     (TipoProvento.JCP, "JCP · exclusiva (10)"),
     (TipoProvento.RENDIMENTO_FII, "Rendimentos de FII · isentos"),
+    (TipoProvento.RENDIMENTO_FUNDO_INFRA, "FI-Infra e FIP-IE · exclusiva (06)"),
     (TipoProvento.REEMBOLSO_BTC, "Reembolsos de BTC"),
     (TipoProvento.ATUALIZACAO, "Atualização (Selic) · exclusiva"),
 )
@@ -40,6 +41,7 @@ SERIES = (
     (TipoProvento.DIVIDENDO, tema.CLARO.caneta),
     (TipoProvento.JCP, tema.CLARO.carimbo),
     (TipoProvento.RENDIMENTO_FII, tema.CLARO.positivo),
+    (TipoProvento.RENDIMENTO_FUNDO_INFRA, tema.CLARO.destaque),
     (TipoProvento.REEMBOLSO_BTC, tema.CLARO.tinta_suave),
     (TipoProvento.ATUALIZACAO, tema.CLARO.negativo),
 )

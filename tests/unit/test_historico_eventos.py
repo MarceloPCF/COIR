@@ -253,7 +253,11 @@ def test_eventos_curados_dos_avisos_da_cvm() -> None:
     assert len(curados) >= 30
     for e in curados:
         assert evento_b3_valido(e.linha()), e
-        assert e.origem == "cvm_ipe" and e.referencia.startswith("IPE ")
+        assert e.origem == "cvm_ipe"
+        if e.tipo == "REDUCAO_CAPITAL":  # dinheiro junto de incorporação: o ISIN é o de origem
+            assert e.referencia and e.preco and e.data_subscricao and e.isin != e.isin_emitido
+            continue
+        assert e.referencia.startswith("IPE ")
         assert e.tipo in gerar.TIPOS_COM_FATOR
         # só a bonificação pode vir em outra espécie (ITSA 2018: PN para quem tem ON e PN)
         assert e.isin == e.isin_emitido or e.tipo == "BONIFICACAO"
@@ -361,7 +365,10 @@ def test_tabela_de_trocas_completa_e_com_fonte() -> None:
         if t["isin_antigo"]:  # ISIN do código antigo: o emissor do ISIN é o do ticker
             assert t["isin_antigo"][2:6] == t["ticker_impresso"][:4], t
             assert t["isin_novo"][2:6] == t["ticker"][:4], t
-            assert "COTAHIST" in t["fonte"] and "CVM" in t["fonte"], t
+            # o último negócio e o documento que explica a troca (ou o próprio ISIN repetido)
+            assert "COTAHIST" in t["fonte"] or "mesmo ISIN" in t["fonte"], t
+            documento = ("CVM", "B3 OC", "RI:", "mesmo ISIN", "mesma companhia")
+            assert any(x in t["fonte"] for x in documento), t
     por_antigo = {t["ticker_impresso"]: t["ticker"] for t in linhas}
     cadeia, ticker = [], "GLOB3"
     while ticker in por_antigo:
@@ -460,3 +467,34 @@ def test_deslistada_entra_pelo_codigo_do_fca() -> None:
     # listada (ITSA) continua pelo cadastro; a Oi, fora dele, entra pelo FCA
     assert historico.deslistadas([fca], {CNPJ: "ITSA"}, series) == {oi: "OIBR"}
     assert historico.deslistadas([fca], {CNPJ: "ITSA"}, {ON: series[ON]}) == {}  # sem negócio
+
+
+def _linha_nomes(dia: str, bdi: str, ticker: str, mercado: str, nome: str, esp: str) -> bytes:
+    linha = f"01{dia}{bdi}{ticker:<12}{mercado}{nome:<12}{esp:<10}"
+    return linha.ljust(245).encode("latin-1") + b"\n"
+
+
+def test_nomes_de_pregao_do_cotahist() -> None:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as z:
+        z.writestr("COTAHIST.TXT", b"".join((
+            b"00COTAHIST\n",
+            _linha_nomes("20261103", "02", "RAIZ55", "010", "RAIZEN", "PNA P   N2"),
+            _linha_nomes("20261106", "96", "RAIZ55F", "020", "RAIZEN", "PNA P   N2"),
+            _linha_nomes("20260520", "02", "AUAU3", "010", "PETZCOBASI", "ON  ED  NM"),
+            _linha_nomes("20261103", "02", "AUAU3", "010", "PETZCOBASI", "ON      NM"),
+            _linha_nomes("20260101", "12", "XPTO11", "010", "FII XPTO", "CI"),
+            _linha_nomes("20260101", "02", "ALUP11", "010", "ALUPAR", "UNT     N2"),
+            _linha_nomes("20260101", "02", "APLE34", "010", "APPLE", "DRN"),
+            _linha_nomes("20260101", "02", "PETRA10", "070", "PETR", "ON"),
+        )))  # fmt: skip
+    linhas = historico.ler_nomes(buffer.getvalue(), {"NM", "N2", "ED", "DRN"})
+    por_nome = {r["nome_pregao"]: r for r in linhas}
+    assert por_nome["RAIZEN PNA P"]["ticker"] == "RAIZ55"
+    raiz, petz = por_nome["RAIZEN PNA P"], por_nome["PETZCOBASI ON"]
+    assert (raiz["desde"], raiz["ate"]) == ("2026-11-03", "2026-11-06")
+    assert (petz["desde"], petz["ate"]) == ("2026-05-20", "2026-11-03")
+    assert por_nome["FII XPTO CI"]["tipo"] == "FII"
+    assert por_nome["ALUPAR UNT"]["tipo"] == "UNIT"
+    assert por_nome["APPLE DRN"]["ticker"] == "APLE34"  # o sufixo de BDR separa programas
+    assert all(r["ticker"] != "PETRA10" for r in linhas)  # opção fica de fora

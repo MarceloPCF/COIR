@@ -22,10 +22,14 @@ from coir.domain.nota import Segmento
 from coir.erros import ExtracaoError
 from coir.parsing.numeros import compactar
 
-Gramatica = Literal["agora", "xp", "btg"]
+Gramatica = Literal["agora", "xp", "btg", "b3rv"]
 # opção flexível (BTG): "Mercadoria:" e depois a modalidade, ex.: "FCA - Com Garantia"
-# código da corretora na B3 e dígito antes da conta do cliente, como em bovespa.RE_CONTA
-RE_CODIGO_CORRETORA = re.compile(r"^\s*(?P<codigo>\d{1,4})-\d\s+\d+\s*$", re.MULTILINE)
+# código da corretora na B3 e dígito antes da conta do cliente, como em bovespa.RE_CONTA; no layout
+# b3rv a conta também tem dígito e o assessor vem depois: "308 - 9 123456 - 7 1"
+RE_CODIGO_CORRETORA = re.compile(
+    r"^\s*(?P<codigo>\d{1,4})[ \t]*-[ \t]*\d[ \t]+\d+(?:[ \t]*-[ \t]*\d(?:[ \t]+\d+)?)?\s*$",
+    re.MULTILINE,
+)
 # o código no próprio rótulo, sem a conta ("Número da Corretora 88-4 Cliente", na CM Capital): só
 # para dizer na mensagem qual código a nota traz; quem identifica a corretora é RE_CODIGO_CORRETORA
 RE_CODIGO_NO_ROTULO = re.compile(
@@ -128,11 +132,19 @@ def pagina_generica(texto: str, gramatica: Gramatica, nome: str) -> Pagina:
     return _pagina(texto, compactar(texto), perfil)
 
 
+def layout_b3rv(texto: str) -> bool:
+    """Rótulos "Nr. Nota Data pregão" numa linha só, sem "Folha" entre eles: o layout em que os
+    negócios começam por "B3 RV LISTADO" e o resumo vem em blocos. Vale para qualquer corretora."""
+    return any(compactar(linha) == "nr.notadatapregao" for linha in texto.splitlines())
+
+
 def _pagina(texto: str, compacto: str, perfil: Perfil) -> Pagina:
     flexivel = "Mercadoria:" in texto and RE_OPCAO_FLEXIVEL.search(texto)
     tipo = TipoPagina.OPCAO_FLEXIVEL if flexivel else TipoPagina.NOTA
     segmento = Segmento.BMF if "c/vmercadoria" in compacto else Segmento.BOVESPA
-    gramatica = perfil.gramaticas.get(segmento)
+    gramatica: Gramatica | None = perfil.gramaticas.get(segmento)
+    if segmento is Segmento.BOVESPA and layout_b3rv(texto):
+        gramatica = "b3rv"
     if gramatica is None:
         raise ExtracaoError(f"{perfil.corretora}: perfil sem gramática para {segmento.value}")
     return Pagina(perfil, segmento, gramatica, tipo)

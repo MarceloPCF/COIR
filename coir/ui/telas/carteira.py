@@ -56,9 +56,19 @@ def _valores(linhas: list[carteira.LinhaPosicao], visao: Visao) -> list[tuple[Va
 
 
 def _total(linhas: list[carteira.LinhaPosicao], visao: Visao) -> tuple[Valor, ...]:
-    compradas = sum((p.custo for p in linhas if p.custo > 0), ZERO)
+    # o termo em aberto ainda não está na carteira: fica fora do total, como fora do PM
+    posicoes = [p for p in linhas if p.liquidacao is None]
+    compradas = sum((p.custo for p in posicoes if p.custo > 0), ZERO)
     vazias = {Visao.TITULAR: 0, Visao.CORRETORA: 1, Visao.CONTA: 2}[visao]
-    return (f"{len(linhas)} posições", "", *([""] * vazias), None, None, compradas)
+    return (f"{len(posicoes)} posições", "", *([""] * vazias), None, None, compradas)
+
+
+def _resumo(linhas: list[carteira.LinhaPosicao], ate: date) -> str:
+    termos = sum(1 for p in linhas if p.liquidacao is not None)
+    texto = f"{len(linhas) - termos} posições em {ate:%d/%m/%Y}"
+    if termos:
+        texto += f" e {termos} compra{'s' if termos > 1 else ''} a termo a liquidar"
+    return texto
 
 
 @dataclass
@@ -130,6 +140,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ui.spinner(size="lg")
         try:
             resultado = await run.io_bound(estado.carteira, ate, visao)
+            termos = await run.io_bound(estado.termos, ate)
         except CoirError as erro:
             lista.clear()
             with lista:
@@ -138,7 +149,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         if resultado is None:
             return
         posicoes, contas = resultado
-        linhas[:] = carteira.posicoes(posicoes, contas, estado.titular)
+        linhas[:] = carteira.posicoes(posicoes, contas, estado.titular, termos or (), visao)
         lista.clear()
         with lista:
             if not linhas:
@@ -152,7 +163,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                     altura="h-[620px]",
                     ao_clicar=lambda i: abrir(int(str(i))),
                 ).mark("grade-carteira")
-        resumo.set_text(f"{len(linhas)} posições em {ate:%d/%m/%Y}")
+        resumo.set_text(_resumo(linhas, ate))
         lado.clear()
         with lado:
             ui.label("Escolha um ativo para ver a trilha do preço médio.").classes(
@@ -162,6 +173,11 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     async def abrir(indice: int) -> None:
         p = linhas[indice]
         ate, visao = escolha.data, escolha.visao
+        if p.liquidacao is not None:
+            lado.clear()
+            with lado:
+                _termo(p)
+            return
         movs = await run.io_bound(estado.movimentos, ate, visao)
         mapa = await run.io_bound(estado.notas_das_operacoes)
         if movs is None or mapa is None:
@@ -182,6 +198,29 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         ui.timer(0.01, carregar, once=True)
 
     ui.timer(0.01, carregar, once=True)
+
+
+def _termo(p: carteira.LinhaPosicao) -> None:
+    """Compra a termo em aberto: ainda não tem trilha, porque só entra no PM na liquidação."""
+    onde = " · ".join(x for x in (p.corretora, p.numero_conta and f"conta {p.numero_conta}") if x)
+    with ui.row().classes("items-baseline gap-3"):
+        ui.label(f"Compra a termo: {p.ticker}").classes("coir-titulo text-lg")
+        if onde:
+            ui.label(onde).classes("coir-subtitulo text-sm")
+    ui.label(
+        f"{formatar(p.quantidade, T.QUANTIDADE)} ações · preço a termo com custos "
+        f"{formatar(p.pm, T.PM)} · custo {formatar(p.custo, T.DINHEIRO)}"
+    ).classes("coir-numero")
+    assert p.liquidacao is not None
+    ui.label(
+        f"Ainda não estão na carteira nem no preço médio. Entram em {p.liquidacao:%d/%m/%Y}, data "
+        "da liquidação (pregão + prazo do contrato), pelo preço a termo mais os custos da nota de "
+        "compra; a partir daí aparecem na trilha do ativo (IN RFB 1.585/2015 art. 62)."
+    ).classes("coir-subtitulo")
+    if p.nota is not None:
+        nota = p.nota
+        ui.button("Abrir a nota da compra", icon="description",
+                  on_click=lambda: ui.navigate.to(f"/notas/{nota}")).props("flat")  # fmt: skip
 
 
 def _trilha(p: carteira.LinhaPosicao, passos: list[Movimento], mapa: dict[int, int]) -> None:

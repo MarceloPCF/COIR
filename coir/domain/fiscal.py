@@ -29,6 +29,15 @@ class TipoAtivo(StrEnum):
     FII = "FII"  # inclui Fiagro
     OPCAO = "OPCAO"
     FUTURO = "FUTURO"
+    # direito, recibo e bônus de subscrição (de ação ou de cota de FII): 15% ou 20% em day trade,
+    # sem isenção e fora do limite (SC Cosit 145 e 166/2021; recibo pela posição B do parecer do
+    # especialista de 09/11/2026, seguido pelo usuário)
+    DIREITO = "DIREITO"
+    # cota de FI-Infra (Lei 12.431/2011 art. 3º) ou de FIP-IE/FIP-PD&I (Lei 11.478/2007 art. 2º),
+    # pela lista de fundos da B3: alíquota zero para pessoa física, fora do limite e da
+    # compensação de prejuízo (parecer do especialista de 09/11/2026, seguido pelo usuário)
+    FUNDO_INFRA = "FUNDO_INFRA"
+    SEM_TIPO = "SEM_TIPO"  # fora das tabelas: o motor isola o ativo, sem palpite de tributação
 
 
 class Categoria(StrEnum):
@@ -79,6 +88,7 @@ class OperacaoMotor(Modelo):
     objeto_tipo: TipoAtivo | None = None  # opção: tipo do ativo-objeto (None: não identificado)
     liquidacao_termo: date | None = None  # compra a termo: entra na carteira nesta data
     pme_ate: date | None = None  # compra elegível à isenção de PME: vendas isentas até esta data
+    pme_media_fim: Decimal | None = None  # média dos 30 pregões do fim da isenção (art. 17 §6º)
     marcada_dt: bool = False  # a nota marca o negócio como day trade (observação "D")
 
 
@@ -134,7 +144,7 @@ class PosicaoFuturo(Modelo):
 
 
 class OutroCusto(Modelo):
-    """Custo dedutível lançado pelo usuário num mês (ex.: taxas de aluguel de ações - BTC): reduz o
+    """Custo dedutível lançado pelo usuário num mês (ex.: corretagem e tarifas do BTC): reduz o
     resultado da categoria no mês (como a aba BTC_Outros da planilha v2)."""
 
     id: int
@@ -174,16 +184,21 @@ class TipoEvento(StrEnum):
     INCORPORACAO = "INCORPORACAO"  # troca de A por B com o custo (ver NaturezaEvento)
     CISAO = "CISAO"  # parte do custo de A vai para B, pelo percentual da companhia
     LEILAO_FRACAO = "LEILAO_FRACAO"  # fração vendida em leilão pela companhia (alienação)
+    OFERTA_PUBLICA = "OFERTA_PUBLICA"  # compra em IPO ou follow-on: não aparece em nota
+    # direito ou bônus de subscrição que venceu sem exercício nem venda: o custo pago vira perda
+    DIREITO_NAO_EXERCIDO = "DIREITO_NAO_EXERCIDO"
 
 
 class NaturezaEvento(StrEnum):
-    """Natureza da INCORPORACAO (a regra fiscal muda com ela)."""
+    """Natureza da INCORPORACAO (a regra fiscal muda com ela). ``OUTRA_CLASSE`` marca a BONIFICACAO
+    ou a SUBSCRICAO noutra classe da companhia, que pode abrir posição."""
 
     INCORPORACAO_SOCIEDADE = "INCORPORACAO_SOCIEDADE"  # Lei 6.404 art. 227
     INCORPORACAO_ACOES = "INCORPORACAO_ACOES"  # Lei 6.404 art. 252 (divergência RFB x Judiciário)
     FUSAO = "FUSAO"  # Lei 6.404 art. 228
     CONVERSAO = "CONVERSAO"  # de classe na mesma companhia (ex.: PN -> ON)
     AJUSTE_SERIE = "AJUSTE_SERIE"  # série de opção com código ou quantidade ajustados pela B3
+    OUTRA_CLASSE = "OUTRA_CLASSE"  # bonificação ou subscrição noutra classe (quem tem PN recebe ON)
 
 
 TIPOS_COM_DESTINO = frozenset({TipoEvento.INCORPORACAO, TipoEvento.CISAO})
@@ -217,8 +232,12 @@ class Evento(Modelo):
     tipo_ativo_destino: TipoAtivo | None = None
     quantidade_destino: Decimal | None = None
     natureza: NaturezaEvento | None = None
+    pme_ate: date | None = None  # ações recebidas no lote isento de PME: vendas isentas até a data
+    pme_media_fim: Decimal | None = None  # média dos 30 pregões do fim da isenção (art. 17 §6º)
+    aviso: str = ""  # o que a apuração mostra sobre o evento (presunção da custódia de PME)
     percentual_custo: Decimal | None = None  # cisão: fração do custo de A que vai para B (0..1)
     observacao: str = ""
+    pme_ate: date | None = None  # oferta de PME: vendas isentas até a data (Lei 13.043 art. 16)
 
 
 # --------------------------------------------------------------------------------------- saídas
@@ -274,6 +293,23 @@ class PosicaoAtivo(Modelo):
     @property
     def pm(self) -> Decimal:
         return ZERO if self.quantidade == 0 else self.custo / self.quantidade
+
+
+class TermoAberto(Modelo):
+    """Compra a termo ainda não liquidada numa data: fica fora da carteira e do PM até a
+    liquidação, mas a tela a mostra numa linha própria, como a B3 (decisão do usuário, F2)."""
+
+    titular: int
+    corretora: str
+    conta: int
+    nota: int
+    ativo: int
+    ticker: str
+    tipo: TipoAtivo
+    pregao: date
+    liquidacao: date
+    quantidade: Decimal
+    custo: Decimal  # preço a termo x quantidade + custos da nota rateados (o que entra no PM)
 
 
 class AtivoIsolado(Modelo):
@@ -370,7 +406,9 @@ class MesApurado(Modelo):
 
 
 class TributacaoExclusiva(Modelo):
-    """Venda de ETF de renda fixa: imposto retido pelo administrador (vai para a DIRPF)."""
+    """Venda fora da apuração mensal: ETF de renda fixa (imposto retido pelo administrador, vai
+    para a DIRPF) ou cota de FI-Infra e FIP-IE (alíquota zero; o ganho vai para os isentos e o
+    prejuízo não compensa nada)."""
 
     data: date
     titular: int
@@ -380,6 +418,7 @@ class TributacaoExclusiva(Modelo):
     alienacao: Decimal
     custo: Decimal
     resultado: Decimal
+    tipo: TipoAtivo = TipoAtivo.ETF_RF
 
 
 class IrrfAnual(Modelo):

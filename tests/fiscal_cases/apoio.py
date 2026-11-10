@@ -92,7 +92,7 @@ class Livro:
         destino: int | None = None, tipo_ativo: TipoAtivo = TipoAtivo.ACAO,
         corretora: str = "XP", corretora_destino: str | None = None, para: str | None = None,
         quantidade_destino: str | None = None, natureza: NaturezaEvento | None = None,
-        percentual: str | None = None,
+        percentual: str | None = None, pme_ate: date | None = None,
     ) -> None:  # fmt: skip
         """`para`: ativo de destino de incorporação e cisão (B)."""
         self.eventos.append(
@@ -107,6 +107,7 @@ class Livro:
                 ativo_destino=None if para is None else self.ativo(para), ticker_destino=para,
                 quantidade_destino=None if quantidade_destino is None else D(quantidade_destino),
                 natureza=natureza, percentual_custo=None if percentual is None else D(percentual),
+                pme_ate=pme_ate,
             )
         )  # fmt: skip
 

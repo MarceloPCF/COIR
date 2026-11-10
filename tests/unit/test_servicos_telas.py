@@ -406,3 +406,44 @@ def test_divergencias_conhecidas_lidas_do_csv(tmp_path: Path) -> None:
         "nota,data,papel,motivo\n9,2026-08-03,,teste\n", encoding="utf-8"
     )
     assert divergencias_conhecidas(tmp_path) == frozenset({("9", date(2026, 8, 3))})
+
+
+def test_ativo_que_parou_de_negociar_avisa_e_diz_o_que_houve(tmp_path: Path) -> None:
+    """Rede para o que a tabela de trocas ainda não tem: não muda custo nem quantidade."""
+    from coir.domain.fiscal import PosicaoAtivo, TipoAtivo
+    from coir.servicos import saidas
+
+    (tmp_path / "nomes_pregao_b3.csv").write_text(
+        "nome_pregao,ticker,desde,ate,tipo\n"
+        "AMBEV ON,AMBV3,2008-01-02,2013-11-08,\n"
+        "SEM INFO ON,SINF3,2008-01-02,2020-01-02,\n"
+        "VALE ON,VALE3,2008-01-02,2026-11-06,\n"
+        "POUCO ON,POUC3,2008-01-02,2026-09-01,\n"
+        "POUQUINHO ON,POQU3,2008-01-02,2026-09-01,\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "saidas_b3.csv").write_text(
+        "ticker,ultimo_negocio,situacao,destino,relacao,dinheiro_por_acao,confianca,fonte,"
+        "observacao\n"
+        "AMBV3,2013-11-08,INCORPORACAO,ABEV3,5,,alta,CVM,\n"
+        "POUC3,2026-09-01,OPA_CANCELAMENTO,,,10.50,media,CVM,\n",
+        encoding="utf-8",
+    )
+
+    def posicao(ticker: str, quantidade: int, tipo: TipoAtivo = TipoAtivo.ACAO) -> PosicaoAtivo:
+        return PosicaoAtivo(titular=1, corretora=None, conta=None, ativo=1, ticker=ticker,
+                            tipo=tipo, vencimento=None, quantidade=Decimal(quantidade),
+                            custo=Decimal(100))  # fmt: skip
+
+    carteira = [posicao("AMBV3", 100), posicao("SINF3", 10), posicao("VALE3", 10),
+                posicao("POUC3", 10), posicao("POQU3", 10), posicao("NOVO3", 10),
+                posicao("SINF3", 0)]  # fmt: skip
+    [ambev, pouco, sem_info] = saidas.ativos_que_sairam(carteira, 1, tmp_path)
+    assert "R$ 10.50" in pouco.texto and "confiança media" in pouco.texto  # conhecida: não espera
+    assert ambev.ticker == "AMBV3" and "incorporada" in ambev.texto
+    assert "ABEV3, 5 por ação" in ambev.texto
+    assert sem_info.ticker == "SINF3" and "Veja o que aconteceu" in sem_info.texto
+    assert saidas.ativos_que_sairam(carteira, 2, tmp_path) == []
+    # dispensado, some do sino
+    restantes = saidas.ativos_que_sairam(carteira, 1, tmp_path, {sem_info.chave})
+    assert [a.ticker for a in restantes] == ["AMBV3", "POUC3"]

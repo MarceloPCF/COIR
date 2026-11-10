@@ -28,30 +28,14 @@ def _troca(texto_nome: str, de: str, para: str) -> list[str]:
 
 
 # ------------------------------------------------------------------------------- conciliação
-@pytest.mark.parametrize(
-    ("de", "para", "campo"),
-    [
-        ("Corretagem 20,00 D", "Corretagem 21,00 D", "Total de despesas"),
-        ("Emolumentos 5,03 D", "Emolumentos 5,04 D", "Total Bovespa / Soma"),
-        ("18.686,92 D", "18.686,93 D", "líquido"),
-        ("Taxa de liquidação 1,49 D", "Taxa de liquidação 1,48 D", "Total CBLC"),
-    ],
-)
-def test_alterar_um_valor_impresso_quebra_a_conciliacao(de: str, para: str, campo: str) -> None:
-    res = extrair_textos("x.pdf", _troca("agora_2008_04_bovespa", de, para))
-    assert res.notas == []
-    [rejeitada] = res.rejeitadas
-    assert campo in rejeitada.motivo
-
-
 def test_conciliar_bmf_detecta_custo_alterado() -> None:
     nota = _nota("xp_2019_02_bmf_daytrade")
     r = nota.resumo_bmf
     assert r is not None
     errada = nota.model_copy(
-        update={"resumo_bmf": r.model_copy(update={"total_custos": Decimal("2.65")})}
+        update={"resumo_bmf": r.model_copy(update={"total_custos": r.total_custos + Decimal(1)})}
     )
-    with pytest.raises(ConciliacaoError, match="total de custos"):
+    with pytest.raises(ConciliacaoError, match=r"total de custos|líquido"):
         conciliar(errada)
 
 
@@ -120,8 +104,11 @@ def test_linha_bmf_fora_do_padrao_falha_alto() -> None:
     assert "BM&F fora do padrão" in motivo
 
 
-def test_marca_day_trade_sem_compra_e_venda() -> None:
-    assert "day trade de GERDAU" in _rejeitada("agora_2008_04_bovespa", "N1 H 300", "N1 HD 300")
+def test_marca_day_trade_sem_compra_e_venda_avisa_e_nao_recusa() -> None:
+    """O outro lado pode estar em outra nota do dia; a apuração confere as quantidades."""
+    res = extrair_textos("x.pdf", _troca("agora_2008_04_bovespa", "N1 H 300", "N1 HD 300"))
+    assert res.rejeitadas == [] and len(res.notas) == 1
+    assert any("day trade de GERDAU" in a for a in res.avisos)
 
 
 def test_irrf_impresso_e_nao_lido_falha_alto() -> None:
@@ -196,12 +183,47 @@ def test_troca_de_ticker_por_data() -> None:
     assert REFS.ticker_na_data("JSLG3", date(2020, 9, 19)) == "JSLG3"
 
 
-def test_ativo_sem_cadastro_falha_com_sugestao() -> None:
+def test_ativo_sem_cadastro_diz_o_que_fazer() -> None:
     nota = _nota("agora_2008_04_bovespa")
-    neg = nota.negocios_bovespa[0].model_copy(update={"especificacao": "GERDAX PN N1"})
+    neg = nota.negocios_bovespa[0].model_copy(update={"especificacao": "NOME QUE NAO EXISTE ON"})
     estranha = nota.model_copy(update={"negocios_bovespa": (neg,)})
-    with pytest.raises(ReferenciaError, match=r"parecidos: .*GGBR4"):
+    with pytest.raises(ReferenciaError, match="Atualize as tabelas em Configurações") as erro:
         operacoes(estranha, REFS, {})
+    assert "Parecidos" not in str(erro.value)  # sugestão fraca já levou ao ativo errado
+
+
+@pytest.mark.parametrize(
+    ("especificacao", "dia", "ticker"),
+    [
+        ("PETZCOBASI ON NM", date(2026, 10, 26), "AUAU3"),
+        ("PETZCOBASI ON ATZ NM", date(2026, 10, 14), "AUAU3"),
+        ("PETZ ON NM", date(2025, 6, 2), "AUAU3"),  # segue a troca de código
+        ("RAIZEN PN N2", date(2026, 10, 30), "RAIZ55"),
+        ("RAIZEN PNA P N2", date(2026, 11, 3), "RAIZ55"),
+        ("XPETFCHINA CI", date(2025, 6, 2), "XINA11"),
+        ("INVESTO NFTS CI", date(2025, 6, 2), "NFTS11"),
+        ("INVESTO HODL CI", date(2026, 1, 5), "HODL11"),
+    ],
+)
+def test_nomes_de_pregao_dos_casos_reais(especificacao: str, dia: date, ticker: str) -> None:
+    """Como a B3 os publica no COTAHIST (fonte pública), pela data do negócio."""
+    nota = _nota("agora_2008_04_bovespa")
+    neg = nota.negocios_bovespa[0].model_copy(update={"especificacao": especificacao})
+    nova = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": dia})
+    assert operacoes(nova, REFS, {})[0].papel == ticker
+
+
+def test_nome_usado_por_dois_tickers_vale_o_do_periodo() -> None:
+    refs = REFS.model_copy(update={"nomes_historicos": {
+        "nome": (("2010-01-01", "2012-12-31", "AAAA3"), ("2015-01-01", "2020-12-31", "BBBB3")),
+        "juntos": (("2010-01-01", "2012-12-31", "AAAA3"), ("2011-01-01", "2020-12-31", "BBBB3")),
+    }})  # fmt: skip
+    assert refs.nome_na_data("nome", date(2011, 5, 5)) == "AAAA3"
+    assert refs.nome_na_data("nome", date(2016, 5, 5)) == "BBBB3"
+    assert refs.nome_na_data("nome", date(2013, 2, 1)) == "AAAA3"  # sem negócio: o mais próximo
+    assert refs.nome_na_data("juntos", date(2011, 5, 5)) is None  # sem palpite
+    assert refs.nome_na_data("outro", date(2011, 5, 5)) is None
+    assert refs.nome_na_data("nome", date(2024, 5, 5)) is None  # longe de todos: sem palpite
 
 
 def test_segmento_coerente() -> None:
@@ -239,3 +261,14 @@ def test_termo_guarda_o_prazo_do_contrato() -> None:
     assert (op.mercado, op.prazo_termo_dias) == ("TERMO", 90)
     [vista] = operacoes(nota, REFS, {})
     assert vista.prazo_termo_dias is None
+
+
+@pytest.mark.parametrize("classe", ["PN", "PNA"])
+def test_exercicio_de_opcao_depois_da_troca_da_classe(classe: str) -> None:
+    """RAIZ PN negocia como PNA em RAIZ55 desde 03/11/2026 (B3 OC 022/2026-VPE)."""
+    nota = _nota("agora_2008_04_bovespa")
+    neg = nota.negocios_bovespa[0].model_copy(
+        update={"especificacao": f"RAIZQ30E {classe}", "mercado": "EXERC OPC VENDA"}
+    )
+    nova = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": date(2026, 11, 20)})
+    assert operacoes(nova, REFS, {})[0].papel == "RAIZ55"

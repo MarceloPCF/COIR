@@ -44,6 +44,12 @@ from coir.engine.futuros import movimentos_futuros
 from coir.engine.movimentos import movimentar
 from coir.erros import MotorError
 
+# fora da apuração mensal, do limite e da compensação: ETF de renda fixa (tributação exclusiva na
+# fonte, Lei 13.043/2014 art. 2º) e FI-Infra e FIP-IE (alíquota zero para pessoa física, Lei
+# 12.431/2011 art. 3º e Lei 11.478/2007 art. 2º; IN RFB 1.585/2015 art. 64 só compensa as perdas
+# dos arts. 27, 58 e 60 a 62)
+FORA_DA_APURACAO = frozenset({TipoAtivo.ETF_RF, TipoAtivo.FUNDO_INFRA})
+
 CENTAVO = Decimal("0.01")
 ALIQUOTAS = {
     Categoria.COMUM: "aliquota_comum",
@@ -98,7 +104,7 @@ def apurar(
     exclusiva: list[TributacaoExclusiva] = []
     pme: dict[tuple[int, int, int], Decimal] = defaultdict(lambda: ZERO)
     for m in movimentos:
-        if m.tipo is TipoAtivo.ETF_RF:
+        if m.tipo in FORA_DA_APURACAO:
             if m.origem.startswith("op:") and (m.cv == "V" or m.resultado):
                 exclusiva.append(_exclusiva(m))
             continue
@@ -123,6 +129,8 @@ def apurar(
         meses += m
         anuais += a
     meses = [_marcar(m, isolados) for m in meses]
+    for titular, texto in _limite_pelo_sem_tipo(movimentos, meses, parametros):
+        avisos[titular].append(texto)
     for i in isolados:
         quando = ", ".join(f"{mes:02d}/{ano}" for ano, mes in i.meses) or "nenhum mês"
         avisos[i.titular].append(
@@ -161,10 +169,41 @@ def _marcar(m: MesApurado, isolados: Sequence[AtivoIsolado]) -> MesApurado:
                                 "dependentes": tuple(sorted(set(dependentes)))})  # fmt: skip
 
 
+def _limite_pelo_sem_tipo(
+    movimentos: Sequence[Movimento], meses: Sequence[MesApurado], params: ParametrosFiscais
+) -> list[tuple[int, str]]:
+    """Meses em que a venda de ativo sem tipo, somada como venda de ação, fez as vendas do mês
+    passarem do limite de isenção: se o ativo não for ação, o ganho de ações seria isento."""
+    sem: dict[tuple[int, int, int], Decimal] = defaultdict(lambda: ZERO)
+    tickers: dict[tuple[int, int, int], set[str]] = defaultdict(set)
+    for m in movimentos:
+        if m.tipo is TipoAtivo.SEM_TIPO and m.venda_acao_a_vista:
+            chave = (m.titular, m.data.year, m.data.month)
+            sem[chave] += m.venda_acao_a_vista
+            tickers[chave].add(m.ticker)
+    saida: list[tuple[int, str]] = []
+    for mes in meses:
+        chave = (mes.titular, mes.ano, mes.mes)
+        if chave not in sem:
+            continue
+        comum = next(r for r in mes.categorias if r.categoria is Categoria.COMUM)
+        limite = params.decimal("limite_isencao_acoes", fim_do_mes(mes.ano, mes.mes))
+        if comum.vendas_acoes - sem[chave] <= limite < comum.vendas_acoes:
+            nomes = ", ".join(sorted(tickers[chave]))
+            saida.append((mes.titular, (
+                f"{mes.mes:02d}/{mes.ano}: a venda de {nomes}, sem tipo de ativo nas tabelas, foi "
+                f"somada às vendas de ações e fez o mês passar do limite de isenção de R$ "
+                f"{limite:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                + ". Se não for ação, o ganho com ações deste mês seria isento: atualize as "
+                "tabelas em Configurações ou mande a nota pela tela Suporte"
+            )))  # fmt: skip
+    return saida
+
+
 def _exclusiva(m: Movimento) -> TributacaoExclusiva:
     return TributacaoExclusiva(data=m.data, titular=m.titular, ativo=m.ativo or 0, ticker=m.ticker,
                                quantidade=m.quantidade, alienacao=m.valor, custo=m.custo_baixa,
-                               resultado=m.resultado)  # fmt: skip
+                               resultado=m.resultado, tipo=m.tipo)  # fmt: skip
 
 
 def _outro_custo(c: OutroCusto) -> Movimento:
@@ -174,7 +213,8 @@ def _outro_custo(c: OutroCusto) -> Movimento:
     return Movimento(
         data=fim_do_mes(c.ano, c.mes), titular=c.titular, conta=None, corretora=None, ativo=None,
         ticker="", origem=f"custo:{c.id}",
-        regra="outros custos dedutíveis lançados pelo usuário: reduzem o resultado do mês"
+        regra="outros custos dedutíveis lançados pelo usuário: reduzem primeiro o ganho isento do "
+        "mês e depois o resultado"
         + (f" ({c.descricao})" if c.descricao else ""),
         categoria=c.categoria, grupo=Grupo.A_VISTA, tipo=TipoAtivo.ACAO, cv=None,
         quantidade=ZERO, valor=ZERO, custos=c.valor, resultado=-c.valor,
@@ -319,6 +359,13 @@ def _categoria(
                 isento += isentavel
                 por_grupo[Grupo.A_VISTA] -= isentavel
                 total -= isentavel
+        # custo lançado à mão em mês de ganho isento: reduz o isento antes de reduzir o tributável,
+        # senão o ganho ficaria isento e o custo ainda viraria prejuízo (decisão de 08/11/2026)
+        custos = sum((-m.resultado for m in movs if m.origem.startswith("custo:")), ZERO)
+        abatido = min(custos, max(isento, ZERO))
+        isento -= abatido
+        por_grupo[Grupo.A_VISTA] += abatido
+        total += abatido
     resultado = centavos(total)
     saldo = resultado + prejuizo_anterior
     aliquota = params.decimal(ALIQUOTAS[cat], dia)

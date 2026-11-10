@@ -1,4 +1,4 @@
-"""Tela 11 — Outros custos dedutíveis (ex.: taxas de aluguel de ações - BTC): a grade do ano, mês
+"""Tela 11 — Outros custos dedutíveis (ex.: corretagem e tarifas da B3 do BTC): a grade do ano, mês
 por categoria, editável; cada valor reduz o resultado da categoria no mês."""
 
 from collections.abc import Callable
@@ -25,9 +25,12 @@ def _r(v: Decimal) -> str:
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.label("Outros custos dedutíveis").classes("coir-titulo-pagina")
     ui.label(
-        f"Custos de {estado.ano} que não estão nas notas e reduzem o resultado do mês, como as "
-        "taxas de aluguel de ações (BTC) cobradas pela corretora. Digite o total do mês em cada "
-        "categoria; zero apaga. A apuração e a DARF são refeitas."
+        f"Custos de {estado.ano} que não estão nas notas e reduzem o resultado. Para quem tomou "
+        "ações emprestadas (BTC) e vendeu: lance a corretagem e as tarifas da B3 do empréstimo, no "
+        "mês da recompra. Não lance a taxa de aluguel paga ao doador: segundo a Receita, pessoa "
+        "física não pode deduzi-la (Solução de Consulta Cosit 42/2020). Quem empresta as ações "
+        "não lança nada aqui. Digite o total do mês em cada categoria; zero apaga. A apuração e a "
+        "DARF são refeitas."
     ).classes("coir-subtitulo")
     if not estado.existe or estado.titular is None or estado.ano is None:
         ui.label("Cadastre o titular primeiro.").classes("coir-vazio w-full")
@@ -36,6 +39,12 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     atuais = {
         (c.mes, c.categoria): c for c in outros_custos.listar(estado.banco, titular) if c.ano == ano
     }
+    if any("aluguel" in c.descricao.lower() for c in atuais.values() if c.descricao):
+        ui.label(
+            "Há lançamento com aluguel na descrição. Confira este e os outros meses: segundo a "
+            "Receita, a taxa paga ao doador não é dedutível; só a corretagem e as tarifas da B3 "
+            "do empréstimo."
+        ).classes("coir-carimbo text-sm").mark("aviso-aluguel")
     total = ui.label("").classes("coir-numero")
 
     def somar() -> None:
@@ -88,7 +97,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 "",
             )
             descricao = (
-                ui.input(value=descricao_atual, placeholder="ex.: aluguel de ações")
+                ui.input(value=descricao_atual, placeholder="ex.: corretagem e tarifa B3 do BTC")
                 .props("outlined dense")
                 .mark(f"descricao-{mes}")
             )

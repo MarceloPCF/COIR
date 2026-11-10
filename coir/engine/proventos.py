@@ -16,6 +16,11 @@
   "Rendimento" em ação sem esse par: fora, listado com aviso.
 - Reembolso de BTC (doador): isento até 2025 (IN RFB 1.585/2015 art. 74); desde 2026 a Lei
   15.265/2025 é omissa para dividendos: isento por equivalência, com aviso (parâmetro).
+- Rendimento de FI-Infra e FIP-IE (tipo FUNDO_INFRA): alíquota zero, exclusiva na fonte (Lei
+  12.431/2011 art. 3º §§1º, 2º e 2º-A; Lei 11.478/2007 art. 2º §3º); ficha exclusiva 06 pelo
+  valor líquido. Preço x quantidade acima do líquido sugere retenção (fundo desenquadrado): aviso.
+  Amortização dessas cotas: reduz o custo (Lei 11.478 art. 2º §2º; IN 1.585 art. 16 §2º), listada
+  e proposta como redução de capital (parecer do especialista de 09/11/2026).
 - Restituição de capital: reduz o custo das ações (IN 1.585 art. 58 §8º): listada e proposta como
   evento de redução de capital; não é rendimento.
 - Linhas "- Transferido": o provento acompanhando a transferência de custódia, em pares que se
@@ -40,6 +45,7 @@ from coir.erros import MotorError
 CENTAVO = Decimal("0.01")
 DIVIDENDO, JCP, RENDIMENTO = "Dividendo", "Juros Sobre Capital Próprio", "Rendimento"
 REEMBOLSO, RESTITUICAO = "Reembolso", "Restituição de Capital"
+AMORTIZACAO = "Amortização"
 TRANSFERIDO = " - Transferido"
 ISENTO_DIVIDENDO = (TipoAtivo.ACAO, TipoAtivo.UNIT)
 
@@ -144,8 +150,11 @@ def proventos(
                 1 if x.entrada else -1
             )
             continue
-        if x.movimentacao not in (DIVIDENDO, JCP, RENDIMENTO, REEMBOLSO, RESTITUICAO):
+        if x.movimentacao not in (DIVIDENDO, JCP, RENDIMENTO, REEMBOLSO, RESTITUICAO, AMORTIZACAO):
             continue
+        if (x.movimentacao == AMORTIZACAO
+                and tipos.tipo_ou_sem(x.codigo) is not TipoAtivo.FUNDO_INFRA):  # fmt: skip
+            continue  # amortização de outros fundos: fora, como antes
         if not x.entrada:
             raise MotorError(
                 f"{x.data}: {x.movimentacao} de {x.codigo} a débito (mov:{item.id}) "
@@ -207,7 +216,9 @@ def _provento(
     x = item.linha
     if x.movimentacao == JCP:
         return _jcp(item, params)
-    tipo_ativo = tipos.tipo(x.codigo)
+    tipo_ativo = tipos.tipo_ou_sem(x.codigo)
+    nome_tipo = ("ativo sem tipo nas tabelas do COIR" if tipo_ativo is TipoAtivo.SEM_TIPO
+                 else tipo_ativo.value)  # fmt: skip
     tipo, obs = TipoProvento.FORA_DO_ESCOPO, ""
     if x.movimentacao == DIVIDENDO:
         if tipo_ativo in ISENTO_DIVIDENDO:
@@ -218,10 +229,12 @@ def _provento(
                 "versão futura"
             )
         else:
-            obs = f"dividendo de {tipo_ativo.value}: tratamento fora da v3.0"
+            obs = f"dividendo de {nome_tipo}: tratamento fora da v3.0"
     elif x.movimentacao == RENDIMENTO:
         if tipo_ativo is TipoAtivo.FII:
             tipo = TipoProvento.RENDIMENTO_FII
+        elif tipo_ativo is TipoAtivo.FUNDO_INFRA:
+            return _rendimento_fundo_infra(item, avisos)
         elif (item.titular, x.codigo, x.data) in pagos and x.preco and x.quantidade:
             bruto = (x.quantidade * x.preco).quantize(CENTAVO, rounding=ROUND_HALF_UP)
             liquido = x.valor or ZERO
@@ -236,7 +249,7 @@ def _provento(
                 "(código 06 ou 12, conforme o informe da empresa)",
             )
         else:
-            obs = f"rendimento em {tipo_ativo.value} sem dividendo ou JCP no mesmo dia: fora"
+            obs = f"rendimento em {nome_tipo} sem dividendo ou JCP no mesmo dia: fora"
     elif x.movimentacao == REEMBOLSO:
         de, acoes = _origem_reembolso(x, params, candidatos)
         informada = ""
@@ -260,10 +273,31 @@ def _provento(
                 obs = f"{origem}: tributável pelo parâmetro vigente"
         return _criar(item, TipoProvento.REEMBOLSO_BTC, x.valor or ZERO, ZERO, x.data.year, obs,
                       reembolso_de=de)  # fmt: skip
+    elif x.movimentacao == AMORTIZACAO:
+        tipo = TipoProvento.RESTITUICAO_CAPITAL
+        obs = ("amortização de cotas: reduz o custo (evento de redução de capital); o que passar "
+               "do custo é rendimento (confira o informe do administrador)")  # fmt: skip
     else:  # restituição de capital
         tipo = TipoProvento.RESTITUICAO_CAPITAL
         obs = "reduz o custo das ações (evento de redução de capital), não é rendimento"
     return _criar(item, tipo, x.valor or ZERO, ZERO, x.data.year, obs)
+
+
+def _rendimento_fundo_infra(item: LinhaB3, avisos: list[str]) -> Provento:
+    """Alíquota zero: o líquido é o rendimento, sem IRRF. Preço x quantidade acima do líquido
+    indica retenção, o que só acontece com o fundo desenquadrado (Lei 12.431 art. 3º §§5º e 6º;
+    Lei 11.478 art. 2º §§4º e 5º): a retenção é definitiva e a ficha continua a mesma, pelo
+    líquido; o COIR avisa."""
+    x = item.linha
+    liquido = x.valor or ZERO
+    obs = "FI-Infra ou FIP-IE: alíquota zero, ficha exclusiva 06 pelo valor líquido"
+    if x.preco and x.quantidade:
+        bruto = (x.quantidade * x.preco).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+        if bruto - liquido > CENTAVO:
+            obs += (f"; preço x quantidade ({bruto}) acima do líquido: houve retenção (fundo "
+                    "desenquadrado?), confira o informe do administrador")  # fmt: skip
+            avisos.append(f"{x.data}: {x.codigo}: {obs}")
+    return _criar(item, TipoProvento.RENDIMENTO_FUNDO_INFRA, liquido, ZERO, x.data.year, obs)
 
 
 def _jcp(item: LinhaB3, params: ParametrosFiscais) -> Provento:

@@ -7,8 +7,12 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
 - ``instrumentos_b3.csv``: ações, units, BDR, ETF e fundos da B3 com ISIN (histórico: primeira e
   última coleta em que o ticker apareceu; nunca apaga linha);
 - ``ativos_b3.csv``: nome de pregão (nome da companhia + classe) -> ticker, como as notas imprimem;
-- ``tipos_ativo_b3.csv``: UNIT, BDR, ETF e FII pela categoria da B3 (fundo só com "imobiliário" ou
-  "Fiagro" no nome; FIP, FIDC e outros ficam de fora: sem palpite);
+- ``nomes_pregao_b3.csv``: nome de pregão -> ticker com o período, do COTAHIST (como as notas
+  imprimem, de 2008 em diante) e da lista de ETF de renda fixa (fora do COTAHIST); nunca apaga;
+- ``tipos_ativo_b3.csv``: UNIT, BDR, ETF e FII pela categoria da B3 (fundo pelo cadastro de fundos
+  da B3, pelo COTAHIST ou pelo nome); direito, recibo e bônus de subscrição viram DIREITO; FI-Infra
+  e FIP-IE, só pela lista de fundos da B3, viram FUNDO_INFRA; FIP comum e FIDC ficam de fora: sem
+  palpite, o motor isola o ativo;
 - ``opcoes_raiz_b3.csv``: raiz de 4 letras -> ativo-objeto (só raiz com um objeto só);
 - ``eventos_b3.csv``: desdobramentos, grupamentos, bonificações, cisões e subscrições (nunca apaga),
   com a origem de cada linha (``b3``, ``cvm_fre``, ``cvm_ipe``; ``b3+cvm_fre`` quando as duas
@@ -17,9 +21,10 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
 - ``proventos_b3.csv``: proventos em dinheiro (dividendo, JCP, rendimento) com data de aprovação,
   data com, pagamento e valor por ação (o crédito do JCP; a B3 só lista os últimos meses, nunca
   apaga);
-- ``proventos_historico_b3.csv``: JCP da aba "Proventos em dinheiro" de cada companhia desde
-  ``HISTORICO_DESDE``, com classe, data de aprovação e data com (sem pagamento nem ISIN: a B3 não
-  publica); cobre os anos que ``proventos_b3.csv`` não alcança; nunca apaga;
+- ``proventos_historico_b3.csv``: JCP e restituição de capital em dinheiro da aba "Proventos em
+  dinheiro" de cada companhia desde ``HISTORICO_DESDE``, com classe, data de aprovação e data com
+  (sem pagamento nem ISIN: a B3 não publica); cobre os anos que ``proventos_b3.csv`` não alcança;
+  nunca apaga;
 - ``emissores_b3.csv``: CNPJ e razão social de cada emissor (companhias e fundos FII, Fiagro e ETF),
   para o Bens e Direitos do IRPF (histórico: o CNPJ de um fundo pode mudar; nunca apaga linha);
 - ``pacote.json``: formato e data do pacote.
@@ -44,13 +49,29 @@ from typing import Any
 FORMATO = 2  # esquema dos arquivos de data/; o app só aceita pacote do mesmo formato
 CAIXA = "CASH"
 CATEGORIAS = {"SHARES", "UNIT", "BDR", "FUNDS", "ETF EQUITIES", "ETF FOREIGN INDEX"}
+# ETF de renda fixa: a B3 os publica fora do segmento à vista, sem especificação nem razão social
+CATEGORIA_RF = "FIXED INCOME TRADABLE INSTRUMENT T1"
+SEGMENTO_RF = "FORWARD"
+# cancelado, sem índice nem carteira (parecer do especialista de 07/11/2026): sem tipo, sem palpite
+FORA_DO_ETF_RF = {"GPRE11"}
 TIPO_POR_CATEGORIA = {"UNIT": "UNIT", "BDR": "BDR", "ETF EQUITIES": "ETF",
-                      "ETF FOREIGN INDEX": "ETF"}  # fmt: skip
+                      "ETF FOREIGN INDEX": "ETF", CATEGORIA_RF: "ETF_RF"}  # fmt: skip
 OPCAO = "OPTION ON EQUITIES"
 RE_RAIZ = re.compile(r"^[A-Z0-9]{4}")
 # ação (final 3 a 8) e unit (11); recibos (9, 10), direitos (1, 2, 12...) e lotes especiais, fora
 RE_ACAO = re.compile(r"^[A-Z0-9]{4}[3-8]$")
 RE_UNIT = re.compile(r"^[A-Z0-9]{4}11$")
+RE_ACAO_BALCAO = re.compile(r"^[A-Z0-9]{4}[3-8]B$")
+SUBSCRICAO = {
+    "DIR",
+    "REC",
+    "BNS",
+}  # direito, recibo e bônus: tipo DIREITO, nunca o do papel (o direito de FII não é FII)
+# ação com final fora do padrão (RAIZ55 "PNA P N2": lote de cotação): a classe da B3 diz que é ação
+RE_ACAO_ESPECIAL = re.compile(r"^[A-Z0-9]{4}\d{2,3}$")
+CLASSES_ACAO = {"ON", "PN", "PNA", "PNB", "PNC", "PND", "PNE", "PNF", "PNG"}
+# ativo-objeto de opção com final especial: só as ações "P" (RAIZ55); AUAU99 e semelhantes, não
+RE_OBJETO_ESPECIAL = re.compile(r"^[A-Z0-9]{4}5[3-6]$")
 
 
 def _padrao(ticker: str, categoria: str = "") -> bool:
@@ -61,6 +82,8 @@ def _padrao(ticker: str, categoria: str = "") -> bool:
     return bool(RE_ACAO.match(ticker) or RE_UNIT.match(ticker))
 
 
+COLUNAS_NOMES = ("nome_pregao", "ticker", "desde", "ate", "tipo")
+COLUNAS_TROCAS = ("ticker_impresso", "ticker", "ate", "isin_antigo", "isin_novo", "fonte")
 COLUNAS_INSTRUMENTOS = ("ticker", "isin", "categoria", "especificacao", "emissor", "nome",
                         "visto_desde", "visto_ate")  # fmt: skip
 COLUNAS_EMISSORES = ("emissor", "cnpj", "razao_social", "tipo", "visto_desde", "visto_ate")
@@ -68,6 +91,8 @@ COLUNAS_PROVENTOS = ("emissor", "isin", "tipo", "valor", "aprovado_em", "data_co
                      "referente")  # fmt: skip
 COLUNAS_HISTORICO = ("emissor", "classe", "tipo", "valor", "aprovado_em", "data_com")
 JCP = "JRS CAP PROPRIO"
+RESTITUICAO = "REST CAP DIN"  # restituição de capital em dinheiro: reduz o custo
+HISTORICO_TIPOS = (JCP, RESTITUICAO)
 HISTORICO_DESDE = "2016-01-01"  # data com mais antiga guardada (dez anos antes da F8)
 COLUNAS_EVENTOS = ("emissor", "isin", "tipo", "fator", "data_com", "aprovado_em", "isin_emitido",
                    "preco", "periodo", "data_subscricao", "origem", "referencia",
@@ -148,7 +173,10 @@ def ler_instrumentos(bruto: bytes) -> tuple[list[Instrumento], list[Opcao]]:
     for r in leitor:
         if r["SctyCtgyNm"] == OPCAO and r["Asst"]:
             opcoes.append(Opcao(r["TckrSymb"], r["Asst"]))
-        elif r["SgmtNm"] == CAIXA and r["SctyCtgyNm"] in CATEGORIAS and r["ISIN"]:
+        elif r["ISIN"] and (
+            (r["SgmtNm"] == CAIXA and r["SctyCtgyNm"] in CATEGORIAS)
+            or (r["SgmtNm"] == SEGMENTO_RF and r["SctyCtgyNm"] == CATEGORIA_RF)
+        ):
             instrumentos.append(Instrumento(
                 ticker=r["TckrSymb"].strip(), isin=r["ISIN"].strip(),
                 categoria=r["SctyCtgyNm"], especificacao=" ".join(r["SpcfctnCd"].split()),
@@ -187,7 +215,7 @@ class Emissor:
     emissor: str  # código de 4 letras (Asst no cadastro de instrumentos; sigla do fundo)
     cnpj: str
     razao_social: str
-    tipo: str  # COMPANHIA, FII, FIAGRO, ETF, ETF-RF, ETF-FII
+    tipo: str  # COMPANHIA, FII, FIAGRO, ETF, ETF-RF, ETF-FII, FI-INFRA, FIP-IE
 
 
 def ler_emissores(empresas: Iterable[Mapping[str, object]], fundos: Iterable[Mapping[str, object]],
@@ -293,17 +321,19 @@ def juntar_proventos(anteriores: list[dict[str, str]], novos: Iterable[dict[str,
 
 
 def ler_historico(emissor: str, resultados: Sequence[Mapping[str, object]]) -> list[dict[str, str]]:
-    """Aba "Proventos em dinheiro" (GetListedCashDividends) de uma companhia -> JCP com data de
-    aprovação e data com desde ``HISTORICO_DESDE``. Linha sem aprovação ou com valor por lote (a
-    B3 cotava por mil ações nos anos 1990) fica de fora."""
+    """Aba "Proventos em dinheiro" (GetListedCashDividends) de uma companhia -> JCP e restituição
+    de capital em dinheiro com data de aprovação e data com desde ``HISTORICO_DESDE`` (a consulta
+    de empresas só traz os últimos meses: sem o histórico, a restituição antiga se perdia). Linha
+    sem aprovação ou com valor por lote (a B3 cotava por mil ações nos anos 1990) fica de fora."""
     saida: list[dict[str, str]] = []
     for e in resultados:
-        if str(e["corporateAction"]).strip() != JCP or str(e.get("quotedPerShares", "1")) != "1":
+        tipo = str(e["corporateAction"]).strip()
+        if tipo not in HISTORICO_TIPOS or str(e.get("quotedPerShares", "1")) != "1":
             continue
         aprovado = _data_br(str(e.get("dateApproval") or ""))
         data_com = _data_br(str(e["lastDatePriorEx"]))
         if aprovado and data_com >= HISTORICO_DESDE:
-            saida.append({"emissor": emissor, "classe": str(e["typeStock"]).strip(), "tipo": JCP,
+            saida.append({"emissor": emissor, "classe": str(e["typeStock"]).strip(), "tipo": tipo,
                           "valor": _numero(_br(str(e["valueCash"]))), "aprovado_em": aprovado,
                           "data_com": data_com})  # fmt: skip
     return saida
@@ -319,7 +349,9 @@ def juntar_historico(anteriores: list[dict[str, str]], novos: Iterable[dict[str,
     todos = {chave(r): dict(r) for r in anteriores}
     for r in novos:
         if chave(r) not in todos:
-            resumo.historico_novos.append(f"{r['data_com']} {r['emissor']} {r['classe']}")
+            resumo.historico_novos.append(
+                f"{r['data_com']} {r['emissor']} {r['classe']} {r['tipo']}"
+            )
             todos[chave(r)] = r
     return [todos[k] for k in sorted(todos, key=lambda k: (k[5], k[0], k[1], k[4], k[3]))]
 
@@ -375,16 +407,25 @@ class Resumo:
     revisao: list[str] = field(default_factory=list[str])
     conflitos: list[str] = field(default_factory=list[str])
     sem_resposta: list[str] = field(default_factory=list[str])
+    saidas: list[str] = field(default_factory=list[str])  # sumiram do cadastro nesta coleta
+    nomes_novos: list[str] = field(default_factory=list[str])
 
     def markdown(self, data: date) -> str:
         partes = [f"## Referências públicas — coleta de {data:%d/%m/%Y}", ""]
         for titulo, itens in (
+            (
+                "Ativos que saíram do cadastro: toda linha pede revisão (troca de código, "
+                "incorporação, cancelamento de registro?); o que tiver evento vai para "
+                "trocas_ticker.csv ou eventos_cvm_ipe.csv",
+                self.saidas,
+            ),
             ("Ativos novos", self.ativos_novos),
             (
-                "Trocas de ticker candidatas (mesmo ISIN; revise e inclua em trocas_ticker.csv)",
+                "Trocas de ticker (mesmo ISIN; já incluídas em trocas_ticker.csv, confira)",
                 [f"{a} -> {n} (até {ate})" for a, n, ate in self.trocas_candidatas],
             ),
             ("Eventos corporativos novos", self.eventos_novos),
+            ("Nomes de pregão novos", self.nomes_novos),
             ("Meses de Selic novos ou revistos", self.selic_nova),
             ("Emissores novos (CNPJ)", self.emissores_novos),
             ("CNPJ novo para emissor já conhecido (revise o Bens e Direitos)", self.cnpj_mudou),
@@ -392,7 +433,10 @@ class Resumo:
                 "Proventos em dinheiro novos (data de aprovação, emissor, tipo)",
                 self.proventos_novos,
             ),
-            ("JCP novos no histórico (data com, emissor, classe)", self.historico_novos),
+            (
+                "JCP e restituições novos no histórico (data com, emissor, classe, tipo)",
+                self.historico_novos,
+            ),
             (
                 "Eventos com fontes divergentes (revise; nada foi alterado no pacote)",
                 self.divergencias,
@@ -412,7 +456,7 @@ class Resumo:
         return not (self.ativos_novos or self.trocas_candidatas or self.eventos_novos
                     or self.selic_nova or self.emissores_novos or self.cnpj_mudou
                     or self.proventos_novos or self.historico_novos
-                    or self.divergencias)  # fmt: skip
+                    or self.divergencias or self.saidas or self.nomes_novos)  # fmt: skip
 
 
 def atualizar_instrumentos(
@@ -444,7 +488,81 @@ def atualizar_instrumentos(
             continue
         for antigo in antigos_por_isin.get(i.isin, []):
             resumo.trocas_candidatas.append((antigo["ticker"], i.ticker, antigo["visto_ate"]))
+    _saidas(anteriores, atuais, vistos, resumo)
     return [por_ticker[t] for t in sorted(por_ticker)]
+
+
+def _saidas(anteriores: list[dict[str, str]], atuais: list[Instrumento], vistos: set[str],
+            resumo: Resumo) -> None:  # fmt: skip
+    """Quem estava no cadastro da coleta anterior e sumiu desta, com os códigos novos do mesmo
+    emissor: nada sai sem alguém olhar (PETZ3 virou AUAU3, de outro emissor, sem sugestão)."""
+    ultima = max((r["visto_ate"] for r in anteriores), default="")
+    novos: dict[str, list[str]] = defaultdict(list)
+    conhecidos = {r["ticker"] for r in anteriores}
+    for i in atuais:
+        if i.ticker not in conhecidos:
+            novos[i.emissor].append(i.ticker)
+    for r in anteriores:
+        if r["visto_ate"] != ultima or r["ticker"] in vistos:
+            continue
+        sucessores = novos.get(r["emissor"], [])
+        sugestao = (f"; novos do emissor: {', '.join(sucessores)}" if sucessores
+                    else "; sem sucessor")  # fmt: skip
+        resumo.saidas.append(f"{r['ticker']} ({r['especificacao']}, {r['nome']}){sugestao}")
+
+
+def juntar_trocas(anteriores: list[dict[str, str]], candidatas: Iterable[tuple[str, str, str]],
+                  instrumentos: list[dict[str, str]], nomes: Iterable[Mapping[str, str]],
+                  ) -> list[dict[str, str]]:  # fmt: skip
+    """Mesmo ISIN, código novo e o antigo fora do cadastro: é só troca de código, entra na tabela
+    (o PR da coleta mostra a linha). ``ate`` é o último negócio no COTAHIST, se houver."""
+    saida = [dict(r) for r in anteriores]
+    ja = {r["ticker_impresso"] for r in saida}
+    isin = {r["ticker"]: r["isin"] for r in instrumentos}
+    ultimo: dict[str, str] = {}
+    for n in nomes:
+        ultimo[n["ticker"]] = max(n["ate"], ultimo.get(n["ticker"], ""))
+    for antigo, novo, visto in candidatas:
+        if antigo in ja:
+            continue
+        ja.add(antigo)
+        ate = ultimo.get(antigo, visto)
+        saida.append({"ticker_impresso": antigo, "ticker": novo, "ate": ate,
+                      "isin_antigo": isin.get(antigo, ""), "isin_novo": isin.get(novo, ""),
+                      "fonte": f"B3: mesmo ISIN no cadastro de instrumentos; último negócio de "
+                               f"{antigo} em {ate}"})  # fmt: skip
+    return saida
+
+
+def juntar_nomes(anteriores: Iterable[Mapping[str, str]], novos: Iterable[Mapping[str, str]],
+                 resumo: Resumo) -> list[dict[str, str]]:  # fmt: skip
+    """União por (nome, ticker) com o período estendido; nunca apaga."""
+    todos = {(r["nome_pregao"], r["ticker"]): dict(r) for r in anteriores}
+    for r in novos:
+        chave = (r["nome_pregao"], r["ticker"])
+        linha = todos.get(chave)
+        if linha is None:
+            todos[chave] = dict(r)
+            resumo.nomes_novos.append(f"{r['nome_pregao']} -> {r['ticker']}")
+        else:
+            linha["desde"] = min(linha["desde"], r["desde"])
+            linha["ate"] = max(linha["ate"], r["ate"])
+            linha["tipo"] = linha.get("tipo") or r.get("tipo", "")
+    return [todos[k] for k in sorted(todos)]
+
+
+def nomes_renda_fixa(fundos: Iterable[Mapping[str, object]], data: date) -> list[dict[str, str]]:
+    """ETF de renda fixa não aparece no COTAHIST: nome de pregão e código vêm da lista de fundos da
+    B3. A nota imprime "INVESTO LFTB F11" ("F11" é sufixo da especificação) ou "... CI"."""
+    dia = data.isoformat()
+    saida: list[dict[str, str]] = []
+    for f in fundos:
+        nome, codigo = " ".join(str(f.get("tradingName") or "").split()), f.get("tradingCode")
+        if f.get("typeName") == "ETF-RF" and nome and codigo:
+            for texto in (nome, f"{nome} CI"):
+                saida.append({"nome_pregao": texto, "ticker": str(codigo), "desde": dia,
+                              "ate": dia})  # fmt: skip
+    return saida
 
 
 def ativos(instrumentos: list[dict[str, str]], nomes: Mapping[str, str],
@@ -470,18 +588,89 @@ def ativos(instrumentos: list[dict[str, str]], nomes: Mapping[str, str],
     return saida
 
 
-def tipos(instrumentos: list[dict[str, str]]) -> list[dict[str, str]]:
+def _tipo_do_fundo(r: Mapping[str, str], emissores: Mapping[str, str]) -> str | None:
+    """Fundo do cadastro de instrumentos. A lista oficial de fundos da B3 vale primeiro: o nome no
+    cadastro é abreviado ("HEDGE BRASIL SHOPPING FII RESP LIM") e pode nem dizer "imobiliário". O
+    Fiagro é FII em qualquer forma, inclusive a de FIDC (Lei 8.668/1993 art. 20-D). Recibo e direito
+    de cota não: parecer do especialista de 09/11/2026."""
+    classe = (r["especificacao"].split() or [""])[0]
+    if classe in SUBSCRICAO:
+        return None
+    emissor = emissores.get(r["emissor"])
+    if emissor in ("FI-INFRA", "FIP-IE", "FIP-PDI"):
+        return "FUNDO_INFRA"  # alíquota zero para PF: só pela lista da B3, nunca pelo nome
+    if emissor == "FIAGRO" or (emissor == "FII" and classe == "CI"):
+        return "FII"
+    nome = _sem_acento(r["nome"])
+    if re.search(r"\bFII\b", nome):
+        return "FII"
+    return "FII" if ("IMOB" in nome or "FIAGRO" in nome) and " PART" not in nome else None
+
+
+def _tipo_pelo_nome(ticker: str, nome: str, tipo: str) -> str:
+    """Código fora do cadastro ou sem tipo nele, pelo COTAHIST: a coluna ``tipo`` do histórico ou a
+    especificação no fim do nome de pregão ("FII ALMIRANT CI", "3M DRN", "CEEE-D ON *"). A última
+    palavra separa o que é direito, recibo ou bônus ("AES TIETE E DIR UNT", "3R PETROLEUM ON REC",
+    "BIOMM BNS ORD"), antes da coluna ``tipo``: o COTAHIST põe o direito de FII ("FII BC FUND DIR
+    CI") com os FII, e ele é tributado a 15%, não a 20% (SC Cosit 166/2021)."""
+    partes = nome.split()
+    marcas = SUBSCRICAO & set(partes[-2:])
+    if marcas and not (marcas == {"REC"} and partes[-1] == "CI"):
+        return "DIREITO"  # "FII BLUE REC CI": REC de recebíveis, a cota (CI) é a especificação
+    if tipo:
+        return tipo
+    if not partes:
+        return ""
+    if partes[0] in ("FII", "FIAGRO") and "CI" in partes:
+        return "FII"
+    if any(p.startswith("DR") and len(p) == 3 for p in partes[1:]):
+        return "BDR"
+    if RE_ACAO_BALCAO.match(ticker) and CLASSES_ACAO & {p.rstrip("*") for p in partes}:
+        return "ACAO"  # IN RFB 1.585/2015 art. 59 I: "bolsas de valores ou mercado de balcão"
+    return "UNIT" if partes[-1] == "UNT" and RE_UNIT.match(ticker) else ""
+
+
+def tipos(instrumentos: list[dict[str, str]], nomes: Iterable[Mapping[str, str]] = (),
+          emissores: Iterable[Mapping[str, str]] = ()) -> list[dict[str, str]]:  # fmt: skip
+    """Tipo pela categoria do cadastro; sem tipo por ele, pelo que o COTAHIST dizia do ticker
+    (``nomes``). Fundo sem tipo por nenhum dos dois fica de fora: nada de palpite. Nome de pregão
+    que dá dois tipos para o mesmo código também."""
     saida: list[dict[str, str]] = []
+    tipo_emissor = {e["emissor"]: e["tipo"] for e in emissores}
+    nao_e_fii = set()
     for r in instrumentos:
         tipo = TIPO_POR_CATEGORIA.get(r["categoria"])
-        if r["categoria"] == "FUNDS":
-            nome = _sem_acento(r["nome"])
-            imobiliario = "IMOB" in nome or "FIAGRO" in nome
-            tipo = "FII" if imobiliario and " PART" not in nome else None
+        if r["ticker"] in FORA_DO_ETF_RF:
+            continue
+        if (r["categoria"] == "SHARES"
+                and (RE_ACAO_ESPECIAL.match(r["ticker"]) or RE_ACAO_BALCAO.match(r["ticker"]))
+                and (r["especificacao"].split() or [""])[0] in CLASSES_ACAO):  # fmt: skip
+            tipo = "ACAO"
+        if (r["especificacao"].split() or [""])[0] in SUBSCRICAO:
+            tipo = "DIREITO"  # SC Cosit 145 e 166/2021; recibo: parecer de 09/11/2026 (posição B)
+        elif r["categoria"] == "FUNDS":
+            tipo = _tipo_do_fundo(r, tipo_emissor)
+            if tipo is None:
+                nao_e_fii.add(r["ticker"])  # FIP, FI-Infra, FIDC: o COTAHIST os põe junto dos FII
         if tipo is not None:
             saida.append(
                 {"ticker": r["ticker"], "tipo": tipo, "observacao": "B3: " + r["categoria"]}
             )
+    com_tipo = {r["ticker"] for r in saida}
+    antigos: dict[str, set[str]] = defaultdict(set)
+    for n in nomes:
+        if n["ticker"] in com_tipo or n["ticker"] in nao_e_fii or n["ticker"] in FORA_DO_ETF_RF:
+            continue
+        tipo = _tipo_pelo_nome(n["ticker"], n.get("nome_pregao", ""), n.get("tipo") or "")
+        if tipo:
+            antigos[n["ticker"]].add(tipo)
+    for t, achados in antigos.items():
+        # a cota de FII é sempre final 11: "FII BC FUND CI" e "FII BC FUND DIR CI" no BRCR12 é
+        # o direito com o nome abreviado de dois jeitos
+        if achados == {"DIREITO", "FII"} and not t.endswith("11"):
+            antigos[t] = {"DIREITO"}
+    saida += [{"ticker": t, "tipo": next(iter(antigos[t])), "observacao": "B3: COTAHIST"}
+              for t in sorted(antigos) if len(antigos[t]) == 1]  # fmt: skip
     return saida
 
 
@@ -489,7 +678,7 @@ def opcoes_raiz(opcoes: Iterable[Opcao], resumo: Resumo) -> list[dict[str, str]]
     objetos: dict[str, set[str]] = defaultdict(set)
     for o in opcoes:
         m = RE_RAIZ.match(o.ticker)
-        if m and _padrao(o.objeto):
+        if m and (_padrao(o.objeto) or RE_OBJETO_ESPECIAL.match(o.objeto)):
             objetos[m.group()].add(o.objeto)
     saida: list[dict[str, str]] = []
     for raiz in sorted(objetos):
@@ -632,6 +821,7 @@ class Coleta:
     historico: dict[str, list[Mapping[str, object]]] = field(
         default_factory=dict[str, list[Mapping[str, object]]]
     )  # emissor -> linhas da aba "Proventos em dinheiro" (todas as páginas)
+    nomes: Sequence[Mapping[str, str]] = ()  # do COTAHIST
 
     def salvar(self, pasta: Path) -> None:
         """Respostas brutas em ``pasta`` (para reprocessar sem rede e depurar)."""
@@ -640,7 +830,8 @@ class Coleta:
         for nome, valor in (("empresas", self.empresas), ("eventos", self.eventos),
                             ("selic", self.selic), ("data", self.data.isoformat()),
                             ("fundos", self.fundos), ("historico", self.historico),
-                            ("sem_resposta", list(self.sem_resposta))):  # fmt: skip
+                            ("sem_resposta", list(self.sem_resposta)),
+                            ("nomes", list(self.nomes))):  # fmt: skip
             (pasta / f"{nome}.json").write_text(json.dumps(valor, ensure_ascii=False),
                                                 encoding="utf-8")  # fmt: skip
 
@@ -651,11 +842,12 @@ class Coleta:
 
         fundos = ler("fundos") if (pasta / "fundos.json").is_file() else []  # coleta antiga
         historico = ler("historico") if (pasta / "historico.json").is_file() else {}
+        nomes = ler("nomes") if (pasta / "nomes.json").is_file() else []
         return cls(data=date.fromisoformat(ler("data")),
                    instrumentos=(pasta / "instrumentos.csv").read_bytes(),
                    empresas=ler("empresas"), eventos=ler("eventos"), selic=ler("selic"),
                    sem_resposta=tuple(ler("sem_resposta")), fundos=fundos,
-                   historico=historico)  # fmt: skip
+                   historico=historico, nomes=nomes)  # fmt: skip
 
 
 RESPOSTA_RUIM = (KeyError, IndexError, TypeError, ValueError, AttributeError, InvalidOperation)
@@ -684,7 +876,6 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
     arquivos = {
         "instrumentos_b3.csv": texto_csv(COLUNAS_INSTRUMENTOS, historico),
         "ativos_b3.csv": texto_csv(("nome_pregao", "ticker"), ativos(historico, nomes, resumo)),
-        "tipos_ativo_b3.csv": texto_csv(("ticker", "tipo", "observacao"), tipos(historico)),
         "opcoes_raiz_b3.csv": texto_csv(("raiz", "ticker"), opcoes_raiz(opcoes, resumo)),
         "eventos_b3.csv": texto_csv(COLUNAS_EVENTOS, juntar_eventos(
             ler_csv(pasta / "eventos_b3.csv"), eventos, resumo, excluidos)),
@@ -702,6 +893,17 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
             ler_csv(pasta / "emissores_b3.csv"), ler_emissores(coleta.empresas, coleta.fundos,
                                                                resumo), coleta.data, resumo)),
     }  # fmt: skip
+    nomes = juntar_nomes(ler_csv(pasta / "nomes_pregao_b3.csv"),
+                         [*coleta.nomes, *nomes_renda_fixa(coleta.fundos, coleta.data)],
+                         resumo)  # fmt: skip
+    arquivos["nomes_pregao_b3.csv"] = texto_csv(COLUNAS_NOMES, nomes)
+    arquivos["tipos_ativo_b3.csv"] = texto_csv(
+        ("ticker", "tipo", "observacao"),
+        tipos(historico, nomes, ler_csv(pasta / "emissores_b3.csv")))  # fmt: skip
+    if (pasta / "trocas_ticker.csv").is_file():
+        arquivos["trocas_ticker.csv"] = texto_csv(COLUNAS_TROCAS, juntar_trocas(
+            ler_csv(pasta / "trocas_ticker.csv"), resumo.trocas_candidatas, historico,
+            nomes))  # fmt: skip
     arquivos["pacote.json"] = json.dumps({"formato": FORMATO, "data": coleta.data.isoformat()},
                                          indent=1) + "\n"  # fmt: skip
     return arquivos, resumo
@@ -745,6 +947,11 @@ def incorporar_eventos(pasta: Path, novos: Iterable[EventoB3],
                 "pacote.json": json.dumps({"formato": FORMATO, "data": data.isoformat()},
                                           indent=1) + "\n"}  # fmt: skip
     return arquivos, resumo
+
+
+def houve_pregao(dia: date, feriados: Iterable[Mapping[str, str]]) -> bool:
+    """Fim de semana e os dias de ``feriados.csv`` (bancários e sem pregão) não têm pregão."""
+    return dia.weekday() < 5 and dia.isoformat() not in {f["data"] for f in feriados}
 
 
 def gravar(pasta: Path, arquivos: Mapping[str, str]) -> list[str]:

@@ -88,7 +88,7 @@ def pasta_efetiva(dados: Path | None) -> Path:
     return embutida
 
 
-RE_TICKER_PADRAO = re.compile(r"^[A-Z0-9]{4}([3-8]|11)$")
+RE_TICKER_PADRAO = re.compile(r"^[A-Z0-9]{4}([3-8]|11|5[3-6])$")  # 53 a 56: ações "P" (RAIZ55)
 
 
 COLUNAS_EVENTOS_B3 = ("emissor", "isin", "tipo", "fator", "data_com", "aprovado_em",
@@ -238,8 +238,9 @@ def proventos_b3(pasta: Path) -> list[dict[str, str]]:
 
 
 def proventos_historico_b3(pasta: Path) -> list[dict[str, str]]:
-    """JCP do histórico público (``proventos_historico_b3.csv``: classe, aprovação e data com, sem
-    pagamento; vazio se não houver), só as linhas com datas válidas e valor numérico."""
+    """JCP e restituição de capital do histórico público (``proventos_historico_b3.csv``: classe,
+    aprovação e data com, sem pagamento; vazio se não houver), só as linhas com datas válidas e
+    valor numérico."""
     caminho = pasta / "proventos_historico_b3.csv"
     saida: list[dict[str, str]] = []
     for r in _linhas(caminho) if caminho.is_file() else []:
@@ -266,6 +267,31 @@ def instrumentos(pasta: Path) -> dict[str, tuple[str, str, str]]:
 
 
 @cache
+def ultimos_negocios(pasta: Path) -> dict[str, date]:
+    """Ticker -> último negócio no COTAHIST (``nomes_pregao_b3.csv``; vazio em pacote antigo)."""
+    caminho = pasta / "nomes_pregao_b3.csv"
+    saida: dict[str, date] = {}
+    for r in _linhas(caminho) if caminho.is_file() else []:
+        ate = date.fromisoformat(r["ate"])
+        saida[r["ticker"]] = max(ate, saida.get(r["ticker"], ate))
+    return saida
+
+
+COLUNAS_SAIDAS = ("ticker", "ultimo_negocio", "situacao", "destino", "relacao",
+                  "dinheiro_por_acao", "confianca", "fonte", "observacao")  # fmt: skip
+
+
+@cache
+def saidas_b3(pasta: Path) -> dict[str, dict[str, str]]:
+    """O que houve com o ativo que parou de negociar (``saidas_b3.csv``, curada, com fonte)."""
+    caminho = pasta / "saidas_b3.csv"
+    linhas = _linhas(caminho) if caminho.is_file() else []
+    if linhas and set(COLUNAS_SAIDAS) - set(linhas[0]):
+        raise ConfiguracaoError("saidas_b3.csv: colunas ausentes")
+    return {r["ticker"]: r for r in linhas}
+
+
+@cache
 def carregar_irpf(ano_calendario: int, pasta: Path | None = None) -> MapeamentoIrpf:
     """Mapeamento das fichas do programa IRPF (``data/irpf/<exercício>.yaml``). Vem sempre com a
     versão instalada (não com o pacote público): cada exercício novo pede código novo no COIR.
@@ -287,6 +313,16 @@ def carregar_irpf(ano_calendario: int, pasta: Path | None = None) -> MapeamentoI
 
 def _data(texto: str) -> date | None:
     return date.fromisoformat(texto) if texto else None
+
+
+def _nomes_historicos(caminho: Path) -> dict[str, tuple[tuple[str, str, str], ...]]:
+    """Histórico de nomes de pregão da B3 (``nomes_pregao_b3.csv``; vazio em pacote antigo)."""
+    saida: dict[str, list[tuple[str, str, str]]] = {}
+    for r in _linhas(caminho) if caminho.is_file() else []:
+        saida.setdefault(compactar(r["nome_pregao"]), []).append(
+            (r["desde"], r["ate"], r["ticker"])
+        )
+    return {nome: tuple(periodos) for nome, periodos in saida.items()}
 
 
 @cache
@@ -323,6 +359,7 @@ def carregar(pasta: Path | None = None) -> Referencias:
             for t in _linhas(base / "trocas_ticker.csv")
         ),
         instituicoes_b3=_mapa(base / "instituicoes_b3.csv", "prefixo", "corretora"),
+        nomes_historicos=_nomes_historicos(base / "nomes_pregao_b3.csv"),
     )
 
 
@@ -390,6 +427,7 @@ def carregar_fiscais(pasta: Path | None = None) -> ReferenciasFiscais:
             ticker=p["ticker"], aquisicao_desde=date.fromisoformat(p["aquisicao_desde"]),
             aquisicao_ate=date.fromisoformat(p["aquisicao_ate"]),
             vendas_ate=date.fromisoformat(p["vendas_ate"]), fonte=p["fonte"],
+            media_fim=Decimal(p["media_fim"]) if p.get("media_fim") else None,
         )
         for p in _linhas(base / "isencao_pme.csv")
     }  # fmt: skip

@@ -100,7 +100,7 @@ async def test_outros_custos_grava_o_mes_e_zero_apaga(tmp_path: Path) -> None:
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/outros-custos")
         await user.should_see("Outros custos dedutíveis")
-        user.find(marker="descricao-3").type("aluguel de ações")
+        user.find(marker="descricao-3").type("corretagem do BTC")
         user.find(marker="custo-3-COMUM").type("12,50").trigger("blur")
         await user.should_see("Março: reduz o resultado comum em 12,50", retries=ESPERA)
         await user.should_see("Total do ano: 12,50")
@@ -110,7 +110,7 @@ async def test_outros_custos_grava_o_mes_e_zero_apaga(tmp_path: Path) -> None:
             3,
             Categoria.COMUM,
             Decimal("12.50"),
-            "aluguel de ações",
+            "corretagem do BTC",
         )
         user.find(marker="custo-3-COMUM").clear().type("0").trigger("blur")
         await user.should_see("Total do ano: 0,00", retries=ESPERA)
@@ -179,26 +179,23 @@ async def test_eventos_lanca_a_proposta_da_b3_e_recusa_o_que_nao_fecha(tmp_path:
     estado.pasta_refs = _pacote_eventos(tmp_path, [])  # sem os eventos reais do pacote da B3
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/eventos")
-        await user.should_see("Propostas da B3 (1)", retries=ESPERA)
+        await user.should_see("A conferir (1)", retries=ESPERA)
         await user.should_see("Eventos lançados (0)")
         linha = _grade(user, "grade-propostas").options["rowData"][0]
         user.find(marker="grade-propostas").trigger("rowClicked", {"data": linha})
         await user.should_see("Proposta da B3: Desdobro GGBR4")
-        [data] = user.find(marker="data-evento").elements
+        [data] = user.find(marker="conferir-data-evento").elements
         assert isinstance(data, ui.input)
         data.set_value("2023-03-01")  # data ex (a B3 traz o crédito)
-        user.find(marker="gravar-evento").click()
+        user.find(marker="conferir-gravar-evento").click()
         await user.should_see("Eventos lançados (1)", retries=ESPERA)
-        await user.should_see("Propostas da B3 (0)")
-        [tipo] = user.find(marker="tipo-evento").elements
-        assert isinstance(tipo, ui.select)
-        tipo.set_value("INCORPORACAO")
-        await user.should_see("Ativo recebido")
-        user.find(marker="ativo-evento").type("GGBR4")
-        user.find(marker="quantidade-evento").type("1000")  # a posição é 600
-        user.find(marker="recebido-evento").type("GOAU4")
-        user.find(marker="qtd-recebida-evento").type("500")
-        user.find(marker="gravar-evento").click()
+        await user.should_see("A conferir (0)")
+        user.find(marker="aba-conversoes").click()
+        user.find(marker="conversoes-ativo-evento").type("GGBR4")
+        user.find(marker="conversoes-quantidade-evento").type("1000")  # a posição é 600
+        user.find(marker="conversoes-recebido-evento").type("GOAU4")
+        user.find(marker="conversoes-qtd-recebida-evento").type("500")
+        user.find(marker="conversoes-gravar-evento").click()
         await user.should_see("não fecha com as operações", retries=ESPERA)
         await user.should_see("Eventos lançados (1)")
     [evento] = eventos.listar(banco, 1)

@@ -680,20 +680,15 @@ def test_pme_compra_depois_de_2023_junta_ao_lote_antigo() -> None:
     assert mes(ap, 2024, 3).isento_pme == 0
 
 
-def test_pme_day_trade_isento_e_lote_misturado_falha() -> None:
+def test_pme_day_trade_isento() -> None:
     """Day trade de PME no período: isento (art. 59 §2º I só afasta o inciso I; decisão do
-    usuário). Lote isento + lote tributado juntos: controle separado (art. 69-A §4º) não
-    implementado, falha alto."""
+    usuário). Os lotes isento e tributado estão em tests/fiscal_cases/test_pme_lotes.py."""
     livro = Livro()
     livro.nota(date(2020, 6, 16), livro.op("C", "PRIO3", 100, "20", pme_ate=PME_ATE),
                livro.op("V", "PRIO3", 100, "21"), irrf_dt="1")  # fmt: skip
     ap = livro.apurar(date(2020, 6, 30))
     assert categoria(ap, 2020, 6, Categoria.DAY_TRADE).resultado == 0
     assert mes(ap, 2020, 6).isento_pme == D(100)
-    livro.nota(date(2021, 1, 4), livro.op("C", "PRIO3", 100, "30", pme_ate=PME_ATE))
-    livro.nota(date(2021, 4, 1), livro.op("C", "PRIO3", 100, "50"))  # depois da oferta
-    with pytest.raises(MotorError, match="mistura lote"):
-        livro.movimentos(date(2021, 4, 30))
 
 
 def test_evento_sem_posicao_falha_alto_e_subscricao_abre_posicao() -> None:

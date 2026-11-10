@@ -380,7 +380,7 @@ class PosicaoB3(Base):
 
 
 class OutroCusto(Base):
-    """Custo dedutível lançado pelo usuário num mês (ex.: taxas de aluguel de ações - BTC), que
+    """Custo dedutível lançado pelo usuário num mês (ex.: corretagem e tarifas do BTC), que
     reduz o resultado da categoria (comum ou day trade) no mês."""
 
     __tablename__ = "outro_custo"

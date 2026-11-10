@@ -26,7 +26,7 @@ from coir.config import (
 from coir.db import repositorio as repo
 from coir.db.modelos import EventoCorporativo, NotaCorretagem, Titular
 from coir.db.sessao import NOME_BANCO, Migracao, conectar, migrar
-from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, Visao
+from coir.domain.fiscal import Apuracao, Movimento, PosicaoAtivo, TermoAberto, Visao
 from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.proventos import Provento
@@ -45,8 +45,15 @@ from coir.servicos import (
     eventos,
     notas,
     operacoes,
+    saidas,
 )
-from coir.servicos.apuracao import apurar_banco, carteira_banco, carteiras_banco, movimentos_banco
+from coir.servicos.apuracao import (
+    apurar_banco,
+    carteira_banco,
+    carteiras_banco,
+    movimentos_banco,
+    termos_banco,
+)
 from coir.servicos.b3 import PASTA_B3
 from coir.servicos.importacao import Extrator, aplicar_tabelas
 from coir.servicos.proventos import informar_creditos, proventos_banco
@@ -288,6 +295,12 @@ class Estado:
             lambda: carteira_banco(self.banco, self.refs, self.fiscais, ate, visao),
         )
 
+    def termos(self, ate: date) -> list[TermoAberto]:
+        """Compras a termo ainda não liquidadas no fim de `ate` (fora da carteira e do PM)."""
+        return self._guardado(
+            ("termos", ate), lambda: termos_banco(self.banco, self.refs, self.fiscais, ate)
+        )
+
     def movimentos(self, ate: date, visao: Visao) -> list[Movimento]:
         return self._guardado(
             ("movimentos", ate, visao),
@@ -421,13 +434,42 @@ class Estado:
                       "arquivo(s) com nota rejeitada", "/importar"),
             Pendencia(len({i.ativo for i in apuracao.isolados if i.titular == titular}),
                       "ativo(s) fora do cálculo (falta evento)", "/eventos"),
-            Pendencia(sum(p.situacao == "pendente" for p in self.propostas()),
+            Pendencia(sum(p.situacao == "pendente" and not p.depois_da_ultima_nota
+                          for p in self.propostas()),
                       "proposta(s) de evento para conferir", "/eventos"),
+            Pendencia(len(self.ativos_que_sairam()),
+                      "ativo(s) na carteira que pararam de negociar", "/eventos"),
             Pendencia(len(avisos), "aviso(s) da apuração para conferir"
                       + (f" ({', '.join(map(str, anos_avisos))})" if anos_avisos else ""),
                       "/apuracao", anos_avisos[-1] if anos_avisos else None),
         ]  # fmt: skip
         return [p for p in itens if p.quantidade]
+
+    def lancar_eventos_automaticos(self, todos: bool = False) -> eventos.ResultadoLote:
+        """Lança os eventos que não pedem nada ao usuário (desdobramento, grupamento e bonificação
+        com custo publicado); com ``todos``, de todos os titulares (depois de uma importação)."""
+        if not self.existe or (self.titular is None and not todos):
+            return eventos.ResultadoLote((), ())
+        alvos = [t.id for t in self.titulares()] if todos else [self.titular]
+        ids: list[int] = []
+        recusadas: list[tuple[str, str]] = []
+        for titular in alvos:
+            if titular is not None:
+                r = eventos.lancar_automaticos(self.banco, titular, self.refs, self.fiscais,
+                                               self.pasta_refs)  # fmt: skip
+                ids.extend(r.ids)
+                recusadas.extend(r.recusadas)
+        if ids:
+            self.invalidar()
+        return eventos.ResultadoLote(tuple(ids), tuple(recusadas))
+
+    def ativos_que_sairam(self) -> list[saidas.AtivoQueSaiu]:
+        """Posições do titular em ativo que parou de negociar na bolsa (falta evento?)."""
+        if not self.existe or self.titular is None:
+            return []
+        posicoes, _ = self.carteira(self.agora().date(), Visao.TITULAR)
+        return saidas.ativos_que_sairam(posicoes, self.titular, self.pasta_refs,
+                                        eventos.ignoradas(self.banco, self.titular))  # fmt: skip
 
     def senhas_pdf(self) -> list[str]:
         """Senhas para abrir PDF protegido: as informadas nesta execução (tela Importar) e as

@@ -4,7 +4,8 @@ O CPF vem com máscara, com traço ou ponto antes dos dígitos verificadores (00
 000.000.000.00). O nome fica na mesma linha do CPF (Ágora, BTG) ou na primeira linha depois do
 rodapé de atendimento ("... Ouvidoria ..."), às vezes precedido do código do cliente (XP, Rico)
 e do rótulo "Cliente" numa linha só dele. No layout BM&F novo da XP o nome vem antes da
-ouvidoria, logo depois da linha do site ("Internet: ...").
+ouvidoria, logo depois da linha do site ("Internet: ..."). No layout b3rv, entre a ouvidoria e o
+nome vêm a folha e o título da nota, e o código do cliente tem dígito ("123456 - 7 NOME").
 """
 
 import re
@@ -13,8 +14,8 @@ from coir.domain.cpf import so_digitos
 from coir.domain.nota import Cliente
 
 RE_CPF = re.compile(r"(?<![\d./])\d{3}\.\d{3}\.\d{3}[-.]\d{2}(?![\d])")
-RE_CODIGO = re.compile(r"^\s*\d[\d-]*\s+")
-ROTULOS = {"cliente", "corretora"}
+RE_CODIGO = re.compile(r"^\s*\d[\d-]*(?:\s+-\s+\d)?\s+")
+ROTULOS = {"cliente", "corretora", "nota de corretagem"}
 
 
 def cliente(texto: str) -> Cliente | None:
@@ -39,7 +40,8 @@ def _depois_do_rotulo(linhas: list[str], cpf: int, rotulo: str) -> str | None:
     if not antes:
         return None
     for linha in linhas[antes[-1] + 1 : cpf]:
-        if linha.strip().lower() not in ROTULOS:
+        pulo = linha.strip().lower()
+        if pulo not in ROTULOS and not pulo.isdigit():
             return _nome(linha)
     return None
 

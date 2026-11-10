@@ -26,7 +26,7 @@ Registradas também em [`regras-fiscais.md`](regras-fiscais.md).
 |---|---|
 | Rateio dos custos de futuros por contrato e por categoria, configurável | rateio pelo volume (a soma dos custos é a mesma) |
 | Day trade entre corretoras antes de 28/07/2010 | ordem dos negócios pelo número da nota (as notas não trazem horário) |
-| Lote de ação de PME isento separado do tributado (IN RFB 1.585/2015 art. 69-A §4º) | o cálculo para com erro explícito |
+| Lote de ação de PME isento separado do tributado (IN RFB 1.585/2015 art. 69-A §4º) | feito em 08/11/2026 |
 | Venda a termo | o cálculo para com erro explícito (a compra a termo funciona) |
 | Feriados depois de 2027 | `data/feriados.csv` vai até 2027 e precisa ser estendido antes de apurar dezembro de 2027 |
 | Dividendos de BDR e de ETF, rendimentos pagos em ações | listados com aviso "fora da v3.0" |
@@ -40,7 +40,7 @@ PME isentas); sobraram estas diferenças, que não são erros do cálculo:
 
 | Item | Situação na 3.0.1 |
 |---|---|
-| Isenção de PME julgada pela data da venda, não pelo lote | a ferramenta de conferência não separa o lote isento do tributado (o motor para com erro nesse caso, ver acima) |
+| Isenção de PME julgada pela data da venda, não pelo lote | a ferramenta de conferência não separa o lote isento do tributado; o motor já separa desde 08/11/2026 |
 | 14 diferenças de IRRF: notas com day trade e operação comum juntas e notas de futuros em que a planilha externa põe o IRRF na compra | a revisar com o mantenedor |
 | 160 diferenças de custos em notas de futuros | a investigar; a origem provável é o rateio (ver "Rateio dos custos de futuros" acima) |
 
@@ -48,7 +48,7 @@ PME isentas); sobraram estas diferenças, que não são erros do cálculo:
 
 - Imposto de renda de ativos no exterior.
 - Opção flexível (o leitor reconhece a nota e avisa; não calcula).
-- Aluguel de ações (BTC) como operação; na 3.0 os custos do aluguel entram como "outros custos" e o
+- Aluguel de ações (BTC) como operação; na 3.0 a corretagem e as tarifas da B3 do empréstimo entram como "outros custos" e o
   reembolso de proventos como rendimento isento.
 - Renda fixa e Tesouro Direto.
 - Carteira: alocação, balanceamento, rentabilidade e manejo de risco (fase futura, F10).

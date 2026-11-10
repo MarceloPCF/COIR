@@ -69,8 +69,15 @@ class TiposAtivo(Modelo):
             return TipoAtivo.BDR
         raise ReferenciaError(
             f"ticker {ticker} sem tipo de ativo: cadastre em data/tipos_ativo.csv "
-            "(UNIT, ETF, ETF_RF, BDR, FII ou ACAO)"
+            "(UNIT, ETF, ETF_RF, BDR, FII, ACAO, DIREITO ou FUNDO_INFRA)"
         )
+
+    def tipo_ou_sem(self, ticker: str) -> TipoAtivo:
+        """Para a apuração: um ativo sem tipo fica isolado, e os outros seguem apurados."""
+        try:
+            return self.tipo(ticker)
+        except ReferenciaError:
+            return TipoAtivo.SEM_TIPO
 
 
 class RegraVencimento(Modelo):
@@ -117,6 +124,7 @@ class IsencaoPME(Modelo):
     aquisicao_ate: date
     vendas_ate: date
     fonte: str = ""
+    media_fim: Decimal | None = None  # média dos 30 pregões antes do fim (Lei 13.043 art. 17 §6º)
 
     def compra_elegivel(self, dia: date) -> bool:
         return self.aquisicao_desde <= dia <= self.aquisicao_ate

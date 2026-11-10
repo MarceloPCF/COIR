@@ -77,6 +77,9 @@ def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None
     # o símbolo do COIR na barra de título e na barra de tarefas; sem isso a janela usa o ícone
     # do executável, que rodando pelo Python é o do Python
     app.native.start_args["icon"] = str(tema.ICONE_JANELA)
+    # abre ocupando a tela: o tamanho fixo não cabia nas telas menores; 1440 x 900 fica como o
+    # tamanho ao restaurar a janela
+    app.native.window_args["maximized"] = True
     ui.run(
         (lambda: montar_erro(estado, erro)) if erro else (lambda: montar(estado)),
         title="COIR", favicon=tema.ICONE, host="127.0.0.1", port=porta or native.find_open_port(),

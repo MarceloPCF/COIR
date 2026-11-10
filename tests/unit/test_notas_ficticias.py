@@ -106,7 +106,10 @@ def test_pendencias_do_painel_e_do_sino(estado: Estado, monkeypatch: pytest.Monk
     monkeypatch.setattr(estado, "ano", 2024)
     assert estado.pendencias()[0] == darf
     assert not [p for p in estado.pendencias() if "proposta" in p.texto]
-    propostas = [SimpleNamespace(situacao=s) for s in ("pendente", "ignorada", "pendente")]
+    propostas = [
+        SimpleNamespace(situacao=s, depois_da_ultima_nota=False)
+        for s in ("pendente", "ignorada", "pendente")
+    ]
     monkeypatch.setattr(estado, "propostas", lambda: propostas)
     [proposta] = [p for p in estado.pendencias() if "proposta" in p.texto]
     assert (proposta.quantidade, proposta.rota) == (2, "/eventos")

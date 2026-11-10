@@ -18,6 +18,9 @@ class TipoProvento(StrEnum):
     DIVIDENDO = "DIVIDENDO"  # isento (Lei 9.249/1995 art. 10)
     JCP = "JCP"  # tributação exclusiva na fonte (Lei 9.249/1995 art. 9º; LC 224/2025)
     RENDIMENTO_FII = "RENDIMENTO_FII"  # isento (Lei 11.033/2004 art. 3º III)
+    # FI-Infra e FIP-IE: alíquota zero, exclusiva na fonte (Lei 12.431/2011 art. 3º §§1º e 2º;
+    # Lei 11.478/2007 art. 2º §3º); ficha exclusiva 06 (Manual MIR)
+    RENDIMENTO_FUNDO_INFRA = "RENDIMENTO_FUNDO_INFRA"
     REEMBOLSO_BTC = "REEMBOLSO_BTC"  # reembolso de proventos ao doador de ações emprestadas
     ATUALIZACAO = "ATUALIZACAO"  # atualização do provento pela Selic: tributação exclusiva
     RESTITUICAO_CAPITAL = "RESTITUICAO_CAPITAL"  # reduz o custo (IN RFB 1.585/2015 art. 58 §8º)

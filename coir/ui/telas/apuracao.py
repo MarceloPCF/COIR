@@ -15,8 +15,16 @@ from coir.domain.fiscal import (
     MesApurado,
     Movimento,
     ResultadoCategoria,
+    TipoAtivo,
 )
 from coir.erros import CoirError
+from coir.reports.agrupar import (
+    COLUNAS_POR_ATIVO,
+    ItemOperacao,
+    chave_da_linha,
+    por_ativo,
+    total_por_ativo,
+)
 from coir.reports.fiscais import GRUPOS, MESES, NOME_CATEGORIA, NOME_GRUPO
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import carteira
@@ -33,6 +41,7 @@ COLUNAS_ANO = (
     Coluna("FII", T.DINHEIRO),
     Coluna("Vendas de ações", T.DINHEIRO),
     Coluna("Isento", T.DINHEIRO),
+    Coluna("PME (isento)", T.DINHEIRO),
     Coluna("Imposto", T.DINHEIRO),
     Coluna("IRRF deduzido", T.DINHEIRO),
     Coluna("Imposto devido", T.DINHEIRO),
@@ -53,6 +62,23 @@ COLUNAS_MOV = (
 )
 CURTA = {Categoria.COMUM: "Comum", Categoria.DAY_TRADE: "Day trade", Categoria.FII: "FII"}
 NOME_FICHA = {Ficha.COMUNS: "Operações comuns e day trade", Ficha.FII: "FII e Fiagro"}
+
+
+def _item(x: Movimento, isencao: str) -> ItemOperacao:
+    """Movimento para o agrupamento: na recompra, a abertura é a receita da venda baixada."""
+    futuro = x.tipo is TipoAtivo.FUTURO
+    return ItemOperacao(
+        data=x.data,
+        ativo=x.ticker,
+        corretora=x.corretora or "",
+        categoria=CURTA[x.categoria],
+        sentido={"V": "C/V", "C": "V/C"}.get(x.cv or "", ""),
+        quantidade=abs(x.quantidade),
+        abertura=None if futuro else abs(x.custo_baixa),
+        encerramento=None if futuro else x.valor,
+        resultado=x.resultado,
+        obs=isencao,
+    )
 
 
 def _r(dinheiro: Decimal) -> str:
@@ -77,6 +103,7 @@ def _linha_ano(m: MesApurado) -> tuple[Valor, ...]:
         _resultado(m, Categoria.FII),
         comum.vendas_acoes if comum else ZERO,
         comum.isento if comum else ZERO,
+        m.isento_pme + m.perda_pme,
         m.imposto,
         m.irrf_deduzido,
         m.imposto_devido,
@@ -96,6 +123,7 @@ def _total_ano(meses: list[MesApurado]) -> tuple[Valor, ...]:
         soma(lambda m: _resultado(m, Categoria.FII)),
         soma(lambda m: c.vendas_acoes if (c := _cat(m, Categoria.COMUM)) else ZERO),
         soma(lambda m: c.isento if (c := _cat(m, Categoria.COMUM)) else ZERO),
+        soma(lambda m: m.isento_pme + m.perda_pme),
         soma(lambda m: m.imposto),
         soma(lambda m: m.irrf_deduzido),
         soma(lambda m: m.imposto_devido),
@@ -196,6 +224,12 @@ def _memoria(estado: Estado, m: MesApurado, movs: list[Movimento], mapa: dict[in
             _par("Limite", _r(limite))
             if comum and comum.isento:
                 _par("Ganho isento", _r(comum.isento), "coir-positivo")
+            if m.isento_pme:
+                _par("Ações de PME: ganho isento (fora do limite)", _r(m.isento_pme),
+                     "coir-positivo")  # fmt: skip
+            if m.perda_pme:
+                _par("Ações de PME: perda (não compensa ganhos)", _r(m.perda_pme),
+                     "coir-negativo")  # fmt: skip
             veredito = (
                 "dentro do limite: ganho de ações isento"
                 if vendas <= limite
@@ -249,30 +283,62 @@ def _memoria(estado: Estado, m: MesApurado, movs: list[Movimento], mapa: dict[in
     if not movs:
         ui.label("Nenhuma venda ou resultado neste mês.").classes("coir-vazio w-full")
         return
-    valores: list[tuple[Valor, ...]] = [
-        (
-            x.data,
-            x.ticker,
-            CURTA[x.categoria],
-            x.regra,
-            x.cv or "",
-            x.quantidade,
-            x.valor,
-            x.custo_baixa,
-            x.resultado,
-            # units fora do limite (ex.: UBBR11 em 2008): tributadas, nunca marcadas "isento"
-            "isento"
-            if conta_na_isencao(x, params) and comum and comum.isento
-            else ("PME" if x.isento_pme else ""),
-        )
-        for x in movs
-    ]
+
+    def isencao(x: Movimento) -> str:
+        # units fora do limite (ex.: UBBR11 em 2008): tributadas, nunca marcadas "isento"
+        if conta_na_isencao(x, params) and comum and comum.isento:
+            return "isento"
+        return "PME" if x.isento_pme else ""
+
+    def valores(lista: list[Movimento]) -> list[tuple[Valor, ...]]:
+        return [
+            (
+                x.data,
+                x.ticker,
+                CURTA[x.categoria],
+                x.regra,
+                x.cv or "",
+                x.quantidade,
+                x.valor,
+                x.custo_baixa,
+                x.resultado,
+                isencao(x),
+            )
+            for x in lista
+        ]
+
+    def chaves(lista: list[Movimento]) -> list[object]:
+        return [carteira.nota_de(x.origem, mapa) for x in lista]
+
+    filtro: dict[str, str] = {"linha": ""}
+
+    def filtrar(linha: object) -> None:
+        filtro["linha"] = "" if filtro["linha"] == linha else str(linha)
+        lista = [x for x in movs
+                 if not filtro["linha"] or f"{x.data}|{x.ticker}" == filtro["linha"]]  # fmt: skip
+        tabela.atualizar(grade, COLUNAS_MOV, valores(lista), chaves=chaves(lista))
+
+    agrupadas = por_ativo(_item(x, isencao(x)) for x in movs)
+    ui.label("Resultado por ativo").classes("coir-titulo text-base")
     tabela.grade(
+        COLUNAS_POR_ATIVO,
+        agrupadas,
+        chaves=[chave_da_linha(x) for x in agrupadas],
+        total=total_por_ativo(agrupadas),
+        larguras=tabela.LARGURAS_POR_ATIVO,
+        altura="h-[260px]",
+        ao_clicar=filtrar,
+    ).mark("movimentos-por-ativo")
+    ui.label(
+        "Clique numa linha para ver só os movimentos dela; clique de novo para ver todos."
+    ).classes("coir-subtitulo text-xs")
+    grade = tabela.grade(
         COLUNAS_MOV,
-        valores,
-        chaves=[carteira.nota_de(x.origem, mapa) for x in movs],
+        valores(movs),
+        chaves=chaves(movs),
         altura="h-[420px]",
         pelo_conteudo=True,
         ao_clicar=lambda n: n is not None and ui.navigate.to(f"/notas/{n}"),
-    ).mark("movimentos-mes")
+    )
+    grade.mark("movimentos-mes")
     ui.label("Clique num movimento para abrir a nota de origem.").classes("coir-subtitulo text-xs")

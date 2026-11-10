@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.referencias import gerar
+from tools.referencias import fontes, gerar
 from tools.referencias.gerar import Coleta, GeracaoError
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "referencias"
@@ -45,7 +45,7 @@ def test_instrumentos_tipos_e_nomes_de_pregao(tmp_path: Path) -> None:
         linha.split(",")[0]: linha.split(",")[1]
         for linha in _linhas(arquivos["tipos_ativo_b3.csv"])
     }
-    # FIP de infraestrutura (AATH11) fica sem tipo: sem palpite
+    # FIP de infraestrutura (AATH11) fica sem tipo: o motor isola, sem palpite
     assert tipos == {"AAPL34": "BDR", "BOVA11": "ETF", "HGLG11": "FII", "TAEE11": "UNIT"}
     assert _linhas(arquivos["opcoes_raiz_b3.csv"]) == ["ITSA,ITSA4"]
     assert len(resumo.ativos_novos) == 11 and not resumo.trocas_candidatas
@@ -277,3 +277,163 @@ def test_historico_sem_aprovacao_ou_por_lote_fica_de_fora() -> None:
                        "data_com": "2020-01-02"}]  # fmt: skip
     with pytest.raises(GeracaoError, match="ilegível"):
         gerar.ler_historico("XXXX", [{**base, "valueCash": "x"}])
+
+
+def test_historico_guarda_restituicao_de_capital_e_deixa_dividendo_de_fora() -> None:
+    """A restituição de capital em dinheiro reduz o custo: a consulta de empresas só traz os
+    últimos meses, e a antiga vinha só do histórico (que guardava só JCP)."""
+    base = {"typeStock": "PN", "corporateAction": "REST CAP DIN", "valueCash": "0,25",
+            "lastDatePriorEx": "28/11/2024", "dateApproval": "20/11/2024",
+            "quotedPerShares": "1"}  # fmt: skip
+    linhas = gerar.ler_historico("XXXX", [base, {**base, "corporateAction": "DIVIDENDO"}])
+    assert [r["tipo"] for r in linhas] == ["REST CAP DIN"]
+
+
+# ------------------------------------------------------------- correções de 07/11/2026
+CABECALHO_CADASTRO = (
+    "Status do Arquivo: Final\nRptDt;TckrSymb;Asst;SgmtNm;SctyCtgyNm;ISIN;SpcfctnCd;CrpnNm\n"
+)
+
+
+def _cadastro(*linhas: str) -> bytes:
+    return (CABECALHO_CADASTRO + "\n".join(linhas) + "\n").encode("latin-1")
+
+
+def test_cadastro_le_etf_de_renda_fixa_fora_do_segmento_a_vista() -> None:
+    bruto = _cadastro(
+        "2026-11-06;LFTB11;LFTB;FORWARD;FIXED INCOME TRADABLE INSTRUMENT T1;BRLFTBCTF002;;",
+        "2026-11-06;RAIZ55;RAIZ;CASH;SHARES;BRRAIZA01PA3;PNA P   N2;RAIZEN S.A.",
+        "2026-11-06;XXXX11;XXXX;FORWARD;OUTRA COISA;BRXXXXCTF002;;",
+    )
+    lista, _ = gerar.ler_instrumentos(bruto)
+    assert [i.ticker for i in lista] == ["LFTB11", "RAIZ55"]
+
+
+def _instrumento(ticker: str, categoria: str, especificacao: str = "") -> dict[str, str]:
+    return {"ticker": ticker, "isin": "BR" + ticker, "categoria": categoria, "emissor": ticker[:4],
+            "especificacao": especificacao, "nome": "", "visto_desde": "2026-01-01",
+            "visto_ate": "2026-01-01"}  # fmt: skip
+
+
+def test_tipos_etf_rf_acao_de_lote_e_ticker_antigo_pelo_cotahist() -> None:
+    linhas = gerar.tipos(
+        [_instrumento("LFTB11", gerar.CATEGORIA_RF), _instrumento("GPRE11", gerar.CATEGORIA_RF),
+         _instrumento("RAIZ55", "SHARES", "PNA P N2"), _instrumento("MGRI15", "SHARES", "REC")],
+        [{"ticker": "AEFI11", "tipo": "FII"}, {"ticker": "AEDU11", "tipo": "UNIT"},
+         {"ticker": "LFTB11", "tipo": "FII"}, {"ticker": "ABCD3", "tipo": ""}],
+    )  # fmt: skip
+    assert {r["ticker"]: r["tipo"] for r in linhas} == {
+        "LFTB11": "ETF_RF", "RAIZ55": "ACAO", "AEFI11": "FII", "AEDU11": "UNIT",
+        "MGRI15": "DIREITO",  # recibo: parecer de 09/11/2026 (posição B)
+    }  # fmt: skip
+
+
+def test_saida_do_cadastro_vai_para_o_resumo_com_ou_sem_sucessor() -> None:
+    anteriores = [
+        {**_instrumento("RAIZ4", "SHARES", "PN N2"), "isin": "BRRAIZACNPR6", "emissor": "RAIZ"},
+        {**_instrumento("PETZ3", "SHARES", "ON NM"), "isin": "BRPETZACNOR2", "emissor": "PETZ"},
+        {**_instrumento("VALE3", "SHARES", "ON NM"), "isin": "BRVALEACNOR0", "emissor": "VALE"},
+    ]
+    atuais = [
+        gerar.Instrumento("RAIZ55", "BRRAIZA01PA3", "SHARES", "PNA P N2", "RAIZ", ""),
+        gerar.Instrumento("AUAU3", "BRAUAUACNOR1", "SHARES", "ON NM", "AUAU", ""),
+        gerar.Instrumento("VALE3", "BRVALEACNOR0", "SHARES", "ON NM", "VALE", ""),
+    ]
+    resumo = gerar.Resumo()
+    gerar.atualizar_instrumentos(anteriores, atuais, date(2026, 11, 9), resumo)
+    saidas = "\n".join(resumo.saidas)
+    assert "RAIZ4" in saidas and "novos do emissor: RAIZ55" in saidas
+    assert "PETZ3" in saidas and "sem sucessor" in saidas
+    assert "VALE3" not in saidas
+    assert "Ativos que saíram do cadastro" in resumo.markdown(date(2026, 11, 9))
+
+
+def test_mesmo_isin_entra_na_tabela_de_trocas_com_o_ultimo_negocio() -> None:
+    instrumentos = [{"ticker": "AAAA3", "isin": "BRAAAA"}, {"ticker": "BBBB3", "isin": "BRAAAA"}]
+    nomes = [{"ticker": "AAAA3", "ate": "2026-10-30"}, {"ticker": "AAAA3", "ate": "2026-01-02"}]
+    linhas = gerar.juntar_trocas([], [("AAAA3", "BBBB3", "2026-11-02")], instrumentos, nomes)
+    assert linhas[0]["ate"] == "2026-10-30" and "mesmo ISIN" in linhas[0]["fonte"]
+    # já registrada: não duplica
+    assert len(gerar.juntar_trocas(linhas, [("AAAA3", "BBBB3", "2026-11-02")], instrumentos,
+                                   nomes)) == 1  # fmt: skip
+
+
+def test_nomes_de_renda_fixa_vem_da_lista_de_fundos() -> None:
+    fundos = [{"typeName": "ETF-RF", "tradingName": "INVESTO LFTB", "tradingCode": "LFTB11"},
+              {"typeName": "ETF", "tradingName": "ISHARES", "tradingCode": "BOVA11"}]  # fmt: skip
+    linhas = gerar.nomes_renda_fixa(fundos, date(2026, 11, 6))
+    assert {r["nome_pregao"] for r in linhas} == {"INVESTO LFTB", "INVESTO LFTB CI"}
+    assert {r["ticker"] for r in linhas} == {"LFTB11"}
+
+
+def test_juntar_nomes_estende_o_periodo_e_nunca_apaga() -> None:
+    resumo = gerar.Resumo()
+    anteriores = [{"nome_pregao": "X ON", "ticker": "XXXX3", "desde": "2010-01-01",
+                   "ate": "2012-01-01", "tipo": ""}]  # fmt: skip
+    novos = [{"nome_pregao": "X ON", "ticker": "XXXX3", "desde": "2011-01-01", "ate": "2013-01-01"},
+             {"nome_pregao": "Y ON", "ticker": "YYYY3", "desde": "2013-01-01",
+              "ate": "2013-01-01"}]  # fmt: skip
+    linhas = gerar.juntar_nomes(anteriores, novos, resumo)
+    assert (linhas[0]["desde"], linhas[0]["ate"]) == ("2010-01-01", "2013-01-01")
+    assert len(linhas) == 2 and resumo.nomes_novos == ["Y ON -> YYYY3"]
+
+
+def test_feriado_e_fim_de_semana_nao_tem_pregao() -> None:
+    feriados = [{"data": "2026-11-02"}]
+    assert not gerar.houve_pregao(date(2026, 11, 2), feriados)  # segunda de Finados
+    assert not gerar.houve_pregao(date(2026, 11, 7), feriados)  # sábado
+    assert gerar.houve_pregao(date(2026, 11, 3), feriados)
+
+
+def test_erro_http_num_dia_sem_arquivo_volta_para_o_dia_anterior() -> None:
+    """A coleta de 02/11/2026 morreu com HTTP 400 no feriado, sem tentar o dia anterior."""
+    pedidos: list[str] = []
+
+    def obter(url: str) -> bytes:
+        pedidos.append(url)
+        if "date=2026-11-02" in url:
+            raise gerar.GeracaoError("falha ao baixar: HTTP Error 400: Bad Request")
+        if "requestname" in url:
+            return b'{"token": "abc"}'
+        return b"Status do Arquivo: Final\nconteudo"
+
+    dia, bruto = fontes.instrumentos(date(2026, 11, 2), obter)
+    assert dia == date(2026, 11, 1) and bruto.startswith(b"Status do Arquivo")
+    assert len(pedidos) == 3
+
+
+def test_sem_nenhum_arquivo_a_falha_cita_o_ultimo_erro() -> None:
+    def obter(_: str) -> bytes:
+        raise gerar.GeracaoError("HTTP Error 400")
+
+    with pytest.raises(gerar.GeracaoError, match="último erro: HTTP Error 400"):
+        fontes.instrumentos(date(2026, 11, 2), obter)
+
+
+def test_em_janeiro_le_tambem_o_ano_anterior_e_a_falta_vai_para_o_resumo() -> None:
+    pedidos: list[str] = []
+
+    def obter(url: str) -> bytes:
+        pedidos.append(url)
+        raise gerar.GeracaoError("sem arquivo")
+
+    nomes, falhas = fontes.nomes_recentes(date(2027, 1, 4), [], obter)
+    assert nomes == [] and falhas == ["COTAHIST de 2026", "COTAHIST de 2027"]
+    assert len(pedidos) == 2
+
+
+def test_pregao_tem_codigo_proprio_de_saida(tmp_path: Path) -> None:
+    from tools.referencias.__main__ import SEM_PREGAO, main
+
+    (tmp_path / "feriados.csv").write_text("data,tipo\n2026-11-02,bancario\n", encoding="utf-8")
+    assert main(["pregao", "--data", "2026-11-03", "--pasta", str(tmp_path)]) == 0
+    assert main(["pregao", "--data", "2026-11-02", "--pasta", str(tmp_path)]) == SEM_PREGAO
+    assert SEM_PREGAO != 1  # traceback do Python sai com 1 e não pode passar por feriado
+
+
+def test_opcao_com_objeto_de_final_99_nao_derruba_a_raiz() -> None:
+    resumo = gerar.Resumo()
+    linhas = gerar.opcoes_raiz([gerar.Opcao("AUAUK1", "AUAU3"), gerar.Opcao("AUAUK2", "AUAU99"),
+                                gerar.Opcao("RAIZK1", "RAIZ55")], resumo)  # fmt: skip
+    assert {r["raiz"]: r["ticker"] for r in linhas} == {"AUAU": "AUAU3", "RAIZ": "RAIZ55"}
+    assert resumo.conflitos == []

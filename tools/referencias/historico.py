@@ -27,7 +27,7 @@ import math
 import re
 import zipfile
 from collections import defaultdict
-from collections.abc import Iterable, Mapping
+from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from decimal import ROUND_CEILING, Decimal
@@ -234,6 +234,54 @@ def ler_cotahist(bruto: bytes, series: Series, pregoes: set[str],
             preco = int(linha[108:121]) / 100 / int(linha[210:217])
             if preco > 0:
                 series.setdefault(isin, []).append(Pregao(dia, linha[242:245].decode(), preco))
+
+
+def nome_de_pregao(nome: str, especificacao: str, sufixos: Collection[str]) -> str:
+    """Nome + especificação como a nota imprime, sem os sufixos do fim que mudam com o tempo ("ON
+    ED NM" -> "ON"); a leitura da nota tira os mesmos. Os de BDR (DR1, DRN...) ficam: separam dois
+    programas do mesmo nome."""
+    tokens = especificacao.split()
+    while tokens and tokens[-1] in sufixos and not tokens[-1].startswith("DR"):
+        tokens.pop()
+    return " ".join([*nome.split(), *tokens])
+
+
+RE_TICKER_11 = re.compile(r"^[A-Z0-9]{4}11$")
+BDI_FUNDOS = (b"12", b"13")  # códigos BDI do COTAHIST: fundos imobiliários e Fiagro
+
+
+def _tipo_no_cotahist(ticker: str, bdi: bytes, especificacao: str) -> str:
+    """Tipo que o próprio COTAHIST dá ao código final 11 (o resto vem do final do ticker)."""
+    if not RE_TICKER_11.match(ticker):
+        return ""
+    classe = (especificacao.split() or [""])[0]
+    if bdi in BDI_FUNDOS and classe == "CI":
+        return "FII"
+    if classe == "UNT":
+        return "UNIT"
+    return "BDR" if classe.startswith("DR") else ""
+
+
+def ler_nomes(bruto: bytes, sufixos: Collection[str]) -> list[dict[str, str]]:
+    """Zip anual do COTAHIST -> nome de pregão, ticker, período e tipo dos negócios à vista (lote
+    padrão, "010", e fracionário, "020", com o F tirado). É o que a nota imprime, ano a ano."""
+    periodos: dict[tuple[str, str], list[str]] = {}
+    with zipfile.ZipFile(io.BytesIO(bruto)) as z, z.open(z.namelist()[0]) as f:
+        for linha in f:
+            if linha[:2] != b"01" or linha[24:27] not in (b"010", b"020"):
+                continue
+            ticker = linha[12:24].decode("latin-1").strip()
+            if linha[24:27] == b"020" and ticker.endswith("F"):
+                ticker = ticker[:-1]
+            especificacao = linha[39:49].decode("latin-1")
+            nome = nome_de_pregao(linha[27:39].decode("latin-1"), especificacao, sufixos)
+            dia = linha[2:10].decode()
+            periodo = periodos.setdefault(
+                (nome, ticker), [dia, dia, _tipo_no_cotahist(ticker, linha[10:12], especificacao)]
+            )
+            periodo[0], periodo[1] = min(periodo[0], dia), max(periodo[1], dia)
+    return [{"nome_pregao": n, "ticker": t, "desde": _iso(p[0]), "ate": _iso(p[1]), "tipo": p[2]}
+            for (n, t), p in sorted(periodos.items())]  # fmt: skip
 
 
 def data_com(serie: list[Pregao], pregoes: list[str], aprovado_em: str, fator: Fraction,

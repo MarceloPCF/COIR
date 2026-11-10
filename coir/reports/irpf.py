@@ -12,7 +12,7 @@ janeiro recalculado pelo COIR, com aviso.
 """
 
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from decimal import ROUND_HALF_UP, Decimal
 
 from coir.domain.cpf import formatar_cnpj
@@ -72,10 +72,11 @@ PERCENTUAIS = frozenset({ALIQUOTA})
 TIPO_BEM: dict[TipoAtivo, TipoBem] = {
     TipoAtivo.ACAO: "ACAO", TipoAtivo.UNIT: "UNIT", TipoAtivo.BDR: "BDR",
     TipoAtivo.OPCAO: "OPCAO", TipoAtivo.ETF: "ETF", TipoAtivo.ETF_RF: "ETF_RF",
-    TipoAtivo.FII: "FII",
+    TipoAtivo.FII: "FII", TipoAtivo.DIREITO: "DIREITO", TipoAtivo.FUNDO_INFRA: "FI_INFRA",
 }  # fmt: skip
 QUANTIDADE_DE = {"UNIT": "units", "BDR": "BDRs", "ETF": "cotas", "ETF_RF": "cotas",
-                 "FII": "cotas", "FIAGRO": "cotas"}  # fmt: skip
+                 "FII": "cotas", "FIAGRO": "cotas", "FI_INFRA": "cotas", "FIP_IE": "cotas",
+                 "DIREITO": "direitos, recibos ou bônus de subscrição"}  # fmt: skip
 ART_58 = "(IN RFB 1.585/2015 art. 58)"
 
 
@@ -110,6 +111,8 @@ def _tipo_bem(p: PosicaoAtivo, info: InfoAtivo | None) -> TipoBem | None:
     tipo = TIPO_BEM.get(p.tipo)
     if tipo == "FII" and info is not None and info.tipo_b3 == "FIAGRO":
         return "FIAGRO"
+    if tipo == "FI_INFRA" and info is not None and info.tipo_b3 in ("FIP-IE", "FIP-PDI"):
+        return "FIP_IE"
     return tipo
 
 
@@ -145,6 +148,11 @@ def _bens(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]) -> list[Be
                 if p.titular == d.titular and p.quantidade > 0 and p.tipo in TIPO_BEM}  # fmt: skip
 
     atual, anterior = abertas(d.carteira_fiscal), abertas(d.carteira_fiscal_anterior)
+    for p in d.carteira_fiscal:
+        if (p.titular == d.titular and p.quantidade > 0 and p.tipo not in TIPO_BEM
+                and p.tipo is not TipoAtivo.FUTURO):  # fmt: skip
+            avisos.append(f"Bens e Direitos: {p.ticker} ({p.tipo.value}) sem código no mapeamento "
+                          f"do exercício {mapa.exercicio}: declare à mão")  # fmt: skip
     bens: list[BemIrpf] = []
     for ativo in sorted(atual.keys() | anterior.keys(),
                         key=lambda a: (atual.get(a) or anterior[a]).ticker):  # fmt: skip
@@ -292,8 +300,13 @@ def _rendimentos(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]
     linha("isentos", "rendimento_fii", proventos(TipoProvento.RENDIMENTO_FII))
     linha("isentos", "reembolso_btc", proventos(TipoProvento.REEMBOLSO_BTC))
     linha("exclusivos", "jcp", proventos(TipoProvento.JCP))
-    etf_rf = [(e.ticker, e.resultado) for e in d.apuracao.exclusiva
-              if e.titular == d.titular and e.data.year == d.ano and e.resultado > 0]  # fmt: skip
+    vendas = [e for e in d.apuracao.exclusiva if e.titular == d.titular and e.data.year == d.ano]
+    etf_rf = [(e.ticker, e.resultado) for e in vendas
+              if e.tipo is TipoAtivo.ETF_RF and e.resultado > 0]  # fmt: skip
+    infra = [(e.ticker, e.resultado) for e in vendas
+             if e.tipo is TipoAtivo.FUNDO_INFRA and e.resultado > 0]  # fmt: skip
+    linha("exclusivos", "ganho_fundo_infra", infra)
+    _rendimentos_fundo_infra(d, proventos(TipoProvento.RENDIMENTO_FUNDO_INFRA), linha, mapa)
     if etf_rf:
         avisos.append("ETF de renda fixa: o COIR estima o ganho bruto; declare o valor líquido do "
                       "informe de rendimentos do administrador")  # fmt: skip
@@ -312,6 +325,23 @@ def _rendimentos(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]
                       "não entra na declaração, só por pedido de restituição (PER/DCOMP; IN RFB "
                       "1.585/2015 art. 65 §§9º e 12 II)")  # fmt: skip
     return saida
+
+
+def _rendimentos_fundo_infra(
+    d: DadosRelatorio, itens: list[tuple[str, Decimal]],
+    linha: Callable[[str, str, Iterable[tuple[str, Decimal]]], None], mapa: MapeamentoIrpf,
+) -> None:  # fmt: skip
+    """FI-Infra na exclusiva 06; FIP-IE na ficha onde o mapa do exercício põe a linha
+    ``rendimento_fip_ie`` (exclusiva 06 pelo Manual MIR; a lei fala em isento: Lei 11.478/2007
+    art. 2º §3º; parecer do especialista de 09/11/2026)."""
+
+    def fip(ticker: str) -> bool:
+        info = d.info_ativos.get(ticker)
+        return info is not None and info.tipo_b3 in ("FIP-IE", "FIP-PDI")
+
+    linha("exclusivos", "rendimento_fundo_infra", [x for x in itens if not fip(x[0])])
+    ficha = "isentos" if mapa.isentos.tem("rendimento_fip_ie") else "exclusivos"
+    linha(ficha, "rendimento_fip_ie", [x for x in itens if fip(x[0])])
 
 
 # ------------------------------------------------------------------------- renda variável

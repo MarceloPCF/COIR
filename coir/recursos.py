@@ -10,6 +10,7 @@ from pathlib import Path
 from coir.erros import ConfiguracaoError
 
 PASTA = "data"
+PASTA_MANUAL = Path("docs") / "manual" / "telas"
 
 
 def pasta_data() -> Path:
@@ -20,3 +21,10 @@ def pasta_data() -> Path:
     if not pasta.is_dir():
         raise ConfiguracaoError(f"Pasta de tabelas de referência não encontrada: {pasta}")
     return pasta
+
+
+def pasta_manual() -> Path:
+    """Páginas do manual, uma por tela (botão "Como faço?"); o spec copia só os ``.md``."""
+    empacotado: str | None = getattr(sys, "_MEIPASS", None)
+    raiz = Path(empacotado) if empacotado else Path(__file__).resolve().parents[1]
+    return raiz / PASTA_MANUAL
