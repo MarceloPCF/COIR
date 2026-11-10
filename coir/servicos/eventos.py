@@ -610,7 +610,8 @@ NOTAS_PROPOSTA = {
 }  # fmt: skip
 NAO_EXERCIDO = ("não exercid", "nao exercid")  # "Direitos de Subscrição - Não Exercido"
 AMORTIZACAO_FUNDO = ("amortização de cotas de FI-Infra ou FIP-IE: reduz o custo das cotas (Lei "
-                     "11.478/2007 art. 2º §2º; IN RFB 1.585/2015 art. 16 §2º); o que passar do "
+                     "11.478/2007 art. 2º §2º e IN RFB 1.585/2015 art. 33, FIP-IE; Lei 12.431/2011 "
+                     "art. 3º e IN art. 34, FI-Infra); o que passar do "
                      "custo é rendimento (confira o informe do administrador)")  # fmt: skip
 RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z]{4})(?P<classe>9|10)$")  # recibo de subscrição ON/PN
 JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data ex)

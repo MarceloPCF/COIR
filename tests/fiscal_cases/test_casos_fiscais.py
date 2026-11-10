@@ -28,7 +28,7 @@ def _t1() -> Livro:
 
 
 def test_t1_prejuizo_em_mes_isento_compensa() -> None:
-    """R5: prejuízo de ações em mês isento continua compensável (Lei 8.981/1995 art. 72 §8º;
+    """R5: prejuízo de ações em mês isento continua compensável (Lei 8.981/1995 art. 72 §4º;
     Manual MIR 2026; decisão do usuário). Mar/24: ações -1.200 (vendas 15.000), opções -300.
     Abr/24: ganho 2.000 -> base 500, IR 75,00 - IRRF 1,50 = DARF 73,50 em 31/05/2024."""
     ap = _t1().apurar(date(2024, 4, 30))
@@ -116,8 +116,8 @@ def _exercicio(serie_cv: str, premio: str, exerc: str, cv: str, strike: str) -> 
 
 
 def test_t5_titular_de_call_soma_o_premio_ao_custo() -> None:
-    """R9 (IN RFB 1.585/2015 art. 58): prêmio 1.000 + custo 5; exercício 1.000 a 30 com custos
-    20 -> custo 31.025, PM 31,025."""
+    """R9 (IN RFB 1.585/2015 art. 60 II e §1º): prêmio 1.000 + custo 5; exercício 1.000 a 30
+    com custos 20 -> custo 31.025, PM 31,025."""
     livro = _exercicio("C", "1", "EXERC CALL", "C", "30")
     livro.nota(date(2024, 2, 16), livro.op("C", "AAAA3", 1000, "30", mercado="EXERC CALL",
                                            opcao="AAAAX30"), custos="20")  # fmt: skip
@@ -326,7 +326,7 @@ def test_compensacao_separada_entre_comum_e_day_trade() -> None:
 def test_saldo_de_irrf_passa_no_ano_e_dezembro_vai_para_a_declaracao() -> None:
     """R6: saldo de IRRF transporta aos meses seguintes do ano e não passa para janeiro. O de
     0,005% vai para a declaração (IN 1.585 art. 63 §8º III); o de day trade só restituição
-    (art. 65 §§9º e 12 II; P&R 715)."""
+    (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)."""
     livro = Livro()
     livro.nota(date(2023, 11, 1), livro.op("C", "TAEE11", 100, "10"), irrf="3")
     livro.nota(date(2023, 12, 1), livro.op("C", "AAAA3", 10, "10"), irrf_dt="2")
@@ -340,9 +340,9 @@ def test_saldo_de_irrf_passa_no_ano_e_dezembro_vai_para_a_declaracao() -> None:
 
 
 def test_futuros_resultado_no_encerramento_da_posicao() -> None:
-    """R11: Lei 11.051/2004 art. 32; IN 1.585 art. 61; P&R 728 (resultado na liquidação ou
-    encerramento). Compra de 1 WINM24 em 25/03/2024; ajustes de 25 a 28/03 somam +300 (100 no
-    negócio + 200 de AJUPOS); de 01 a 05/04 somam -100 (AJUPOS -50 + ajuste do negócio de
+    """R11: Lei 11.051/2004 art. 32; IN 1.585 art. 61; P&R IRPF 2026 pergunta 728 (resultado na
+    liquidação ou encerramento). Compra de 1 WINM24 em 25/03/2024; ajustes de 25 a 28/03 somam +300
+    (100 no negócio + 200 de AJUPOS); de 01 a 05/04 somam -100 (AJUPOS -50 + ajuste do negócio de
     encerramento -50). Março: 0. Abril: +200, IR 30,00, DARF em 31/05/2024."""
     livro = Livro()
     livro.nota(date(2024, 3, 25), ajustes=[
@@ -405,7 +405,8 @@ def test_futuros_inversao_de_posicao_e_falhas_altas() -> None:
 
 def test_eventos_ajustam_quantidade_e_custo_sem_resultado() -> None:
     """R8: bonificação soma quantidade com custo atribuído; desdobramento e grupamento só a
-    quantidade; redução de capital reduz o custo (RIR/2018; Perguntas e Respostas IRPF)."""
+    quantidade; redução de capital reduz o custo (RIR/2018 art. 843 §1º e §3º II; IN RFB
+    1.585/2015 art. 58 §§1º, 7º e 8º)."""
     livro = Livro()
     livro.nota(date(2024, 1, 2), livro.op("C", "AAAA3", 100, "10"))
     livro.evento(date(2024, 2, 1), "AAAA3", TipoEvento.DESDOBRAMENTO, "C", "100")
@@ -526,10 +527,11 @@ def test_venda_a_descoberto_resultado_na_recompra_e_limite_do_mes_da_venda(
     preco_venda: str, imposto: str
 ) -> None:
     """Venda a descoberto (sem norma específica; leitura A1 escolhida pelo usuário em 15/10/2026:
-    resultado na recompra, por analogia com IN 1.585 art. 62 II e P&R 725; limite pelo mês da
-    venda). Maio: venda a descoberto de 1.000 BBAS3 (25.000 ou 15.000). Junho: recompra a 23 e
-    venda de 200 VALE3 por 5.000 com ganho 200. Com 25.000: os 2.000 são tributáveis (maio acima
-    do limite) e VALE3 isenta -> IR 300,00. Com 15.000: recompra a 13 (ganho 2.000) isenta."""
+    resultado na recompra, por analogia com IN 1.585 art. 62 II e P&R IRPF 2026 pergunta 725;
+    limite pelo mês da venda). Maio: venda a descoberto de 1.000 BBAS3 (25.000 ou 15.000). Junho:
+    recompra a 23 e venda de 200 VALE3 por 5.000 com ganho 200. Com 25.000: os 2.000 são tributáveis
+    (maio acima do limite) e VALE3 isenta -> IR 300,00. Com 15.000: recompra a 13 (ganho 2.000)
+    isenta."""
     livro = Livro()
     livro.nota(date(2025, 4, 1), livro.op("C", "VALE3", 200, "24"))
     livro.nota(date(2025, 5, 15), livro.op("V", "BBAS3", 1000, preco_venda))
@@ -575,9 +577,9 @@ def test_mesmo_codigo_de_serie_em_anos_diferentes_sao_posicoes_separadas() -> No
 
 
 def test_exercicio_parcial_e_sobra_vira_po_no_vencimento() -> None:
-    """R9/R10 (IN RFB 1.585/2015 art. 58; P&R IRPF, opções): titular de 1.000 calls exerce 600 no
-    vencimento; as 400 restantes viram pó (perde 40% do prêmio de 1.000 = -400); o custo das
-    ações leva 600 do prêmio."""
+    """R9/R10 (IN RFB 1.585/2015 arts. 58 e 60; P&R IRPF 2026, opções): titular de 1.000 calls
+    exerce 600 no vencimento; as 400 restantes viram pó (perde 40% do prêmio de 1.000 = -400); o
+    custo das ações leva 600 do prêmio."""
     livro = Livro()
     livro.nota(date(2024, 1, 10), livro.op("C", "AAAAX30", 1000, "1", mercado="CALL",
                                            vencimento=date(2024, 2, 16)))  # fmt: skip
@@ -590,7 +592,7 @@ def test_exercicio_parcial_e_sobra_vira_po_no_vencimento() -> None:
 
 
 def test_bonificacao_ajusta_a_quantidade_da_serie_sem_custo() -> None:
-    """R8 (Lei 9.249/1995 art. 10 parágrafo único e IN RFB 1.585/2015 art. 58: o custo atribuído
+    """R8 (Lei 9.249/1995 art. 10 §1º e IN RFB 1.585/2015 art. 58: o custo atribuído
     da bonificação vai para as ações) e ajuste de proventos da B3 nas séries de opção: a série só
     muda a quantidade, sem custo (1.000 -> 1.050 lançadas)."""
     livro = Livro()
@@ -606,9 +608,10 @@ def test_bonificacao_ajusta_a_quantidade_da_serie_sem_custo() -> None:
 
 
 def test_irrf_de_day_trade_e_consumido_primeiro() -> None:
-    """IRRF em saldo único (Lei 9.959/2000 art. 8º §4º; IN 1.585 art. 65 §8º; P&R 714): abate o
-    imposto total do mês. Consome primeiro o de day trade (não vai para a declaração). Nov:
-    IRRF 0,005% 3 e day trade 2, imposto 4 -> sobra 1 de 0,005% e 0 de day trade."""
+    """IRRF em saldo único (Lei 9.959/2000 art. 8º §4º; IN 1.585 art. 65 §8º; P&R IRPF 2026
+    pergunta 714): abate o imposto total do mês. Consome primeiro o de day trade (não vai para a
+    declaração). Nov: IRRF 0,005% 3 e day trade 2, imposto 4 -> sobra 1 de 0,005% e 0 de day
+    trade."""
     livro = Livro()
     livro.nota(date(2023, 11, 1), livro.op("C", "TAEE11", 100, "10"), irrf="3", irrf_dt="2")
     livro.nota(date(2023, 11, 10), livro.op("V", "TAEE11", 100, "10.2667"))  # ganho 26,67: IR 4

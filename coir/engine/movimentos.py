@@ -7,8 +7,9 @@ exercícios; vendas; vencimento (pó).
 Fontes:
 - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora desde a
   MP 497/2010; antes, qualquer corretora); §13: exercício de opção não é day trade.
-- Exercício (art. 58 §§): titular de call soma o prêmio ao custo; lançador de call soma o prêmio à
-  alienação; titular de put subtrai o prêmio da alienação; lançador de put subtrai do custo.
+- Exercício (art. 60 II a-d e §§1º e 3º): titular de call soma o prêmio ao custo; lançador de
+  call soma o prêmio à alienação; titular de put subtrai o prêmio da alienação; lançador de put
+  subtrai do custo.
 - Opção não exercida: o prêmio é perda (titular) ou ganho (lançador) no vencimento.
 - Termo: as ações entram na carteira na liquidação, pelo preço a termo + custos da nota. Vendas
   à vista na mesma data consomem primeiro o lote do termo, pelo preço a termo (art. 62 I, linha do

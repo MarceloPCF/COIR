@@ -4,7 +4,7 @@ mão no parecer do especialista fiscal de 19/10/2026).
 Fontes:
 - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o
   custo das ações originais é atribuído às recebidas na proporção fixada pela assembleia; P&R
-  IRPF (substituição de ações): não é alienação, a data de aquisição é a original.
+  IRPF 2022 pergunta 578 (substituição de ações): não é alienação, a data de aquisição é a original.
 - Incorporação de ações (Lei 6.404 art. 252): custo mantido (TRF1, TRF3, TRF4; decisão do usuário
   de 19/10/2026); a RFB diverge (SC Cosit 224/2014), parâmetro incorporacao_acoes_tratamento.
 - Ajuste de série de opção pela B3 (Manual de Procedimentos Operacionais da Câmara, item 7.9):

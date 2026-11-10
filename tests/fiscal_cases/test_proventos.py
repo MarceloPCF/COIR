@@ -315,8 +315,9 @@ def test_rendimento_de_fi_infra_com_retencao_avisa() -> None:
 
 
 def test_amortizacao_de_fi_infra_reduz_o_custo_e_a_de_fii_fica_fora() -> None:
-    """Lei 11.478/2007 art. 2º §2º; IN 1.585 art. 16 §2º: a amortização reduz o custo das cotas.
-    A de FII continua fora (não foi objeto do parecer)."""
+    """Lei 12.431/2011 art. 3º e IN 1.585 art. 34 (FI-Infra; para FIP-IE, Lei 11.478/2007 art. 2º
+    §2º e IN art. 33): a amortização reduz o custo das cotas. A de FII continua fora (não foi objeto
+    do parecer)."""
     lista, _ = _infra(
         mov(date(2026, 6, 15), "Amortização", "XINF11 - FUNDO INFRA", "100", "2", "200"),
         mov(date(2026, 6, 15), "Amortização", "KNRI11 - KINEA RENDA", "100", "2", "200", i=2),

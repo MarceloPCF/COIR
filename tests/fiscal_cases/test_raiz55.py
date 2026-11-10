@@ -6,7 +6,7 @@ PN negociadas como PNA, fator de cotação e lote padrão de 100; COTAHIST: últ
 
 Regra: não há alienação (Lei 7.713/1988 art. 3º §3º), e o custo e a quantidade continuam os mesmos.
 Na nota, a quantidade é a de ações e o preço é por 100 ações; o custo é o valor impresso (IN RFB
-1.585/2015 art. 58 caput). A PNA continua ação para a isenção de R$ 20 mil (art. 59 caput).
+1.585/2015 art. 58 caput). A PNA continua ação para a isenção de R$ 20 mil (art. 59 I).
 """
 
 from datetime import date

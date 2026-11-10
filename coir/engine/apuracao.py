@@ -6,7 +6,7 @@ Fontes (alíquotas e limites vêm de data/parametros_fiscais.csv, com a fonte de
 - Isenção: ganho líquido em ações no mercado à vista quando as alienações do mês somam até
   R$ 20 mil (Lei 11.033/2004 art. 3º I); units, ETF, BDR, FII, opções, futuros e day trade fora.
 - Prejuízo: compensa só na mesma categoria, sem prazo (IN RFB 1.585/2015); prejuízo de mês isento
-  compensa se `prejuizo_mes_isento_compensavel` (Lei 8.981/1995 art. 72 §8º).
+  compensa se `prejuizo_mes_isento_compensavel` (Lei 8.981/1995 art. 72 §4º).
 - IRRF (0,005% e 1%): deduz do imposto do mês; o saldo passa aos meses seguintes do ano; o de
   dezembro vai para a declaração anual (IN RFB 1.585/2015; decisão do usuário). A DARF usa um
   saldo único; as fichas do programa IRPF recebem o IRRF que cada uma consumiu (`fichas.py`).

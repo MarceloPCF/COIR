@@ -1,5 +1,5 @@
 """Livro de operações do titular no ano, para a tela (com os custos da nota rateados como no
-motor: pelo valor de cada operação, IN RFB 1.585/2015 art. 58 §2º)."""
+motor: pelo valor de cada operação, IN RFB 1.585/2015 art. 56 §§3º e 4º)."""
 
 from dataclasses import dataclass
 from datetime import date
