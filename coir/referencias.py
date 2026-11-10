@@ -238,8 +238,9 @@ def proventos_b3(pasta: Path) -> list[dict[str, str]]:
 
 
 def proventos_historico_b3(pasta: Path) -> list[dict[str, str]]:
-    """JCP do histórico público (``proventos_historico_b3.csv``: classe, aprovação e data com, sem
-    pagamento; vazio se não houver), só as linhas com datas válidas e valor numérico."""
+    """JCP e restituição de capital do histórico público (``proventos_historico_b3.csv``: classe,
+    aprovação e data com, sem pagamento; vazio se não houver), só as linhas com datas válidas e
+    valor numérico."""
     caminho = pasta / "proventos_historico_b3.csv"
     saida: list[dict[str, str]] = []
     for r in _linhas(caminho) if caminho.is_file() else []:

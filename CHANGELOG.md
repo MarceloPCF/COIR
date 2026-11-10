@@ -11,6 +11,8 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 ## [Não lançado]
 
 ### Adicionado
+- **Restituição de capital pelo pacote público**: a coleta guarda as restituições de capital em dinheiro do histórico da B3 (antes só JCP), e a tela Eventos as propõe como redução de capital, só com o valor, para quem não importou a movimentação.
+- **Aviso de movimentação da B3 ausente**: a tela Eventos avisa quando a movimentação importada não cobre o período das notas (sem ela, subscrições, restituições e ofertas não aparecem).
 
 - **Eventos em abas:** A conferir, Lançados, Subscrições, Transferências, Conversões e Ofertas (IPO), cada uma com um formulário curto e sem o C/V.
 - **Lançar as seguras:** lança de uma vez os desdobramentos e grupamentos das tabelas da B3 que não pedem nada do usuário, com lista para conferir antes e opção de desfazer.
