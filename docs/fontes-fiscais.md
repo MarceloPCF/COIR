@@ -67,7 +67,7 @@ As tabelas geradas em `data/` (o pacote que vai no zip do programa e no release
 | Fonte | URL | O que cobre | Onde entra |
 |---|---|---|---|
 | B3, consulta de empresas listadas (`GetListedSupplementCompany`) | `https://sistemaswebb3-listados.b3.com.br/listedCompaniesProxy/CompanyCall/GetListedSupplementCompany/` | Desdobramento, grupamento, bonificação, cisão, resgate e subscrição com data com e fator exatos; proventos em dinheiro recentes. **Só o último evento de cada tipo por ISIN**: o histórico se perde quando a companhia repete o tipo de evento. | coleta semanal; `origem` = `b3` |
-| B3, proventos em dinheiro (`GetListedCashDividends`) | mesmo endereço, método `GetListedCashDividends` | JCP desde 2016, com data de aprovação e data com. | `proventos_historico_b3.csv` |
+| B3, proventos em dinheiro (`GetListedCashDividends`) | mesmo endereço, método `GetListedCashDividends` | JCP e restituição de capital em dinheiro (`REST CAP DIN`) desde 2016, com data de aprovação e data com. A restituição vira proposta de redução de capital na tela Eventos (só o valor, na data ex). | `proventos_historico_b3.csv` |
 | B3, cadastro de instrumentos | `https://arquivos.b3.com.br/api/download/requestname?fileName=InstrumentsConsolidatedFile` | Tickers, ISIN, espécie e emissor do dia (o portal guarda só o último mês). | `instrumentos_b3.csv` e derivados |
 | CVM, Formulário de Referência (dados abertos), tabela `capital_social_desdobramento` (e `..._classe_acao`) | `https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FRE/DADOS/fre_cia_aberta_AAAA.zip` (2010 a 2023) | Desdobramentos, grupamentos e bonificações aprovados de 2007 a 2022 (cada FRE traz os três exercícios anteriores): data de aprovação e quantidade de ações antes e depois, por espécie (ON, PN, PNA, PNB). O FRE de 2024 em diante não tem mais a tabela. | `python -m tools.referencias historico`; `origem` = `cvm_fre` |
 | B3, série histórica de cotações (COTAHIST) | `https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_AAAA.ZIP` | Por pregão e ISIN: preço e número de distribuição (muda no pregão seguinte à data com de todo evento). Confirma a data com dos eventos do FRE e dos avisos. | idem (não é publicado: só confere) |
@@ -483,7 +483,7 @@ Companhias que saíram da bolsa:
 - `docs/regras-fiscais.md` — R19: …nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65; recibo: posição B do parecer de 09/11/2026,…
 - `docs/regras-fiscais.md` — R2: R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R20: …de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&R IRPF…
-- `docs/regras-fiscais.md` — R21: …ou `baixa_b3`); baixa o menor entre a quantidade e a posição, com aviso se sobrar posição | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei…
+- `docs/regras-fiscais.md` — R21: …com aviso se sobrar posição; sem quantidade (a linha da B3 vem sem ela), baixa todo o saldo | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei…
 - `docs/regras-fiscais.md` — R3: R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A
 - `docs/regras-fiscais.md` — R6: …0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da…
 - `docs/regras-fiscais.md` — R7: …fica fora (parâmetro `custodia_no_custo = false`, decisão de 10/11/2026) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A
@@ -586,7 +586,7 @@ Companhias que saíram da bolsa:
 ## SC Cosit 166/2021
 
 - `coir/engine/movimentos.py` — _direito_nao_exercido: …de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; art. 64 caput; SC Cosit 166/2021; parecer do especialista de 09/11/2026). Fora do limite de R$ 20 mil: não há valor de alienação.…
-- `docs/regras-fiscais.md` — R21: …posição | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art. 171 §4º; P&R IRPF 2026 pergunta 727; parecer de 09/11/2026, seguido pelo usuário | M…
+- `docs/regras-fiscais.md` — R21: …o saldo | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art. 171 §4º; P&R IRPF 2026 pergunta 727; parecer de 09/11/2026, seguido pelo usuário | M…
 - `tests/fiscal_cases/test_direito_nao_exercido.py` — módulo: …20 mil (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art. 171 §4º). Parecer do especialista de 09/11/2026, seguido pelo usuário.
 
 ## SC Cosit 224/2014

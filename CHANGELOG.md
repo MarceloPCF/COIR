@@ -11,6 +11,8 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 ## [Não lançado]
 
 ### Adicionado
+- **Restituição de capital pelo pacote público**: a coleta guarda as restituições de capital em dinheiro do histórico da B3 (antes só JCP), e a tela Eventos as propõe como redução de capital, só com o valor, para quem não importou a movimentação.
+- **Aviso de movimentação da B3 ausente**: a tela Eventos avisa quando a movimentação importada não cobre o período das notas (sem ela, subscrições, restituições e ofertas não aparecem).
 
 - **Eventos em abas:** A conferir, Lançados, Subscrições, Transferências, Conversões e Ofertas (IPO), cada uma com um formulário curto e sem o C/V.
 - **Lançar as seguras:** lança de uma vez os desdobramentos e grupamentos das tabelas da B3 que não pedem nada do usuário, com lista para conferir antes e opção de desfazer.
@@ -21,6 +23,8 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ### Corrigido
 
+- **Restituição de capital e amortização propostas pela B3**: a proposta vinha com a quantidade da linha da B3, que é a posição, e o evento tirava essas ações da carteira; a venda seguinte virava venda a descoberto. Agora a proposta leva só o valor.
+- **Direito não exercido sem quantidade**: a linha "não exercido" da B3 vem sem quantidade; o evento sem ela baixa todo o saldo.
 - **Notas da Clear de 2018 a 2020:** eram recusadas com "rótulo 'Data pregão' não encontrado". O COIR agora lê esse layout, com negócios "B3 RV LISTADO" e o resumo em blocos, em qualquer corretora.
 - **Fundos imobiliários sem tipo:** mais de 300 FII e Fiagro, como HGBS11 e BRCR11, estavam fora da tabela de tipos porque o nome abreviado não dizia "imobiliário". A tabela agora usa a lista oficial de fundos da B3 e o COTAHIST.
 - **Direito, recibo e bônus de subscrição:** ficavam sem tipo, e o ganho não era apurado; alguns direitos de FII (BRCR12, XPHT14) estavam como FII, a 20%. Agora são tributados a 15% (20% em day trade), sem isenção e fora do limite de R$ 20 mil (Soluções de Consulta Cosit 145 e 166/2021). O direito vendido sem nota de compra, recebido da empresa ou do fundo, entra com custo zero.

@@ -21,9 +21,10 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
 - ``proventos_b3.csv``: proventos em dinheiro (dividendo, JCP, rendimento) com data de aprovação,
   data com, pagamento e valor por ação (o crédito do JCP; a B3 só lista os últimos meses, nunca
   apaga);
-- ``proventos_historico_b3.csv``: JCP da aba "Proventos em dinheiro" de cada companhia desde
-  ``HISTORICO_DESDE``, com classe, data de aprovação e data com (sem pagamento nem ISIN: a B3 não
-  publica); cobre os anos que ``proventos_b3.csv`` não alcança; nunca apaga;
+- ``proventos_historico_b3.csv``: JCP e restituição de capital em dinheiro da aba "Proventos em
+  dinheiro" de cada companhia desde ``HISTORICO_DESDE``, com classe, data de aprovação e data com
+  (sem pagamento nem ISIN: a B3 não publica); cobre os anos que ``proventos_b3.csv`` não alcança;
+  nunca apaga;
 - ``emissores_b3.csv``: CNPJ e razão social de cada emissor (companhias e fundos FII, Fiagro e ETF),
   para o Bens e Direitos do IRPF (histórico: o CNPJ de um fundo pode mudar; nunca apaga linha);
 - ``pacote.json``: formato e data do pacote.
@@ -90,6 +91,8 @@ COLUNAS_PROVENTOS = ("emissor", "isin", "tipo", "valor", "aprovado_em", "data_co
                      "referente")  # fmt: skip
 COLUNAS_HISTORICO = ("emissor", "classe", "tipo", "valor", "aprovado_em", "data_com")
 JCP = "JRS CAP PROPRIO"
+RESTITUICAO = "REST CAP DIN"  # restituição de capital em dinheiro: reduz o custo
+HISTORICO_TIPOS = (JCP, RESTITUICAO)
 HISTORICO_DESDE = "2016-01-01"  # data com mais antiga guardada (dez anos antes da F8)
 COLUNAS_EVENTOS = ("emissor", "isin", "tipo", "fator", "data_com", "aprovado_em", "isin_emitido",
                    "preco", "periodo", "data_subscricao", "origem", "referencia",
@@ -318,17 +321,19 @@ def juntar_proventos(anteriores: list[dict[str, str]], novos: Iterable[dict[str,
 
 
 def ler_historico(emissor: str, resultados: Sequence[Mapping[str, object]]) -> list[dict[str, str]]:
-    """Aba "Proventos em dinheiro" (GetListedCashDividends) de uma companhia -> JCP com data de
-    aprovação e data com desde ``HISTORICO_DESDE``. Linha sem aprovação ou com valor por lote (a
-    B3 cotava por mil ações nos anos 1990) fica de fora."""
+    """Aba "Proventos em dinheiro" (GetListedCashDividends) de uma companhia -> JCP e restituição
+    de capital em dinheiro com data de aprovação e data com desde ``HISTORICO_DESDE`` (a consulta
+    de empresas só traz os últimos meses: sem o histórico, a restituição antiga se perdia). Linha
+    sem aprovação ou com valor por lote (a B3 cotava por mil ações nos anos 1990) fica de fora."""
     saida: list[dict[str, str]] = []
     for e in resultados:
-        if str(e["corporateAction"]).strip() != JCP or str(e.get("quotedPerShares", "1")) != "1":
+        tipo = str(e["corporateAction"]).strip()
+        if tipo not in HISTORICO_TIPOS or str(e.get("quotedPerShares", "1")) != "1":
             continue
         aprovado = _data_br(str(e.get("dateApproval") or ""))
         data_com = _data_br(str(e["lastDatePriorEx"]))
         if aprovado and data_com >= HISTORICO_DESDE:
-            saida.append({"emissor": emissor, "classe": str(e["typeStock"]).strip(), "tipo": JCP,
+            saida.append({"emissor": emissor, "classe": str(e["typeStock"]).strip(), "tipo": tipo,
                           "valor": _numero(_br(str(e["valueCash"]))), "aprovado_em": aprovado,
                           "data_com": data_com})  # fmt: skip
     return saida
@@ -344,7 +349,9 @@ def juntar_historico(anteriores: list[dict[str, str]], novos: Iterable[dict[str,
     todos = {chave(r): dict(r) for r in anteriores}
     for r in novos:
         if chave(r) not in todos:
-            resumo.historico_novos.append(f"{r['data_com']} {r['emissor']} {r['classe']}")
+            resumo.historico_novos.append(
+                f"{r['data_com']} {r['emissor']} {r['classe']} {r['tipo']}"
+            )
             todos[chave(r)] = r
     return [todos[k] for k in sorted(todos, key=lambda k: (k[5], k[0], k[1], k[4], k[3]))]
 
@@ -426,7 +433,10 @@ class Resumo:
                 "Proventos em dinheiro novos (data de aprovação, emissor, tipo)",
                 self.proventos_novos,
             ),
-            ("JCP novos no histórico (data com, emissor, classe)", self.historico_novos),
+            (
+                "JCP e restituições novos no histórico (data com, emissor, classe, tipo)",
+                self.historico_novos,
+            ),
             (
                 "Eventos com fontes divergentes (revise; nada foi alterado no pacote)",
                 self.divergencias,

@@ -279,6 +279,16 @@ def test_historico_sem_aprovacao_ou_por_lote_fica_de_fora() -> None:
         gerar.ler_historico("XXXX", [{**base, "valueCash": "x"}])
 
 
+def test_historico_guarda_restituicao_de_capital_e_deixa_dividendo_de_fora() -> None:
+    """A restituição de capital em dinheiro reduz o custo: a consulta de empresas só traz os
+    últimos meses, e a antiga vinha só do histórico (que guardava só JCP)."""
+    base = {"typeStock": "PN", "corporateAction": "REST CAP DIN", "valueCash": "0,25",
+            "lastDatePriorEx": "28/11/2024", "dateApproval": "20/11/2024",
+            "quotedPerShares": "1"}  # fmt: skip
+    linhas = gerar.ler_historico("XXXX", [base, {**base, "corporateAction": "DIVIDENDO"}])
+    assert [r["tipo"] for r in linhas] == ["REST CAP DIN"]
+
+
 # ------------------------------------------------------------- correções de 07/11/2026
 CABECALHO_CADASTRO = (
     "Status do Arquivo: Final\nRptDt;TckrSymb;Asst;SgmtNm;SctyCtgyNm;ISIN;SpcfctnCd;CrpnNm\n"

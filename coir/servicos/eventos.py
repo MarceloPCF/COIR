@@ -217,8 +217,8 @@ NOTA_DATA_EX = ("a B3 informa a data do crédito: use a data ex (primeiro pregã
                 "como decidido para os eventos")  # fmt: skip
 SEM_CV = frozenset({TipoEvento.TRANSFERENCIA, *TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO,
                     TipoEvento.DIREITO_NAO_EXERCIDO})  # fmt: skip
-QUANTIDADE_OBRIGATORIA = EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO,
-                                             TipoEvento.DIREITO_NAO_EXERCIDO}  # fmt: skip
+# direito não exercido sem quantidade baixa todo o saldo: a linha "não exercido" da B3 vem sem ela
+QUANTIDADE_OBRIGATORIA = EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO}
 AVISO_INCORPORACAO_ACOES = (
     "incorporação de ações (Lei 6.404 art. 252): o COIR mantém o custo (posição do Judiciário); a "
     "Receita trata como alienação com ganho de capital (SC Cosit 224/2014). Avalie com o seu "
@@ -651,6 +651,9 @@ def propostas(
             ticker = (f"{recibo['raiz']}{3 if recibo['classe'] == '9' else 4}" if recibo
                       else codigo)  # fmt: skip
             recebido = tipo is TipoEvento.INCORPORACAO  # a B3 mostra o crédito de B
+            # restituição de capital e amortização: a quantidade da B3 é a posição sobre a qual o
+            # dinheiro foi pago, não ações ou cotas canceladas; levada ao evento, zeraria a posição
+            so_valor = tipo is TipoEvento.REDUCAO_CAPITAL
             data, nota_data = m.data, NOTA_DATA_EX
             if tipo is TipoEvento.DIREITO_NAO_EXERCIDO:
                 data, nota_data = _fim_do_prazo(codigo, m.data, fiscais, pasta)
@@ -658,7 +661,7 @@ def propostas(
                 nota_data = AMORTIZACAO_FUNDO
             dados = DadosEvento(
                 tipo=tipo, data=data, conta=conta, ticker="" if recebido else ticker, cv=cv,
-                quantidade=None if recebido else m.quantidade,
+                quantidade=None if recebido or so_valor else m.quantidade,
                 valor=(m.valor or Decimal(0)) if tipo in (TipoEvento.REDUCAO_CAPITAL,
                                                          TipoEvento.LEILAO_FRACAO) else Decimal(0),
                 ticker_destino=ticker if recebido else None,
@@ -701,6 +704,42 @@ def propostas(
                    key=lambda p: p.data, reverse=True)  # fmt: skip
     trilha.propostas(titular, lista)
     return _sem_pendencia_antes(lista)
+
+
+FOLGA_COBERTURA = timedelta(days=45)  # movimentação que começa ou termina perto das notas basta
+SO_NA_MOVIMENTACAO = ("subscrições, restituições de capital, ofertas públicas e eventos que o "
+                      "pacote público não tem")  # fmt: skip
+
+
+def lacuna_movimentacao(banco: Path, titular: int) -> str | None:
+    """Aviso quando a movimentação da B3 importada não cobre o período das notas: só ela traz os
+    eventos de cada conta, e sem ela as propostas dependem do pacote público. None se cobre."""
+    with conectar(banco) as fabrica, fabrica() as s:
+        notas = s.execute(select(func.min(NotaCorretagem.data_pregao),
+                                 func.max(NotaCorretagem.data_pregao))
+                          .join(Conta).where(Conta.titular_id == titular)).one()  # fmt: skip
+        movs = s.execute(select(func.min(MovimentacaoB3.data), func.max(MovimentacaoB3.data))
+                         .where(MovimentacaoB3.titular_id == titular)).one()  # fmt: skip
+    primeira, ultima = notas
+    if primeira is None or ultima is None:
+        return None
+    if movs[0] is None or movs[1] is None:
+        return (
+            f"Sem a movimentação da B3, {SO_NA_MOVIMENTACAO} não aparecem aqui. Importe a "
+            "planilha de movimentação da Área do Investidor em Importar > Planilhas da B3."
+        )
+    faltas = []
+    if movs[0] - primeira > FOLGA_COBERTURA:
+        faltas.append(f"começa em {movs[0]:%m/%Y} e as notas em {primeira:%m/%Y}")
+    if ultima - movs[1] > FOLGA_COBERTURA:
+        faltas.append(f"termina em {movs[1]:%m/%Y} e as notas vão até {ultima:%m/%Y}")
+    if not faltas:
+        return None
+    return (
+        f"A movimentação da B3 importada {' e '.join(faltas)}: fora dela, "
+        f"{SO_NA_MOVIMENTACAO} não aparecem aqui. Importe a movimentação do período que "
+        "falta, se a Área do Investidor tiver."
+    )
 
 
 def _mapa_proposta(
@@ -918,6 +957,91 @@ def _do_pacote(
                                 and dados.tipo is TipoEvento.BONIFICACAO
                                 and ev.get("custo_atribuido") else None),
                 referencia=ev.get("referencia", "")))  # fmt: skip
+    saida += _propor_restituicoes(s, refs, fiscais, pasta, por_isin, historico, nome_conta,
+                                  tickers_serie, parou_em, inicio, limite, ignoradas,
+                                  lancados)  # fmt: skip
+    return saida
+
+
+REST_CAP = "REST CAP DIN"  # restituição de capital em dinheiro nos proventos da B3
+NOTA_RESTITUICAO = ("restituição de capital em dinheiro do pacote público da B3 (R$ {valor} por "
+                    "ação, data com {data_com}): reduz o custo, sem resultado (IN RFB 1.585/2015 "
+                    "art. 58 §8º); confira o valor creditado na movimentação da B3")  # fmt: skip
+
+
+def _restituicoes(pasta: Path, refs: Referencias,
+                  por_isin: dict[str, str]) -> list[tuple[str, date, Decimal]]:  # fmt: skip
+    """(ticker, data com, valor por ação) das restituições de capital em dinheiro do pacote: as
+    recentes (com ISIN) e as do histórico (empresa e classe); a mesma nas duas entra uma vez."""
+    achadas: dict[tuple[str, str], Decimal] = {}
+    for r in referencias.proventos_b3(pasta):
+        ticker = por_isin.get(r["isin"])
+        if r["tipo"] == REST_CAP and ticker and r.get("data_com"):
+            achadas.setdefault((ticker, r["data_com"]), Decimal(r["valor"]))
+    for r in referencias.proventos_historico_b3(pasta):
+        digito = refs.classes.get(r["classe"])
+        if r["tipo"] == REST_CAP and digito:
+            achadas.setdefault((r["emissor"] + digito, r["data_com"]), Decimal(r["valor"]))
+    saida: list[tuple[str, date, Decimal]] = []
+    for (ticker, data_com), valor in sorted(achadas.items()):
+        try:
+            saida.append((ticker, date.fromisoformat(data_com), valor))
+        except ValueError:
+            continue
+    return saida
+
+
+def _propor_restituicoes(
+    s: Session, refs: Referencias, fiscais: ReferenciasFiscais, pasta: Path,
+    por_isin: dict[str, str], historico: dict[tuple[int, int], list[tuple[date, Decimal]]],
+    nome_conta: dict[int, str], tickers_serie: dict[int, str], parou_em: dict[int, date],
+    inicio: date, limite: date, ignoradas: set[str], lancados: list[tuple[int, int | None, date]],
+) -> list[Proposta]:  # fmt: skip
+    """Restituição de capital em dinheiro como redução de capital só com o valor (posição na data
+    com vezes o valor por ação, truncado no centavo), na data ex. Pede conferência: a B3 credita
+    o valor da conta, que a movimentação mostra."""
+    cal = fiscais.calendario
+    saida: list[Proposta] = []
+    for ticker, data_com, valor in _restituicoes(pasta, refs, por_isin):
+        if not cal.primeiro_ano <= data_com.year <= cal.ultimo_ano or data_com < inicio:
+            continue
+        try:
+            data_ex = proximo_pregao(data_com, cal)
+        except ReferenciaError:
+            continue
+        if data_ex > limite:
+            continue
+        ativos = _ativos_do_ticker(s, ticker)
+        for (conta, ativo), hist in historico.items():
+            q = _na_data(hist, data_com)
+            if (
+                ativo not in ativos
+                or ativo in tickers_serie
+                or q <= 0
+                or conta not in nome_conta
+                or data_ex > parou_em.get(ativo, date.max)
+            ):
+                continue  # fmt: skip
+            total = (q * valor).quantize(Decimal("0.01"), rounding=ROUND_FLOOR)
+            if total <= 0:
+                continue
+            dados = DadosEvento(
+                tipo=TipoEvento.REDUCAO_CAPITAL, data=data_ex, conta=conta, ticker=ticker, cv="V",
+                quantidade=None, valor=total, origem="b3",
+                observacao="pacote público da B3: restituição de capital em dinheiro",
+            )  # fmt: skip
+            chave = hashlib.sha256(f"b3rest|{ticker}|{data_com}|{valor}|{conta}"
+                                   .encode()).hexdigest()  # fmt: skip
+            if chave in ignoradas:
+                situacao = "ignorada"
+            elif _ja_lancado(s, refs, ticker, data_ex, lancados, troca_conta=False):
+                situacao = "lançado"
+            else:
+                situacao = "pendente"
+            saida.append(Proposta(
+                chave, data_ex, "Restituição de capital (proventos da B3)", ticker, q, total,
+                nome_conta[conta], situacao, dados,
+                NOTA_RESTITUICAO.format(valor=valor, data_com=f"{data_com:%d/%m/%Y}")))  # fmt: skip
     return saida
 
 

@@ -276,6 +276,36 @@ def test_propostas_do_pacote_com_data_ex_e_quantidade_pela_posicao(demo: Path) -
     assert lancado.situacao == "lançado"
 
 
+def test_restituicao_de_capital_do_historico_vira_proposta_so_com_o_valor(demo: Path) -> None:
+    """A restituição de capital em dinheiro do histórico da B3 (empresa e classe, sem ISIN) vira
+    redução de capital na data ex, com 300 x 0,123456 = 37,03 (truncado) e sem quantidade: a
+    posição continua com 300. A mesma restituição no pacote recente (com ISIN) não repete."""
+    pasta = _pacote_eventos(demo.parent, [
+        "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2008-01-31,2008-01-01,BRGGBRTESTE1,,,",
+    ])  # fmt: skip
+    (pasta / "proventos_historico_b3.csv").write_text(
+        "emissor,classe,tipo,valor,aprovado_em,data_com\n"
+        "GGBR,PN,REST CAP DIN,0.123456,2023-04-10,2023-04-28\n"
+        "GGBR,PN,JRS CAP PROPRIO,0.5,2023-04-10,2023-04-28\n", encoding="utf-8")  # fmt: skip
+    (pasta / "proventos_b3.csv").write_text(
+        "emissor,isin,tipo,valor,aprovado_em,data_com,pagamento,referente\n"
+        "GGBR,BRGGBRTESTE1,REST CAP DIN,0.123456,2023-04-10,2023-04-28,2023-05-15,\n",
+        encoding="utf-8")  # fmt: skip
+    [p] = [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
+           if p.dados.tipo is TipoEvento.REDUCAO_CAPITAL]  # fmt: skip
+    assert (p.data, p.codigo, p.dados.cv, p.dados.quantidade, p.dados.valor, p.segura) == (
+        date(2023, 5, 2),
+        "GGBR4",
+        "V",
+        None,
+        D("37.03"),
+        False,
+    )
+    assert "restituição de capital" in p.nota
+    eventos.salvar(demo, 1, p.dados, REFS, FISCAIS)
+    assert _carteira(demo, date(2023, 5, 2))["GGBR4"] == (300, D(18650))  # 18.687 - 37,03
+
+
 def test_evento_do_objeto_propoe_ajuste_das_series_abertas(demo: Path) -> None:
     """Demonstração: IRBRE35 (600, vence em maio) aberta em fev/2023 na BTG; desdobramento 1:2 de
     IRBR3 -> a série recebe mais 600 (a B3 ajusta a quantidade)."""
@@ -607,6 +637,40 @@ def test_so_o_evento_mais_antigo_do_ativo_e_seguro_e_o_numero_e_o_que_entra(demo
     assert "lance antes o evento anterior" in resto[TipoEvento.GRUPAMENTO].nota
     eventos.excluir_lote(demo, 1, [*r1.ids, *r2.ids], REFS, FISCAIS)
     assert eventos.listar(demo, 1) == []
+
+
+def test_restituicao_de_capital_proposta_so_com_o_valor(demo: Path) -> None:
+    """A quantidade da linha da B3 é a posição sobre a qual o dinheiro foi pago: levada ao evento
+    (que tira), zeraria a posição e a venda seguinte viraria venda a descoberto."""
+    movimentos = planilha(demo.parent / "movimentacao-2023.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "10/05/2023", "Restituição de Capital", "GGBR4 - GERDAU S.A.", AGORA_B3, 300,
+         0.1, 30],
+    ]})  # fmt: skip
+    importar_planilhas(demo, [movimentos], 1, AGORA)
+    [p] = eventos.propostas(demo, 1, REFS)
+    assert (p.dados.tipo, p.dados.cv, p.dados.quantidade, p.dados.valor) == (
+        TipoEvento.REDUCAO_CAPITAL,
+        "V",
+        None,
+        30,
+    )
+    eventos.salvar(demo, 1, p.dados, REFS, FISCAIS)
+    quantidade, custo = _carteira(demo, date(2023, 5, 10))["GGBR4"]
+    assert quantidade == 300 and custo < D(18687)
+
+
+def test_aviso_quando_a_movimentacao_nao_cobre_as_notas(demo: Path) -> None:
+    """Sem a movimentação da B3, subscrições e restituições não aparecem: a tela avisa; com ela
+    cobrindo só parte das notas, diz o período que falta."""
+    assert "Sem a movimentação da B3" in (eventos.lacuna_movimentacao(demo, 1) or "")
+    movimentos = planilha(demo.parent / "movimentacao-2023.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "03/03/2023", "Desdobro", "GGBR4 - GERDAU S.A.", AGORA_B3, 300, "-", "-"],
+    ]})  # fmt: skip
+    importar_planilhas(demo, [movimentos], 1, AGORA)
+    aviso = eventos.lacuna_movimentacao(demo, 1) or ""
+    assert "começa em 03/2023" in aviso or "termina em 03/2023" in aviso
 
 
 def test_proposta_da_movimentacao_nunca_e_segura(demo: Path) -> None:

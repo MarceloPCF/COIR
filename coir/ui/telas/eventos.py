@@ -68,8 +68,8 @@ AJUDA = {
     TipoEvento.DIREITO_NAO_EXERCIDO: "Direito, recibo ou bônus de subscrição comprado que venceu "
                                      "sem exercício nem venda: o custo pago vira perda em "
                                      "operações comuns, fora do limite de isenção. Use o fim do "
-                                     "prazo de exercício. Os recebidos sem custo não dão "
-                                     "resultado.",
+                                     "prazo de exercício. Sem quantidade, baixa todo o saldo; "
+                                     "os recebidos sem custo não dão resultado.",
 }  # fmt: skip
 ROTULO_DATA = {
     TipoEvento.SUBSCRICAO: "Data da subscrição",
@@ -88,7 +88,7 @@ ROTULO_QUANTIDADE = {
     TipoEvento.INCORPORACAO: "Quantidade de origem",
     TipoEvento.CISAO: "Quantidade de origem (posição da conta)",
     TipoEvento.LEILAO_FRACAO: "Fração vendida",
-    TipoEvento.DIREITO_NAO_EXERCIDO: "Direitos que venceram",
+    TipoEvento.DIREITO_NAO_EXERCIDO: "Direitos que venceram (vazio: todo o saldo)",
 }
 ROTULO_VALOR = {
     TipoEvento.BONIFICACAO: "Custo atribuído",
@@ -624,6 +624,10 @@ class _Conferir:
             "as ações que estavam em carteira. Aqui fica o que depende de você, como subscrição "
             "e bonificação sem custo."
         ).classes("coir-subtitulo")
+        self.lacuna = (
+            ui.label("").classes("coir-carimbo text-sm w-full").mark("lacuna-movimentacao")
+        )
+        self.lacuna.set_visibility(False)
         self.secao_saidas = ui.column().classes("w-full gap-1")
         self.secao_lote = ui.column().classes("w-full gap-1")
         self.secao_lote.set_visibility(False)
@@ -638,7 +642,9 @@ class _Conferir:
         return [p for p in self.propostas
                 if p.situacao == "pendente" and not p.depois_da_ultima_nota]  # fmt: skip
 
-    def mostrar(self, propostas: list[Proposta]) -> None:
+    def mostrar(self, propostas: list[Proposta], lacuna: str | None = None) -> None:
+        self.lacuna.set_text(lacuna or "")
+        self.lacuna.set_visibility(bool(lacuna))
         self.propostas = propostas
         self._desenhar_lista()
         self._desenhar_lote()
@@ -846,6 +852,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         try:
             lancados = await run.io_bound(eventos.listar, estado.banco, titular)
             propostas = await run.io_bound(estado.propostas)
+            lacuna = await run.io_bound(eventos.lacuna_movimentacao, estado.banco, titular)
             if conferir.lista.is_deleted:
                 return  # o usuário saiu da tela durante a leitura
         except CoirError as erro:
@@ -853,7 +860,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             with conferir.lista:
                 ui.label(f"Não foi possível ler os eventos: {erro}").classes("coir-negativo")
             return
-        conferir.mostrar(propostas or [])
+        conferir.mostrar(propostas or [], lacuna)
         guia_conferir.props(f'label="A conferir ({len(conferir.pendentes)})"')
         for aba in tarefas:
             aba.mostrar(lancados or [])
