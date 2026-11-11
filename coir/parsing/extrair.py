@@ -18,10 +18,9 @@ from pathlib import Path
 
 from coir.domain.nota import Cliente, NotaExtraida, Segmento
 from coir.erros import ExtracaoError
-from coir.parsing import bmf, bovespa
+from coir.parsing import bmf, bovespa, rotulos
 from coir.parsing.cliente import cliente
 from coir.parsing.conciliar import conciliar
-from coir.parsing.numeros import compactar
 from coir.parsing.paginas import (
     GRAMATICAS_PADRAO,
     CorretoraDesconhecida,
@@ -38,6 +37,7 @@ from coir.parsing.texto_pdf import paginas as ler_paginas
 RE_CONTA_BMF_XP = re.compile(r"^\s*(?P<conta>\d+)\s*$")
 # BTG: número inteiro no fim da linha do endereço (não o "0,00" de um negócio)
 RE_CONTA_BMF_BTG = re.compile(r"(?:^|\s)(\d{3,})\s*$")
+CODIGO_CLIENTE_NO_FIM = re.compile(rotulos.padrao("codigo_cliente", colado=True) + r"\s*$")
 
 
 @dataclass
@@ -226,7 +226,7 @@ def _conta_bmf(texto: str, variante: str) -> str:
     if variante == "xp":
         # 2022+: a conta vem logo após "Codigo do Cliente"; antes, na última linha
         for i, linha in enumerate(linhas[:-1]):
-            if compactar(linha) == "codigodocliente":
+            if rotulos.linha_inteira(linha, "codigo_cliente"):
                 m = RE_CONTA_BMF_XP.match(linhas[i + 1])
                 if m:
                     return str(int(m["conta"]))
@@ -237,7 +237,7 @@ def _conta_bmf(texto: str, variante: str) -> str:
     # BTG: no fim da linha seguinte a "... Código cliente" (depois do endereço); sem ela, na
     # última linha. A última linha pode ser o rodapé (telefone da ouvidoria, endereço da BTG)
     for i, linha in enumerate(linhas[:-1]):
-        if compactar(linha).endswith("codigocliente"):
+        if CODIGO_CLIENTE_NO_FIM.search(linha):
             m = RE_CONTA_BMF_BTG.search(linhas[i + 1])
             if m:
                 return str(int(m.group(1)))

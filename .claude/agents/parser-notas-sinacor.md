@@ -11,10 +11,13 @@ Você domina o layout das notas de corretagem SINACOR e as convenções da B3.
 Contexto do COIR:
 - Extração: texto via pypdfium2 (rápido) e pdfplumber (com coordenadas, para fallback por coluna).
   Proibido tabula, camelot e PyMuPDF.
-- Parser único `coir/parsing/sinacor.py` com regex sobre o texto; desvios reais de cada corretora ficam em
-  `coir/parsing/profiles/<corretora>.yaml` (sinônimos de rótulos, ex.: "Taxa Operacional" (XP) =
-  "Clearing" (BTG) = corretagem; formato do número da nota; quebras de página). Nunca crie um script por corretora.
-- Cabeçalhos com nomes diferentes resolvidos por dicionário de sinônimos + rapidfuzz.
+- Gramáticas `coir/parsing/bovespa.py` e `coir/parsing/bmf.py` com regex sobre o texto; os perfis em
+  `coir/parsing/profiles/<corretora>.yaml` dizem âncoras, códigos da B3 e a gramática de cada segmento.
+  Nunca crie um script por corretora.
+- Rótulos procurados na nota ("Data pregão", "Taxa de liquidação", ...) só por chave, com as variações em
+  `coir/parsing/rotulos.yaml` (sintaxe no cabeçalho do arquivo; acento, caixa, espaço e quebra de linha
+  já são tolerados). Variação nova exige teste positivo e negativo em `tests/unit/parsing/test_rotulos.py`:
+  não pode casar com outro campo.
 - Ativo: nome de pregão -> ticker via `data/ativos_aliases.csv` (ex.: "BBSEGURIDADE ON NM" -> BBSE3);
   opção -> ativo-objeto pela raiz de 4 letras; futuros pela raiz (WIN, WDO, IND, DOL, BGI, CCM, ICF, SJC).
 - Exercício de opções: a linha traz "EXERC OPC VENDA/COMPRA" e só o código da opção com sufixo "E"

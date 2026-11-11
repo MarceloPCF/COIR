@@ -62,28 +62,3 @@ def compactar(texto: str) -> str:
     """
     sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode()
     return re.sub(r"\s+", "", sem_acento).casefold()
-
-
-def regex_rotulo(rotulo: str) -> re.Pattern[str]:
-    """Regex que casa o rótulo com espaços opcionais entre os caracteres e acentos trocados."""
-    partes: list[str] = []
-    for ch in compactar(rotulo):
-        base = re.escape(ch)
-        partes.append(f"[{base}{_ACENTOS.get(ch, '')}]" if ch in _ACENTOS else base)
-    return re.compile(r"\s*".join(partes), re.IGNORECASE)
-
-
-_ACENTOS = {"a": "áàâãÁÀÂÃ", "e": "éêÉÊ", "i": "íÍ", "o": "óôõÓÔÕ", "u": "úÚü", "c": "çÇ"}
-
-
-def valor_apos_rotulo(texto: str, rotulo: str) -> Montante | None:
-    """Primeiro valor que segue o rótulo na mesma linha (ex.: 'Taxa de liquidação 1,49 D')."""
-    padrao = regex_rotulo(rotulo)
-    for linha in texto.splitlines():
-        m = padrao.search(linha)
-        if not m:
-            continue
-        valor = RE_MONTANTE.match(linha[m.end() :].lstrip())
-        if valor:
-            return Montante(valor=decimal_br(valor["valor"]), dc=_dc(valor["dc"]))
-    return None

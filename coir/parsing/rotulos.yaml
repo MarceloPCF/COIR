@@ -1,0 +1,154 @@
+# Rótulos que o COIR procura nas notas de corretagem SINACOR e as formas aceitas de cada um.
+# Lido por coir/parsing/rotulos.py. A primeira forma de cada lista é a de referência, usada nas
+# mensagens de erro.
+#
+# Valem em todas as formas, sem precisar escrever:
+#   - acento e maiúsculas: "pregão" = "PREGAO" = "Pregao";
+#   - espaço entre palavras opcional ou repetido: "Data pregão" = "Datapregão" = "Data   pregão";
+#     espaço solto dentro da palavra também ("Taxa de liq uidação"), como algumas notas imprimem;
+#   - quebra de linha entre as palavras, quando o rótulo não está inteiro em nenhuma linha;
+#   - o rótulo não começa no meio de uma palavra: "Bolsa" não casa "Rebolsa".
+#
+# Sintaxe:
+#   [de|do|da]   palavra opcional: uma das alternativas ou nenhuma
+#   Taxa|Tx.     uma das alternativas
+#   Nr.          abreviação: o ponto é opcional, mas sem o ponto a palavra não pode continuar
+#                ("Fl." casa "Fl 1" e "Fl.1", não "Flex"); de uma letra só ("D."), o ponto é
+#                obrigatório: "D" solto pode ser o D/C de um valor
+#   A.N.A.       ponto no meio da palavra: opcional ("ANA")
+#   Nº           º e ° valem um pelo outro
+#   opera*       começo de palavra: o resto vai até o próximo espaço (acentos ilegíveis no PDF)
+#
+# Cuidado ao acrescentar uma forma: ela não pode casar com outro campo da nota. Os testes negativos
+# de tests/unit/parsing/test_rotulos.py conferem os casos conhecidos. Ficaram de fora de propósito:
+#   - "Data" sozinha (casaria "Data liquidação") e "Pregão" sozinho;
+#   - "Emol." (casaria "Taxas BM&F (emol+f.gar)": emolumentos e taxas BM&F nunca entram os dois);
+#   - "Página"/"Pág." como folha (o rodapé "Página 1 de 2" não é o número da folha);
+#   - "N." como número da nota (letra solta demais, mesmo com o ponto);
+#   - "Taxa" ou "Valor" sozinhos, e "Oper." em "Valor das operações" (é o começo do rótulo dos
+#     títulos públicos).
+
+# ------------------------------------------------------------------------------- cabeçalho
+numero_nota:
+  - Nr. [da|de|do] nota
+  - Nro. [da|de|do] nota
+  - Nº [da|de|do] nota
+  - No. [da|de|do] nota
+  - Num. [da|de|do] nota
+  - Número [da|de|do] nota
+folha:
+  - Folha
+  - Fl.
+  - Fls.
+data_pregao:
+  - Data [do|de|da] pregão
+  - Dt. [do|de|da] pregão
+  - D. [do|de|da] pregão
+nota_de_corretagem:
+  - Nota [de|da] corretagem
+codigo_cliente:
+  - Código [do|de|da] cliente
+  - Cód. [do|de|da] cliente
+cv_mercadoria:  # cabeçalho das colunas de negócios da nota BM&F
+  - C/V Mercadoria
+
+# ---------------------------------------------------------------- resumo dos negócios (Bovespa)
+resumo_negocios:
+  - Resumo [dos|de|do] negócios
+debentures:
+  - Debêntures
+vendas_a_vista:
+  - Vendas [à|a] vista
+compras_a_vista:
+  - Compras [à|a] vista
+opcoes_compras:
+  - Opções [-] compras
+opcoes_vendas:
+  - Opções [-] vendas
+operacoes_a_termo:
+  - Operações [à|a] termo
+valor_operacoes_titulos_publicos:
+  - Valor|Vlr. [das|dos|de] oper* c/|com títulos públ*
+valor_operacoes:
+  - Valor|Vlr. [das|dos|de] operações
+
+# ------------------------------------------------------------------ resumo financeiro (Bovespa)
+resumo_financeiro:
+  - Resumo financeiro
+clearing:  # custo (BTG, b3rv) e título do bloco no layout b3rv
+  - Clearing
+bolsa:  # título do bloco no layout b3rv
+  - Bolsa
+corretagem_despesas:  # título do bloco no layout b3rv
+  - Corretagem [/|e] despesas
+valor_liquido_operacoes:
+  - Valor|Vlr. líquido|líq. [das|dos|de] operações
+taxa_liquidacao:
+  - Taxa|Tx. [de|da] liquidação [/CCP]
+taxa_registro:
+  - Taxa|Tx. [de|da] registro
+taxa_termo_opcoes:
+  - Taxa|Tx. [de] termo [/|e] opções
+taxa_ana:
+  - Taxa|Tx. A.N.A.
+emolumentos:
+  - Emolumentos
+taxa_transferencia_ativos:
+  - Taxa|Tx. [de] transferência|transf. [de] ativos
+corretagem:
+  - Corretagem
+taxa_operacional:
+  - Taxa|Tx. operacional
+execucao:
+  - Execução
+execucao_casa:
+  - Execução casa
+taxa_custodia:
+  - Taxa|Tx. [de] custódia
+impostos:
+  - Impostos
+iss:
+  - ISS
+  - I.S.S.
+outros:
+  - Outros
+outras:
+  - Outras
+total:  # total de cada bloco no layout b3rv
+  - Total
+total_cblc:
+  - Total [da] CBLC
+total_bovespa:
+  - Total Bovespa [/] [Soma]
+total_despesas:
+  - Total custos|corretagem [/|e] despesas
+  - Total [das|de] despesas
+irrf_operacoes:
+  - I.R.R.F. s/|sobre opera*
+  - IRRF s/|sobre opera*
+day_trade:
+  - Day [-] Trade
+projecao:
+  - Proje*
+  - Proj.
+liquido_para:
+  - Líquido|Líq. para
+observacoes:  # legenda da coluna Obs. no rodapé
+  - (*) [-] Observações
+  - (*) [-] Obs.
+
+# --------------------------------------------------------------------- resumo da nota BM&F
+venda_disponivel:
+  - Venda disponível
+  - Venda disp.
+irrf:
+  - IRRF
+  - I.R.R.F.
+irrf_day_trade:
+  - IRRF Day [-] Trade
+  - I.R.R.F. Day [-] Trade
+outros_custos:
+  - "[+] Outros custos"  # entre aspas: no YAML, "[" no começo abre uma lista
+irrf_operacional:
+  - IRRF operacional
+  - I.R.R.F. operacional
