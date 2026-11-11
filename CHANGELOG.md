@@ -11,6 +11,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 ## [Não lançado]
 
 ### Adicionado
+- **Rótulos das notas escritos de outro jeito**: o COIR passa a reconhecer os rótulos da nota em outras grafias, o que ajuda a ler notas de corretoras que ele ainda não conhece. Valem, por exemplo, "Data do pregão", "Data pregao", "D. pregão", "Dt pregão" e "Datapregão"; "Nº da nota" e "Número da nota"; "Fl."; "Cód. cliente"; e "Tx. liquidação". Também valem acentos e maiúsculas trocados, palavras coladas ou separadas e o rótulo quebrado em duas linhas. As formas aceitas ficam reunidas num só arquivo (`coir/parsing/rotulos.yaml`). Nenhuma delas casa com outro campo: "Data liquidação" não vira data do pregão, e "Taxas BM&F (emol+f.gar)" não vira emolumentos. As notas que o COIR já lia saem iguais.
 - **Restituição de capital pelo pacote público**: a coleta guarda as restituições de capital em dinheiro do histórico da B3 (antes só JCP), e a tela Eventos as propõe como redução de capital, só com o valor, para quem não importou a movimentação.
 - **Aviso de movimentação da B3 ausente**: a tela Eventos avisa quando a movimentação importada não cobre o período das notas (sem ela, subscrições, restituições e ofertas não aparecem).
 

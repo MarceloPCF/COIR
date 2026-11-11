@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict
 
 from coir.domain.nota import Segmento
 from coir.erros import ExtracaoError
+from coir.parsing import rotulos
 from coir.parsing.numeros import compactar
 
 Gramatica = Literal["agora", "xp", "btg", "b3rv"]
@@ -106,7 +107,7 @@ def classificar(texto: str, perfis: tuple[Perfil, ...] | None = None) -> Pagina:
     perfil = next((p for p in todos if any(compactar(a) in compacto for a in p.ancoras)), None)
     if perfil is None:
         perfil = _pelo_codigo(texto, todos)
-    return _pagina(texto, compacto, perfil)
+    return _pagina(texto, perfil)
 
 
 def nome_generico(textos: Iterable[str]) -> str | None:
@@ -129,19 +130,22 @@ def pagina_generica(texto: str, gramatica: Gramatica, nome: str) -> Pagina:
     if gramatica != "agora":  # o layout da Ágora é só Bovespa
         segmentos[Segmento.BMF] = gramatica
     perfil = Perfil(corretora=nome, prioridade=0, ancoras=(), gramaticas=segmentos)
-    return _pagina(texto, compactar(texto), perfil)
+    return _pagina(texto, perfil)
 
 
 def layout_b3rv(texto: str) -> bool:
     """Rótulos "Nr. Nota Data pregão" numa linha só, sem "Folha" entre eles: o layout em que os
     negócios começam por "B3 RV LISTADO" e o resumo vem em blocos. Vale para qualquer corretora."""
-    return any(compactar(linha) == "nr.notadatapregao" for linha in texto.splitlines())
+    return any(
+        rotulos.linha_inteira(linha, "numero_nota", "data_pregao") for linha in texto.splitlines()
+    )
 
 
-def _pagina(texto: str, compacto: str, perfil: Perfil) -> Pagina:
+def _pagina(texto: str, perfil: Perfil) -> Pagina:
     flexivel = "Mercadoria:" in texto and RE_OPCAO_FLEXIVEL.search(texto)
     tipo = TipoPagina.OPCAO_FLEXIVEL if flexivel else TipoPagina.NOTA
-    segmento = Segmento.BMF if "c/vmercadoria" in compacto else Segmento.BOVESPA
+    bmf = rotulos.regex("cv_mercadoria", colado=True).search(texto)  # âncora: mesmo colado
+    segmento = Segmento.BMF if bmf else Segmento.BOVESPA
     gramatica: Gramatica | None = perfil.gramaticas.get(segmento)
     if segmento is Segmento.BOVESPA and layout_b3rv(texto):
         gramatica = "b3rv"

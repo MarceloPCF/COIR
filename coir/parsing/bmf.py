@@ -11,8 +11,9 @@ from typing import Literal
 
 from coir.domain.nota import CategoriaCusto, Custo, Montante, NegocioBMF, ResumoBMF
 from coir.erros import ExtracaoError
+from coir.parsing import rotulos
 from coir.parsing.bovespa import RE_SO_VALOR
-from coir.parsing.numeros import RE_DECIMAL, RE_INTEIRO, compactar, data_br, decimal_br, montantes
+from coir.parsing.numeros import RE_DECIMAL, RE_INTEIRO, data_br, decimal_br, montantes
 
 Variante = Literal["xp", "btg"]
 
@@ -22,13 +23,17 @@ RE_NEGOCIO = re.compile(
     rf"(?P<qtd>{RE_INTEIRO})\s+(?P<preco>{RE_DECIMAL})\s+(?P<tipo>[A-ZÀ-Ú][A-ZÀ-Ú. ]*?)\s+"
     rf"(?P<valor>{RE_DECIMAL})(?:\s+(?P<dc>[DC]))?\s+(?P<taxa>{RE_DECIMAL})\s*$"
 )
-# XP: rótulo compacto que abre cada linha de rótulos -> nomes dos valores da linha seguinte
-LINHAS_XP: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("vendadisponivel", ("venda_disp", "compra_disp", "venda_opc", "compra_opc", "valor_negocios")),
-    ("irrfirrfday", ("irrf", "irrf_dt", "taxa_operacional", "taxa_registro", "taxas_bmf")),
-    ("+outroscustos", ("outros_custos", "impostos", "ajuste_posicao", "ajuste_dt", "total_custos")),
-    ("outrosirrfoperacional", ("outros", "irrf_operacional", "conta_investimento", "conta_normal",
-                               "liquido_parcial", "liquido")),
+# XP: rótulos (rotulos.yaml) que abrem cada linha de rótulos -> nomes dos valores da linha seguinte
+LINHAS_XP: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
+    (("venda_disponivel",),
+     ("venda_disp", "compra_disp", "venda_opc", "compra_opc", "valor_negocios")),
+    (("irrf", "irrf_day_trade"),
+     ("irrf", "irrf_dt", "taxa_operacional", "taxa_registro", "taxas_bmf")),
+    (("outros_custos",),
+     ("outros_custos", "impostos", "ajuste_posicao", "ajuste_dt", "total_custos")),
+    (("outros", "irrf_operacional"),
+     ("outros", "irrf_operacional", "conta_investimento", "conta_normal", "liquido_parcial",
+      "liquido")),
 )  # fmt: skip
 # BTG: rótulos na ordem do texto; o i-ésimo valor do bloco pertence ao i-ésimo rótulo
 ROTULOS_BTG: tuple[tuple[str, str], ...] = (
@@ -87,8 +92,9 @@ def negocios(texto: str) -> list[NegocioBMF]:
 def _valores_xp(texto: str) -> dict[str, Montante]:
     linhas = [linha for linha in texto.splitlines() if linha.strip()]
     valores: dict[str, Montante] = {}
-    for inicio, nomes in LINHAS_XP:
-        i = next((k for k, linha in enumerate(linhas) if compactar(linha).startswith(inicio)), None)
+    for chaves, nomes in LINHAS_XP:
+        inicio = rotulos.referencia(*chaves)
+        i = next((k for k, linha in enumerate(linhas) if rotulos.no_inicio(linha, *chaves)), None)
         if i is None or i + 1 >= len(linhas):
             raise ExtracaoError(f"resumo BM&F: linha de rótulos {inicio!r} não encontrada")
         lidos = montantes(linhas[i + 1])
@@ -102,12 +108,11 @@ def _valores_xp(texto: str) -> dict[str, Montante]:
 
 def _valores_btg(texto: str, ajuste_dt: Decimal, total: Decimal) -> dict[str, Montante]:
     linhas = [linha.strip() for linha in texto.splitlines() if linha.strip()]
-    compactos = [compactar(linha) for linha in linhas]
-    try:
-        inicio = compactos.index("outros")
-        fim = compactos.index("i.s.s", inicio)
-    except ValueError as erro:
-        raise ExtracaoError("resumo BM&F (BTG): bloco Outros ... I.S.S não encontrado") from erro
+    inicio = next((i for i, s in enumerate(linhas) if rotulos.linha_inteira(s, "outros")), None)
+    fim = next((i for i, s in enumerate(linhas) if inicio is not None and i > inicio
+                and rotulos.linha_inteira(s, "iss")), None)  # fmt: skip
+    if inicio is None or fim is None:
+        raise ExtracaoError("resumo BM&F (BTG): bloco Outros ... I.S.S não encontrado")
     valores = [v for linha in linhas[inicio:fim] if RE_SO_VALOR.match(linha) or _so_valores(linha)
                for v in montantes(linha)]  # fmt: skip
     if len(valores) != len(ROTULOS_BTG):
