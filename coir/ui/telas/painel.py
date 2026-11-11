@@ -72,6 +72,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 log.info("verificação de versão nova sem resposta: %s", erro)
             finally:
                 estado.versao_verificada = True
+        if aviso.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante a consulta
         if estado.versao_nova is not None:
             _aviso_versao(aviso, estado.versao_nova)
         if atualizacao.mais_novo(estado.dados, estado.remoto) and estado.remoto is not None:
@@ -90,10 +92,14 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             todas = await run.io_bound(estado.darfs_todos_os_anos)
             pendencias = await run.io_bound(estado.pendencias)
         except CoirError as erro:
+            if espera.is_deleted:
+                return
             corpo.clear()
             with corpo:
                 ui.label(f"Não foi possível apurar: {erro}").classes("coir-negativo")
             return
+        if espera.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante o cálculo
         espera.delete()
         if apuracao is None or darfs is None or todas is None or pendencias is None:
             return

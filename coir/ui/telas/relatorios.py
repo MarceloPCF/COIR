@@ -103,7 +103,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ui.notify("Escolha ao menos um formato.", type="warning")
             return
         d = await preparar()
-        if d is None:
+        if d is None or botao.is_deleted:
             return
         botao.set_enabled(False)
         try:
@@ -112,7 +112,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ui.notify(f"Exportação não feita: {erro}", type="negative", multi_line=True)
             return
         finally:
-            botao.set_enabled(True)
+            if not botao.is_deleted:  # a tela pode ter sido refeita durante a gravação
+                botao.set_enabled(True)
         if arquivos is not None:
             ui.notify(f"{len(arquivos)} arquivo(s) gravado(s) em {pasta.value}", type="positive")
 

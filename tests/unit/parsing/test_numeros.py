@@ -13,8 +13,8 @@ from coir.parsing.numeros import (
     decimal_br,
     montante,
     montantes,
-    valor_apos_rotulo,
 )
+from coir.parsing.rotulos import valor_apos
 
 
 @pytest.mark.parametrize(
@@ -54,12 +54,12 @@ def test_montante_com_barra_e_dc_variaveis() -> None:
 
 def test_rotulos_colados_do_layout_antigo() -> None:
     assert compactar("Taxa deliquidação") == compactar("Taxa de liquidação")
-    assert valor_apos_rotulo("Taxa deliquidação 1,49 D", "Taxa de liquidação") == Montante(
+    assert valor_apos("Taxa deliquidação 1,49 D", "taxa_liquidacao") == Montante(
         valor=Decimal("1.49"), dc="D"
     )
     # rótulo sem valor na linha (cabeçalho de seção) é ignorado; vale a próxima ocorrência
     texto = "Corretagem / Despesas\nTotal corretagem / Despesas 20,40\nCorretagem 20,00 D"
-    assert valor_apos_rotulo(texto, "Corretagem") == Montante(valor=Decimal("20.00"), dc="D")
+    assert valor_apos(texto, "corretagem") == Montante(valor=Decimal("20.00"), dc="D")
 
 
 def test_data_br() -> None:

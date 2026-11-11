@@ -121,7 +121,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ui.notify(f"Exportação não feita: {erro}", type="negative", multi_line=True)
             return
         finally:
-            botao_exportar.set_enabled(True)
+            if not botao_exportar.is_deleted:  # a tela pode ter sido refeita durante a exportação
+                botao_exportar.set_enabled(True)
         if arquivos:
             ui.notify(f"Posição de {escolha.data:%d/%m/%Y} exportada: {len(arquivos)} arquivo(s) "
                       f"em {pasta}", type="positive", multi_line=True)  # fmt: skip
@@ -135,6 +136,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     async def carregar() -> None:
         ate, visao = escolha.data, escolha.visao
+        if lista.is_deleted:
+            return
         lista.clear()
         with lista:
             ui.spinner(size="lg")
@@ -142,12 +145,14 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             resultado = await run.io_bound(estado.carteira, ate, visao)
             termos = await run.io_bound(estado.termos, ate)
         except CoirError as erro:
+            if lista.is_deleted:
+                return
             lista.clear()
             with lista:
                 ui.label(f"Não foi possível calcular a carteira: {erro}").classes("coir-negativo")
             return
-        if resultado is None:
-            return
+        if resultado is None or lista.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante o cálculo
         posicoes, contas = resultado
         linhas[:] = carteira.posicoes(posicoes, contas, estado.titular, termos or (), visao)
         lista.clear()
@@ -180,7 +185,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             return
         movs = await run.io_bound(estado.movimentos, ate, visao)
         mapa = await run.io_bound(estado.notas_das_operacoes)
-        if movs is None or mapa is None:
+        if movs is None or mapa is None or lado.is_deleted:
             return
         passos = carteira.trilha(movs, estado.titular, p, ate)
         lado.clear()

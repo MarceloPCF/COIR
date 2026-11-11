@@ -45,10 +45,14 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         try:
             lista = await run.io_bound(estado.conciliacoes)
         except CoirError as erro:
+            if espera.is_deleted:
+                return
             corpo.clear()
             with corpo:
                 ui.label(f"Não foi possível conciliar: {erro}").classes("coir-negativo")
             return
+        if espera.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante o cálculo
         espera.delete()
         if lista is None:
             return

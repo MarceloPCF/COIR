@@ -11,6 +11,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 ## [Não lançado]
 
 ### Adicionado
+- **Rótulos das notas escritos de outro jeito**: o COIR passa a reconhecer os rótulos da nota em outras grafias, o que ajuda a ler notas de corretoras que ele ainda não conhece. Valem, por exemplo, "Data do pregão", "Data pregao", "D. pregão", "Dt pregão" e "Datapregão"; "Nº da nota" e "Número da nota"; "Fl."; "Cód. cliente"; e "Tx. liquidação". Também valem acentos e maiúsculas trocados, palavras coladas ou separadas e o rótulo quebrado em duas linhas. As formas aceitas ficam reunidas num só arquivo (`coir/parsing/rotulos.yaml`). Nenhuma delas casa com outro campo: "Data liquidação" não vira data do pregão, e "Taxas BM&F (emol+f.gar)" não vira emolumentos. As notas que o COIR já lia saem iguais.
 - **Restituição de capital pelo pacote público**: a coleta guarda as restituições de capital em dinheiro do histórico da B3 (antes só JCP), e a tela Eventos as propõe como redução de capital, só com o valor, para quem não importou a movimentação.
 - **Aviso de movimentação da B3 ausente**: a tela Eventos avisa quando a movimentação importada não cobre o período das notas (sem ela, subscrições, restituições e ofertas não aparecem).
 
@@ -23,6 +24,8 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ### Corrigido
 
+- **Aviso "An element has been deleted but is still being used" no registro de atividades**: trocar o titular ou o ano, ou gravar algo, enquanto o sino de pendências ainda contava fazia a contagem antiga terminar mexendo no sino já refeito. O mesmo podia acontecer em qualquer tela que grava, importa ou exporta numa thread (DARF, Eventos, Importar, Proventos, Configurações, Relatórios, Carteira, Notas, Suporte, Cadastros, Outros custos) quando a tela mudava antes de terminar. Agora o trabalho termina (o que foi gravado continua gravado), e só a parte que mostraria o resultado numa tela que não existe mais é deixada de lado.
+- **Erro no Painel ao abrir**: trocar o titular ou o ano, ou a tela se refazer, enquanto o Painel ainda calculava dava "ValueError: list.remove(x): x not in list" no registro de atividades. O cálculo antigo agora termina sem mexer na tela nova; o mesmo vale para Apuração, Conciliação, Futuros, Proventos e Declaração.
 - **Restituição de capital e amortização propostas pela B3**: a proposta vinha com a quantidade da linha da B3, que é a posição, e o evento tirava essas ações da carteira; a venda seguinte virava venda a descoberto. Agora a proposta leva só o valor.
 - **Direito não exercido sem quantidade**: a linha "não exercido" da B3 vem sem quantidade; o evento sem ela baixa todo o saldo.
 - **Notas da Clear de 2018 a 2020:** eram recusadas com "rótulo 'Data pregão' não encontrado". O COIR agora lê esse layout, com negócios "B3 RV LISTADO" e o resumo em blocos, em qualquer corretora.

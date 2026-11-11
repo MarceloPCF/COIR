@@ -21,19 +21,17 @@ from coir.domain.nota import (
     ResumoBovespa,
 )
 from coir.erros import ExtracaoError
-from coir.parsing import observacoes
+from coir.parsing import observacoes, rotulos
 from coir.parsing.numeros import (
     RE_DATA,
     RE_DECIMAL,
     RE_INTEIRO,
     RE_MONTANTE,
-    compactar,
     data_br,
     decimal_br,
     montantes,
-    regex_rotulo,
-    valor_apos_rotulo,
 )
+from coir.parsing.rotulos import padrao, procurar
 
 Variante = Literal["agora", "xp", "btg", "b3rv"]
 
@@ -59,84 +57,96 @@ RE_NEGOCIO = {
 }
 RE_PRAZO = re.compile(r"^(?P<prazo>\d{2}/\d{2}|\d{1,4})\s+")
 RE_LIQUIDO = re.compile(
-    rf"L\s*[íi]\s*q\s*u\s*i\s*d\s*o\s*p\s*a\s*r\s*a\s*(?P<data>\d{{2}}/\d{{2}}/\d{{4}})\s*"
+    rf"{padrao('liquido_para')}\s*(?P<data>\d{{2}}/\d{{2}}/\d{{4}})\s*"
     rf"(?P<valor>{RE_DECIMAL})\s*\|?\s*(?P<dc>[DC])?"
 )
 RE_IRRF = re.compile(
-    rf"I\.?\s*R\.?\s*R\.?\s*F\.?\s*s/\s*opera\S*\s*,?\s*base\s*(?:R\$)?\s*(?P<base>{RE_DECIMAL})"
+    rf"{padrao('irrf_operacoes')}\s*,?\s*base\s*(?:R\$)?\s*(?P<base>{RE_DECIMAL})"
     rf"(?:\s+(?P<valor>{RE_DECIMAL})(?:\s*(?P<dc>[DC]))?)?"
 )
+# a XP cola "IRRFDay Trade": aqui o rótulo pode começar no meio da palavra
+_DAY_TRADE_PROJECAO = padrao("day_trade", colado=True), padrao("projecao")
 RE_IRRF_DT = re.compile(
-    rf"Day\s*-?\s*Trade.*?Proje\S*\s*R\$\s*(?P<valor>{RE_DECIMAL})", re.IGNORECASE
+    rf"{_DAY_TRADE_PROJECAO[0]}.*?{_DAY_TRADE_PROJECAO[1]}\s*R\$\s*(?P<valor>{RE_DECIMAL})"
 )
-RE_ISS_AGORA = re.compile(rf"ISS\s*\([^)]*\)\s*(?P<valor>{RE_DECIMAL})(?:\s*(?P<dc>[DC]))?")
+RE_TEM_IRRF_DT = re.compile(rf"{_DAY_TRADE_PROJECAO[0]}[\s\S]*?{_DAY_TRADE_PROJECAO[1]}")
+RE_ISS_AGORA = re.compile(
+    rf"{padrao('iss')}\s*\([^)]*\)\s*(?P<valor>{RE_DECIMAL})(?:\s*(?P<dc>[DC]))?"
+)
 RE_SO_VALOR = re.compile(rf"^\s*{RE_MONTANTE.pattern}\s*$")
 RE_CONTA = re.compile(r"^\s*(?P<codigo>\d{1,4}-\d)\s+(?P<conta>\d+)\s*$")
 RE_CONTA_AGORA = re.compile(r"^\s*(?P<conta>\d+)-(?P<dv>\d)\s+\D")
 RE_CONTA_B3RV = re.compile(r"^\s*\d{1,4}\s*-\s*\d\s+(?P<conta>\d+)\s*-\s*\d(?:\s+\d+)?\s*$")
 RE_LIQUIDO_B3RV = re.compile(
-    rf"L\s*[íi]\s*q\s*u\s*i\s*d\s*o\s*p\s*a\s*r\s*a\s*(?P<valor>{RE_DECIMAL})\s*(?P<dc>[DC])\s*$"
+    rf"{padrao('liquido_para')}\s*(?P<valor>{RE_DECIMAL})\s*(?P<dc>[DC])\s*$"
 )
 # preço cotado por lote: valor = quantidade x preço / fator (RAIZ55: 100; lote de mil: "*")
 FATORES_COTACAO = (1, 10, 100, 1000)
 CENTAVO = Decimal("0.01")
 
-# (rótulos aceitos, categoria, grupo); o primeiro rótulo que tiver valor na nota vale
-CUSTOS_COMUNS: tuple[tuple[tuple[str, ...], CategoriaCusto, GrupoCusto], ...] = (
-    (("Taxa de liquidação/CCP", "Taxa de liquidação"), CategoriaCusto.LIQUIDACAO, "cblc"),
-    (("Taxa de Registro",), CategoriaCusto.REGISTRO, "cblc"),
-    (("Taxa de termo/opções",), CategoriaCusto.TERMO_OPCOES, "bolsa"),
-    (("Taxa A.N.A.",), CategoriaCusto.ANA, "bolsa"),
-    (("Emolumentos",), CategoriaCusto.EMOLUMENTOS, "bolsa"),
+# (rótulos em rotulos.yaml, nome gravado no custo, categoria, grupo); vale o primeiro rótulo que
+# tiver valor na nota
+RegraCusto = tuple[tuple[str, ...], str, CategoriaCusto, GrupoCusto]
+CUSTOS_COMUNS: tuple[RegraCusto, ...] = (
+    (("taxa_liquidacao",), "Taxa de liquidação/CCP", CategoriaCusto.LIQUIDACAO, "cblc"),
+    (("taxa_registro",), "Taxa de Registro", CategoriaCusto.REGISTRO, "cblc"),
+    (("taxa_termo_opcoes",), "Taxa de termo/opções", CategoriaCusto.TERMO_OPCOES, "bolsa"),
+    (("taxa_ana",), "Taxa A.N.A.", CategoriaCusto.ANA, "bolsa"),
+    (("emolumentos",), "Emolumentos", CategoriaCusto.EMOLUMENTOS, "bolsa"),
 )
-CUSTOS_DESPESAS: dict[Variante, tuple[tuple[tuple[str, ...], CategoriaCusto, GrupoCusto], ...]] = {
+CUSTOS_DESPESAS: dict[Variante, tuple[RegraCusto, ...]] = {
     "agora": (
-        (("Corretagem",), CategoriaCusto.CORRETAGEM, "despesas"),
-        (("Outras",), CategoriaCusto.OUTROS, "despesas"),
+        (("corretagem",), "Corretagem", CategoriaCusto.CORRETAGEM, "despesas"),
+        (("outras",), "Outras", CategoriaCusto.OUTROS, "despesas"),
     ),
     "xp": (
-        (("Taxa de Transf. de Ativos",), CategoriaCusto.TRANSFERENCIA, "bolsa"),
-        (("Taxa Operacional", "Corretagem"), CategoriaCusto.CORRETAGEM, "despesas"),
-        (("Execução",), CategoriaCusto.EXECUCAO, "despesas"),
-        (("Taxa de Custódia",), CategoriaCusto.CUSTODIA, "despesas"),
-        (("Impostos",), CategoriaCusto.IMPOSTOS, "despesas"),
-        (("Outros",), CategoriaCusto.OUTROS, "despesas"),
+        (("taxa_transferencia_ativos",), "Taxa de Transf. de Ativos", CategoriaCusto.TRANSFERENCIA,
+         "bolsa"),
+        (("taxa_operacional", "corretagem"), "Taxa Operacional", CategoriaCusto.CORRETAGEM,
+         "despesas"),
+        (("execucao",), "Execução", CategoriaCusto.EXECUCAO, "despesas"),
+        (("taxa_custodia",), "Taxa de Custódia", CategoriaCusto.CUSTODIA, "despesas"),
+        (("impostos",), "Impostos", CategoriaCusto.IMPOSTOS, "despesas"),
+        (("outros",), "Outros", CategoriaCusto.OUTROS, "despesas"),
     ),
     "btg": (
-        (("Taxa de Transferencia de Ativos",), CategoriaCusto.TRANSFERENCIA, "cblc"),
-        (("Clearing",), CategoriaCusto.CORRETAGEM, "despesas"),
-        (("Execução",), CategoriaCusto.EXECUCAO, "despesas"),
-        (("Execução casa",), CategoriaCusto.EXECUCAO, "despesas"),
+        (("taxa_transferencia_ativos",), "Taxa de Transferencia de Ativos",
+         CategoriaCusto.TRANSFERENCIA, "cblc"),
+        (("clearing",), "Clearing", CategoriaCusto.CORRETAGEM, "despesas"),
+        (("execucao",), "Execução", CategoriaCusto.EXECUCAO, "despesas"),
+        (("execucao_casa",), "Execução casa", CategoriaCusto.EXECUCAO, "despesas"),
     ),
-}
-# layout b3rv, por bloco do resumo financeiro; o começo do rótulo basta ("ISS ( SÃO PAULO )")
-CUSTOS_B3RV: dict[GrupoCusto, tuple[tuple[str, CategoriaCusto], ...]] = {
+}  # fmt: skip
+# layout b3rv, por bloco do resumo financeiro: (rótulo, nome gravado, categoria); o começo da
+# linha basta ("ISS ( SÃO PAULO )") e "Execução casa" vem antes de "Execução"
+CUSTOS_B3RV: dict[GrupoCusto, tuple[tuple[str, str, CategoriaCusto], ...]] = {
     "cblc": (
-        ("Taxa de liquidação/CCP", CategoriaCusto.LIQUIDACAO),
-        ("Taxa de Registro", CategoriaCusto.REGISTRO),
+        ("taxa_liquidacao", "Taxa de liquidação/CCP", CategoriaCusto.LIQUIDACAO),
+        ("taxa_registro", "Taxa de Registro", CategoriaCusto.REGISTRO),
     ),
     "bolsa": (
-        ("Taxa de termo/opções", CategoriaCusto.TERMO_OPCOES),
-        ("Taxa A.N.A.", CategoriaCusto.ANA),
-        ("Emolumentos", CategoriaCusto.EMOLUMENTOS),
+        ("taxa_termo_opcoes", "Taxa de termo/opções", CategoriaCusto.TERMO_OPCOES),
+        ("taxa_ana", "Taxa A.N.A.", CategoriaCusto.ANA),
+        ("emolumentos", "Emolumentos", CategoriaCusto.EMOLUMENTOS),
     ),
     "despesas": (
-        ("Clearing", CategoriaCusto.CORRETAGEM),
-        ("Execução casa", CategoriaCusto.EXECUCAO),
-        ("Execução", CategoriaCusto.EXECUCAO),
-        ("ISS", CategoriaCusto.IMPOSTOS),
-        ("Outros", CategoriaCusto.OUTROS),
+        ("clearing", "Clearing", CategoriaCusto.CORRETAGEM),
+        ("execucao_casa", "Execução casa", CategoriaCusto.EXECUCAO),
+        ("execucao", "Execução", CategoriaCusto.EXECUCAO),
+        ("iss", "ISS", CategoriaCusto.IMPOSTOS),
+        ("outros", "Outros", CategoriaCusto.OUTROS),
     ),
 }
+# rótulos do resumo dos negócios, na ordem impressa (XP e b3rv leem os 8 valores pela posição)
 RESUMO_NEGOCIOS = (
-    "Debêntures",
-    "Vendas à vista",
-    "Compras à vista",
-    "Opções - compras",
-    "Opções - vendas",
-    "Operações à termo",
-    "Valor das oper. c/ títulos públ.",
-    "Valor das operações",
+    "debentures",
+    "vendas_a_vista",
+    "compras_a_vista",
+    "opcoes_compras",
+    "opcoes_vendas",
+    "operacoes_a_termo",
+    "valor_operacoes_titulos_publicos",  # sem uso no cálculo: as outras gramáticas nem o procuram
+    "valor_operacoes",
 )
 
 
@@ -150,14 +160,6 @@ class Cabecalho:
 # --------------------------------------------------------------------------- cabeçalho e conta
 def _linhas(texto: str) -> list[str]:
     return [linha for linha in texto.splitlines() if linha.strip()]
-
-
-def _indice(linhas: Sequence[str], rotulo: str, inicio: int = 0) -> int:
-    alvo = compactar(rotulo)
-    for i in range(inicio, len(linhas)):
-        if alvo in compactar(linhas[i]):
-            return i
-    raise ExtracaoError(f"rótulo {rotulo!r} não encontrado")
 
 
 def numero_nota(texto: str) -> str:
@@ -181,28 +183,35 @@ def _vizinha(linhas: Sequence[str], i: int, rotulo: str) -> str:
 
 
 def cabecalho(texto: str, variante: Variante) -> Cabecalho:
+    """Rótulo quebrado em duas linhas: o valor de depois vem após a segunda, o de antes, antes da
+    primeira."""
     linhas = _linhas(texto)
     if variante == "b3rv":  # número antes dos rótulos, data depois, folha antes do título da nota
-        i = _indice(linhas, "Nr. Nota Data pregão")
+        ini, fim = procurar(linhas, "numero_nota", "data_pregao")
+        i_titulo = procurar(linhas, "nota_de_corretagem", inicio=ini)[0]
         return Cabecalho(
-            numero_nota(_vizinha(linhas, i - 1, "Nr. nota")),
-            _folha(_vizinha(linhas, _indice(linhas, "NOTA DE CORRETAGEM", i) - 1, "Folha")),
-            data_br(_vizinha(linhas, i + 1, "Data pregão")),
+            numero_nota(_vizinha(linhas, ini - 1, "Nr. nota")),
+            _folha(_vizinha(linhas, i_titulo - 1, "Folha")),
+            data_br(_vizinha(linhas, fim + 1, "Data pregão")),
         )
     if variante == "agora":
-        i = _indice(linhas, "Nr.Nota Folha Data pregão")
-        partes = _vizinha(linhas, i + 1, "Nr.Nota").split()
+        _, fim = procurar(linhas, "numero_nota", "folha", "data_pregao")
+        partes = _vizinha(linhas, fim + 1, "Nr.Nota").split()
         if len(partes) < 3:
             raise ExtracaoError("cabeçalho da nota (Ágora) incompleto")
         return Cabecalho(numero_nota(partes[0]), _folha(partes[1]), data_br(partes[2]))
-    passo = -1 if variante == "btg" else 1  # BTG: o valor vem antes do rótulo
-    i_nota = _indice(linhas, "Nr. nota")
-    i_folha = _indice(linhas, "Folha", 0 if variante == "btg" else i_nota)
-    i_data = _indice(linhas, "Data pregão", 0 if variante == "btg" else i_folha)
+    btg = variante == "btg"  # BTG: o valor vem antes do rótulo
+
+    def vizinha(achado: tuple[int, int], rotulo: str) -> str:
+        return _vizinha(linhas, achado[0] - 1 if btg else achado[1] + 1, rotulo)
+
+    nota = procurar(linhas, "numero_nota")
+    folha = procurar(linhas, "folha", inicio=0 if btg else nota[0])
+    data = procurar(linhas, "data_pregao", inicio=0 if btg else folha[0])
     return Cabecalho(
-        numero_nota(_vizinha(linhas, i_nota + passo, "Nr. nota")),
-        _folha(_vizinha(linhas, i_folha + passo, "Folha")),
-        data_br(_vizinha(linhas, i_data + passo, "Data pregão")),
+        numero_nota(vizinha(nota, "Nr. nota")),
+        _folha(vizinha(folha, "Folha")),
+        data_br(vizinha(data, "Data pregão")),
     )
 
 
@@ -210,7 +219,9 @@ def conta(texto: str, variante: Variante) -> str:
     """Conta do cliente sem zeros à esquerda (como o gabarito guarda)."""
     linhas = _linhas(texto)
     if variante == "b3rv":
-        m = RE_CONTA_B3RV.match(_vizinha(linhas, _indice(linhas, "Código cliente") + 1, "conta"))
+        m = RE_CONTA_B3RV.match(
+            _vizinha(linhas, procurar(linhas, "codigo_cliente")[1] + 1, "conta")
+        )
         if m is None:
             raise ExtracaoError("conta do cliente não encontrada")
         return str(int(m["conta"]))
@@ -297,24 +308,24 @@ def _negocio(m: re.Match[str], marcas: frozenset[str] = frozenset()) -> NegocioB
 
 
 # ---------------------------------------------------------------------------------- resumo
-def _valor(texto: str, rotulos: Sequence[str]) -> Montante | None:
-    for rotulo in rotulos:
-        v = valor_apos_rotulo(texto, rotulo)
+def _valor(texto: str, chaves: Sequence[str]) -> Montante | None:
+    for chave in chaves:
+        v = rotulos.valor_apos(texto, chave)
         if v is not None:
             return v
     return None
 
 
-def _obrigatorio(texto: str, *rotulos: str) -> Montante:
-    v = _valor(texto, rotulos)
+def _obrigatorio(texto: str, chave: str) -> Montante:
+    v = rotulos.valor_apos(texto, chave)
     if v is None:
-        raise ExtracaoError(f"valor de {rotulos[0]!r} não encontrado no resumo")
+        raise ExtracaoError(f"valor de {rotulos.referencia(chave)!r} não encontrado no resumo")
     return v
 
 
-def _bloco_antes(linhas: list[str], rotulo: str) -> list[Montante]:
+def _bloco_antes(linhas: list[str], chave: str) -> list[Montante]:
     """Valores (um por linha) logo antes da linha do rótulo (XP: resumo dos negócios)."""
-    i = _indice(linhas, rotulo)
+    i = procurar(linhas, chave)[0]
     valores: list[Montante] = []
     j = i - 1
     while j >= 0 and RE_SO_VALOR.match(linhas[j]):
@@ -323,11 +334,11 @@ def _bloco_antes(linhas: list[str], rotulo: str) -> list[Montante]:
     return valores
 
 
-def _bloco_depois(linhas: list[str], rotulo: str) -> list[Montante]:
+def _bloco_depois(linhas: list[str], chave: str) -> list[Montante]:
     """Valores (um por linha) logo depois da linha do rótulo (BTG: ISS, IRRF e Outras)."""
-    padrao = regex_rotulo(rotulo)
+    alvo = rotulos.regex(chave)
     for i, linha in enumerate(linhas):
-        if padrao.search(linha):
+        if alvo.search(linha):
             valores: list[Montante] = []
             for seguinte in linhas[i + 1 :]:
                 if not RE_SO_VALOR.match(seguinte):
@@ -379,12 +390,11 @@ def _bloco_custos(
     custos: list[Custo] = []
     total: Montante | None = None
     for rotulo, valor in colunas:
-        compacto = compactar(rotulo)
-        if compacto == "total":
+        if rotulos.linha_inteira(rotulo, "total"):
             total = valor
             continue
-        for nome, categoria in CUSTOS_B3RV[grupo]:
-            if compacto.startswith(compactar(nome)):
+        for chave, nome, categoria in CUSTOS_B3RV[grupo]:
+            if rotulos.no_inicio(rotulo, chave):
                 custos.append(_custo(nome, categoria, grupo, valor))
                 break
         else:
@@ -398,26 +408,27 @@ def _resumo_b3rv(texto: str) -> ResumoBovespa:
     """Layout b3rv. Os rótulos do resumo dos negócios saem fora da ordem no texto, mas os 8 valores
     seguem a ordem de sempre (RESUMO_NEGOCIOS), e a conciliação confere compras e vendas."""
     linhas = _linhas(texto)
-    i_fin = _indice(linhas, "Resumo Financeiro")
-    i_cblc = _indice(linhas, "Clearing", i_fin) + 1  # "Clearing" aqui é só o título do bloco
-    i_bolsa = _indice(linhas, "Bolsa", i_cblc)
-    i_desp = _indice(linhas, "Corretagem / Despesas", i_bolsa)
-    i_negs = _indice(linhas, "Resumo dos Negócios", i_desp)
-    i_obs = _indice(linhas, "(*) - Observações", i_negs)
-    primeiro = _colunas(linhas[i_cblc:i_bolsa])
-    if not primeiro or not compactar(primeiro[0][0]).startswith("valorliquidodasoperacoes"):
+    fin = procurar(linhas, "resumo_financeiro")
+    # "Clearing" aqui é só o título do bloco
+    i_cblc = procurar(linhas, "clearing", inicio=fin[0])[1] + 1
+    bolsa = procurar(linhas, "bolsa", inicio=i_cblc)
+    desp = procurar(linhas, "corretagem_despesas", inicio=bolsa[0])
+    quadro = procurar(linhas, "resumo_negocios", inicio=desp[0])
+    i_obs = procurar(linhas, "observacoes", inicio=quadro[0])[0]
+    primeiro = _colunas(linhas[i_cblc : bolsa[0]])
+    if not primeiro or not rotulos.no_inicio(primeiro[0][0], "valor_liquido_operacoes"):
         raise ExtracaoError("'Valor líquido das operações' não encontrado no resumo")
     custos_cblc, total_cblc = _bloco_custos(primeiro[1:], "cblc")
-    custos_bolsa, total_bolsa = _bloco_custos(_colunas(linhas[i_bolsa + 1 : i_desp]), "bolsa")
-    custos_desp, total_desp = _bloco_custos(_colunas(linhas[i_desp + 1 : i_negs]), "despesas")
+    custos_bolsa, total_bolsa = _bloco_custos(_colunas(linhas[bolsa[1] + 1 : desp[0]]), "bolsa")
+    custos_desp, total_desp = _bloco_custos(_colunas(linhas[desp[1] + 1 : quadro[0]]), "despesas")
     custos = [*custos_cblc, *custos_bolsa, *custos_desp]
-    transferencia = valor_apos_rotulo(texto, "Taxa de Transferência de Ativos")
+    transferencia = rotulos.valor_apos(texto, "taxa_transferencia_ativos")
     if transferencia is not None:
         custos.append(
             _custo("Taxa de Transferência de Ativos", CategoriaCusto.TRANSFERENCIA, "cblc",
                    transferencia)
         )  # fmt: skip
-    valores = [montantes(s)[0].valor for s in linhas[i_negs + 1 : i_obs] if RE_SO_VALOR.match(s)]
+    valores = [montantes(s)[0].valor for s in linhas[quadro[1] + 1 : i_obs] if RE_SO_VALOR.match(s)]
     if len(valores) != len(RESUMO_NEGOCIOS):
         raise ExtracaoError(f"resumo dos negócios com {len(valores)} valores (esperado 8)")
     negs = dict(zip(RESUMO_NEGOCIOS, valores, strict=True))
@@ -429,10 +440,10 @@ def _resumo_b3rv(texto: str) -> ResumoBovespa:
     assert liquido is not None
     irrf, base = _irrf(texto, "b3rv")
     return ResumoBovespa(
-        valor_operacoes=negs["Valor das operações"],
-        compras=negs["Compras à vista"] + negs["Opções - compras"],
-        vendas=negs["Vendas à vista"] + negs["Opções - vendas"],
-        termo=negs["Operações à termo"],
+        valor_operacoes=negs["valor_operacoes"],
+        compras=negs["compras_a_vista"] + negs["opcoes_compras"],
+        vendas=negs["vendas_a_vista"] + negs["opcoes_vendas"],
+        termo=negs["operacoes_a_termo"],
         valor_liquido_operacoes=primeiro[0][1],
         custos=tuple(custos),
         total_cblc=total_cblc,
@@ -451,7 +462,7 @@ def _irrf(texto: str, variante: Variante) -> tuple[Decimal, Decimal | None]:
     """Valor e base do IRRF sobre operações, na linha "I.R.R.F. s/ operações, base ..."."""
     m_irrf = RE_IRRF.search(texto)
     if m_irrf is None:
-        if "i.r.r.f.s/opera" in compactar(texto):
+        if rotulos.regex("irrf_operacoes", colado=True).search(texto):
             raise ExtracaoError("linha de I.R.R.F. s/ operações fora do padrão")
         return Decimal(0), None
     if m_irrf["valor"]:
@@ -463,7 +474,7 @@ def _irrf(texto: str, variante: Variante) -> tuple[Decimal, Decimal | None]:
 
 def _irrf_day_trade(texto: str) -> Decimal:
     m_dt = RE_IRRF_DT.search(texto)
-    if m_dt is None and re.search(r"daytrade.*proje", compactar(texto)):
+    if m_dt is None and RE_TEM_IRRF_DT.search(texto):
         raise ExtracaoError("linha de IRRF day trade (projeção) fora do padrão")
     return decimal_br(m_dt["valor"]) if m_dt else Decimal(0)
 
@@ -474,17 +485,18 @@ def resumo(texto: str, variante: Variante) -> ResumoBovespa:
         return _resumo_b3rv(texto)
     linhas = _linhas(texto)
     if variante == "xp":
-        bloco = _bloco_antes(linhas, "Resumo dos Negócios")
+        bloco = _bloco_antes(linhas, "resumo_negocios")
         if len(bloco) != len(RESUMO_NEGOCIOS):
             raise ExtracaoError(f"resumo dos negócios com {len(bloco)} valores (esperado 8)")
         negs = dict(zip(RESUMO_NEGOCIOS, (b.valor for b in bloco), strict=True))
     else:
-        negs = {r: _obrigatorio(texto, r).valor for r in RESUMO_NEGOCIOS if r != RESUMO_NEGOCIOS[6]}
+        negs = {c: _obrigatorio(texto, c).valor for c in RESUMO_NEGOCIOS
+                if c != "valor_operacoes_titulos_publicos"}  # fmt: skip
     custos: list[Custo] = []
-    for rotulos, categoria, grupo in (*CUSTOS_COMUNS, *CUSTOS_DESPESAS[variante]):
-        v = _valor(texto, rotulos)
+    for chaves, nome, categoria, grupo in (*CUSTOS_COMUNS, *CUSTOS_DESPESAS[variante]):
+        v = _valor(texto, chaves)
         if v is not None:
-            custos.append(_custo(rotulos[0], categoria, grupo, v))
+            custos.append(_custo(nome, categoria, grupo, v))
     irrf, base = _irrf(texto, variante)
     if variante == "agora":
         iss = RE_ISS_AGORA.search(texto)
@@ -498,7 +510,7 @@ def resumo(texto: str, variante: Variante) -> ResumoBovespa:
                 )
             )
     if variante == "btg":  # ISS, IRRF e Outras: valores sem rótulo depois de "Execução casa"
-        orfaos = _bloco_depois(linhas, "Execução casa")
+        orfaos = _bloco_depois(linhas, "execucao_casa")
         if len(orfaos) != 3:
             raise ExtracaoError(
                 f"BTG: {len(orfaos)} valores sem rótulo após Execução casa (esperado 3)"
@@ -509,19 +521,17 @@ def resumo(texto: str, variante: Variante) -> ResumoBovespa:
     liquido = RE_LIQUIDO.search(texto)
     if not liquido:
         raise ExtracaoError("'Líquido para' não encontrado")
-    vlo = _obrigatorio(texto, "Valor líquido das operações")
+    vlo = _obrigatorio(texto, "valor_liquido_operacoes")
     return ResumoBovespa(
-        valor_operacoes=negs["Valor das operações"],
-        compras=negs["Compras à vista"] + negs["Opções - compras"],
-        vendas=negs["Vendas à vista"] + negs["Opções - vendas"],
-        termo=negs["Operações à termo"],
+        valor_operacoes=negs["valor_operacoes"],
+        compras=negs["compras_a_vista"] + negs["opcoes_compras"],
+        vendas=negs["vendas_a_vista"] + negs["opcoes_vendas"],
+        termo=negs["operacoes_a_termo"],
         valor_liquido_operacoes=vlo,
         custos=tuple(custos),
-        total_cblc=_obrigatorio(texto, "Total CBLC"),
-        total_bovespa=_obrigatorio(texto, "Total Bovespa / Soma"),
-        total_despesas=_obrigatorio(
-            texto, "Total Custos / Despesas", "Total corretagem / Despesas"
-        ),
+        total_cblc=_obrigatorio(texto, "total_cblc"),
+        total_bovespa=_obrigatorio(texto, "total_bovespa"),
+        total_despesas=_obrigatorio(texto, "total_despesas"),
         irrf=irrf,
         irrf_base=base,
         irrf_no_liquido=False,  # decidido na conciliação
