@@ -70,9 +70,10 @@ As tabelas geradas em `data/` (o pacote que vai no zip do programa e no release
 | B3, proventos em dinheiro (`GetListedCashDividends`) | mesmo endereço, método `GetListedCashDividends` | JCP e restituição de capital em dinheiro (`REST CAP DIN`) desde 2016, com data de aprovação e data com. A restituição vira proposta de redução de capital na tela Eventos (só o valor, na data ex). | `proventos_historico_b3.csv` |
 | B3, cadastro de instrumentos | `https://arquivos.b3.com.br/api/download/requestname?fileName=InstrumentsConsolidatedFile` | Tickers, ISIN, espécie e emissor do dia (o portal guarda só o último mês). | `instrumentos_b3.csv` e derivados |
 | CVM, Formulário de Referência (dados abertos), tabela `capital_social_desdobramento` (e `..._classe_acao`) | `https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FRE/DADOS/fre_cia_aberta_AAAA.zip` (2010 a 2023) | Desdobramentos, grupamentos e bonificações aprovados de 2007 a 2022 (cada FRE traz os três exercícios anteriores): data de aprovação e quantidade de ações antes e depois, por espécie (ON, PN, PNA, PNB). O FRE de 2024 em diante não tem mais a tabela. | `python -m tools.referencias historico`; `origem` = `cvm_fre` |
-| B3, série histórica de cotações (COTAHIST) | `https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_AAAA.ZIP` | Por pregão e ISIN: preço e número de distribuição (muda no pregão seguinte à data com de todo evento). Confirma a data com dos eventos do FRE e dos avisos. | idem (não é publicado: só confere) |
-| CVM, documentos IPE (dados abertos) | `https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/IPE/DADOS/ipe_cia_aberta_AAAA.zip` e o documento em `https://www.rad.cvm.gov.br/ENET/frmDownloadDocumento.aspx` | Fatos relevantes e avisos aos acionistas: proporção, data-base, data ex e custo atribuído da bonificação. Usados para 2023 em diante, quando o FRE parou e a B3 já tinha substituído o evento, e para o que o FRE não resolve (fator ruidoso, papel sem negócio para conferir). | `tools/referencias/eventos_cvm_ipe.csv` (transcrito, com o protocolo); `origem` = `cvm_ipe` |
+| B3, série histórica de cotações (COTAHIST) | `https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_AAAA.ZIP` | Por pregão e ISIN, no mercado à vista de qualquer faixa (BDI 02 e também 05 a 08 e 58, das companhias em recuperação judicial ou extrajudicial, concordata ou sanção): preço, número de distribuição (muda no pregão seguinte à data com de todo evento) e a marca de evento na especificação, do dia ex em diante (`EB` bonificação ou desdobramento, `EG` grupamento, `ED`/`EJ`/`ER`/`ES`/`EC` dividendo, juros, restituição ou rendimento, subscrição, cisão). Confirma a data com dos eventos do FRE e dos avisos e é a varredura do mercado inteiro. | idem (não é publicado: só confere) |
+| CVM, documentos IPE (dados abertos) | `https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/IPE/DADOS/ipe_cia_aberta_AAAA.zip` e o documento em `https://www.rad.cvm.gov.br/ENET/frmDownloadDocumento.aspx` | Fatos relevantes e avisos aos acionistas: proporção, data-base, data ex e custo atribuído da bonificação. Usados para 2023 em diante, quando o FRE parou e a B3 já tinha substituído o evento, para o que o FRE não resolve (fator ruidoso, papel sem negócio para conferir, quantidade "antes" repetida de outro ato: BIDI 2021), para o que a varredura acha e para o custo atribuído das bonificações. | `tools/referencias/eventos_cvm_ipe.csv` (transcrito, com o protocolo); `origem` = `cvm_ipe` |
 | CVM, Formulário Cadastral (FCA, dados abertos), tabelas `geral` e `valor_mobiliario` | `https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FCA/DADOS/fca_cia_aberta_AAAA.zip` (2010 em diante) | Por CNPJ: nome empresarial com o nome anterior e a data da mudança; códigos de negociação (só de 2018 em diante). Confirma que o código antigo e o novo de uma troca são a mesma companhia, e liga ao FRE a companhia que saiu da bolsa. | `trocas_ticker.csv` (coluna `fonte`; curada) e `python -m tools.referencias historico` |
+| CVM, cadastro de companhias abertas | `https://dados.cvm.gov.br/dados/CIA_ABERTA/CAD/DADOS/cad_cia_aberta.csv` | CNPJ, nome e data do cancelamento do registro. Liga ao FRE e ao IPE a companhia que saiu da bolsa antes de 2018 (o FCA não tem o código dela). | `tools/referencias/emissores_antigos.csv` (curado, com a fonte) |
 | Banco Central, série 4390 (Selic mensal) | `https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json` | Taxa Selic de cada mês encerrado. | `selic_mensal.csv` |
 
 Regras da combinação (`tools/referencias/gerar.py`, `historico.py`):
@@ -104,7 +105,24 @@ Regras da combinação (`tools/referencias/gerar.py`, `historico.py`):
   2023, TIMS 2025...) o COIR descarta ao ler o pacote (`coir/referencias.eventos_b3`), sem
   depender da lista;
 - a unit entra com o fator das ações só quando todas as espécies tiveram o mesmo fator e a mesma
-  data com e a cotação da unit confirma.
+  data com e a cotação da unit confirma; o custo atribuído da unit é o da ação vezes a composição
+  (ALUP11 e SULA11: 1 ON + 2 PN; KLBN11: 1 ON + 4 PN), ou o que o aviso informa (ENGI11);
+- a marca da B3 decide a data com quando o preço não decide (bonificação pequena, duas mudanças
+  de distribuição na janela): conta a marca que aparece no pregão (a B3 a mantém alguns dias, e um
+  dividendo nesse meio-tempo não é evento novo: BBDC 2010). A marca dá a data, não o fator: se o
+  preço consegue conferir o fator, tem de confirmar (o FRE dizia 5722% para CTSA 2020 e 811% para
+  PATI 2014; a B3 e o aviso, 183,21% e 12,32%). Fator que arredonda para 1 é ruído, não evento;
+- papel sem negócio entre o último pregão antes do evento e o primeiro depois dele: qualquer data
+  com do intervalo dá a mesma posição, porque ninguém negociou. Vale a véspera do primeiro pregão
+  com a marca (ou com a mudança coerente com o fator), e a referência guarda o intervalo ("data
+  com: sem negócio de A a B"); a data de outra fonte dentro do intervalo é o mesmo evento (soma a
+  origem, sem divergência);
+- o custo atribuído da bonificação vem do aviso aos acionistas (Lei 9.249/1995, art. 10, §1º; IN
+  RFB 1.585/2015, art. 58, §1º). Quando há re-ratificação ou aviso final, vale o último (RAPT 2010:
+  R$ 1,99 corrigido para R$ 3,98; VITT 2026). Sem o valor por ação no documento, é a parcela
+  capitalizada dividida pelas ações bonificadas, calculada do próprio aviso (SULA 2013: R$
+  1.000.000.000 / 163.666.122 ações). Bonificação sem custo no pacote não é lançada sozinha: a
+  tela Eventos pede o custo.
 
 Trocas de código (`data/trocas_ticker.csv`, curada à mão, uma linha por espécie):
 
@@ -136,10 +154,38 @@ Companhias que saíram da bolsa:
 - o histórico liga o CNPJ do FRE ao código de negociação pelo FCA (2018 em diante: o código com
   negócio mais recente no COTAHIST; CNPJ com dois códigos empatados fica de fora). Antes de 2018
   o FCA não traz código, e a companhia deslistada antes disso continua sem o FRE;
+- antes de 2018, o CNPJ do FRE chega ao código pela tabela curada
+  `tools/referencias/emissores_antigos.csv` (CNPJ, código, razão social e a fonte: cadastro de
+  companhias abertas da CVM e o nome no COTAHIST). Ex.: a Ambev antiga (AMBV, desdobramento 5:1
+  em 2010), Aços Villares, Confab, Fosfertil, AES Tietê, Oi/Brasil Telecom, ALL;
 - de 2023 em diante (sem FRE), o evento vem do aviso aos acionistas transcrito em
-  `eventos_cvm_ipe.csv`, conferido pela cotação; a varredura do COTAHIST (mudança de distribuição
-  com o preço andando 8% ou mais, sem evento no pacote) acha os candidatos, e a queda com aviso de
-  dividendo na mesma janela não entra (é provento em dinheiro, não evento em ações).
+  `eventos_cvm_ipe.csv`, conferido pela cotação.
+
+Varredura do mercado inteiro e casos conferidos (`historico.saltos`, `sem_evento.csv`):
+
+- toda mudança de distribuição com a marca de bonificação, desdobramento ou grupamento da B3 (B ou
+  G aparecendo no pregão), ou com o preço saltando perto de uma fração simples (2, 1/10, 3/2...,
+  com pelo menos 40% de variação), tem de ter evento no pacote para o emissor (ou para quem trocou
+  de código com ele) com data com entre 7 pregões antes do último negócio sem a mudança e o
+  primeiro com ela. Isso independe do FRE e da consulta da B3: é o que pegou o desdobramento 1:3
+  do Banco Inter em 2021 (o FRE repetiu a quantidade "antes" de 2019, e o fator não fechou);
+- o que não é evento em ações vai para `tools/referencias/sem_evento.csv` (colunas `origem`,
+  `isin`, `data`, `motivo`, `fonte`): `origem` "cotacao" para o salto (data com do salto) e "fre"
+  para o ato do FRE (data de aprovação). Motivos: a marca da B3 é de dividendo, juros,
+  restituição, subscrição ou cisão; o aviso é de dividendo, redução de capital ou aumento por
+  subscrição; o ato do FRE é anterior à listagem, posterior à saída, já está no pacote por outra
+  fonte (com outro tipo ou data), ou a B3 não marcou nada nem o preço saltou; data impossível do
+  FRE (VIVR "2077-03-08" é 08/03/2007, antes da listagem). Quando a única evidência é a marca da
+  B3 e não há documento acessível (companhia com registro cancelado, fora do IPE e do FRE), a
+  linha diz "sem fonte oficial acessível" e o evento fica fora até haver o aviso. Linha sem motivo,
+  sem fonte ou com outra origem faz a geração falhar;
+- o resumo do histórico lista o que sobra (atos do FRE sem evento, saltos sem evento,
+  divergências); o teste `tests/golden/test_cobertura_mercado_real.py` (com os arquivos públicos
+  na pasta de `COIR_CACHE_B3`) exige que tudo isso saia vazio.
+
+Restituição de capital em dinheiro: a aba de proventos da B3 (`REST CAP DIN`) traz só as
+companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020, Tarpon 2019, GTD
+2013...) fica registrada em `sem_evento.csv` como redução de capital, sem proposta no app.
 
 ## LC 224/2025
 
