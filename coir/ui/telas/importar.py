@@ -113,7 +113,8 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     async def ao_enviar(e: events.MultiUploadEventArguments) -> None:
         recebidos = [(f.name, await f.read()) for f in e.files]
-        envio.reset()
+        if not envio.is_deleted:  # a tela pode ter sido refeita durante o envio
+            envio.reset()
         try:
             copias = await run.io_bound(copiar_para_pasta, recebidos, estado.pasta_notas)
         except CoirError as erro:
@@ -176,10 +177,14 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         texto = ui.label("").classes("coir-subtitulo text-sm")
 
     def travar(sim: bool) -> None:
+        if envio.is_deleted:
+            return  # a importação continua, mas o usuário saiu da tela (ou ela foi refeita)
         envio.set_enabled(not sim)
         pasta.set_enabled(not sim)
 
     def mostrar_andamento() -> None:
+        if barra.is_deleted:
+            return
         visivel = andamento.ativo and andamento.total > 0
         barra.set_visibility(visivel)
         texto.set_visibility(visivel)
@@ -193,6 +198,8 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     resultado = ui.column().classes("w-full gap-2")
 
     def mostrar(rel: RelatorioImportacao) -> None:
+        if resultado.is_deleted:
+            return  # o usuário saiu da tela (ou ela foi refeita) durante a importação
         linhas = por_arquivo(rel, divergencias_conhecidas(estado.dados))
         resultado.clear()
         with resultado:

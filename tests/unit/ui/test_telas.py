@@ -3,12 +3,15 @@
 import asyncio
 import json
 import threading
+from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 import pytest
-from nicegui import app, ui
+from nicegui import app, run, ui
+from nicegui import helpers as nicegui_helpers
 from nicegui.elements.upload_files import SmallFileUpload
 from nicegui.testing.user_simulation import user_simulation
 
@@ -17,7 +20,7 @@ from coir.domain.fiscal import Apuracao
 from coir.parsing.extrair import ResultadoExtracao
 from coir.servicos import manutencao
 from coir.servicos.cadastros import adicionar_titular
-from coir.servicos.estado import Estado
+from coir.servicos.estado import Estado, Pendencia
 from coir.servicos.notas import listar
 from coir.ui.app import montar
 from tests.apoio import cpf_de_teste
@@ -465,6 +468,165 @@ async def test_painel_trocar_o_ano_durante_o_calculo_nao_da_erro(
         await user.should_see("DARF", retries=ESPERA)
         await asyncio.sleep(0.3)  # o cálculo da tela antiga termina depois
     assert erros == []
+
+
+async def _ate(condicao: Callable[[], bool], o_que: str) -> None:
+    """Espera a condição (sem prazo fixo de sleep, que falha numa máquina lenta)."""
+    for _ in range(ESPERA * 2):
+        if condicao():
+            return
+        await asyncio.sleep(0.05)
+    raise AssertionError(f"não aconteceu a tempo: {o_que}")
+
+
+def _avisos_do_nicegui(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Guarda os avisos "uma vez só" do NiceGUI (elemento apagado e ainda usado etc.), que vão
+    para o Registro de atividades do usuário."""
+    avisos: list[str] = []
+    monkeypatch.setattr(nicegui_helpers, "warn_once", lambda msg, **_: avisos.append(msg))
+    return avisos
+
+
+@pytest.mark.asyncio
+async def test_sino_trocar_o_ano_durante_o_calculo_nao_da_aviso(
+    demo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """O sino conta as pendências depois de desenhar; trocar o ano refaz o topo e o cálculo antigo
+    terminava limpando a lista do sino apagado. Antes: "An element has been deleted but is still
+    being used" no Registro de atividades (relatado em 10/11/2026)."""
+    estado = _estado(demo)
+    liberar = threading.Event()
+    original = estado.pendencias
+    chamadas = {"comecadas": 0, "terminadas": 0}
+
+    def pendencias_lentas() -> list[Pendencia]:
+        chamadas["comecadas"] += 1
+        try:
+            liberar.wait(10)
+            return original()
+        finally:
+            chamadas["terminadas"] += 1
+
+    estado.pendencias = pendencias_lentas  # type: ignore[method-assign]
+    avisos = _avisos_do_nicegui(monkeypatch)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/")
+        await user.should_see("Painel de 2026")
+        # o Painel e o sino pedem as pendências e ficam esperando
+        await _ate(lambda: chamadas["comecadas"] >= 2, "o sino começar a contar")
+        ano = next(s for s in user.find(kind=ui.select).elements if s.props.get("label") == "Ano")
+        ano.set_value(2025)
+        await user.should_see("Painel de 2025")
+        await _ate(lambda: chamadas["comecadas"] >= 4, "o sino novo começar a contar")
+        liberar.set()
+        await _ate(
+            lambda: chamadas["terminadas"] == chamadas["comecadas"], "os cálculos terminarem"
+        )
+        await user.should_see("DARF", retries=ESPERA)
+    assert avisos == []
+
+
+def _erros_da_interface(monkeypatch: pytest.MonkeyPatch) -> list[Exception]:
+    """Guarda as exceções que o NiceGUI mandaria ao Registro de atividades."""
+    erros: list[Exception] = []
+    tratar = app.handle_exception
+    monkeypatch.setattr(app, "handle_exception", lambda e: (erros.append(e), tratar(e)))
+    return erros
+
+
+TELAS_QUE_CALCULAM = (
+    "/", "/apuracao", "/darf", "/proventos", "/declaracao", "/relatorios", "/carteira",
+    "/eventos", "/opcoes", "/futuros", "/conciliacao",
+)  # fmt: skip
+
+
+@pytest.mark.asyncio
+async def test_trocar_o_ano_durante_o_calculo_de_cada_tela_nao_da_erro_nem_aviso(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Toda tela que calcula numa thread: o ano muda (a tela e o sino são refeitos) antes de o
+    cálculo terminar. O timer apagado com a tela cancela o cálculo, e o run.io_bound do NiceGUI 3
+    devolve None em vez de propagar o cancelamento: a função segue e não pode mexer nos elementos
+    apagados."""
+    estado = _estado(criar(tmp_path))  # banco próprio: a tela Eventos lança os automáticos
+    liberar = [threading.Event()]
+    # chamadas começadas, à espera (corrotinas) e em thread: a thread de um cálculo cancelado
+    # continua presa depois que o run.io_bound já devolveu None
+    conta = {"comecadas": 0, "esperando": 0, "threads": 0}
+    trava = threading.Lock()
+    original = run.io_bound
+
+    async def io_bound_preso(f: Any, *args: Any, **kwargs: Any) -> Any:
+        evento = liberar[0]
+
+        def preso() -> Any:
+            try:
+                evento.wait(10)  # o cálculo "demora" até a tela ser refeita
+                return f(*args, **kwargs)
+            finally:
+                with trava:
+                    conta["threads"] -= 1
+
+        with trava:
+            conta["comecadas"] += 1
+            conta["esperando"] += 1
+            conta["threads"] += 1
+        try:
+            return await original(preso)
+        finally:
+            conta["esperando"] -= 1
+
+    monkeypatch.setattr(run, "io_bound", io_bound_preso)
+    avisos, erros = _avisos_do_nicegui(monkeypatch), _erros_da_interface(monkeypatch)
+    async with user_simulation(lambda: montar(estado)) as user:
+        for i, rota in enumerate(TELAS_QUE_CALCULAM):
+            liberar[0] = threading.Event()
+            antes = conta["comecadas"]
+            await user.open(rota)
+            # a tela e o sino começaram a calcular e esperam
+            await _ate(lambda a=antes: conta["comecadas"] - a >= 2, f"{rota} calcular")
+            ano = next(s for s in user.find(kind=ui.select).elements
+                       if s.props.get("label") == "Ano")  # fmt: skip
+            ano.set_value(2025 if i % 2 == 0 else 2026)
+            liberar[0].set()
+            await _ate(lambda: conta["esperando"] == conta["threads"] == 0, f"{rota} terminar")
+            assert (avisos, erros) == ([], []), rota
+
+
+@pytest.mark.asyncio
+async def test_darf_trocar_o_ano_enquanto_grava_o_pagamento_nao_da_aviso(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Um clique não é cancelado junto com a tela: a gravação termina depois e a tela DARF ia
+    recarregar a lista que a troca de ano já tinha apagado. O pagamento continua gravado."""
+    from coir.servicos import darf
+
+    estado = _estado(criar(tmp_path))
+    liberar, gravando = threading.Event(), threading.Event()
+    original = darf.registrar_pagamento
+
+    def registrar_lento(*args: Any, **kwargs: Any) -> Any:
+        gravando.set()
+        liberar.wait(10)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(darf, "registrar_pagamento", registrar_lento)
+    avisos, erros = _avisos_do_nicegui(monkeypatch), _erros_da_interface(monkeypatch)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/")
+        await user.should_see("Competência 02/2023", retries=ESPERA)
+        user.find(marker="ver-darf").click()
+        await user.should_see("Registrar o pagamento", retries=ESPERA)
+        user.find(marker="salvar-pagamento").click()
+        await _ate(gravando.is_set, "a gravação começar")
+        ano = next(s for s in user.find(kind=ui.select).elements if s.props.get("label") == "Ano")
+        ano.set_value(2025)
+        await user.should_see("As DARFs de 2025", retries=ESPERA)
+        liberar.set()
+        # o aviso sai no mesmo passo em que a tela DARF antiga se recarregaria
+        await user.should_see("Pagamento registrado", retries=ESPERA)
+    assert (avisos, erros) == ([], [])
+    assert (2023, 2) in darf.pagamentos(estado.banco, estado.titular or 0)
 
 
 @pytest.mark.asyncio

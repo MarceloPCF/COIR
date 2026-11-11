@@ -97,8 +97,10 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 _reembolsos(estado, reembolsos, recarregar)
 
     async def recarregar() -> None:
-        corpo.clear()
         ao_mudar()
+        if corpo.is_deleted:
+            return  # chamado depois de gravar: a tela foi refeita enquanto gravava
+        corpo.clear()
         await carregar()
 
     ui.timer(0.01, carregar, once=True)
@@ -216,7 +218,8 @@ def _creditos(estado: Estado, jcp: list[Provento],
                 except CoirError as erro:
                     ui.notify(f"Não gravado: {erro}", type="negative")
                     return
-                janela.close()
+                if not janela.is_deleted:
+                    janela.close()
                 ui.notify(f"{len(escolhidas)} data(s) de crédito gravada(s).", type="positive")
                 await recarregar()
 

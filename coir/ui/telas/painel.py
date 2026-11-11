@@ -72,6 +72,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 log.info("verificação de versão nova sem resposta: %s", erro)
             finally:
                 estado.versao_verificada = True
+        if aviso.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante a consulta
         if estado.versao_nova is not None:
             _aviso_versao(aviso, estado.versao_nova)
         if atualizacao.mais_novo(estado.dados, estado.remoto) and estado.remoto is not None:

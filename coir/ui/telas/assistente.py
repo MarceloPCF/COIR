@@ -51,7 +51,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
                 async def procurar() -> None:
                     escolhida = await escolher_pasta(Path(campo.value or str(estado.dados)))
-                    if escolhida is not None:
+                    if escolhida is not None and not campo.is_deleted:
                         campo.set_value(str(escolhida))
 
                 ui.button("Procurar...", icon="folder_open", on_click=procurar).props(

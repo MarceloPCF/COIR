@@ -23,6 +23,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ### Corrigido
 
+- **Aviso "An element has been deleted but is still being used" no registro de atividades**: trocar o titular ou o ano, ou gravar algo, enquanto o sino de pendências ainda contava fazia a contagem antiga terminar mexendo no sino já refeito. O mesmo podia acontecer em qualquer tela que grava, importa ou exporta numa thread (DARF, Eventos, Importar, Proventos, Configurações, Relatórios, Carteira, Notas, Suporte, Cadastros, Outros custos) quando a tela mudava antes de terminar. Agora o trabalho termina (o que foi gravado continua gravado), e só a parte que mostraria o resultado numa tela que não existe mais é deixada de lado.
 - **Erro no Painel ao abrir**: trocar o titular ou o ano, ou a tela se refazer, enquanto o Painel ainda calculava dava "ValueError: list.remove(x): x not in list" no registro de atividades. O cálculo antigo agora termina sem mexer na tela nova; o mesmo vale para Apuração, Conciliação, Futuros, Proventos e Declaração.
 - **Restituição de capital e amortização propostas pela B3**: a proposta vinha com a quantidade da linha da B3, que é a posição, e o evento tirava essas ações da carteira; a venda seguinte virava venda a descoberto. Agora a proposta leva só o valor.
 - **Direito não exercido sem quantidade**: a linha "não exercido" da B3 vem sem quantidade; o evento sem ela baixa todo o saldo.

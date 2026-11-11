@@ -63,6 +63,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         lista = ui.column().classes("w-full gap-0")
 
     def mostrar_backups() -> None:
+        if lista.is_deleted:
+            return  # chamado depois do backup: a tela foi refeita enquanto ele era feito
         lista.clear()
         with lista:
             copias = manutencao.backups(estado.banco)
@@ -176,13 +178,18 @@ def _programa(estado: Estado) -> None:
         try:
             nova = await run.io_bound(versao.nova, obter=estado.baixar)
         except CoirError as erro:
-            with resultado:
-                ui.label(f"Não foi possível verificar: {erro}").classes("coir-negativo text-sm")
+            if not resultado.is_deleted:
+                with resultado:
+                    ui.label(f"Não foi possível verificar: {erro}").classes(
+                        "coir-negativo text-sm")  # fmt: skip
             return
         finally:
-            botao.set_enabled(True)
+            if not botao.is_deleted:  # a tela pode ter sido refeita durante a consulta
+                botao.set_enabled(True)
             estado.versao_verificada = True
         estado.versao_nova = nova
+        if resultado.is_deleted:
+            return
         with resultado:
             if nova is None:
                 ui.label("Você já tem a versão mais nova.").classes("coir-positivo text-sm")
@@ -227,6 +234,8 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             remoto = await run.io_bound(atualizacao.verificar, estado.baixar)
             estado.remoto, estado.verificado = remoto, True
             if remoto is None or not atualizacao.mais_novo(estado.dados, remoto):
+                if novo.is_deleted:
+                    return
                 with novo:
                     ui.label("As tabelas em uso já são as mais novas.").classes("coir-subtitulo")
                 return
@@ -236,8 +245,9 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             ui.notify(str(erro), type="negative", multi_line=True)
             return
         finally:
-            botao.set_enabled(True)
-        if mudancas is None:  # run.io_bound devolve None se a página fechou
+            if not botao.is_deleted:  # a tela pode ter sido refeita durante a consulta
+                botao.set_enabled(True)
+        if mudancas is None or novo.is_deleted:  # a página fechou ou a tela foi refeita
             return
         selic = f" · Selic de {', '.join(mudancas.selic_nova)}" if mudancas.selic_nova else ""
         with novo, ui.row().classes("items-center gap-3"):
@@ -255,10 +265,11 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         except CoirError as erro:
             ui.notify(str(erro), type="negative", multi_line=True)
             return
-        novo.clear()
-        mostrar()
         ao_mudar()
         ui.notify("Tabelas atualizadas. Carteira e apuração refeitas.", type="positive")
+        if not novo.is_deleted:  # a tela pode ter sido refeita durante a aplicação
+            novo.clear()
+            mostrar()
 
     async def desfazer() -> None:
         try:
@@ -268,9 +279,10 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return
-        mostrar()
         ao_mudar()
         ui.notify("Voltou ao pacote anterior.", type="positive")
+        if not em_uso.is_deleted:
+            mostrar()
 
     botao.on_click(verificar)
     voltar.on_click(desfazer)

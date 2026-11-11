@@ -234,6 +234,8 @@ def montar(estado: Estado) -> None:
                 itens, falha = [], str(erro)
             else:
                 falha = ""
+            if lista.is_deleted:
+                return  # o topo foi refeito (titular, ano, gravação) durante a contagem
             lista.clear()
             with lista:
                 ui.label("Pendências").classes("coir-campo-rotulo")
