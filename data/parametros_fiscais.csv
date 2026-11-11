@@ -3,41 +3,41 @@ aliquota_comum,0.15,2005-01-01,,Lei 11.033/2004 art. 2º II; RIR/2018 art. 839
 aliquota_day_trade,0.20,2005-01-01,,Lei 11.033/2004 art. 2º I
 aliquota_fii,0.20,1999-01-01,,Lei 8.668/1993 art. 18 II (red. Lei 9.779/1999); inclui day trade de FII
 limite_isencao_acoes,20000.00,2005-01-01,,Lei 11.033/2004 art. 3º I (valor bruto das alienações de ações à vista no mês)
-units_na_isencao,false,2005-01-01,,decisão do usuário (05/10/2026): units fora do limite e da isenção
-custodia_no_custo,false,2005-01-01,,SC Cosit 227/2018 §§17-18 (taxa de custódia não é custo nem despesa da operação; fundamento geral); decisão do usuário (10/11/2026): leitura conservadora
-day_trade_na_soma_limite,false,2005-01-01,,IN RFB 1.585/2015 art. 59 §2º I (day trade fora da isenção); demonstrativo do programa IRPF (campo Total em alienações de ações (op. comuns)); decisão do usuário (10/11/2026): day trade não tem isenção e não entra nos R$ 20 mil
-prejuizo_mes_isento_compensavel,true,2005-01-01,,Lei 8.981/1995 art. 72 §4º; Manual MIR 2026; decisão do usuário (14/10/2026)
+units_na_isencao,false,2005-01-01,,critério do COIR: units fora do limite e da isenção
+custodia_no_custo,false,2005-01-01,,SC Cosit 227/2018 §§17-18 (taxa de custódia não é custo nem despesa da operação; fundamento geral); critério do COIR (leitura conservadora)
+day_trade_na_soma_limite,false,2005-01-01,,IN RFB 1.585/2015 art. 59 §2º I (day trade fora da isenção); demonstrativo do programa IRPF (campo Total em alienações de ações (op. comuns)): day trade não tem isenção e não entra nos R$ 20 mil
+prejuizo_mes_isento_compensavel,true,2005-01-01,,Lei 8.981/1995 art. 72 §4º; Manual MIR 2026
 day_trade_mesma_corretora,false,2000-01-01,2010-07-27,Lei 9.959/2000 art. 8º §1º I a (redação original): day trade em qualquer corretora
 day_trade_mesma_corretora,true,2010-07-28,,MP 497/2010 art. 21 (conv. Lei 12.350/2010 art. 45): mesma corretora
 darf_minimo,10.00,1997-01-01,,Lei 9.430/1996 art. 68 caput e §1º (abaixo do mínimo acumula)
 darf_codigo,6015,2005-01-01,,P&R IRPF 2026 pergunta 730; Agenda Tributária RFB (código de renda variável PF)
 multa_mora_dia,0.0033,1997-01-01,,"Lei 9.430/1996 art. 61 caput (0,33% por dia de atraso sobre o principal)"
 multa_mora_teto,0.20,1997-01-01,,Lei 9.430/1996 art. 61 §2º (limite de 20%)
-multa_mora_inicio_contagem,rfb,1997-01-01,,RFB/Sicalc (Como calcular multa de mora): do primeiro dia útil após o vencimento; alternativa lei (art. 61 §1º); decisão do usuário (17/10/2026)
-multa_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido pelo usuário em 17/10/2026: R$ 1234.57 x 0.0231 = 28.518567 -> 28.51)
+multa_mora_inicio_contagem,rfb,1997-01-01,,RFB/Sicalc (Como calcular multa de mora): do primeiro dia útil após o vencimento; alternativa lei (art. 61 §1º)
+multa_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido no Sicalc: R$ 1234.57 x 0.0231 = 28.518567 -> 28.51)
 juros_mora_mes_pagamento,0.01,1997-01-01,,Lei 9.430/1996 art. 61 §3º c/c art. 5º §3º (1% no mês do pagamento; Selic acumulada nos meses entre o vencimento e o pagamento)
-juros_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido pelo usuário em 17/10/2026: R$ 1234.57 x 0.01 = 12.3457 -> 12.34)
+juros_mora_arredondamento,ROUND_DOWN,1997-01-01,,lei omissa sobre centavos; Sicalc trunca (conferido no Sicalc: R$ 1234.57 x 0.01 = 12.3457 -> 12.34)
 aliquota_irrf_jcp,0.15,1996-01-01,2025-12-31,Lei 9.249/1995 art. 9º §2º (15% na data do pagamento ou crédito)
 aliquota_irrf_jcp,0.175,2026-01-01,,"LC 224/2025 art. 8º e art. 14 III (17,5% pago ou creditado desde 01/01/2026)"
 dividendos_limite_mensal_mesma_pj,50000.00,2026-01-01,,Lei 15.270/2025 (Lei 9.250 art. 6º-A): acima de R$ 50 mil no mês da mesma PJ há retenção de 10% sobre o total
 aliquota_irrf_dividendos_acima_limite,0.10,2026-01-01,,Lei 15.270/2025 (Lei 9.250 art. 6º-A caput e §§1º e 2º)
 reembolso_btc_dividendos_isento,true,2005-01-01,2025-12-31,IN RFB 1.585/2015 art. 74 caput e §1º I a (Lei 13.043/2014 art. 7º)
-reembolso_btc_dividendos_isento,true,2026-01-01,,Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: isento por equivalência (decisão do usuário 19/10/2026; rever se a RFB se manifestar)
-incorporacao_acoes_tratamento,custo_mantido,1976-12-15,,"Lei 6.404 art. 252: custo das ações entregues mantido nas recebidas (TRF1/TRF3/TRF4; decisão do usuário 19/10/2026). A RFB diverge (SC Cosit 224/2014: alienação, ganho de capital no GCAP); a tela de Eventos avisa"
-leilao_fracao_isentavel,true,1976-12-15,,"sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (decisão do usuário 19/10/2026)"
+reembolso_btc_dividendos_isento,true,2026-01-01,,Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: isento por equivalência (critério do COIR; rever se a RFB se manifestar)
+incorporacao_acoes_tratamento,custo_mantido,1976-12-15,,"Lei 6.404 art. 252: custo das ações entregues mantido nas recebidas (TRF1/TRF3/TRF4; critério do COIR). A RFB diverge (SC Cosit 224/2014: alienação, ganho de capital no GCAP); a tela de Eventos avisa"
+leilao_fracao_isentavel,true,1976-12-15,,"sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (critério do COIR)"
 reembolso_btc_norma_omissa,false,2005-01-01,2025-12-31,IN RFB 1.585/2015 art. 74 caput e §1º I a (reembolso de dividendos de BTC expressamente isento)
 reembolso_btc_norma_omissa,true,2026-01-01,,Lei 15.265/2025 arts. 20 e 21 omissos para dividendos: a tela de proventos avisa (isento por equivalência)
 opcoes_linha_acoes_tipos_objeto,ACAO;UNIT,2005-01-01,,"programa IRPF, ficha Renda variável: ""Mercado de opções - ações"" para opção sobre ação; ETF, índice e outros em ""Mercado de opções - outros"" (P&R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, coerente com o Bens e Direitos do programa (código 03.01, ações inclusive units)"
-day_trade_criterio,marcacao_corretora,2000-01-01,,"IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (decisão do usuário de 25/10/2026, parecer do especialista). Alternativa: ordem_impressa"
-pme_lote_ordem_venda,proporcional,2014-07-10,,"IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; proporcional pela SC Cosit 148/2025 §§32-33 (analogia; decisão do usuário de 10/11/2026: leitura conservadora); opções isento_primeiro e tributado_primeiro (decisão de 08/11/2026)"
-janela_liquidacao_oferta_dias,7,2000-01-01,,"Sem norma: critério do COIR para venda antes da liquidação da oferta (decisão do usuário de 08/11/2026); a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)"
-direito_recebido_custo_zero,true,2005-01-01,,IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); parecer do especialista de 09/11/2026 seguido pelo usuário
-direito_vencido_data,fim_do_prazo,2005-01-01,,"IN RFB 1.585/2015 art. 60 §3º (analogia: perda na data do vencimento); Lei 6.404 art. 171 §4º (prazo decadencial): o direito comprado não exercido vira perda no fim do prazo de subscrição do pacote da B3, ou na data da baixa na B3 sem ele; alternativa baixa_b3 (parecer do especialista de 09/11/2026 seguido pelo usuário)"
-fiagro_rendimento_isento,false,2021-03-29,2021-06-10,Lei 14.130/2021 (cria o Fiagro em 29/03/2021; a extensão da isenção da Lei 11.033 art. 3º III foi vetada e o veto derrubado só no DOU de 11/06/2021); decisão do usuário (10/11/2026): leitura conservadora
+day_trade_criterio,marcacao_corretora,2000-01-01,,"IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (critério do COIR). Alternativa: ordem_impressa"
+pme_lote_ordem_venda,proporcional,2014-07-10,,"IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; proporcional pela SC Cosit 148/2025 §§32-33 (analogia; critério do COIR, leitura conservadora); alternativas isento_primeiro e tributado_primeiro"
+janela_liquidacao_oferta_dias,7,2000-01-01,,"Sem norma: critério do COIR para venda antes da liquidação da oferta; a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)"
+direito_recebido_custo_zero,true,2005-01-01,,IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); critério do COIR
+direito_vencido_data,fim_do_prazo,2005-01-01,,"IN RFB 1.585/2015 art. 60 §3º (analogia: perda na data do vencimento); Lei 6.404 art. 171 §4º (prazo decadencial): o direito comprado não exercido vira perda no fim do prazo de subscrição do pacote da B3, ou na data da baixa na B3 sem ele; alternativa baixa_b3 (critério do COIR)"
+fiagro_rendimento_isento,false,2021-03-29,2021-06-10,Lei 14.130/2021 (cria o Fiagro em 29/03/2021; a extensão da isenção da Lei 11.033 art. 3º III foi vetada e o veto derrubado só no DOU de 11/06/2021); critério do COIR (leitura conservadora)
 fiagro_rendimento_isento,true,2021-06-11,,"Lei 11.033/2004 art. 3º III (red. Lei 14.130/2021 art. 4º; veto derrubado, DOU 11/06/2021)"
 fii_isencao_minimo_cotistas,50,2005-11-22,2023-12-31,Lei 11.033/2004 art. 3º parágrafo único I (red. Lei 11.196/2005 art. 125)
 fii_isencao_minimo_cotistas,100,2024-01-01,,Lei 11.033/2004 art. 3º §1º I e III (red. Lei 14.754/2023 art. 41; enquadramento até 30/06/2024): 100 cotistas e o grupo de pessoas ligadas sem 30% ou mais das cotas
 obrigatoriedade_bolsa_criterio,qualquer_operacao,2015-01-01,2021-12-31,"IN RFB anuais da DIRPF, exercícios 2016 a 2022, art. 2º III: quem realizou operações em bolsa (qualquer valor) declara; o parâmetro vale pelo ano-calendário"
 obrigatoriedade_bolsa_criterio,vendas_ou_ganho,2022-01-01,,"IN RFB anuais da DIRPF desde o exercício 2023, art. 2º IV a e b: alienações em bolsa acima do limite no ano ou ganhos líquidos sujeitos ao imposto; o parâmetro vale pelo ano-calendário"
 obrigatoriedade_bolsa_vendas,40000.00,2022-01-01,,"IN RFB anuais da DIRPF desde o exercício 2023, art. 2º IV a (soma das alienações em bolsa no ano-calendário)"
-irpf_minimo_renda_anual,600000.00,2026-01-01,,"Lei 9.250/1995 art. 16-A (incl. Lei 15.270/2025): IR mínimo de quem recebe mais de R$ 600 mil no ano; os ganhos líquidos em bolsa, inclusive os isentos, entram na base (§1º I); só aviso informativo (decisão do usuário de 10/11/2026)"
+irpf_minimo_renda_anual,600000.00,2026-01-01,,"Lei 9.250/1995 art. 16-A (incl. Lei 15.270/2025): IR mínimo de quem recebe mais de R$ 600 mil no ano; os ganhos líquidos em bolsa, inclusive os isentos, entram na base (§1º I); só aviso informativo (critério do COIR)"

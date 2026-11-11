@@ -415,7 +415,10 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
         _cab(d),
         (*mercados, *resultados, consolidacao, outras, fii),
         pdf=True,
-        notas=("Mesma ordem dos blocos do programa da Receita; as fichas por ano ficam na F8.",),
+        notas=(
+            "Mesma ordem dos blocos do programa da Receita; as fichas do ano ficam na tela "
+            "Declaração anual.",
+        ),
     )
 
 
