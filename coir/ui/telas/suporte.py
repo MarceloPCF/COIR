@@ -66,7 +66,7 @@ def _registro(estado: Estado) -> None:
         except CoirError as erro:
             ui.notify(str(erro), type="negative", multi_line=True)
             return
-        if feito is None:  # run.io_bound devolve None se a página fechou
+        if feito is None or resultado.is_deleted:  # a página fechou ou a tela foi refeita
             return
         resultado.clear()
         with resultado:
@@ -186,24 +186,30 @@ def _envio(estado: Estado) -> None:
         janela.open()
         try:
             recebidos = [(f.name, await f.read()) for f in e.files]
-            envio.reset()
+            if not envio.is_deleted:
+                envio.reset()
             pronto = await run.io_bound(
                 suporte.novo_envio, estado.dados, estado.banco, estado.agora()
             )
             if pronto is None:  # run.io_bound devolve None se a página fechou
                 return
             for i, (nome, conteudo) in enumerate(recebidos, start=1):
-                passo.text = f"Nota {i} de {len(recebidos)}: {nome}"
-                barra.value = (i - 1) / len(recebidos)
+                if not janela.is_deleted:  # a tela pode ter sido refeita: o preparo continua
+                    passo.text = f"Nota {i} de {len(recebidos)}: {nome}"
+                    barra.value = (i - 1) / len(recebidos)
                 if await run.io_bound(suporte.preparar_nota, pronto, estado.dados, nome,
                                       conteudo, estado.senhas_informadas) is None:  # fmt: skip
                     return
-            barra.value = 1
+            if not janela.is_deleted:
+                barra.value = 1
         except CoirError as erro:
             ui.notify(str(erro), type="negative", multi_line=True)
             return
         finally:
-            janela.close()
+            if not janela.is_deleted:
+                janela.close()
+        if resultado.is_deleted:
+            return
         with resultado:
             _conferencia(pronto)
 

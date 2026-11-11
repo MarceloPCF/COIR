@@ -134,7 +134,7 @@ def _custodia(estado: Estado, titular: int, ano: ui.select, ao_mudar: Callable[[
             return
         estado.invalidar()
         ao_mudar()
-        lancados.refresh()
+        lancados.refresh()  # refreshable: ignora sozinho a tela que já foi apagada
 
     with ui.column().classes("coir-folha gap-2 w-full").mark("form-custodia"):
         ui.label("Custódia em 31/12").classes("coir-titulo text-base")
@@ -186,7 +186,8 @@ def _custodia(estado: Estado, titular: int, ano: ui.select, ao_mudar: Callable[[
                 return
             for _, ticker, quantidade, custo in linhas:
                 for campo in (ticker, quantidade, custo):
-                    campo.set_value("")
+                    if not campo.is_deleted:  # a tela pode ter sido refeita durante a gravação
+                        campo.set_value("")
             estado.invalidar()
             ao_mudar()
             lancados.refresh()
@@ -301,7 +302,8 @@ def _titulares(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             except CoirError as erro:
                 ui.notify(str(erro), type="negative")
                 return
-            nome.value = cpf.value = ""
+            if not nome.is_deleted:  # a tela pode ter sido refeita durante a gravação
+                nome.value = cpf.value = ""
             ui.notify("Titular cadastrado.", type="positive")
             recarregar()
 

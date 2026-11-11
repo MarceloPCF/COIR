@@ -65,10 +65,13 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             return
         estado.invalidar()
         ao_mudar()
-        lista = await run.io_bound(outros_custos.listar, estado.banco, titular)
-        atuais.clear()
-        atuais.update({(c.mes, c.categoria): c for c in lista or [] if c.ano == ano})
-        somar()
+        # a tela pode ter sido refeita durante a gravação: então não há total a atualizar
+        lista = None if total.is_deleted else await run.io_bound(
+            outros_custos.listar, estado.banco, titular)  # fmt: skip
+        if lista is not None and not total.is_deleted:
+            atuais.clear()
+            atuais.update({(c.mes, c.categoria): c for c in lista if c.ano == ano})
+            somar()
         if valor:
             ui.notify(
                 f"{MESES[mes - 1]}: reduz o resultado {NOMES[categoria].lower()} em {_r(valor)}.",

@@ -136,7 +136,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object], nota: int | None = No
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return
-        if d is None or senhas is None:
+        if d is None or senhas is None or detalhe.is_deleted:
             return
         detalhe.clear()
         with detalhe:
@@ -296,8 +296,9 @@ def _pdf(d: notas.DetalheNota, senhas: list[str]) -> None:
             ui.notify(str(erro), type="negative")
             return
         finally:
-            carregando.set_visibility(False)
-        if png is not None:
+            if not carregando.is_deleted:  # outra nota aberta ou tela refeita durante a leitura
+                carregando.set_visibility(False)
+        if png is not None and not grande.is_deleted:
             grande.set_visibility(True)
             grande.set_source("data:image/png;base64," + base64.b64encode(png).decode())
 
@@ -310,7 +311,7 @@ def _pdf(d: notas.DetalheNota, senhas: list[str]) -> None:
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return
-        if png is None:
+        if png is None or imagem.is_deleted:
             return
         imagem.set_source("data:image/png;base64," + base64.b64encode(png).decode())
 

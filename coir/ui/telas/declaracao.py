@@ -64,6 +64,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             resultado = await run.io_bound(estado.fichas_irpf)
             feitos = await run.io_bound(estado.lancados)
         except CoirError as erro:
+            if espera.is_deleted:
+                return
             corpo.clear()
             with corpo:
                 ui.label(f"Não foi possível montar a declaração: {erro}").classes("coir-negativo")
@@ -71,6 +73,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         if resultado is None or feitos is None:
             return  # a página foi fechada durante o cálculo
         f, mapa = resultado
+        if espera.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante o cálculo
         espera.delete()
         with corpo:
             if f is None or mapa is None:
@@ -268,8 +272,12 @@ async def _conferencia(estado: Estado) -> None:
     try:
         conferencia: Conferencia | None = await run.io_bound(estado.conferir_dirpf)
     except CoirError as erro:
+        if espera.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante a leitura
         espera.delete()
         ui.label(f"Não foi possível ler a declaração: {erro}").classes("coir-negativo")
+        return
+    if espera.is_deleted:
         return
     espera.delete()
     if conferencia is None:

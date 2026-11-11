@@ -401,6 +401,8 @@ class _Painel:
         t.estado.invalidar()
         t.ao_mudar()
         ui.notify("Evento gravado. Carteira e apuração refeitas.", type="positive")
+        if self.area.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante a gravação
         self.novo()
         await t.recarregar()
 
@@ -417,6 +419,8 @@ class _Painel:
         t.estado.invalidar()
         t.ao_mudar()
         ui.notify("Evento excluído.", type="positive")
+        if self.area.is_deleted:
+            return
         self.novo()
         await t.recarregar()
 
@@ -427,6 +431,8 @@ class _Painel:
         await run.io_bound(eventos.ignorar, t.estado.banco, t.titular, self.form.proposta.chave,
                            t.estado.agora(), sim)  # fmt: skip
         t.ao_mudar()  # o sino do topo conta as propostas pendentes
+        if self.area.is_deleted:
+            return
         self.novo()
         await t.recarregar()
 
@@ -672,7 +678,8 @@ class _Conferir:
                         await run.io_bound(eventos.ignorar, t.estado.banco, t.titular, chave,
                                            t.estado.agora())  # fmt: skip
                         t.ao_mudar()  # o sino do topo conta o aviso
-                        self._desenhar_saidas()
+                        if not self.secao_saidas.is_deleted:
+                            self._desenhar_saidas()
 
                     ui.button("Ignorar", on_click=dispensar).props("flat dense").mark(
                         "ignorar-saida"
@@ -767,9 +774,11 @@ class _Conferir:
         if resultado is None:
             return
         self.lote, self.recusadas = (*self.lote, *resultado.ids), resultado.recusadas
-        self.painel.novo()
         estado.invalidar()
         t.ao_mudar()
+        if self.lista.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante o lançamento
+        self.painel.novo()
         await t.recarregar()
 
     def _desenhar_lote(self) -> None:
@@ -797,10 +806,12 @@ class _Conferir:
                       timeout=12000)  # fmt: skip
             return
         self.lote, self.recusadas = (), ()
-        self.painel.novo()
         t.estado.invalidar()
         t.ao_mudar()
         ui.notify("Lançamento desfeito.", type="positive")
+        if self.lista.is_deleted:
+            return
+        self.painel.novo()
         await t.recarregar()
 
 
@@ -853,13 +864,15 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             lancados = await run.io_bound(eventos.listar, estado.banco, titular)
             propostas = await run.io_bound(estado.propostas)
             lacuna = await run.io_bound(eventos.lacuna_movimentacao, estado.banco, titular)
-            if conferir.lista.is_deleted:
-                return  # o usuário saiu da tela durante a leitura
         except CoirError as erro:
+            if conferir.lista.is_deleted:
+                return
             conferir.lista.clear()
             with conferir.lista:
                 ui.label(f"Não foi possível ler os eventos: {erro}").classes("coir-negativo")
             return
+        if conferir.lista.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante a leitura
         conferir.mostrar(propostas or [], lacuna)
         guia_conferir.props(f'label="A conferir ({len(conferir.pendentes)})"')
         for aba in tarefas:

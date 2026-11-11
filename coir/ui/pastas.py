@@ -33,7 +33,7 @@ def seletor(estado: Estado, chave: str, rotulo: str, atual: Path,
 
             async def procurar() -> None:
                 escolhida = await escolher_pasta(Path(campo.value or str(atual)))
-                if escolhida is not None:
+                if escolhida is not None and not campo.is_deleted:
                     campo.set_value(str(escolhida))
                     usar(escolhida)
 

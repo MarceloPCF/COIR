@@ -59,7 +59,8 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     async def ao_enviar(e: events.MultiUploadEventArguments) -> None:
         recebidos = [(f.name, await f.read()) for f in e.files]
-        envio.reset()
+        if not envio.is_deleted:  # a tela pode ter sido refeita durante o envio
+            envio.reset()
         try:
             copias = await run.io_bound(copiar_para_pasta, recebidos, pasta_b3, ".xlsx")
         except CoirError as erro:
@@ -96,6 +97,8 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     resultado = ui.column().classes("w-full gap-0")
 
     def mostrar(rel: RelatorioB3) -> None:
+        if resultado.is_deleted:
+            return  # o usuário saiu da tela (ou ela foi refeita) durante a importação
         resultado.clear()
         with resultado, ui.column().classes("coir-folha w-full gap-0 p-0"):
             for a in rel.arquivos:

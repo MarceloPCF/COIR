@@ -66,18 +66,22 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     linhas: list[darf.LinhaDarf] = []
 
     async def carregar(escolher: tuple[int, int] | None = None) -> None:
+        if lista.is_deleted:
+            return  # chamado depois de gravar: a tela foi refeita enquanto gravava
         lista.clear()
         with lista:
             ui.spinner(size="lg")
         try:
             resultado = await run.io_bound(estado.darfs)
         except CoirError as erro:
+            if lista.is_deleted:
+                return
             lista.clear()
             with lista:
                 ui.label(f"Não foi possível apurar: {erro}").classes("coir-negativo")
             return
-        if resultado is None:
-            return
+        if resultado is None or lista.is_deleted:
+            return  # a tela foi refeita (titular, ano) ou fechada durante o cálculo
         linhas[:] = resultado
         lista.clear()
         with lista:
