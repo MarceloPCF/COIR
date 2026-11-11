@@ -1,7 +1,8 @@
 """Proventos a partir da movimentação da B3 (decisões do usuário de 19/10/2026).
 
 - Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR, ETF ou
-  FII: fora da v3.0, listado com aviso (BDR: Lei 14.754/2023, não é isento).
+  FII: fora da v3.0, listado com aviso (BDR não é isento: Lei 9.249/1995 art. 10 só alcança
+  PJ brasileira).
 - JCP: tributação exclusiva; a B3 credita o líquido e o preço unitário é o bruto por ação, o que
   mostra a alíquota retida: 15% até 2025, 17,5% desde 2026, pela data do pagamento ou do crédito,
   o que vier primeiro (LC 224/2025 art. 8º). Pago num ano com a alíquota do ano anterior = creditado
@@ -19,8 +20,9 @@
 - Rendimento de FI-Infra e FIP-IE (tipo FUNDO_INFRA): alíquota zero, exclusiva na fonte (Lei
   12.431/2011 art. 3º §§1º, 2º e 2º-A; Lei 11.478/2007 art. 2º §3º); ficha exclusiva 06 pelo
   valor líquido. Preço x quantidade acima do líquido sugere retenção (fundo desenquadrado): aviso.
-  Amortização dessas cotas: reduz o custo (Lei 11.478 art. 2º §2º; IN 1.585 art. 16 §2º), listada
-  e proposta como redução de capital (parecer do especialista de 09/11/2026).
+  Amortização dessas cotas: reduz o custo (FIP-IE: Lei 11.478 art. 2º §2º e IN 1.585 art. 33
+  §§2º-3º; FI-Infra: Lei 12.431 art. 3º e IN 1.585 art. 34), listada e proposta como redução de
+  capital (parecer do especialista de 09/11/2026).
 - Restituição de capital: reduz o custo das ações (IN 1.585 art. 58 §8º): listada e proposta como
   evento de redução de capital; não é rendimento.
 - Linhas "- Transferido": o provento acompanhando a transferência de custódia, em pares que se
@@ -225,7 +227,8 @@ def _provento(
             tipo = TipoProvento.DIVIDENDO
         elif tipo_ativo is TipoAtivo.BDR:
             obs = (
-                "dividendo de BDR não é isento (Lei 14.754/2023); a tributação fica para uma "
+                "dividendo de BDR não é isento (Lei 9.249/1995 art. 10 só alcança PJ "
+                "brasileira); a tributação fica para uma "
                 "versão futura"
             )
         else:

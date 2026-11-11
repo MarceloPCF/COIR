@@ -286,7 +286,10 @@ def _rendimentos(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]
                     and m.tipo is not TipoAtivo.OPCAO
                     and m.evento is TipoEvento.BONIFICACAO]  # fmt: skip
     linha("isentos", "bonificacao", bonificacoes)
-    isento = sum((_cat(m, Categoria.COMUM).isento for m in _meses(d)), ZERO)
+    # código 20: só os meses com ganho isento positivo; a perda de mês isento (parâmetro
+    # prejuizo_mes_isento_compensavel desligado) não reduz o total (decisão do usuário de
+    # 10/11/2026, recomendação do especialista)
+    isento = sum((max(_cat(m, Categoria.COMUM).isento, ZERO) for m in _meses(d)), ZERO)
     if isento:
         lucro = isentos.linha("lucro_acoes_ate_limite")
         saida.append(RendimentoIrpf(ficha="isentos", chave=lucro.chave, codigo=lucro.codigo,
@@ -422,10 +425,13 @@ def fichas(d: DadosRelatorio) -> FichasIrpf | None:
     avisos.append("Resultado negativo até o mês anterior (janeiro): o prejuízo recalculado pelo "
                   "COIR a partir das notas, que é o que se comprova. Se a declaração do ano "
                   "anterior trouxe outro valor, a diferença só muda o imposto do mês em que o "
-                  "prejuízo acaba: até 5 anos depois desse mês, retifique e recolha a diferença "
-                  "(ou peça de volta o que pagou a mais, até 5 anos do pagamento); depois disso, "
-                  "o imposto decaiu (CTN art. 150 §4º e art. 168 I) e não há o que retificar nem "
-                  "pagar (decisões do usuário de 20/10 e 03/11/2026)")  # fmt: skip
+                  "prejuízo acaba: dentro do prazo, retifique e recolha a diferença (ou peça de "
+                  "volta o que pagou a mais, até 5 anos do pagamento, CTN art. 168 I); depois "
+                  "dele, o imposto decaiu e não há o que retificar nem pagar. O prazo é de 5 anos "
+                  "do mês quando houve DARF paga no mês (CTN art. 150 §4º); no mês sem pagamento, "
+                  "mesmo com IRRF retido, conta 5 anos a partir de 1º de janeiro do ano seguinte "
+                  "ao do mês (art. 173 I), o que dá até cerca de 12 meses a mais (decisões do "
+                  "usuário de 20/10, 03/11 e 10/11/2026, leitura conservadora)")  # fmt: skip
     avisos.append("Imposto pago: o a pagar do mês quando a DARF que o cobriu já foi emitida; no "
                   "programa, informe o valor efetivamente pago no DARF 6015")  # fmt: skip
     return FichasIrpf(

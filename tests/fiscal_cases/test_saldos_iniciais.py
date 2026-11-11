@@ -65,3 +65,22 @@ def test_custodia_inicial_so_de_posicao_comprada_a_vista(cv: str, tipo_ativo: Ti
     ap = livro.apurar(date(2025, 1, 31))
     [isolado] = ap.isolados
     assert isolado.ticker == "XPTO3" and "custódia inicial" in isolado.motivo
+
+
+def test_imposto_acumulado_abaixo_do_minimo_continua_no_ano_seguinte() -> None:
+    """Decisão do usuário de 10/11/2026 (leitura conservadora): o imposto abaixo de R$ 10 em
+    31/12 não some; acumula até o total chegar a R$ 10 (Lei 9.430/1996 art. 68 §1º).
+
+    Saldo inicial em 31/12/2024: imposto acumulado de 6,00. Março/2025: venda de 1.000 PETR4 a
+    25,03 = 25.030,00 sobre custo de 25.000,00 (ganho 30,00, 15% = 4,50). 4,50 + 6,00 = 10,50:
+    a DARF sai em março com 10,50. Sem o acumulado, 4,50 ficaria acumulando."""
+    livro = Livro()
+    livro.evento(FIM, "PETR4", TipoEvento.CUSTODIA_INICIAL, "C", "1000", "25000")
+    livro.nota(date(2025, 3, 10), livro.op("V", "PETR4", 1000, "25.03"))
+    saldo = SaldoInicial(titular=1, ano=2024, darf_acumulado=D("6.00"))
+    ap = apurar(livro.notas, livro.eventos, REFS.parametros, REFS.calendario,
+                date(2025, 3, 31), saldos_iniciais=[saldo])  # fmt: skip
+    jan = next(m for m in ap.meses if (m.ano, m.mes) == (2025, 1))
+    assert (jan.darf_acumulado_anterior, jan.darf, jan.darf_acumulado) == (D("6.00"), 0, D("6.00"))
+    marco = next(m for m in ap.meses if (m.ano, m.mes) == (2025, 3))
+    assert (marco.imposto_devido, marco.darf) == (D("4.50"), D("10.50"))

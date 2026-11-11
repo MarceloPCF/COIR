@@ -272,6 +272,8 @@ class PrejuizoInicial(Base):
     comum: Mapped[Decimal]
     day_trade: Mapped[Decimal]
     fii: Mapped[Decimal]
+    # imposto abaixo do mínimo da DARF acumulado em 31/12 (Lei 9.430/1996 art. 68 §1º)
+    darf_acumulado: Mapped[Decimal] = mapped_column(server_default="0")
     registrado_em: Mapped[datetime]
 
 

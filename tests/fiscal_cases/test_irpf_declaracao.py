@@ -197,3 +197,24 @@ def test_jcp_pago_mais_de_um_ano_depois_do_credito_fica_a_receber_nos_dois_31_12
         assert f is not None
         assert [(b.anterior, b.atual) for b in f.bens] == [esperado]
         assert not [r for r in f.rendimentos if r.codigo == "10"]
+
+
+def test_codigo_20_soma_so_os_meses_com_ganho_isento() -> None:
+    """Decisão do usuário de 10/11/2026 (recomendação do especialista): com o parâmetro
+    prejuizo_mes_isento_compensavel desligado, a perda de mês isento entra negativa no isento do
+    mês, mas não reduz o código 20. Janeiro/2025: C 100 AAAA3 a 10,00 e V 100 a 20,00 (ganho isento
+    1.000,00); fevereiro: C 100 a 10,00 e V 100 a 7,00 (perda de 300,00 em mês isento). Código 20 =
+    1.000,00, não 700,00."""
+    from tests.fiscal_cases.apoio import parametros
+
+    livro = Livro()
+    livro.nota(date(2025, 1, 6), livro.op("C", "AAAA3", 100, "10"))
+    livro.nota(date(2025, 1, 20), livro.op("V", "AAAA3", 100, "20"))
+    livro.nota(date(2025, 2, 3), livro.op("C", "AAAA3", 100, "10"))
+    livro.nota(date(2025, 2, 17), livro.op("V", "AAAA3", 100, "7"))
+    dados = _dados(livro, 2025).model_copy(update={"apuracao": livro.apurar(
+        date(2025, 12, 31), parametros(prejuizo_mes_isento_compensavel="false"))})  # fmt: skip
+    f = fichas(dados)
+    assert f is not None
+    [r] = [r for r in f.rendimentos if r.codigo == "20"]
+    assert r.valor == D("1000.00")

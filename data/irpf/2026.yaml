@@ -42,7 +42,7 @@ renda_variavel:
 bens:
   fonte: >-
     Programa IRPF 2026, ficha Bens e Direitos; Manual do MIR (bens financeiros); P&R IRPF 2026
-    perguntas 459 e 720 (um item por ação, total das corretoras); leiaute DIRPF 2023 reg. 27
+    pergunta 720 (um item por ação, total das corretoras); leiaute DIRPF 2023 reg. 27
   itens:
     - tipo: ACAO
       grupo: "03"

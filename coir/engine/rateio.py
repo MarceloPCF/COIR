@@ -1,5 +1,5 @@
-"""Rateio dos custos da nota pelo valor das operações (IN RFB 1.585/2015 art. 58 §2º: custos de
-corretagem e taxas integram o custo de aquisição e reduzem o valor de alienação).
+"""Rateio dos custos da nota pelo valor das operações (IN RFB 1.585/2015 art. 56 §§3º e 4º:
+custos de corretagem e taxas integram o custo de aquisição e reduzem o valor de alienação).
 
 Rateio em centavos pelo maior resto: as parcelas somam exatamente o total da nota.
 """

@@ -20,7 +20,9 @@ from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import RE_SERIE_OPCAO, Referencias
 from coir.domain.relatorio import DadosRelatorio, InfoAtivo, NotaDoLivro
 from coir.engine.apuracao import apurar
+from coir.engine.fiagro import avisos_fii_fiagro
 from coir.engine.movimentos import carteira
+from coir.engine.obrigatoriedade import aviso_irpf_minimo, aviso_obrigatoriedade
 from coir.erros import ConfiguracaoError, ExportacaoError, MotorError
 from coir.reports.fiscais import TODOS, relatorios
 from coir.reports.saida_csv import escrever_csv
@@ -118,6 +120,15 @@ def dados_banco(
     tickers |= {m.ticker for m in apuracao.movimentos if m.titular == tid and m.data.year == ano}
     tickers |= {e.ticker for e in apuracao.exclusiva if e.titular == tid}
     info = info_ativos(tickers, refs, fiscais, pasta_refs or referencias.pasta_efetiva(None))
+    fiagro = {t for t, i in info.items() if i.tipo_b3 == "FIAGRO"}
+    avisos_irpf += avisos_fii_fiagro(tid, ano, apuracao.movimentos, lista_proventos, fiagro,
+                                     params)  # fmt: skip
+    obrigatoria = aviso_obrigatoriedade(tid, ano, apuracao.movimentos, apuracao.meses, params)
+    if obrigatoria:
+        avisos_irpf.append(obrigatoria)
+    minimo = aviso_irpf_minimo(tid, ano, apuracao.meses, params)
+    if minimo:
+        avisos_irpf.append(minimo)
     return DadosRelatorio(
         titular=tid, nome=nome, cpf=cpf, ano=ano, gerado_em=gerado_em,
         codigo_darf=params.texto("darf_codigo", date(ano, 1, 1)),

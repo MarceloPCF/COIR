@@ -9,12 +9,12 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R1 | Operações comuns (ações, units, ETF, BDR, opções, futuros, termo): 15% sobre ganho líquido mensal | Categoria COMUM, base única com subtotais por mercado | IN RFB 1.585/2015 | A |
 | R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A |
 | R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A |
-| R4 | Isenção: vendas de AÇÕES no mercado à vista ≤ R$ 20.000 no mês (todas as corretoras/contas do CPF) | Soma do valor **bruto** das alienações por titular/mês (fracionário e venda por exercício incluídos); fora: units, ETF, BDR, FII, opções, futuros, termo e day trade | Lei 11.033/2004 art. 3º I | A |
+| R4 | Isenção: vendas de AÇÕES no mercado à vista ≤ R$ 20.000 no mês (todas as corretoras/contas do CPF) | Soma do valor **bruto** das alienações por titular/mês (fracionário, venda por exercício e venda na liquidação do termo incluídos; a venda em day trade fica fora, parâmetro `day_trade_na_soma_limite = false`, decisão de 10/11/2026); a isenção não alcança units, ETF, BDR, FII, opções, futuros, termo e day trade | Lei 11.033/2004 art. 3º I | A |
 | R4a | Units NÃO entram na isenção | Parâmetro `units_na_isencao = false` | decisão do usuário (05/10/2026) | A |
-| R5 | Prejuízo de mês isento continua compensável | Parâmetro `prejuizo_mes_isento_compensavel = true` | Lei 8.981/1995 art. 72 §8º; Manual MIR 2026; decisão do usuário (14/10/2026) | A |
-| R6 | IRRF 0,005% s/ vendas comuns (dispensado se ≤ R$ 1; não incide no exercício nem em PME) e 1% s/ ganho de DT | Ler da nota; os dois abatem o imposto total do mês (o de DT consumido primeiro); saldo aos meses seguintes do ano; em dezembro, o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT: divergência de orientação registrada | M |
-| R7 | Custo de aquisição inclui corretagem, emolumentos e taxas; na venda os custos reduzem a alienação | Rateio proporcional ao valor da operação na nota | IN RFB 1.585/2015 | A |
-| R8 | Bonificação: soma quantidade com custo atribuído; desdobramento/grupamento: só quantidade; redução de capital com restituição reduz o custo. Dinheiro junto de incorporação, por resgate de ações (PETZ3 -> AUAU3): o custo é repartido pelo valor atribuído pela companhia, a parte da ação resgatada sai por `REDUCAO_CAPITAL` na data ex (o valor é esse custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026). Incorporação/fusão/cisão/conversão: o custo das ações entregues vai para as recebidas na proporção da assembleia, sem resultado (cisão: percentual divulgado pela companhia, sobre o custo de antes do evento; sem percentual, bloqueia); incorporação de ações (art. 252): custo mantido, com aviso da divergência da RFB (parâmetro `incorporacao_acoes_tratamento`); ajuste de série de opção pela B3: sem efeito fiscal (código e quantidade mudam, custo e vencimento ficam); fração vendida em leilão: alienação pelo PM no mês do crédito, entra no limite de isenção (parâmetro `leilao_fracao_isentavel`). Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF (substituição de ações; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A |
+| R5 | Prejuízo de mês isento continua compensável | Parâmetro `prejuizo_mes_isento_compensavel = true` | Lei 8.981/1995 art. 72 §4º; Manual MIR 2026; decisão do usuário (14/10/2026) | A |
+| R6 | IRRF 0,005% s/ vendas comuns (dispensado se ≤ R$ 1; não incide no exercício nem em PME) e 1% s/ ganho de DT | Ler da nota; os dois abatem o imposto total do mês (o de DT consumido primeiro); saldo aos meses seguintes do ano; em dezembro, o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT: divergência de orientação registrada | M |
+| R7 | Custo de aquisição inclui corretagem, emolumentos e taxas; na venda os custos reduzem a alienação | Rateio proporcional ao valor da operação na nota; a taxa de custódia fica fora (parâmetro `custodia_no_custo = false`, decisão de 10/11/2026) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A |
+| R8 | Bonificação: soma quantidade com custo atribuído; desdobramento/grupamento: só quantidade; redução de capital com restituição reduz o custo. Dinheiro junto de incorporação, por resgate de ações (PETZ3 -> AUAU3): o custo é repartido pelo valor atribuído pela companhia, a parte da ação resgatada sai por `REDUCAO_CAPITAL` na data ex (o valor é esse custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026). Incorporação/fusão/cisão/conversão: o custo das ações entregues vai para as recebidas na proporção da assembleia, sem resultado (cisão: percentual divulgado pela companhia, sobre o custo de antes do evento; sem percentual, bloqueia); incorporação de ações (art. 252): custo mantido, com aviso da divergência da RFB (parâmetro `incorporacao_acoes_tratamento`); ajuste de série de opção pela B3: sem efeito fiscal (código e quantidade mudam, custo e vencimento ficam); fração vendida em leilão: alienação pelo PM no mês do crédito, entra no limite de isenção (parâmetro `leilao_fracao_isentavel`). Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF 2022 pergunta 578 (substituição de ações; não consta das edições 2024 e 2026; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A |
 | R9 | Exercício de opções: prêmio integra custo (titular de call) / valor de venda (lançador de call); casos simétricos para put | Vincular opção, ativo-objeto e negócio de exercício; 4 casos com exemplo. A nota traz só o código da opção + "E" (ex.: KLBNO193E), às vezes + classe; ativo-objeto = 4 letras + classe (ON→3, PN→4, PNA→5, PNB→6, UNT→11); sem classe: classe da abertura da série, depois opcoes.csv | IN RFB 1.585/2015 | M |
 | R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A |
 | R11 | Futuros: resultado no encerramento ou liquidação da posição = soma dos ajustes desde a abertura − custos; encerramento parcial pelo preço médio; day trade no dia | Ajustes da posição aberta acumulados por contrato e realizados no encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A |
@@ -22,11 +22,11 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R13 | Atraso: multa 0,33%/dia limitada a 20% + juros Selic (do mês seguinte ao vencimento até o mês anterior ao pagamento + 1% no mês do pagamento) | `data/selic_mensal.csv` (BCB SGS 4390) | Lei 9.430/1996 art. 61 | A |
 | R14 | Dividendos > R$ 50 mil/mês da mesma PJ: IRRF 10% sobre o total; IRPFM para renda anual > R$ 600 mil | Registrar IRRF do provento; relatório informativo (IRPFM fora do escopo v3.0) | Lei 15.270/2025 | A |
 | R15 | JCP: IRRF exclusivo 15% até 31/12/2025; 17,5% para JCP pago ou creditado desde 01/01/2026 | Provento com IRRF; alíquota com vigência | LC 224/2025 | A |
-| R16 | Rendimentos de FII isentos se o fundo cumpre requisitos | Usuário marca conforme informe do fundo | Lei 11.033/2004 art. 3º (alt. Lei 14.754/2023) | M |
+| R16 | Rendimentos de FII isentos se o fundo cumpre requisitos | Usuário confere no informe do fundo; a declaração lembra os requisitos (`fii_isencao_minimo_cotistas`) e avisa o Fiagro antes de 11/06/2021 (`fiagro_rendimento_isento`) | Lei 11.033/2004 art. 3º (alt. Lei 14.130/2021 e Lei 14.754/2023) | M |
 | R17 | Fichas/códigos da DIRPF mudam por ano | Mapeamento por ano em `data/irpf/<ano>.yaml` | programa IRPF do ano | revisar anualmente |
 | R18 | Termo: custo/alienação pelo preço a termo; ganho apurado na liquidação/encerramento (operação comum) | Contrato a termo vinculado à liquidação | IN RFB 1.585/2015 | M (validar com as operações a termo da planilha) |
 | R19 | Direito, recibo e bônus de subscrição (de ação ou de cota de FII): 15% (20% em day trade), sem isenção e fora da soma do limite de R$ 20 mil; o direito recebido sem nota de compra entra com custo zero | Tipo `DIREITO` (tabela de tipos pela especificação DIR/REC/BNS do cadastro e do COTAHIST, antes do tipo do papel); categoria COMUM ou DAY_TRADE, nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65; recibo: posição B do parecer de 09/11/2026, seguido pelo usuário | A (alíquota e limite); M (custo zero); B (recibo) |
-| R20 | FI-Infra e FIP-IE/FIP-PD&I: ganho de pessoa física com alíquota zero, em bolsa ou fora; fora da apuração mensal, do limite de R$ 20 mil e do DARF; prejuízo não compensa outros ganhos | Tipo `FUNDO_INFRA` só pela lista de fundos da B3 (typeName FI-INFRA e FIP IE em `emissores_b3.csv`), nunca pelo nome; vai para a lista à parte da apuração (`exclusiva`, com o tipo); DIRPF: ganho em Tributação exclusiva, código 06; cotas em Bens 07.10 (FI-Infra) e 07.07 (FIP-IE), CNPJ do fundo; rendimento distribuído (linha "Rendimento" da B3) em Tributação exclusiva, código 06, pelo líquido, FI-Infra e FIP-IE em linhas próprias (`rendimento_fundo_infra` e `rendimento_fip_ie` no mapa do exercício), com aviso quando preço x quantidade mostra retenção; amortização reduz o custo (proposta de redução de capital); sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §§1º b, 2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&R IRPF 2026 perguntas 736 e 738; pareceres de 09/11/2026 | A (alíquota, retenção do FIP-IE, rendimento do FI-Infra na 06, números 07.07 e 07.10 conferidos no programa); M (prejuízo, retenção do FI-Infra, ficha do rendimento do FIP-IE, amortização do FI-Infra) |
+| R20 | FI-Infra e FIP-IE/FIP-PD&I: ganho de pessoa física com alíquota zero, em bolsa ou fora; fora da apuração mensal, do limite de R$ 20 mil e do DARF; prejuízo não compensa outros ganhos | Tipo `FUNDO_INFRA` só pela lista de fundos da B3 (typeName FI-INFRA e FIP IE em `emissores_b3.csv`), nunca pelo nome; vai para a lista à parte da apuração (`exclusiva`, com o tipo); DIRPF: ganho em Tributação exclusiva, código 06; cotas em Bens 07.10 (FI-Infra) e 07.07 (FIP-IE), CNPJ do fundo; rendimento distribuído (linha "Rendimento" da B3) em Tributação exclusiva, código 06, pelo líquido, FI-Infra e FIP-IE em linhas próprias (`rendimento_fundo_infra` e `rendimento_fip_ie` no mapa do exercício), com aviso quando preço x quantidade mostra retenção; amortização reduz o custo (proposta de redução de capital); sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&R IRPF 2026 perguntas 736 e 738; pareceres de 09/11/2026 | A (alíquota, retenção do FIP-IE, rendimento do FI-Infra na 06, números 07.07 e 07.10 conferidos no programa); M (prejuízo, retenção do FI-Infra, ficha do rendimento do FIP-IE, amortização do FI-Infra) |
 | R21 | Direito, recibo ou bônus de subscrição comprado que vence sem exercício nem venda: o custo pago, com corretagem e emolumentos, vira perda em operações comuns na data do fim do prazo de exercício; fora do limite de R$ 20 mil; o recebido sem custo não dá resultado | Evento `DIREITO_NAO_EXERCIDO` (sem valor): proposto pela baixa "não exercido" da movimentação da B3, com a data do fim do prazo de subscrição do pacote da B3 (a data de subscrição; sem ela, o fim do período de negociação; nunca depois da baixa) ou a da baixa; parâmetro `direito_vencido_data` (`fim_do_prazo` ou `baixa_b3`); baixa o menor entre a quantidade e a posição, com aviso se sobrar posição; sem quantidade (a linha da B3 vem sem ela), baixa todo o saldo | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art. 171 §4º; P&R IRPF 2026 pergunta 727; parecer de 09/11/2026, seguido pelo usuário | M (sem norma específica) |
 
 ## Outros custos dedutíveis (aba BTC_Outros do v2)
@@ -43,7 +43,7 @@ Parecer do especialista e decisões do usuário (08/11/2026):
 - **Mês de ganho isento:** o custo reduz primeiro o isento; só o que sobra reduz o resultado (decisão do usuário: sem isso, o
   ganho ficaria isento e o custo ainda viraria prejuízo compensável).
 - **Doador:** não lança nada; a remuneração tem IRRF definitivo (Lei 15.265 art. 19 caput e §4º I).
-- **A conferir:** o PDF oficial da SC 42/2020 e o P&R IRPF 2026 não puderam ser lidos; as leis foram lidas em compiladores.
+- **A conferir:** a íntegra da SC 42/2020 e o P&R IRPF 2026 foram lidos em 10/11/2026 (docs/normas/); o PDF da SC confirma a ementa; as leis foram lidas em compiladores.
 
 ## Oferta pública (IPO e follow-on; parecer do especialista, 08/11/2026)
 A compra em oferta não aparece em nota de corretagem e entra como `OFERTA_PUBLICA`: o custo é o valor
@@ -351,9 +351,11 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
 - Prejuízo herdado em janeiro: o recalculado pelo COIR, com aviso da diferença para o declarado
   (decisão do usuário). O prejuízo compensável é o comprovado pelas notas (ônus da prova do
   contribuinte; valor digitado na DIRPF sem lastro não cria direito). A diferença só muda o imposto
-  do mês em que o prejuízo se esgota: dentro de 5 anos desse mês, retificar e recolher; depois, o
-  crédito decaiu (CTN art. 150 §4º, havendo pagamento; art. 173 I se houver dolo) e não se retifica
-  nem se paga (seria pagamento indevido, CTN art. 156 V); restituição de pagamento a maior, 5 anos do
+  do mês em que o prejuízo se esgota: dentro do prazo, retificar e recolher; depois, o crédito
+  decaiu e não se retifica nem se paga. Prazo: 5 anos do mês quando houve DARF paga (CTN art. 150
+  §4º); no mês sem pagamento, ainda que com IRRF retido, 5 anos de 1º de janeiro do ano seguinte
+  (art. 173 I), o mesmo havendo dolo, fraude ou simulação (decisão do usuário de 10/11/2026,
+  leitura conservadora; o IRRF não conta como pagamento) (seria pagamento indevido, CTN art. 156 V); restituição de pagamento a maior, 5 anos do
   pagamento (CTN art. 168 I). Decisão do usuário de 03/11/2026, com parecer do especialista, num
   caso de prejuízo de abertura digitado na DIRPF sem lastro nas notas.
 - Bens e Direitos: um item por ativo, custo médio do titular somando corretoras (P&R IRPF 2026
@@ -369,7 +371,7 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
   como crédito contra a companhia (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art.
   9º §2º), com a alíquota da data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art.
   8º). Creditado = registrado como dívida com o acionista individualizado (IN RFB 1.700/2017 art.
-  75 §10), o que pede a deliberação e a data com (Lei 6.404/1976 art. 205). A data do crédito vem
+  75 §10), o que pede a deliberação e a data com (Lei 6.404/1976 art. 205, por analogia: o artigo trata de dividendo). A data do crédito vem
   da correção do usuário na tela de Proventos (informe da empresa, tabela `credito_jcp`) ou, pela
   B3, da mais tarde entre a aprovação e a data com (decisão do usuário de 21/10/2026: o programa
   mensal aprovado em dezembro para o ano seguinte não é crédito do ano da aprovação). Fontes da
@@ -402,7 +404,10 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
   tela mostra a diferença (DARF complementar no Sicalc; restituição pelo PER/DCOMP), sem
   imputação automática.
 - A denúncia espontânea (CTN art. 138; STJ REsp 1.149.022/SP; Súmula 360) fica como nota na tela:
-  o COIR calcula como o Sicalc.
+  o COIR calcula como o Sicalc. A LC 236/2026 (vigor na publicação; 04/09/2026) deu ao art. 138 a
+  redação "inclusive em relação à multa de mora"; o Sicalc continuou cobrando a multa (caso C8b,
+  07/10/2026). Decisão do usuário de 10/11/2026 (leitura conservadora): o COIR mantém a multa até um
+  ato da RFB; reavaliar a cada release (ficha `docs/normas/lc-236-2026.md`).
 - Juros (art. 61 §3º c/c art. 5º §3º; F7a, 19/10/2026): soma simples da Selic mensal (BCB SGS 4390,
   a mesma do Sicalc, em `data/selic_mensal.csv`) dos meses entre o do vencimento e o do pagamento, sem
   contar nenhum dos dois, mais 1% no mês do pagamento; pago no mesmo mês do vencimento, zero. Base: o
@@ -430,7 +435,7 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
 ## Proventos (F7a, 19/10/2026)
 `coir/engine/proventos.py`, a partir da movimentação da B3; casos em `tests/fiscal_cases/test_proventos.py`.
 - Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09. BDR, ETF e FII com
-  "Dividendo": fora da v3.0, listados com aviso (BDR não é isento, Lei 14.754/2023).
+  "Dividendo": fora da v3.0, listados com aviso (BDR não é isento: a Lei 9.249/1995 art. 10 só alcança lucros de pessoa jurídica brasileira).
 - JCP: exclusivo (código 10, pelo líquido). O preço unitário da B3 é o bruto por ação, o que mostra a
   alíquota retida (15% até 2025; 17,5% desde 2026, LC 224/2025 art. 8º, pela data do pagamento ou do
   crédito). Pago em 2026 com 15% = creditado em 2025: declarado no ano do crédito, com o crédito a
@@ -472,6 +477,71 @@ corretoras diferentes, com código e contas próprios (decisão do usuário). Fi
 - Incorporação, cisão ou leilão de lote isento de PME dentro do prazo da isenção: falha alto (sem norma nem caso real).
 - Venda a termo: falha alto (só a compra a termo está implementada).
 - `data/feriados.csv` cobre até 2027: estender antes de apurar dezembro de 2027.
+
+## Decisões da revisão contra a base normativa (10/11/2026)
+
+Revisão completa em `docs/normas/revisao-2026-11-10.md`. O usuário pediu leitura conservadora nas
+cinco perguntas principais:
+
+1. Multa de mora depois da LC 236/2026: mantida como o Sicalc (ver a seção da DARF).
+2. Taxa de custódia: sai do custo e não reduz a alienação (SC Cosit 227/2018 §§17-18; parâmetro
+   `custodia_no_custo = false`; a conferência da nota continua somando todos os custos impressos).
+3. Fração de desdobramento, grupamento, bonificação e cisão propostos pelo pacote da B3: a proposta
+   leva a quantidade com a fração, que fica na posição até o leilão; o leilão a vende pelo custo
+   médio (IN 1.585 art. 58 caput; Lei 6.404 art. 169 §3º). A subscrição continua só com ações
+   inteiras. A proposta tirada só da movimentação da B3 (sem o pacote) traz a quantidade creditada,
+   sem a fração: aí o usuário lança a fração.
+4. Vencimento da DARF: pelo mês do pregão, como antes (IN 1.585 art. 56 §5º; IN 2.164/2023 art. 3º;
+   P&R pergunta 730). A pergunta 745 (mês da liquidação) dá um prazo maior; o COIR paga antes.
+5. Venda de ação em day trade: o day trade não tem isenção e **não entra** na soma do limite de
+   R$ 20 mil (decisão do usuário de 10/11/2026, revendo a primeira resposta do mesmo dia; IN 1.585
+   art. 59 §2º I; campo "Total em alienações de ações (op. comuns)" do demonstrativo do programa
+   IRPF). Parâmetro `day_trade_na_soma_limite = false`; ligado, o motor soma o day trade em
+   `vendas_limite` e avisa quando ele fez o mês passar do limite. A leitura contrária (P&R 2026
+   pergunta 707, "total das alienações") fica registrada na revisão.
+
+### Perguntas 6 a 20 da revisão: leitura conservadora (10/11/2026)
+
+O usuário pediu leitura conservadora também nas demais perguntas de
+`docs/normas/revisao-2026-11-10.md`: não reduzir imposto e não criar regra sem norma; onde o COIR
+não tem o dado, avisar em vez de calcular.
+
+6. Fiagro e FII: o motor continua a apurá-los juntos, como a ficha única do programa IRPF. A
+   declaração avisa quando o ano tem ganho de um e perda do outro, porque só a compensação de FII
+   com FII tem norma (IN 1.585 art. 37 §2º). Na dúvida, recolher sem a compensação cruzada
+   (`coir/engine/fiagro.py`).
+7. Decadência: no mês sem DARF paga, ainda que com IRRF retido, vale o CTN art. 173 I (5 anos de
+   1º de janeiro do ano seguinte); com pagamento, o art. 150 §4º. O IRRF não conta como pagamento.
+8. Código 20 (ganho isento de ações): soma só os meses com ganho isento positivo.
+9. Amortização de FI-Infra ou FIP-IE acima do custo: o custo vai a zero e o excedente é avisado
+   como rendimento do fundo, de alíquota zero, na mesma linha dos rendimentos (exclusiva 06,
+   decisão de 09/11/2026). Antes o motor falhava. O rendimento de FIP-IE continua na 06.
+10. OPA ou venda à companhia fora do pregão: sem evento novo. O COIR só recebe o que vem em nota
+    de corretagem, que é negócio em bolsa; a alienação fora de bolsa é ganho de capital (GCAP), não
+    compensa prejuízo de bolsa (SC Cosit 130/2023) e fica com o usuário.
+11. Lotes de PME: padrão `proporcional` (SC Cosit 148/2025 §§32-33, por analogia), com a parte
+    isenta arredondada para baixo; `isento_primeiro` e `tributado_primeiro` continuam como opções.
+12. Aviso da Lei 15.270: a bonificação em ações com valor atribuído, desde 2026, gera aviso
+    (pode ser emprego de lucros, P&R Altas Rendas perguntas 12 a 14); o reembolso de dividendos de
+    BTC continua somado; a exceção dos lucros até 2025 não é aplicada pelo COIR, só lembrada.
+13. Reembolso de dividendos de BTC desde 2026: continua isento por equivalência (decisão de
+    19/10/2026); a opção `reduz_custo` (SC Cosit 153/2016, confiança baixa) não foi criada.
+14. FII e Fiagro: parâmetros `fiagro_rendimento_isento` (isento só desde 11/06/2021) e
+    `fii_isencao_minimo_cotistas` (50 até 2023, 100 desde 2024). A declaração avisa o rendimento
+    de Fiagro anterior à isenção e lembra os requisitos. A linha exclusiva para rendimento não
+    isento fica para quando houver a marcação do fundo pelo usuário (R16).
+15. DIRPF: exercícios sem `data/irpf/<ano>.yaml` (2017 a 2024) continuam só com aviso; novo aviso
+    de obrigatoriedade pelos dados de bolsa (parâmetros `obrigatoriedade_bolsa_*`, pelo
+    ano-calendário); os bens dispensados não são omitidos; sem relatório próprio para o ReVar.
+16. Notas de 2015 com BTC como tomador (IN 1.022 art. 60 §2º II, remuneração no custo até
+    01/09/2015): ignorado. A remuneração não entra no custo, o que não reduz o ganho.
+17. Leilão de frações: continua na data do crédito, a única que a movimentação da B3 traz. Quem
+    souber a data do pregão do leilão corrige o evento.
+18. Saldo inicial: aceita o imposto acumulado abaixo do mínimo da DARF em 31/12, que continua
+    acumulando no ano seguinte (Lei 9.430/1996 art. 68 §1º; migração 0010).
+19. Dados de teste irreais: só anotados nas docstrings.
+20. IR mínimo: total informativo dos ganhos líquidos em bolsa do ano (tributados e isentos), desde
+    2026 (parâmetro `irpf_minimo_renda_anual`); o COIR não calcula o IR mínimo.
 
 ## Pontos do v2.02 a corrigir (ver docs/PLANO.md, Diagnóstico)
 - Isenção inferida por "IRRF < R$ 1" (falha com 2+ corretoras; pode isentar ETF).
