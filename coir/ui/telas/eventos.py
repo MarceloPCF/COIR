@@ -634,6 +634,9 @@ class _Conferir:
             ui.label("").classes("coir-carimbo text-sm w-full").mark("lacuna-movimentacao")
         )
         self.lacuna.set_visibility(False)
+        self.corrigir: Callable[[EventoLancado], None] | None = None  # abre o evento em Lançados
+        self.secao_sem_custo = ui.column().classes("w-full gap-1")
+        self.secao_sem_custo.set_visibility(False)
         self.secao_saidas = ui.column().classes("w-full gap-1")
         self.secao_lote = ui.column().classes("w-full gap-1")
         self.secao_lote.set_visibility(False)
@@ -661,6 +664,20 @@ class _Conferir:
                 self.painel.novo()
             else:
                 self.painel.abrir_proposta(atual)
+
+    def mostrar_sem_custo(self, lancados: list[EventoLancado]) -> None:
+        """Bonificações já gravadas sem custo atribuído: o preço médio da venda sai errado."""
+        sem_custo = eventos.bonificacoes_sem_custo_de(lancados)
+        self.secao_sem_custo.clear()
+        self.secao_sem_custo.set_visibility(bool(sem_custo))
+        with self.secao_sem_custo:
+            for e in sem_custo:
+                with ui.row().classes("w-full items-center gap-2 flex-nowrap"):
+                    ui.label(eventos.aviso_sem_custo(e)).classes(
+                        "coir-carimbo text-sm grow").mark("bonificacao-sem-custo")  # fmt: skip
+                    if self.corrigir is not None:
+                        ui.button("Corrigir", on_click=lambda e=e, ir=self.corrigir: ir(e)
+                                  ).props("flat dense").mark("corrigir-sem-custo")  # fmt: skip
 
     def _desenhar_saidas(self) -> None:
         t = self.tela
@@ -874,6 +891,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         if conferir.lista.is_deleted:
             return  # a tela foi refeita (titular, ano) ou fechada durante a leitura
         conferir.mostrar(propostas or [], lacuna)
+        conferir.mostrar_sem_custo(lancados or [])
         guia_conferir.props(f'label="A conferir ({len(conferir.pendentes)})"')
         for aba in tarefas:
             aba.mostrar(lancados or [])
@@ -889,6 +907,13 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         for a in ABAS:
             with ui.tab_panel(guia[a.chave]).classes("p-0 pt-3 gap-3"):
                 tarefas.append(_AbaEventos(tela, a))
+
+    def corrigir(e: EventoLancado) -> None:
+        """Abre a bonificação sem custo no formulário da aba Lançados."""
+        guias.set_value(guia["lancados"])
+        next(x for x in tarefas if x.aba.chave == "lancados").painel.abrir_evento(e)
+
+    conferir.corrigir = corrigir
 
     async def abrir() -> None:
         """Ao abrir a tela, lança o que não pede nada (notas importadas, tabelas novas)."""

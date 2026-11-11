@@ -175,3 +175,23 @@ async def test_outros_custos_avisa_quando_a_descricao_fala_em_aluguel(tmp_path: 
         await user.open("/outros-custos")
         await user.should_see("Não lance a taxa de aluguel", retries=ESPERA)
         await user.should_see("Há lançamento com aluguel na descrição")
+
+
+@pytest.mark.asyncio
+async def test_bonificacao_gravada_sem_custo_e_avisada_e_abre_para_corrigir(
+    demo: Path, tmp_path: Path
+) -> None:
+    """Caso UNIP6 (bonificação lançada sem valor): a aba A conferir avisa e o botão Corrigir abre
+    o evento em Lançados, para informar o custo atribuído."""
+    eventos.salvar(demo, 1, eventos.DadosEvento(
+        tipo=TipoEvento.BONIFICACAO, data=date(2023, 6, 1), conta=AGORA_CONTA, ticker="GGBR4",
+        cv="C", quantidade=D(30), valor=D(0)), REFS, FISCAIS)  # fmt: skip
+    estado = _estado(demo)
+    estado.titular, estado.ano = 1, 2023
+    estado.pasta_refs = _pacote_eventos(tmp_path, [])
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/eventos")
+        await user.should_see(marker="bonificacao-sem-custo", retries=ESPERA)
+        await user.should_see("lançada sem custo atribuído", retries=ESPERA)
+        user.find(marker="corrigir-sem-custo").click()
+        await user.should_see("Corrigir: Bonificação", retries=ESPERA)

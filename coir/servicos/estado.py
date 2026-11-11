@@ -437,6 +437,8 @@ class Estado:
             Pendencia(sum(p.situacao == "pendente" and not p.depois_da_ultima_nota
                           for p in self.propostas()),
                       "proposta(s) de evento para conferir", "/eventos"),
+            Pendencia(len(eventos.bonificacoes_sem_custo(self.banco, titular)),
+                      "bonificação(ões) sem custo atribuído", "/eventos"),
             Pendencia(len(self.ativos_que_sairam()),
                       "ativo(s) na carteira que pararam de negociar", "/eventos"),
             Pendencia(len(avisos), "aviso(s) da apuração para conferir"
