@@ -46,7 +46,7 @@ from coir.domain.fiscal import (
     Visao,
 )
 from coir.domain.parametros import ReferenciasFiscais
-from coir.domain.referencias import Referencias
+from coir.domain.referencias import RE_SERIE_OPCAO, Referencias
 from coir.engine.calendario import proximo_pregao
 from coir.engine.movimentos import movimentar
 from coir.erros import CoirError, ImportacaoError, MotorError, ReferenciaError
@@ -599,8 +599,13 @@ PROPOSTAS: dict[str, tuple[TipoEvento, str | None]] = {
     # só em cotas de FI-Infra e FIP-IE (ver _mapa_proposta)
     "amortização": (TipoEvento.REDUCAO_CAPITAL, "V"),
 }
+SEM_CUSTO_NO_PACOTE = (
+    "o pacote público não traz o custo atribuído desta bonificação: informe-o (aviso aos "
+    "acionistas); sem ele, o preço médio da venda fica errado"
+)
+AVISO_SEM_CUSTO = "informe o custo atribuído (aviso aos acionistas)"
 NOTAS_PROPOSTA = {
-    TipoEvento.BONIFICACAO: "informe o custo atribuído (aviso aos acionistas)",
+    TipoEvento.BONIFICACAO: AVISO_SEM_CUSTO,
     TipoEvento.SUBSCRICAO: "ações subscritas: informe o valor pago",
     TipoEvento.INCORPORACAO: "a B3 mostra o ativo recebido: informe o de origem e a quantidade",
     TipoEvento.CISAO: "informe o ativo cindido e o percentual do custo",
@@ -637,6 +642,7 @@ def propostas(
                                             EventoCorporativo.tipo != TipoEvento.OFERTA_PUBLICA)
         )]  # fmt: skip
         saida: list[Proposta] = []
+        bonificacoes = _bonificacoes_do_pacote(fiscais, pasta)
         for m in s.scalars(select(MovimentacaoB3).where(MovimentacaoB3.titular_id == titular)
                            .order_by(MovimentacaoB3.data.desc(), MovimentacaoB3.id)):  # fmt: skip
             codigo = m.codigo or m.produto.split(" - ")[0].strip()
@@ -675,9 +681,22 @@ def propostas(
                 situacao = "lançado"
             else:
                 situacao = "pendente"
-            nota = "; ".join(x for x in (NOTAS_PROPOSTA.get(tipo, ""), nota_data) if x)
+            pedido = NOTAS_PROPOSTA.get(tipo, "")
+            custo, referencia = None, ""
+            if tipo is TipoEvento.BONIFICACAO and not dados.valor and dados.quantidade:
+                achado = _custo_da_bonificacao(bonificacoes, ticker, m.data)
+                if achado is not None:
+                    custo, referencia = achado
+                    dados = replace(dados, valor=(dados.quantidade * custo).quantize(
+                        Decimal("0.01"), ROUND_HALF_UP))  # fmt: skip
+                    pedido = (f"custo atribuído de R$ {custo} por ação, do pacote público "
+                              "(aviso aos acionistas; confira)")  # fmt: skip
+                else:
+                    pedido = SEM_CUSTO_NO_PACOTE
+            nota = "; ".join(x for x in (pedido, nota_data) if x)
             saida.append(Proposta(m.chave, m.data, m.movimentacao, codigo, m.quantidade,
-                                  m.valor, corretora, situacao, dados, nota))  # fmt: skip
+                                  m.valor, corretora, situacao, dados, nota,
+                                  custo_por_acao=custo, referencia=referencia))  # fmt: skip
         if fiscais is None or pasta is None:
             trilha.propostas(titular, saida)
             return _sem_pendencia_antes(saida)
@@ -704,6 +723,69 @@ def propostas(
                    key=lambda p: p.data, reverse=True)  # fmt: skip
     trilha.propostas(titular, lista)
     return _sem_pendencia_antes(lista)
+
+
+BonificacoesDoPacote = dict[str, list[tuple[date, Decimal, str]]]
+
+
+def _bonificacoes_do_pacote(
+    fiscais: ReferenciasFiscais | None, pasta: Path | None
+) -> BonificacoesDoPacote:
+    """Ticker recebido -> (data ex, custo atribuído por ação, referência) das bonificações do pacote
+    público que trazem o custo (eventos_b3.csv). Vazio sem o pacote."""
+    if fiscais is None or pasta is None:
+        return {}
+    por_isin = referencias.tickers_por_isin(pasta)
+    saida: BonificacoesDoPacote = defaultdict(list)
+    for ev in referencias.eventos_b3(pasta):
+        if ev["tipo"] != "BONIFICACAO" or not ev.get("custo_atribuido"):
+            continue
+        ticker = por_isin.get(ev["isin_emitido"] or ev["isin"])
+        if ticker is None:
+            continue
+        try:
+            data_ex = proximo_pregao(date.fromisoformat(ev["data_com"]), fiscais.calendario)
+            custo = Decimal(ev["custo_atribuido"])
+        except (ReferenciaError, InvalidOperation, ValueError):
+            continue
+        if custo > 0:
+            saida[ticker].append((data_ex, custo, ev.get("referencia", "")))
+    return saida
+
+
+def _custo_da_bonificacao(
+    bonificacoes: BonificacoesDoPacote, ticker: str, credito: date
+) -> tuple[Decimal, str] | None:
+    """Custo atribuído por ação da bonificação do pacote no mesmo ativo cuja data ex fica a até
+    JANELA dias do crédito que a B3 mostra. Dois custos diferentes na janela: nenhum (o usuário
+    confere)."""
+    perto = timedelta(days=JANELA)
+    achados = {(c, r) for dia, c, r in bonificacoes.get(ticker, []) if abs(credito - dia) <= perto}
+    if len({c for c, _ in achados}) != 1:
+        return None
+    return min(achados)
+
+
+def bonificacoes_sem_custo_de(lancados: Sequence[EventoLancado]) -> list[EventoLancado]:
+    """Bonificações lançadas sem custo atribuído (valor vazio ou zero): o preço médio da venda sai
+    errado. Fica de fora o ajuste de quantidade de série de opção, que não tem custo."""
+    return [e for e in lancados
+            if e.dados.tipo is TipoEvento.BONIFICACAO and not e.dados.valor
+            and not RE_SERIE_OPCAO.match(e.dados.ticker)]  # fmt: skip
+
+
+def bonificacoes_sem_custo(banco: Path, titular: int) -> list[EventoLancado]:
+    """As bonificações sem custo atribuído gravadas no banco do titular (sino e tela Eventos)."""
+    return bonificacoes_sem_custo_de(listar(banco, titular))
+
+
+def aviso_sem_custo(e: EventoLancado) -> str:
+    """Texto do aviso da tela Eventos para uma bonificação lançada sem custo atribuído."""
+    q = e.dados.quantidade
+    acoes = f", {q.normalize():f} ações" if q else ""
+    return (f"Bonificação de {e.dados.ticker} em {e.dados.data:%d/%m/%Y} ({e.conta_nome}{acoes}) "
+            f"lançada sem custo atribuído: {AVISO_SEM_CUSTO}. Sem ele, o preço médio da venda "
+            "fica errado.")  # fmt: skip
 
 
 FOLGA_COBERTURA = timedelta(days=45)  # movimentação que começa ou termina perto das notas basta
