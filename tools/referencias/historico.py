@@ -12,8 +12,11 @@ Duas fontes oficiais, cruzadas, sem palpite:
 - B3, série histórica de cotações (COTAHIST): o número de distribuição do ISIN muda no pregão
   seguinte à data com de todo evento (conferido em 100% dos eventos da consulta de empresas). A
   data com é o pregão anterior à única mudança, na janela depois da aprovação, em que o preço caiu
-  (ou subiu) como o fator manda. Mudança ambígua, papel sem negócio no pregão da data ex ou fator
-  pequeno demais para conferir pelo preço vão para revisão.
+  (ou subiu) como o fator manda. A B3 também marca na especificação do papel, do dia ex em diante,
+  o tipo do evento (EB: bonificação ou desdobramento; EG: grupamento; ED, EJ, ES: dividendo, juros,
+  subscrição): quando o preço não decide, a única mudança marcada com o tipo do evento decide.
+  Mudança ambígua, papel sem negócio no pregão da data ex ou fator pequeno demais para conferir
+  pelo preço (sem marca) vão para revisão.
 
 Puro e determinístico, só a biblioteca padrão (como o resto do gerador).
 """
@@ -23,6 +26,7 @@ from __future__ import annotations
 import bisect
 import csv
 import io
+import itertools
 import math
 import re
 import zipfile
@@ -147,7 +151,7 @@ def fator_simples(antes: int, depois: int) -> Fraction | None:
     if r > 1:
         candidatos.append((1 + Fraction(round((r - 1) * 200), 200), TOLERANCIA_PERCENTUAL))
     for f, tolerancia in candidatos:
-        if f > 0 and abs(f / r - 1) < tolerancia:
+        if f > 0 and f != 1 and abs(f / r - 1) < tolerancia:  # fator 1 não é evento (ruído)
             return f
     return None
 
@@ -169,8 +173,10 @@ class Pregao:
     distribuicao: str
     preco: float  # último preço por ação (já dividido pelo fator de cotação)
     isin: str = ""  # ISIN negociado no pregão, se não for o da série (código anterior a uma troca)
+    marca: str = ""  # marca de evento da especificação ("EB", "EG", "EDB"...), do dia ex em diante
 
 
+BDI_ACOES = (b"02", b"05", b"06", b"07", b"08", b"58")
 Series = dict[str, list[Pregao]]  # ISIN -> pregões em que houve negócio (lote padrão, à vista)
 
 
@@ -225,7 +231,10 @@ def ler_cotahist(bruto: bytes, series: Series, pregoes: set[str],
                 continue
             dia = linha[2:10].decode()
             pregoes.add(dia)
-            if linha[24:27] != b"010" or linha[10:12] != b"02":
+            # mercado à vista (010), qualquer BDI do lote: 02 é o padrão; 05 a 08 e 58, companhias
+            # em recuperação judicial ou extrajudicial, concordata ou sanção (PDGR3 em 2019, OIBR3
+            # desde 2016), cujos eventos também valem
+            if linha[24:27] != b"010" or linha[10:12] not in BDI_ACOES:
                 continue
             isin = linha[230:242].decode()
             if isin[6:8] not in ("AC", "CD") or (emissores is not None
@@ -233,7 +242,28 @@ def ler_cotahist(bruto: bytes, series: Series, pregoes: set[str],
                 continue
             preco = int(linha[108:121]) / 100 / int(linha[210:217])
             if preco > 0:
-                series.setdefault(isin, []).append(Pregao(dia, linha[242:245].decode(), preco))
+                series.setdefault(isin, []).append(Pregao(
+                    dia, linha[242:245].decode(), preco,
+                    marca=marca_de_evento(linha[39:49].decode("latin-1"))))  # fmt: skip
+
+
+def marca_de_evento(especificacao: str) -> str:
+    """Marca que a B3 põe na especificação do papel a partir da data ex ("PN  EB  N2" -> "EB"; B:
+    bonificação ou desdobramento; G: grupamento; D, J, R, S, C: dividendo, juros, rendimento,
+    subscrição, cisão), ou ""."""
+    return next((p for p in especificacao.split()[1:] if re.fullmatch(r"E[A-Z]{1,3}", p)), "")
+
+
+def _marca_nova(antes: Pregao, depois: Pregao, letra: str) -> bool:
+    """A marca do evento (B ou G) aparece neste pregão: a B3 a mantém por alguns dias depois da
+    data ex, e um dividendo nesse meio-tempo muda a distribuição sem evento novo (BBDC, fevereiro
+    de 2010: "EDB" no ex-dividendo, logo depois da bonificação de janeiro)."""
+    return letra in depois.marca[1:] and letra not in antes.marca[1:]
+
+
+def marca_do_tipo(tipo: str) -> str:
+    """Letra da marca da B3 que o evento deixa no papel: G no grupamento, B nos demais."""
+    return "G" if tipo == "GRUPAMENTO" else "B"
 
 
 def nome_de_pregao(nome: str, especificacao: str, sufixos: Collection[str]) -> str:
@@ -287,7 +317,9 @@ def ler_nomes(bruto: bytes, sufixos: Collection[str]) -> list[dict[str, str]]:
 def data_com(serie: list[Pregao], pregoes: list[str], aprovado_em: str, fator: Fraction,
              ate: str = "") -> tuple[str | None, str]:  # fmt: skip
     """(data com ISO, "") ou (None, motivo da revisão). ``serie`` em ordem; ``ate`` limita a janela
-    (a próxima aprovação do mesmo tipo e espécie, para não pegar o evento do ano seguinte)."""
+    (a próxima aprovação do mesmo tipo e espécie, para não pegar o evento do ano seguinte). Data com
+    pela marca da B3 depois de pregões sem negócio: (data com, "sem negócio de A a B"), o intervalo
+    em que qualquer data com dá a mesma posição."""
     dias = [p.dia for p in serie]
     a = aprovado_em.replace("-", "")
     limite = (date.fromisoformat(aprovado_em) + JANELA).strftime("%Y%m%d")
@@ -300,9 +332,9 @@ def data_com(serie: list[Pregao], pregoes: list[str], aprovado_em: str, fator: F
         return None, "sem negócio depois da aprovação"
     esperado = -math.log(fator)
     tolerancia = abs(esperado) / 2
-    if tolerancia < PRECO_MINIMO:
-        return None, "fator pequeno demais para conferir pela cotação"
-    mudancas: list[tuple[float, bool, str, str]] = []  # (desvio, com negócio na véspera, com, ex)
+    letra = "G" if fator < 1 else "B"
+    # (desvio, com negócio na véspera, com, ex, marcada com o tipo do evento)
+    mudancas: list[tuple[float, bool, str, str, bool]] = []
     for j in range(i, len(serie)):
         if serie[j].dia > limite:
             break
@@ -311,15 +343,35 @@ def data_com(serie: list[Pregao], pregoes: list[str], aprovado_em: str, fator: F
         k = bisect.bisect_left(pregoes, serie[j].dia)
         vespera = pregoes[k - 1]
         desvio = abs(math.log(serie[j].preco / serie[j - 1].preco) - esperado)
-        mudancas.append((desvio, vespera == serie[j - 1].dia, vespera, serie[j].dia))
+        mudancas.append((desvio, vespera == serie[j - 1].dia, vespera, serie[j].dia,
+                         _marca_nova(serie[j - 1], serie[j], letra)))  # fmt: skip
+    marcadas = [m for m in mudancas if m[4]]
+    if len(marcadas) == 1:
+        # sem negócio entre o último pregão sem a marca e o primeiro com ela, qualquer data com do
+        # intervalo dá a mesma posição: a véspera do primeiro pregão marcado serve
+        desvio, vespera_com_negocio, com, ex, _ = marcadas[0]
+        if tolerancia >= PRECO_MINIMO and desvio >= tolerancia:
+            # a marca dá a data, não o fator: se o preço consegue conferir, tem de confirmar
+            return None, f"a cotação na marca da B3 ({_iso(ex)}) não confirma o fator"
+        if not vespera_com_negocio:
+            ultimo = serie[bisect.bisect_left(dias, ex) - 1].dia
+            return _iso(com), f"sem negócio de {_iso(ultimo)} a {_iso(com)}"
+        return _iso(com), ""
+    if tolerancia < PRECO_MINIMO:
+        return None, "fator pequeno demais para conferir pela cotação"
     coerentes = [m for m in mudancas if m[0] < tolerancia]
     if not coerentes:
         return None, "nenhuma mudança de distribuição com a cotação coerente com o fator"
     if len(coerentes) > 1:
         return None, "mais de uma data ex possível: " + ", ".join(_iso(m[3]) for m in coerentes)
-    _, _, com, ex = coerentes[0]
-    if not all(m[1] for m in mudancas if m[3] <= ex):
+    _, vespera_com_negocio, com, ex, _ = coerentes[0]
+    if not all(m[1] for m in mudancas if m[3] < ex):
         return None, f"papel sem negócio em algum pregão até a data ex ({_iso(ex)})"
+    if not vespera_com_negocio:
+        # a única mudança coerente vem depois de pregões sem negócio: como na marca da B3,
+        # qualquer data com do intervalo dá a mesma posição (APTI4 em 2008: 0,95 -> 501)
+        ultimo = serie[bisect.bisect_left(dias, ex) - 1].dia
+        return _iso(com), f"sem negócio de {_iso(ultimo)} a {_iso(com)}"
     return _iso(com), ""
 
 
@@ -410,7 +462,7 @@ def eventos_fre(linhas: Iterable[LinhaFre], emissor_por_cnpj: Mapping[str, str],
             eventos.append(EventoB3(
                 emissor=emissor, isin=ex, tipo=tipo, fator=fator_b3(tipo, f), data_com=com,
                 aprovado_em=aprovado, isin_emitido=ex, origem="cvm_fre",
-                referencia=f"FRE {documento}",
+                referencia=f"FRE {documento}" + (f" (data com: {motivo})" if motivo else ""),
             ))  # fmt: skip
     for cnpj, r in pendentes:
         com_irma = confirmadas.get((cnpj, r.tipo, r.aprovado_em, r.fator))
@@ -500,17 +552,105 @@ def muda_no_pregao_seguinte(serie: list[Pregao], pregoes: list[str], com: str) -
 COBERTURA = 0.005  # o FRE arredonda as quantidades; a B3 traz o fator exato
 
 
-def cobertas(revisao: Iterable[Revisao], linhas: Iterable[Mapping[str, str]]) -> list[Revisao]:
+def cobertas(revisao: Iterable[Revisao], linhas: Iterable[Mapping[str, str]],
+             conferidos: Collection[tuple[str, str, str]] = ()) -> list[Revisao]:  # fmt: skip
     """Tira da revisão o que outra fonte já traz: mesma espécie e tipo, data com na janela depois
-    da aprovação e fator igual ao do FRE a menos do arredondamento das quantidades."""
+    da aprovação e fator igual ao do FRE a menos do arredondamento das quantidades. O aviso da CVM
+    transcrito (origem ``cvm_ipe``) cobre qualquer fator: o FRE às vezes repete a quantidade
+    "antes" de um ato anterior (BIDI 2021: 50.767.085 -> 1.150.356.087, quando o aviso diz 3 para
+    1). O que está em ``conferidos`` (``sem_evento.csv``, origem "fre") foi conferido e não é
+    evento."""
     por_isin: dict[tuple[str, str], list[Mapping[str, str]]] = defaultdict(list)
     for r in linhas:
         por_isin[(r["isin"], r["tipo"])].append(r)
     saida = []
     for x in revisao:
+        if ("fre", x.isin, x.aprovado_em) in conferidos:
+            continue
         fim = (date.fromisoformat(x.aprovado_em) + JANELA).isoformat()
-        if not any(x.aprovado_em <= r["data_com"] <= fim
-                   and abs(float(multiplicador(r["tipo"], r["fator"])) / x.razao - 1) < COBERTURA
+        if not any(x.aprovado_em <= r["data_com"] <= fim and (
+                       r.get("origem") == "cvm_ipe"
+                       or abs(float(multiplicador(r["tipo"], r["fator"])) / x.razao - 1)
+                       < COBERTURA)
                    for r in por_isin[(x.isin, x.tipo)]):  # fmt: skip
             saida.append(x)
+    return saida
+
+
+# --------------------------------------------------------------------------------- varredura
+SALTO_MINIMO = 1.4  # razão de preço num pregão: abaixo disto, dividendo e evento se confundem
+SALTO_TOLERANCIA = 0.12  # |ln(razão / fração)|: o preço do dia anda além do fator
+SALTO_PREGOES = 5  # no máximo tantos pregões da bolsa entre os dois negócios do salto
+SALTO_VIZINHANCA = 7  # pregões entre o salto e a data com de um evento do pacote do emissor
+FRACOES_SALTO = sorted({Fraction(n) for n in range(2, 101)}
+                       | {Fraction(1, n) for n in range(2, 101)}
+                       | {Fraction(p, q) for p, q in ((3, 2), (4, 3), (5, 3), (5, 2), (2, 3),
+                                                      (3, 4), (3, 5), (2, 5))})  # fmt: skip
+
+
+@dataclass(frozen=True)
+class Salto:
+    isin: str
+    com: str  # AAAAMMDD, último pregão com negócio antes da mudança
+    ex: str  # AAAAMMDD, primeiro pregão com negócio depois
+    razao: float  # preço antes / preço depois (> 1: desdobramento ou bonificação)
+    marca: str  # marca de evento da B3 no dia ex ("EB", "EG"...), ou ""
+
+    def texto(self) -> str:
+        quando = f"{self.isin} entre {_iso(self.com)} e {_iso(self.ex)}"
+        marca = f"marca {self.marca} da B3, " if self.marca else ""
+        return f"{quando}: {marca}preço na razão {self.razao:.3f}, sem evento no pacote"
+
+
+def fracao_do_salto(razao: float) -> Fraction | None:
+    """Fração simples (n, 1/n, 3/2...) a menos de ``SALTO_TOLERANCIA``, ou None."""
+    if 1 / SALTO_MINIMO < razao < SALTO_MINIMO:
+        return None
+    melhor = min(FRACOES_SALTO, key=lambda f: abs(math.log(razao / float(f))))
+    return melhor if abs(math.log(razao / float(melhor))) < SALTO_TOLERANCIA else None
+
+
+def saltos(series: Series, pregoes: Iterable[str], linhas: Iterable[Mapping[str, str]],
+           conferidos: Collection[tuple[str, str, str]] = (),
+           pares: Iterable[tuple[str, str]] = (), desde: str = DESDE) -> list[Salto]:  # fmt: skip
+    """Varredura do mercado inteiro, independente do FRE: toda mudança do número de distribuição
+    com a marca de bonificação, desdobramento ou grupamento da B3 (B ou G na marca), ou com o
+    preço saltando perto de uma fração simples (2, 1/10, 3/2...), tem de ter evento no pacote para
+    o emissor (ou para quem trocou de código com ele) com data com entre ``SALTO_VIZINHANCA``
+    pregões antes do último negócio sem a mudança e o primeiro com ela, ou estar em
+    ``conferidos`` (``sem_evento.csv``, origem "cotacao": dividendo grande, redução de capital,
+    erro de cotação). O que sobra é evento que falta."""
+    calendario = sorted(pregoes)
+    posicao = {d: i for i, d in enumerate(calendario)}
+    familia: dict[str, set[str]] = defaultdict(set)
+    for antigo, novo in pares:
+        familia[antigo[2:6]].add(novo[2:6])
+        familia[novo[2:6]].add(antigo[2:6])
+    datas: dict[str, list[int]] = defaultdict(list)
+    for r in linhas:
+        i = posicao.get(r["data_com"].replace("-", ""))
+        if i is not None:
+            for e in {r["emissor"], r["isin"][2:6]}:
+                datas[e].append(i)
+    desde_ = desde.replace("-", "")
+    saida = []
+    for chave, serie in sorted(series.items()):
+        for antes, depois in itertools.pairwise(serie):
+            if antes.dia < desde_ or antes.distribuicao == depois.distribuicao:
+                continue
+            i, j = posicao.get(antes.dia), posicao.get(depois.dia)
+            if i is None or j is None:
+                continue
+            razao = antes.preco / depois.preco
+            marcada = _marca_nova(antes, depois, "B") or _marca_nova(antes, depois, "G")
+            if not marcada and (j - i > SALTO_PREGOES or fracao_do_salto(razao) is None):
+                continue
+            isin = antes.isin or chave
+            emissores = {isin[2:6], (depois.isin or chave)[2:6]}
+            emissores |= {f for e in list(emissores) for f in familia[e]}
+            if any(i - SALTO_VIZINHANCA <= k < j for e in emissores for k in datas[e]):
+                continue
+            if ("cotacao", isin, _iso(antes.dia)) in conferidos:
+                continue
+            saida.append(Salto(isin, antes.dia, depois.dia, razao, depois.marca))
     return saida

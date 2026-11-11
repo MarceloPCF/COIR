@@ -83,9 +83,10 @@ def test_fator_como_a_b3_escreve() -> None:
     assert gerar.multiplicador("GRUPAMENTO", "0.1") == Fraction(1, 10)
 
 
-def _linha_cotahist(dia: str, isin: str, distribuicao: str, preco: float, ticker: str = "X") -> str:
+def _linha_cotahist(dia: str, isin: str, distribuicao: str, preco: float, ticker: str = "X",
+                    especificacao: str = "ON") -> str:  # fmt: skip
     linha = [" "] * 245
-    campos = {0: "01", 2: dia, 10: "02", 12: ticker.ljust(12), 24: "010",
+    campos = {0: "01", 2: dia, 10: "02", 12: ticker.ljust(12), 24: "010", 39: especificacao,
               108: f"{round(preco * 100):013d}", 210: "0000001", 230: isin,
               242: distribuicao}  # fmt: skip
     for inicio, texto in campos.items():
@@ -149,8 +150,10 @@ def test_data_com_ambigua_ou_sem_negocio_vai_para_revisao() -> None:
     sem_negocio = [("100", 10.0), ("100", 10.0), ("", 0), ("101", 9.1), ("101", 9.1),
                    ("101", 9.1), ("101", 9.1), ("101", 9.1)]  # fmt: skip
     series, pregoes = _series({ON: sem_negocio, PN: [("100", 5.0)] * 8})
-    com, motivo = historico.data_com(series[ON], pregoes, "2016-04-27", Fraction(11, 10))
-    assert com is None and motivo.startswith("papel sem negócio")
+    # a única mudança coerente vem depois de um pregão sem negócio: qualquer data com do intervalo
+    # dá a mesma posição (ninguém negociou), e o intervalo vai na referência
+    assert historico.data_com(series[ON], pregoes, "2016-04-27", Fraction(11, 10)) == (
+        "2016-04-29", "sem negócio de 2016-04-28 a 2016-04-29")  # fmt: skip
     # a janela para na aprovação seguinte do mesmo tipo (não pega o evento do ano seguinte)
     series, pregoes = _series({ON: duas})
     assert historico.data_com(series[ON], pregoes, "2016-04-27", Fraction(11, 10),
@@ -498,3 +501,162 @@ def test_nomes_de_pregao_do_cotahist() -> None:
     assert por_nome["ALUPAR UNT"]["tipo"] == "UNIT"
     assert por_nome["APPLE DRN"]["ticker"] == "APLE34"  # o sufixo de BDR separa programas
     assert all(r["ticker"] != "PETRA10" for r in linhas)  # opção fica de fora
+
+
+def test_marca_de_evento_da_especificacao() -> None:
+    assert historico.marca_de_evento("PN  EB  N2") == "EB"
+    assert historico.marca_de_evento("ON  EDB NM") == "EDB"
+    assert historico.marca_de_evento("PN  EG") == "EG"
+    assert historico.marca_de_evento("ON      NM") == ""
+    assert historico.marca_de_evento("UNT     N2") == ""
+    linha = _linha_cotahist("20210526", ON, "102", 22.39, especificacao="ON  EB  N2")
+    series: historico.Series = {}
+    historico.ler_cotahist(_cotahist([linha]), series, set())
+    assert series[ON][0].marca == "EB"
+
+
+def _com_marca(valores: list[tuple[str, float, str]]) -> tuple[historico.Series, list[str]]:
+    """Pregões dos dias de DIAS para ON: (distribuição, preço, marca da B3)."""
+    serie = [Pregao(d, dist, p, marca=m) for d, (dist, p, m) in zip(DIAS, valores, strict=True)
+             if dist]  # fmt: skip
+    return {ON: serie}, DIAS
+
+
+def test_data_com_pela_marca_da_b3_quando_o_preco_nao_decide() -> None:
+    """Bonificação de 5%: o preço do dia não a separa de um dividendo, mas a B3 marca o papel com
+    EB a partir da data ex. Duas mudanças (dividendo ED, bonificação EB): decide a marca."""
+    valores = [("100", 10.0, ""), ("101", 9.6, "ED"), ("101", 9.6, "ED"),
+               ("102", 9.2, "EB"), ("102", 9.2, "EB"), ("102", 9.2, ""), ("102", 9.2, ""),
+               ("102", 9.2, "")]  # fmt: skip
+    series, pregoes = _com_marca(valores)
+    assert historico.data_com(series[ON], pregoes, "2016-04-27", Fraction(21, 20)) == (
+        "2016-04-29", "")  # fmt: skip
+    # a marca dá a data, não o fator: fator que o preço desmente vai para revisão (CTSA 2020: o
+    # FRE dizia 5722%, a B3 183%)
+    com, motivo = historico.data_com(series[ON], pregoes, "2016-04-27", Fraction(3))
+    assert com is None and "não confirma o fator" in motivo
+    # com dias sem negócio antes da marca o preço também confere (PATI 2014: o FRE dizia 811%, a
+    # cotação caiu 5% na marca EB)
+    gap = [("100", 10.0, ""), ("100", 10.0, ""), ("", 0, ""), ("101", 9.5, "EB"),
+           ("101", 9.5, ""), ("101", 9.5, ""), ("101", 9.5, ""), ("101", 9.5, "")]  # fmt: skip
+    gs, gp = _com_marca(gap)
+    assert historico.data_com(gs[ON], gp, "2016-04-27", Fraction(155, 17))[0] is None
+    # grupamento: só a marca com G conta
+    assert historico.data_com(series[ON], pregoes, "2016-04-27", Fraction(1, 10))[0] is None
+    # sem negócio na véspera da marca: qualquer data com entre o último negócio e a marca dá a
+    # mesma posição (ninguém negociou); vale a véspera do primeiro pregão marcado
+    falha = [("100", 10.0, ""), ("100", 10.0, ""), ("", 0, ""), ("101", 9.5, "EB"),
+             ("101", 9.5, ""), ("101", 9.5, ""), ("101", 9.5, ""), ("101", 9.5, "")]  # fmt: skip
+    series, pregoes = _com_marca(falha)
+    assert historico.data_com(series[ON], pregoes, "2016-04-27", Fraction(21, 20)) == (
+        "2016-04-29", "sem negócio de 2016-04-28 a 2016-04-29")  # fmt: skip
+
+
+def test_varredura_acha_marca_e_salto_sem_evento_no_pacote() -> None:
+    """Desdobramento 1:3 do BIDI em 2021 (marca EB, preço cai a um terço) sem linha no pacote:
+    a varredura acusa; com o evento no pacote, ou com o caso conferido em sem_evento.csv, não."""
+    bidi = "BRBIDIACNPR0"
+    serie = [Pregao("20210524", "10", 69.0), Pregao("20210525", "10", 68.86),
+             Pregao("20210526", "11", 22.39, marca="EB"),
+             Pregao("20210527", "11", 22.3, marca="EB")]  # fmt: skip
+    pregoes = [p.dia for p in serie]
+    [salto] = historico.saltos({bidi: serie}, pregoes, [])
+    assert (salto.isin, salto.com, salto.ex, salto.marca) == (bidi, "20210525", "20210526", "EB")
+    assert "marca EB" in salto.texto()
+    linha = {"emissor": "BIDI", "isin": bidi, "data_com": "2021-05-25"}
+    assert historico.saltos({bidi: serie}, pregoes, [linha]) == []
+    assert historico.saltos({bidi: serie}, pregoes, [],
+                            {("cotacao", bidi, "2021-05-25")}) == []  # fmt: skip
+    # data com do pacote depois do dia ex não cobre
+    tarde = {"emissor": "BIDI", "isin": bidi, "data_com": "2021-05-26"}
+    assert len(historico.saltos({bidi: serie}, pregoes, [tarde])) == 1
+    # sem marca: só o salto de preço perto de uma fração simples conta (dividendo de 5% não)
+    sem_marca = [replace(p, marca="") for p in serie]
+    assert len(historico.saltos({bidi: sem_marca}, pregoes, [])) == 1
+    dividendo = [Pregao("20210525", "10", 10.0), Pregao("20210526", "11", 9.5)]
+    assert historico.saltos({bidi: dividendo}, pregoes, []) == []
+    # o evento do código antigo cobre o salto do novo (troca de código)
+    antigo = {"emissor": "XPTO", "isin": "BRXPTOACNPR1", "data_com": "2021-05-25"}
+    assert historico.saltos({bidi: serie}, pregoes, [antigo],
+                            pares=[("BRXPTOACNPR1", bidi)]) == []  # fmt: skip
+
+
+def test_aviso_da_cvm_cobre_a_revisao_do_fre_com_quantidade_errada() -> None:
+    """BIDI 2021: o FRE repete a quantidade "antes" de 2019 (50.767.082 -> 1.142.977.848); o
+    aviso da CVM transcrito (3 para 1) tira o ato da revisão."""
+    r = historico.Revisao("BIDI", "BRBIDIACNPR0", "DESDOBRAMENTO", "2021-04-28",
+                          "1142977848/50767082", "fator não é uma fração simples", "122285",
+                          1142977848 / 50767082)  # fmt: skip
+    ipe = {"isin": "BRBIDIACNPR0", "tipo": "DESDOBRAMENTO", "fator": "200",
+           "data_com": "2021-05-25", "origem": "cvm_ipe"}  # fmt: skip
+    assert historico.cobertas([r], [ipe]) == []
+    assert historico.cobertas([r], [{**ipe, "origem": "b3"}]) == [r]
+    assert historico.cobertas([r], [], {("fre", "BRBIDIACNPR0", "2021-04-28")}) == []
+
+
+def test_sem_evento_exige_motivo_fonte_e_origem(tmp_path: Path) -> None:
+    caminho = tmp_path / "sem_evento.csv"
+    cabecalho = "origem,isin,data,motivo,fonte\n"
+    caminho.write_text(cabecalho + "cotacao,BRX,2020-01-02,dividendo,aviso\n", "utf-8")
+    assert gerar.sem_evento(caminho) == {("cotacao", "BRX", "2020-01-02")}
+    caminho.write_text(cabecalho + "palpite,BRX,2020-01-02,dividendo,aviso\n", "utf-8")
+    with pytest.raises(gerar.GeracaoError, match="origem desconhecida"):
+        gerar.sem_evento(caminho)
+    assert all(m and f for m, f in [(r["motivo"], r["fonte"])
+                                    for r in gerar.ler_csv(gerar.SEM_EVENTO)])  # fmt: skip
+
+
+def test_emissores_antigos_com_cnpj_codigo_e_fonte() -> None:
+    linhas = gerar.ler_csv(gerar.EMISSORES_ANTIGOS)
+    assert linhas
+    assert all(len(r["cnpj"]) == 14 and r["cnpj"].isdigit() and len(r["emissor"]) == 4
+               and r["fonte"] for r in linhas)  # fmt: skip
+    assert len({r["cnpj"] for r in linhas}) == len(linhas)
+
+
+def test_data_com_no_intervalo_sem_negocio_e_o_mesmo_evento_da_outra_fonte() -> None:
+    """EKTR 2008: a B3 traz o grupamento com data com 02/05; o FRE, pela marca da B3 depois de dias
+    sem negócio, cai no fim do intervalo (09/05). Mesmo evento: soma a origem, sem divergência."""
+    b3 = EventoB3("EKTR", "BREKTRACNOR0", "GRUPAMENTO", "0.0005", "2008-05-02", "2008-03-28",
+                  "BREKTRACNOR0")  # fmt: skip
+    nota = "FRE 9000 (data com: sem negócio de 2008-04-30 a 2008-05-09)"
+    fre = replace(b3, data_com="2008-05-09", origem="cvm_fre", referencia=nota)
+    resumo = Resumo()
+    [linha] = gerar.juntar_eventos([b3.linha()], [fre], resumo)
+    assert resumo.divergencias == [] and linha["data_com"] == "2008-05-02"
+    assert linha["origem"] == "b3+cvm_fre"
+    # fora do intervalo continua divergência
+    longe = replace(fre, referencia="FRE 9000 (data com: sem negócio de 2008-05-05 a 2008-05-09)")
+    resumo = Resumo()
+    gerar.juntar_eventos([b3.linha()], [longe], resumo)
+    assert len(resumo.divergencias) == 1
+
+
+def test_cotahist_le_companhia_em_recuperacao_judicial() -> None:
+    """PDGR3 em 2019 negociava com BDI 08 (recuperação judicial): o grupamento dela também conta."""
+    linha = _linha_cotahist("20191030", ON, "114", 1.0)
+    rj = linha[:10] + "08" + linha[12:]
+    fracionario = rj[:24] + "020" + rj[27:]
+    series: historico.Series = {}
+    historico.ler_cotahist(_cotahist([rj, fracionario]), series, set())
+    assert [p.dia for p in series[ON]] == ["20191030"]
+
+
+def test_marca_que_continua_no_papel_nao_e_evento_novo() -> None:
+    """BBDC 2010: o papel segue com "EB" dias depois da bonificação; o dividendo seguinte muda a
+    distribuição ("EDB"), mas a marca B não é nova: não é outro evento."""
+    isin = "BRBBDCACNPR8"
+    serie = [
+        Pregao("20100119", "1", 20.0),
+        Pregao("20100120", "2", 18.2, marca="EB"),
+        Pregao("20100201", "2", 18.0, marca="EB"),
+        Pregao("20100202", "3", 17.8, marca="EDB"),
+    ]
+    pregoes = [p.dia for p in serie]
+    linha = {"emissor": "BBDC", "isin": isin, "data_com": "2010-01-19"}
+    assert historico.saltos({isin: serie}, pregoes, [linha]) == []
+
+
+def test_fator_que_arredonda_para_um_nao_e_evento() -> None:
+    """CNFB 2011: o FRE dá 243.409.871 -> 243.384.419 PN (ruído); arredondar para 1 não é evento."""
+    assert historico.fator_simples(243409871, 243384419) is None

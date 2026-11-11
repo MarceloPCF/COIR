@@ -405,6 +405,7 @@ class Resumo:
     historico_novos: list[str] = field(default_factory=list[str])
     divergencias: list[str] = field(default_factory=list[str])
     revisao: list[str] = field(default_factory=list[str])
+    saltos: list[str] = field(default_factory=list[str])
     conflitos: list[str] = field(default_factory=list[str])
     sem_resposta: list[str] = field(default_factory=list[str])
     saidas: list[str] = field(default_factory=list[str])  # sumiram do cadastro nesta coleta
@@ -442,6 +443,11 @@ class Resumo:
                 self.divergencias,
             ),
             ("Eventos da CVM sem data com ou fator conferível (revise)", self.revisao),
+            (
+                "Saltos de cotação sem evento no pacote (revise: o evento que falta vai para "
+                "eventos_cvm_ipe.csv; o que não é evento, para sem_evento.csv)",
+                self.saltos,
+            ),
             ("Ignorados por conflito (revise)", self.conflitos),
             (
                 "Companhias sem resposta da B3 nesta coleta (eventos delas não atualizados)",
@@ -718,6 +724,13 @@ def _somar_origem(linha: dict[str, str], nova: Mapping[str, str]) -> None:
     linha["custo_atribuido"] = linha.get("custo_atribuido") or nova["custo_atribuido"]
 
 
+def _no_intervalo(a: Mapping[str, str], b: Mapping[str, str]) -> bool:
+    """A data com de ``b`` cai no intervalo sem negócio em que ``a`` teve a data com fixada pela
+    marca da B3 ("sem negócio de A a B" na referência)."""
+    intervalo = re.search(r"sem negócio de (\S+) a (\S+)\)", a.get("referencia", ""))
+    return intervalo is not None and intervalo[1] <= b["data_com"] <= intervalo[2]
+
+
 def _texto_evento(r: Mapping[str, str]) -> str:
     return f"{r['data_com']} {r['emissor']} {r['isin']} {r['tipo']} {r['fator']} ({r['origem']})"
 
@@ -755,8 +768,11 @@ def juntar_eventos(anteriores: list[dict[str, str]], novos: Iterable[EventoB3], 
                         and set(r["origem"].split("+")) - {e.origem}
                         and abs(date.fromisoformat(r["data_com"]) - dia) <= MESMO_EVENTO
                         ]  # fmt: skip
-            iguais = [r for r in vizinhos if r["tipo"] == e.tipo
-                      and r["data_com"] == e.data_com and _equivalentes(r, linha)]  # fmt: skip
+            # data com pela marca da B3 depois de pregões sem negócio: qualquer dia do intervalo
+            # dá a mesma posição, e a data da outra fonte dentro dele é o mesmo evento
+            iguais = [r for r in vizinhos if r["tipo"] == e.tipo and _equivalentes(r, linha)
+                      and (r["data_com"] == e.data_com or _no_intervalo(linha, r)
+                           or _no_intervalo(r, linha))]  # fmt: skip
             if iguais:
                 _somar_origem(iguais[0], linha)
                 continue
@@ -911,6 +927,9 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
 
 CURADOS = Path(__file__).with_name("eventos_cvm_ipe.csv")
 EXCLUIDOS = Path(__file__).with_name("eventos_excluidos.csv")
+SEM_EVENTO = Path(__file__).with_name("sem_evento.csv")
+# CNPJ -> código das companhias que saíram da bolsa antes de 2018 (o FCA não traz o código)
+EMISSORES_ANTIGOS = Path(__file__).with_name("emissores_antigos.csv")
 COLUNAS_CHAVE = ("isin", "tipo", "data_com", "isin_emitido", "fator")  # chave do evento no pacote
 
 
@@ -933,6 +952,21 @@ def eventos_excluidos(caminho: Path = EXCLUIDOS) -> set[tuple[str, ...]]:
     if any(not r["motivo"] or not r["fonte"] for r in linhas):
         raise GeracaoError(f"{caminho.name}: exclusão sem motivo ou sem fonte")
     return {tuple(r[c] for c in COLUNAS_CHAVE) for r in linhas}
+
+
+def sem_evento(caminho: Path = SEM_EVENTO) -> set[tuple[str, str, str]]:
+    """Casos conferidos que não viram evento no pacote (``sem_evento.csv``): salto de cotação que
+    é dividendo grande ou erro de preço (origem "cotacao", data com) e ato do FRE que não chegou
+    ao investidor da B3 (origem "fre", data de aprovação), cada um com o motivo e a fonte.
+    -> {(origem, isin, data)}."""
+    if not caminho.is_file():
+        return set()
+    linhas = ler_csv(caminho)
+    if any(not r["motivo"] or not r["fonte"] or r["origem"] not in ("cotacao", "fre")
+           for r in linhas):  # fmt: skip
+        raise GeracaoError(f"{caminho.name}: linha sem motivo, sem fonte ou de origem desconhecida"
+                           )  # fmt: skip
+    return {(r["origem"], r["isin"], r["data"]) for r in linhas}
 
 
 def incorporar_eventos(pasta: Path, novos: Iterable[EventoB3],
