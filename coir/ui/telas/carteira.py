@@ -195,9 +195,14 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     def mudar(chave: str, valor: object) -> None:
         if chave == "data":
             try:
-                escolha.data = date.fromisoformat(str(valor))
+                dia = date.fromisoformat(str(valor))
             except ValueError:
                 return
+            if not relatorios.ANO_MINIMO <= dia.year <= relatorios.ANO_MAXIMO:  # ex.: ano 1
+                ui.notify(f"Data fora do intervalo: use um ano entre {relatorios.ANO_MINIMO} e "
+                          f"{relatorios.ANO_MAXIMO}.", type="warning")  # fmt: skip
+                return
+            escolha.data = dia
         else:
             escolha.visao = Visao(str(valor))
         ui.timer(0.01, carregar, once=True)

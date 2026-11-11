@@ -258,15 +258,20 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 "aplicar-tabelas")  # fmt: skip
 
     async def aplicar() -> None:
+        # o aviso sai na página, não no botão: a tela pode ser refeita (ou trocada) durante a
+        # aplicação, e avisar pelo botão apagado dava RuntimeError (registro de 11/2026)
+        pagina = ui.context.client
         try:
             await run.io_bound(atualizacao.aplicar, estado.dados)
             estado.recarregar_referencias()
             await run.io_bound(estado.preparar, estado.agora())  # renormaliza as notas, se preciso
-        except CoirError as erro:
-            ui.notify(str(erro), type="negative", multi_line=True)
+        except (CoirError, OSError) as erro:  # OSError: pasta de dados sem permissão, disco
+            with pagina:
+                ui.notify(f"Tabelas não aplicadas: {erro}", type="negative", multi_line=True)
             return
         ao_mudar()
-        ui.notify("Tabelas atualizadas. Carteira e apuração refeitas.", type="positive")
+        with pagina:
+            ui.notify("Tabelas atualizadas. Carteira e apuração refeitas.", type="positive")
         if not novo.is_deleted:  # a tela pode ter sido refeita durante a aplicação
             novo.clear()
             mostrar()

@@ -33,6 +33,8 @@ UM_DIA = timedelta(days=1)
 # ------------------------------------------------------------------------------------- titulares
 def adicionar_titular(sessao: Session, cpf: str, nome: str) -> Titular:
     digitos = so_digitos(cpf)
+    if not nome.strip():
+        raise ImportacaoError("informe o nome do titular")
     if not cpf_valido(digitos):
         raise ImportacaoError("CPF inválido")
     if titular_por_cpf(sessao, digitos) is not None:

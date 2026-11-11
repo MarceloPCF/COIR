@@ -447,3 +447,36 @@ def test_ativo_que_parou_de_negociar_avisa_e_diz_o_que_houve(tmp_path: Path) -> 
     # dispensado, some do sino
     restantes = saidas.ativos_que_sairam(carteira, 1, tmp_path, {sem_info.chave})
     assert [a.ticker for a in restantes] == ["AMBV3", "POUC3"]
+
+
+def test_registro_ignora_conexao_fechada_pelo_navegador(tmp_path: Path) -> None:
+    """O ConnectionResetError (WinError 10054) que o asyncio do Windows registra ao fechar uma
+    conexão da janela não vai ao registro de atividades; os outros erros do asyncio vão."""
+    import logging
+
+    from coir.config import configurar_registro, ler_registro
+
+    arquivo = configurar_registro(tmp_path)
+    asyncio_log = logging.getLogger("asyncio")
+    try:
+        try:
+            raise ConnectionResetError(10054, "conexão fechada pelo host remoto")
+        except ConnectionResetError:
+            asyncio_log.exception("Exception in callback "
+                                  "_ProactorBasePipeTransport._call_connection_lost()")  # fmt: skip
+        try:
+            raise RuntimeError("outro problema")
+        except RuntimeError:
+            asyncio_log.exception("Exception in callback outra_coisa()")
+        for h in logging.getLogger().handlers:
+            h.flush()
+        texto = " | ".join(ler_registro(tmp_path))
+        assert "_call_connection_lost" not in texto
+        assert "outro problema" in texto
+    finally:
+        for f in list(asyncio_log.filters):  # o filtro é global: não vaza para os outros testes
+            asyncio_log.removeFilter(f)
+        raiz = logging.getLogger()
+        for h in [h for h in raiz.handlers if getattr(h, "baseFilename", "") == str(arquivo)]:
+            raiz.removeHandler(h)
+            h.close()

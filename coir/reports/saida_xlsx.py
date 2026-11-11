@@ -13,6 +13,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import xlsxwriter
+from xlsxwriter.exceptions import FileCreateError
 from xlsxwriter.format import Format
 from xlsxwriter.worksheet import Worksheet
 
@@ -131,5 +132,11 @@ def escrever_xlsx(relatorios: list[Relatorio], caminho: Path, agora: datetime) -
             lin += 1
         for c, largura in larguras.items():
             aba.set_column(c, c, largura)
-    livro.close()
+    try:
+        livro.close()
+    except FileCreateError as erro:
+        # o xlsxwriter embrulha o erro do disco (arquivo aberto no Excel, disco cheio) numa
+        # exceção própria; quem chama trata OSError, como no csv e no pdf
+        origem = erro.args[0] if erro.args and isinstance(erro.args[0], OSError) else None
+        raise origem or OSError(str(erro)) from erro
     return caminho

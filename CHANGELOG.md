@@ -24,6 +24,20 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ### Corrigido
 
+- **Varredura de erros da interface:** valores errados em todos os campos, arquivos fora do padrão em todos os envios e cliques rápidos entre telas, titular e ano não mostram mais "Erro inesperado". Cada caso abaixo virou mensagem na própria tela:
+  - planilha .xlsx vazia, corrompida ou de outro tipo enviada como planilha da B3: diz que o arquivo não é uma planilha do Excel válida;
+  - exportar os relatórios com a planilha do ano anterior aberta no Excel: pede para fechar o arquivo;
+  - exportar para uma unidade que não existe ou para um arquivo: diz qual pasta não pôde ser usada;
+  - Relatórios com o campo da pasta vazio volta à pasta padrão; caminho incompleto é recusado (antes os arquivos iam para a pasta onde o COIR foi aberto);
+  - Importar: "Usar esta pasta" com o campo vazio ou incompleto pede o caminho completo (antes passava a usar a pasta do programa);
+  - Carteira: data fora do intervalo (ex.: ano 1) é recusada (antes a exportação dava erro);
+  - números digitados em notação científica ("1e400"), "NaN" ou com 16 dígitos ou mais são recusados (antes o Salvar dos saldos iniciais dava erro);
+  - Eventos: ticker sem tipo de ativo não impede mais a tela de abrir; o aviso aparece no lugar da lista de ativos que saíram da bolsa;
+  - Configurações: aplicar as tabelas novas e trocar de tela antes de terminar não dá mais erro ao mostrar o aviso;
+  - PDF vazio, corrompido ou que não é PDF: a mensagem diz isso, além de "PDF ilegível".
+- **Banco corrompido:** se o `coir.db` estiver corrompido (ou outro arquivo tiver esse nome), o COIR abre a tela "o banco não abriu", com o caminho dos backups, em vez de não abrir.
+- **Linha de comando:** pasta ou arquivo inexistente, banco que não é do COIR e CSV de eventos fora do UTF-8 dão mensagem curta, sem o erro técnico do Python. `coir titular adicionar` recusa nome vazio, como a tela.
+- **Aviso sobre o titular na importação:** não fala mais em `--titular`, que só existe na linha de comando.
 - **Aviso "An element has been deleted but is still being used" no registro de atividades**: trocar o titular ou o ano, ou gravar algo, enquanto o sino de pendências ainda contava fazia a contagem antiga terminar mexendo no sino já refeito. O mesmo podia acontecer em qualquer tela que grava, importa ou exporta numa thread (DARF, Eventos, Importar, Proventos, Configurações, Relatórios, Carteira, Notas, Suporte, Cadastros, Outros custos) quando a tela mudava antes de terminar. Agora o trabalho termina (o que foi gravado continua gravado), e só a parte que mostraria o resultado numa tela que não existe mais é deixada de lado.
 - **Erro no Painel ao abrir**: trocar o titular ou o ano, ou a tela se refazer, enquanto o Painel ainda calculava dava "ValueError: list.remove(x): x not in list" no registro de atividades. O cálculo antigo agora termina sem mexer na tela nova; o mesmo vale para Apuração, Conciliação, Futuros, Proventos e Declaração.
 - **Restituição de capital e amortização propostas pela B3**: a proposta vinha com a quantidade da linha da B3, que é a posição, e o evento tirava essas ações da carteira; a venda seguinte virava venda a descoberto. Agora a proposta leva só o valor.

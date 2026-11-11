@@ -78,3 +78,42 @@ def test_banco_titular_e_importar_pasta_vazia(
     r = runner.invoke(app, ["carteira", "2024-05-31", "--visao", "corretora"])
     assert r.exit_code == 0 and "não é o PM do imposto" in r.output, r.output
     assert runner.invoke(app, ["carteira", "--visao", "banco"]).exit_code != 0
+
+
+@pytest.mark.parametrize(
+    ("argumentos", "mensagem"),
+    [
+        (["exportar", "--ano", "2026", "--destino", "{arquivo}"], "não foi possível usar a pasta"),
+        (["titular", "listar", "--banco", "{arquivo}"], "não é um banco do COIR"),
+        (["banco", "migrar", "--banco", "{arquivo}"], "não é um banco do COIR"),
+        (["notas", "extrair", "--origem", "{nada}", "--destino", "{saida}"],
+         "pasta de notas não encontrada"),
+        (["eventos", "importar", "{nada}"], "não foi possível ler"),
+        (["eventos", "importar", "{binario}"], "não é um CSV em UTF-8"),
+        (["titular", "adicionar", "{cpf}", "--nome", " "], "informe o nome do titular"),
+    ],
+)  # fmt: skip
+def test_entradas_erradas_viram_erro_de_dominio(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, argumentos: list[str], mensagem: str
+) -> None:
+    """Caminho errado, arquivo que não é banco ou CSV e nome vazio: mensagem curta (CoirError,
+    que o ``main`` mostra como "Erro: ..."), nunca o traceback do Python (varredura de 11/2026)."""
+    from coir.erros import CoirError
+
+    dados = tmp_path / "dados"
+    dados.mkdir()
+    monkeypatch.setenv(VAR_DADOS, str(dados))
+    assert runner.invoke(app, ["banco", "migrar"]).exit_code == 0
+    from tests.apoio import cpf_de_teste
+
+    outro = cpf_de_teste("111444777")
+    assert runner.invoke(app, ["titular", "adicionar", outro, "--nome", "T"]).exit_code == 0
+    arquivo = tmp_path / "texto.csv"
+    arquivo.write_text("isto não é banco nem pasta\n", encoding="utf-8")
+    binario = tmp_path / "planilha.csv"
+    binario.write_bytes(b"\xff\xfe\x00\x81\x9d" * 50)
+    caminhos = {"arquivo": arquivo, "nada": tmp_path / "nao-existe", "saida": dados / "saida",
+                "binario": binario, "cpf": cpf_de_teste()}  # fmt: skip
+    resultado = runner.invoke(app, [a.format(**caminhos) for a in argumentos])
+    assert isinstance(resultado.exception, CoirError), resultado.exception
+    assert mensagem in str(resultado.exception)
