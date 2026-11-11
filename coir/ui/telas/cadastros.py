@@ -64,7 +64,9 @@ def _saldos(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         campos = {}
         for chave, rotulo in (("comum", "Prejuízo a compensar: operações comuns"),
                               ("day_trade", "Prejuízo a compensar: day trade"),
-                              ("fii", "Prejuízo a compensar: FII e Fiagro")):  # fmt: skip
+                              ("fii", "Prejuízo a compensar: FII e Fiagro"),
+                              ("darf_acumulado", "Imposto acumulado abaixo do mínimo da DARF, "
+                               "ainda não pago")):  # fmt: skip
             valor = getattr(atual, chave) if atual else None
             campos[chave] = ui.input(rotulo, value=_moeda(valor) if valor else "").props(
                 "outlined dense input-class=text-right").classes("w-[360px]").mark(

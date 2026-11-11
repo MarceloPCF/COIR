@@ -35,8 +35,8 @@ from coir.domain.fiscal import (
     TipoEvento,
     Visao,
 )
-from coir.domain.nota import NegocioBMF, NotaExtraida
-from coir.domain.parametros import IsencaoPME, ReferenciasFiscais
+from coir.domain.nota import CategoriaCusto, NegocioBMF, NotaExtraida
+from coir.domain.parametros import IsencaoPME, ParametrosFiscais, ReferenciasFiscais
 from coir.domain.referencias import RE_SERIE_OPCAO, Referencias, codigo_atual
 from coir.engine.apuracao import apurar
 from coir.engine.apuracao import conta_na_isencao as conta_na_isencao  # para a tela
@@ -175,6 +175,24 @@ def _ajustes(nota: NotaExtraida, refs: Referencias) -> tuple[AjusteFuturo, ...]:
     return tuple(saida)
 
 
+def custos_dedutiveis(nota: NotaExtraida, total: Decimal, params: ParametrosFiscais) -> Decimal:
+    """Custos da nota que entram no custo e reduzem a alienação. A taxa de custódia não é custo
+    da operação (SC Cosit 227/2018 §§17-18): sai do total enquanto o parâmetro
+    ``custodia_no_custo`` for falso (decisão do usuário de 10/11/2026, leitura conservadora)."""
+    if params.booleano("custodia_no_custo", nota.data_pregao):
+        return total
+    resumo = nota.resumo_bovespa or nota.resumo_bmf
+    custodia = sum(
+        (
+            c.valor
+            for c in (resumo.custos if resumo else ())
+            if c.categoria is CategoriaCusto.CUSTODIA
+        ),
+        Decimal(0),
+    )
+    return total - custodia
+
+
 def _assinado(n: NegocioBMF) -> Decimal:
     return n.valor if n.dc == "C" else -n.valor  # como na conciliação (sem indicador: débito)
 
@@ -199,7 +217,8 @@ def entradas(
             NotaMotor(
                 id=r.id, titular=r.conta.titular_id, conta=r.conta_id,
                 corretora=r.conta.corretora.nome, numero=r.numero, data=r.data_pregao,
-                custos=r.custos_total, irrf=r.irrf, irrf_day_trade=r.irrf_day_trade,
+                custos=custos_dedutiveis(nota, r.custos_total, fiscais.parametros),
+                irrf=r.irrf, irrf_day_trade=r.irrf_day_trade,
                 operacoes=_nota_bovespa(r, nota, fiscais, tickers, refs) if bovespa else (),
                 ajustes=() if bovespa else _ajustes(nota, refs),
             )

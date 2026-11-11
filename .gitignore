@@ -77,3 +77,6 @@ desktop.ini
 
 # Referencias de interface de outros sistemas: uso interno, nao publicar
 docs/referencias/
+
+# Acervo de normas baixado por tools/normas_acervo.py (texto oficial copiado; refazível)
+.cache/
