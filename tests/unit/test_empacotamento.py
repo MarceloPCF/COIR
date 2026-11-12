@@ -4,6 +4,7 @@ nenhum elemento JavaScript do NiceGUI usado pelo COIR fora do pacote."""
 import ast
 import re
 from collections.abc import Callable
+from importlib.metadata import files
 from pathlib import Path
 from typing import cast
 
@@ -106,17 +107,23 @@ def test_coir_so_usa_elementos_js_que_vao_no_pacote() -> None:
 @pytest.mark.parametrize("destino,fora", [
     ("nicegui/elements/mermaid/dist/index.js", True),
     ("nicegui/elements/aggrid/dist/index.js", False),
-    ("nicegui/elements/echart/dist/index-x.js", False),
+    ("nicegui/elements/echart/dist/index.js", False),
     ("nicegui/elements/anywidget/lib/a.js", True),
     ("nicegui/elements/markdown.js", False),
     ("reportlab/fonts/Vera.ttf", True),
     ("nicegui/static/vue.esm-browser.js", False),
+    # arquivo que o Windows deixou na pasta instalada (não está no RECORD do NiceGUI)
+    ("nicegui/InlinePlacementControl.xbf", True),
+    ("nicegui/elements/scene/ContextMenu.xbf", True),
 ])  # fmt: skip
 def test_filtro_do_spec(destino: str, fora: bool) -> None:
     arvore = ast.parse(SPEC.read_text(encoding="utf-8"))
     funcao = next(n for n in arvore.body
                   if isinstance(n, ast.FunctionDef) and n.name == "_fora_do_pacote")  # fmt: skip
-    escopo: dict[str, object] = {"Path": Path, "ELEMENTOS_JS": _elementos_do_spec()}
+    do_nicegui = {f.as_posix() for f in files("nicegui") or []}
+    escopo: dict[str, object] = {
+        "Path": Path, "ELEMENTOS_JS": _elementos_do_spec(), "DO_NICEGUI": do_nicegui,
+    }  # fmt: skip
     exec(compile(ast.Module([funcao], []), str(SPEC), "exec"), escopo)
     fora_do_pacote = cast(Callable[[str], bool], escopo["_fora_do_pacote"])
     assert fora_do_pacote(destino) is fora

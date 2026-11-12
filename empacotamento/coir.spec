@@ -2,6 +2,7 @@
 # _internal/ compartilhado. Gerado por tools/empacotar.py (não rodar o PyInstaller direto).
 # -*- mode: python ; coding: utf-8 -*-
 
+from importlib.metadata import files
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
@@ -15,6 +16,10 @@ AQUI = Path(SPECPATH)  # noqa: F821
 # Usar outro elemento desses pede incluí-lo aqui e a licença em empacotamento/licencas
 # (tests/unit/test_empacotamento.py confere).
 ELEMENTOS_JS = {"aggrid", "echart"}
+# Só os arquivos que a própria distribuição do NiceGUI lista (RECORD): o Windows já gravou arquivos
+# estranhos (.xbf de controles XAML) dentro da pasta instalada e da cache do uv, e eles iriam no
+# pacote sem dono nem licença.
+DO_NICEGUI = {f.as_posix() for f in files("nicegui") or []}
 
 dados = [
     (str(RAIZ / "data"), "data"),  # tabelas de referência (coir.recursos.pasta_data)
@@ -45,6 +50,8 @@ excluir = [
 
 def _fora_do_pacote(destino: str) -> bool:
     partes = Path(destino).parts
+    if partes[0] == "nicegui" and Path(destino).as_posix() not in DO_NICEGUI:
+        return True
     if partes[:2] == ("nicegui", "elements") and len(partes) > 3 and partes[3] in ("dist", "lib"):
         return partes[2] not in ELEMENTOS_JS
     return partes[:2] == ("reportlab", "fonts")
