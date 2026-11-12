@@ -8,7 +8,7 @@ precisa também de ajuste na gramática.
 ## Se você só usa o COIR
 
 A nota não foi lida? Use o **Pedido de corretora** no site
-(https://marcelopcf.github.io/COIR/#corretora) ou abra uma issue no GitHub, com:
+(https://coir.com.br/#corretora) ou abra uma issue no GitHub, com:
 
 - o nome da corretora, o segmento (Bovespa ou BM&F) e o ano da nota;
 - a mensagem que o COIR mostrou na importação (tela Importar ou registro de atividades);
