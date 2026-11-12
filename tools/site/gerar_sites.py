@@ -210,15 +210,15 @@ HEAD_META = """<meta charset="utf-8">
 <title>COIR — imposto de renda da bolsa calculado no seu computador</title>
 <meta name="description" content="Programa gratuito para Windows que importa notas de corretagem SINACOR e planilhas da B3, calcula o preço médio, apura o IR mensal de renda variável, gera o DARF e prepara a declaração anual. Seus dados não saem do computador.">
 <meta name="google-site-verification" content="vDjlNKkJJRVfJJTE-ybAxmtGzT-z72kWETuAConlxOg">
-<link rel="canonical" href="https://marcelopcf.github.io/COIR/">{ROBOTS}
+<link rel="canonical" href="https://coir.com.br/">{ROBOTS}
 <link rel="icon" href="{R}favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="{TEMA}">
 <meta property="og:title" content="COIR — IR da bolsa no seu computador">
 <meta property="og:description" content="Notas de corretagem → preço médio → IR mensal → DARF → declaração anual. Gratuito, sem enviar seus dados.">
-<meta property="og:url" content="https://marcelopcf.github.io/COIR/">
+<meta property="og:url" content="https://coir.com.br/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:image" content="https://marcelopcf.github.io/COIR/docs/social-preview-v3.png">
+<meta property="og:image" content="https://coir.com.br/docs/social-preview-v3.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta property="og:image:alt" content="COIR versão 3: o Painel do programa com a DARF da vez e o resultado mês a mês">
@@ -226,7 +226,7 @@ HEAD_META = """<meta charset="utf-8">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"COIR","applicationCategory":"FinanceApplication",
  "operatingSystem":"Windows 10, Windows 11","offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"},
- "url":"https://marcelopcf.github.io/COIR/","license":"https://www.gnu.org/licenses/agpl-3.0.html",
+ "url":"https://coir.com.br/","license":"https://www.gnu.org/licenses/agpl-3.0.html",
  "description":"Controle de operações e imposto de renda de renda variável para pessoa física na B3."}
 </script>"""
 
