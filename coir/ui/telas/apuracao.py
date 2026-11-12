@@ -243,10 +243,9 @@ def _memoria(estado: Estado, m: MesApurado, movs: list[Movimento], mapa: dict[in
                 else ("acima do limite: ganho tributável")
             )
             ui.label(veredito).classes("coir-subtitulo text-xs")
-            ui.label(
-                "Lei 11.033/2004 art. 3º I: entram todas as vendas de ações, inclusive day "
-                "trade e exercício, que nunca são isentos; units fora do limite."
-            ).classes("coir-subtitulo text-xs")
+            ui.label("Lei 11.033/2004 art. 3º I; units fora do limite.").classes(
+                "coir-subtitulo text-xs"
+            )
         for r in m.categorias:
             with _bloco(f"{2 + list(Categoria).index(r.categoria)}. {NOME_CATEGORIA[r.categoria]}"):
                 for g in GRUPOS:
