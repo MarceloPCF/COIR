@@ -24,5 +24,9 @@ alguém incorporar o código num produto fechado ou num serviço web pago sem de
   revê-la exige nova ADR.
 - Contribuições de terceiros: antes de aceitar a primeira, criar `CONTRIBUTING.md` com cláusula em que o
   contribuidor autoriza o mantenedor a relicenciar a contribuição; sem ela, cada contribuição amarra a licença.
-- A interface (F6) deve mostrar a licença e o link do código-fonte (tela "Sobre").
+- A interface (F6) deve mostrar a licença e o link do código-fonte (tela "Sobre"). Feito em
+  11/11/2026 na seção "Licença e código-fonte" de Configurações.
+- O pacote leva `AVISOS-DE-TERCEIROS.txt` com o texto integral das licenças de tudo o que vai no
+  .zip, gerado por `tools/licencas.py` a partir dos executáveis e de
+  `empacotamento/licencas/componentes.toml`; a montagem falha se algum arquivo ficar sem licença.
 - Revisar esta decisão antes do lançamento da v3.0.

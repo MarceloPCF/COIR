@@ -16,6 +16,7 @@ from nicegui.elements.upload_files import SmallFileUpload
 from nicegui.testing.user_simulation import user_simulation
 
 from coir import auditoria
+from coir.config import VERSAO
 from coir.domain.fiscal import Apuracao
 from coir.parsing.extrair import ResultadoExtracao
 from coir.servicos import manutencao
@@ -674,6 +675,10 @@ async def test_configuracoes_backup_restaurar_e_tema(
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/configuracoes")
         await user.should_see("Nenhum backup ainda.")
+        await user.should_see("Licença e código-fonte")  # avisos legais da AGPL
+        [fonte] = user.find(marker="codigo-fonte").elements
+        assert isinstance(fonte, ui.link)
+        assert fonte.props["href"] == f"https://github.com/MarceloPCF/COIR/tree/v{VERSAO}"
         user.find(marker="fazer-backup").click()
         await user.should_see("Backup feito", retries=ESPERA)
         from coir.servicos.cadastros import renomear_titular

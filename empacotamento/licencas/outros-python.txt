@@ -1,0 +1,6 @@
+Bibliotecas ligadas ao Python embutido que não têm texto próprio nas licenças acima:
+
+SQLite (sqlite3.dll) — domínio público. https://www.sqlite.org/copyright.html
+
+liblzma, das XZ Utils (dentro de _lzma.pyd) — domínio público até a versão 5.2 e BSD Zero Clause
+(0BSD) desde a 5.4; nenhum dos dois exige aviso. https://tukaani.org/xz/

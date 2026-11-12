@@ -105,6 +105,31 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     mostrar_backups()
 
     _registro(estado)
+    _licenca()
+
+
+def _licenca() -> None:
+    """Avisos legais da AGPL (seção 0, "Appropriate Legal Notices"): copyright, sem garantia,
+    licença e onde está o código-fonte desta versão."""
+    with (
+        _secao(
+            "Licença e código-fonte",
+            "Copyright © MarceloPCF. O COIR é software livre: você pode usar, copiar, estudar, "
+            "modificar e redistribuir nos termos da GNU Affero General Public License, versão 3 "
+            "ou posterior (AGPL-3.0-or-later). É oferecido sem nenhuma garantia, nos termos da "
+            "licença. O texto da licença (LICENSE.txt) e os avisos das bibliotecas de terceiros "
+            "(AVISOS-DE-TERCEIROS.txt) estão na pasta do programa.",
+        ),
+        ui.row().classes("items-center gap-4 text-sm"),
+    ):
+        ui.link(
+            "Código-fonte desta versão",
+            f"https://github.com/{atualizacao.REPOSITORIO}/tree/v{VERSAO}",
+            new_tab=True,
+        ).mark("codigo-fonte")
+        ui.link(
+            "Texto da licença", "https://www.gnu.org/licenses/agpl-3.0.html", new_tab=True
+        ).mark("texto-licenca")
 
 
 def _registro(estado: Estado) -> None:
