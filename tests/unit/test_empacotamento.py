@@ -79,7 +79,9 @@ def test_texto_da_licenca_vem_dos_metadados() -> None:
     assert "GNU LESSER GENERAL PUBLIC LICENSE" in textos["COPYING.LESSER"]
     assert "GNU GENERAL PUBLIC LICENSE" in textos["COPYING"]  # a LGPL pede as duas
     pdfium = dict(licencas.textos_do_pacote(metadata.distribution("pypdfium2")))
-    assert "licenses/data/windows_x64/BUILD_LICENSES/freetype.txt" in pdfium  # caminho, não nome
+    # caminho, não só o nome (a pasta da plataforma muda: windows_x64, linux_x64...)
+    assert any(k.startswith("licenses/data/") and k.endswith("/BUILD_LICENSES/freetype.txt")
+               for k in pdfium)  # fmt: skip
     assert licencas.textos_do_pacote(metadata.distribution("proxy-tools")) == []
     assert "proxy-tools" in licencas.carregar().sem_texto  # por isso o texto curado
 

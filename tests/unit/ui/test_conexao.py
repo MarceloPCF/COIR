@@ -78,7 +78,8 @@ def test_conexao_abandonada_nao_vira_erro_no_registro(
             ("Erro", "Sistema", DERRUBADA),
             ("Erro", "Sistema", "Accept failed on a socket"),
         ]
-        assert "WinError 87" in entradas[0].detalhe and "Servidor.atender" in entradas[1].detalhe
+        # o texto "[WinError 87]" só existe no Windows; "parâmetro" identifica o mesmo erro nos dois
+        assert "parâmetro" in entradas[0].detalhe and "Servidor.atender" in entradas[1].detalhe
         assert "10054" not in "\n".join(e.detalhe for e in entradas)
         assert auditoria.read_text(encoding="utf-8").count('"modulo":"asyncio"') >= 1
 

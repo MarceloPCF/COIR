@@ -625,3 +625,19 @@ async def test_trocar_de_tela_e_de_ano_durante_a_importacao(
         await andamento.assentar(0.5)
     assert not registro.erros and not registro.avisos, str(registro)
     assert len(listar(estado.banco, None, None)) >= len(arquivos)
+
+
+def test_pasta_de_dados_com_nome_longo_demais(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No Linux, consultar uma pasta com nome acima do limite do sistema levanta OSError
+    (ENAMETOOLONG) em vez de responder "não existe"; o assistente mostra a mensagem (CI Ubuntu)."""
+    import errno
+
+    from coir.ui.telas import assistente
+
+    def longo(_self: Path) -> bool:
+        raise OSError(errno.ENAMETOOLONG, "File name too long")
+
+    monkeypatch.setattr(Path, "is_dir", longo)
+    assert assistente._contar_pdfs(Path("x" * 300)) == (  # pyright: ignore[reportPrivateUsage]
+        "Não foi possível ler essa pasta: File name too long."
+    )
