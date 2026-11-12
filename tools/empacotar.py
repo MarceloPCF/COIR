@@ -84,7 +84,7 @@ Escolha uma pasta FORA desta pasta do programa: assim, para atualizar, basta tro
 pela da versão nova; os dados continuam onde estão e o banco é migrado com backup.
 
 Se não abrir (aviso do Windows, antivírus), veja:
-https://marcelopcf.github.io/COIR/docs/manual/se-nao-abrir.html
+https://coir.com.br/docs/manual/se-nao-abrir.html
 
 Linha de comando: coir-cli.exe --help
 

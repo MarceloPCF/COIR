@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://marcelopcf.github.io/COIR/sitemap.xml
+Sitemap: https://coir.com.br/sitemap.xml
