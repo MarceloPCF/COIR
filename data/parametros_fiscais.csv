@@ -5,7 +5,7 @@ aliquota_fii,0.20,1999-01-01,,Lei 8.668/1993 art. 18 II (red. Lei 9.779/1999); i
 limite_isencao_acoes,20000.00,2005-01-01,,Lei 11.033/2004 art. 3º I (valor bruto das alienações de ações à vista no mês)
 units_na_isencao,false,2005-01-01,,critério do COIR: units fora do limite e da isenção
 custodia_no_custo,false,2005-01-01,,SC Cosit 227/2018 §§17-18 (taxa de custódia não é custo nem despesa da operação; fundamento geral); critério do COIR (leitura conservadora)
-day_trade_na_soma_limite,false,2005-01-01,,IN RFB 1.585/2015 art. 59 §2º I (day trade fora da isenção); demonstrativo do programa IRPF (campo Total em alienações de ações (op. comuns)): day trade não tem isenção e não entra nos R$ 20 mil
+day_trade_na_soma_limite,true,2005-01-01,,"Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)"
 prejuizo_mes_isento_compensavel,true,2005-01-01,,Lei 8.981/1995 art. 72 §4º; Manual MIR 2026
 day_trade_mesma_corretora,false,2000-01-01,2010-07-27,Lei 9.959/2000 art. 8º §1º I a (redação original): day trade em qualquer corretora
 day_trade_mesma_corretora,true,2010-07-28,,MP 497/2010 art. 21 (conv. Lei 12.350/2010 art. 45): mesma corretora

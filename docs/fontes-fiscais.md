@@ -19,7 +19,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 9.430/1996 | 19 | [lei-9430-1996.md](normas/lei-9430-1996.md) |
 | Lei 9.779/1999 | 1 | [lei-9779-1999.md](normas/lei-9779-1999.md) |
 | Lei 9.959/2000 | 5 | [lei-9959-2000.md](normas/lei-9959-2000.md) |
-| Lei 11.033/2004 | 34 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
+| Lei 11.033/2004 | 40 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
 | Lei 11.051/2004 | 5 | [lei-11051-2004.md](normas/lei-11051-2004.md) |
 | Lei 11.196/2005 | 1 | [lei-11196-2005.md](normas/lei-11196-2005.md) |
 | Lei 11.478/2007 | 7 | [lei-11478-2007.md](normas/lei-11478-2007.md) |
@@ -31,7 +31,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 15.265/2025 | 15 | [lei-15265-2025.md](normas/lei-15265-2025.md) |
 | Lei 15.270/2025 | 16 | [lei-15270-2025.md](normas/lei-15270-2025.md) |
 | MP 497/2010 | 5 | [mp-497-2010.md](normas/mp-497-2010.md) |
-| IN RFB 1.585/2015 | 100 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
+| IN RFB 1.585/2015 | 102 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
 | IN RFB 1.700/2017 | 2 | [in-rfb-1700-2017.md](normas/in-rfb-1700-2017.md) |
 | IN RFB 1.916/2019 | 1 | [in-rfb-1916-2019.md](normas/in-rfb-1916-2019.md) |
 | Res. CMN 4.880/2020 | 1 | [res-cmn-4880-2020.md](normas/res-cmn-4880-2020.md) |
@@ -40,7 +40,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | SC Cosit 63/2020 | 2 | [sc-cosit-63-2020.md](normas/sc-cosit-63-2020.md) |
 | SC Cosit 67/2024 | 1 | [sc-cosit-67-2024.md](normas/sc-cosit-67-2024.md) |
 | SC Cosit 130/2023 | 1 | [sc-cosit-130-2023.md](normas/sc-cosit-130-2023.md) |
-| SC Cosit 145/2021 | 3 | [sc-cosit-145-2021.md](normas/sc-cosit-145-2021.md) |
+| SC Cosit 145/2021 | 4 | [sc-cosit-145-2021.md](normas/sc-cosit-145-2021.md) |
 | SC Cosit 148/2025 | 5 | [sc-cosit-148-2025.md](normas/sc-cosit-148-2025.md) |
 | SC Cosit 153/2016 | 1 | [sc-cosit-153-2016.md](normas/sc-cosit-153-2016.md) |
 | SC Cosit 166/2021 | 3 | [sc-cosit-166-2021.md](normas/sc-cosit-166-2021.md) |
@@ -51,8 +51,8 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | P&R IRPF 2026 | 28 | [pr-irpf.md](normas/pr-irpf.md) |
 | Manual MIR | 2 | [manual-mir.md](normas/manual-mir.md) |
 | Manual MIR 2026 | 3 | [manual-mir.md](normas/manual-mir.md) |
-| Programa IRPF | 11 | — |
-| CTN | 6 | [lei-5172-1966-ctn.md](normas/lei-5172-1966-ctn.md) |
+| Programa IRPF | 10 | — |
+| CTN | 10 | [lei-5172-1966-ctn.md](normas/lei-5172-1966-ctn.md) |
 | Súmula STJ 360 | 1 | — |
 | REsp 1.149.022/SP | 1 | — |
 | RIR/2018 | 7 | [decreto-9580-2018-rir.md](normas/decreto-9580-2018-rir.md) |
@@ -315,6 +315,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 - `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/parametros_fiscais.csv` — aliquota_comum: Lei 11.033/2004 art. 2º II; RIR/2018 art. 839
 - `data/parametros_fiscais.csv` — aliquota_day_trade: Lei 11.033/2004 art. 2º I
+- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)
 - `data/parametros_fiscais.csv` — fiagro_rendimento_isento: Lei 11.033/2004 art. 3º III (red. Lei 14.130/2021 art. 4º; veto derrubado, DOU 11/06/2021)
 - `data/parametros_fiscais.csv` — fiagro_rendimento_isento: Lei 14.130/2021 (cria o Fiagro em 29/03/2021; a extensão da isenção da Lei 11.033 art. 3º III foi vetada e o veto derrubado só no DOU de 11/06/2021); critério do COIR (leitura conservadora)
 - `data/parametros_fiscais.csv` — fii_isencao_minimo_cotistas: Lei 11.033/2004 art. 3º parágrafo único I (red. Lei 11.196/2005 art. 125)
@@ -322,24 +323,29 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 - `data/parametros_fiscais.csv` — limite_isencao_acoes: Lei 11.033/2004 art. 3º I (valor bruto das alienações de ações à vista no mês)
 - `docs/regras-fiscais.md` — Critérios do COIR: saldo único (a lei e a IN não separam o IRRF de FII; Lei 11.033/2004 art. 2º §7º). As fichas do
 - `docs/regras-fiscais.md` — Critérios do COIR: venda de ação no limite (Lei 11.033/2004 art. 3º I; critério do COIR,
+- `docs/regras-fiscais.md` — Critérios do COIR: seguido no COIR, que substitui o critério do COIR). Base: Lei 11.033 art. 3º I e IN
 - `docs/regras-fiscais.md` — Proventos: Rendimento de FII/Fiagro: isento (Lei 11.033 art. 3º III).
 - `docs/regras-fiscais.md` — Proventos: §4º c; Lei 11.033 art. 1º), como as fontes retêm (22,5% nos dados reais); código 06 ou 12 conforme
 - `docs/regras-fiscais.md` — R16: …(`fii_isencao_minimo_cotistas`) e avisa o Fiagro antes de 11/06/2021 (`fiagro_rendimento_isento`) | Lei 11.033/2004 art. 3º (alt. Lei 14.130/2021 e Lei 14.754/2023) | M
-- `docs/regras-fiscais.md` — R4: …critério do COIR); a isenção não alcança units, ETF, BDR, FII, opções, futuros, termo e day trade | Lei 11.033/2004 art. 3º I | A
+- `docs/regras-fiscais.md` — R4: …= true`; a leitura contrária (SC Cosit 145/2021 §13, por analogia) fica registrada | Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º, art. 67 §3º; CTN art. 111 II | A (leitura literal);…
 - `docs/regras-fiscais.md` — Relatórios: abatimento (day trade antes da Lei 11.033) na ficha de comuns.
 - `docs/regras-fiscais.md` — Relatórios: duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é
 - `tests/fiscal_cases/test_ativo_isolado.py` — test_venda_do_ativo_sem_tipo_conta_no_limite_e_avisa_quando_decide: Tipo desconhecido conta como venda de ação no limite (critério do COIR; Lei 11.033/2004 art. 3º I): se for ação, não contar isentaria vendas acima do limite. Vendas de fevereiro: 19.000…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t2_limite_pelo_valor_bruto_das_vendas: R4: o limite de R$ 20 mil é sobre o valor bruto das alienações (Lei 11.033/2004 art. 3º I); custos de venda não reduzem o valor para o limite. 20.000,00 com custos 10 é isento; 20.000,01 é tributável.
-- `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …sem isenção e fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com…
+- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_500_d_e_compra_200_d_dao_200_de_day_trade_e_300_de_venda_comum: …isento: a soma do limite é o bruto comum, 3.000,00, mais a venda do day trade, 2.000,00 = 5.000,00 (Lei 11.033/2004 art. 3º I). O estoque não entra no day trade (§2º) e paga a venda comum: fica 700 a 9,00 =…
+- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_em_day_trade_entra_na_soma_do_limite_de_isencao: Lei 11.033/2004 art. 3º I e IN RFB 1.585/2015 art. 59 I ("total das alienações"); o §2º I só tira o day trade da…
+- `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …do direito fica fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …parâmetro leilao_fracao_isentavel (critério do COIR: entra no limite de R$ 20 mil do mês do crédito, Lei 11.033/2004 art. 3º I).
 - `tests/fiscal_cases/test_fii_fiagro_avisos.py` — módulo: …compensação cruzada sem norma (IN RFB 1.585/2015 art. 37 §2º), rendimento de Fiagro antes da isenção (Lei 11.033/2004 art. 3º III, red. Lei 14.130/2021, DOU 11/06/2021) e requisitos da isenção (art. 3º §1º: 50…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — test_ficha_mes_a_mes_e_imposto_pago_de_dezembro: …1.000,00. Dezembro: V 4.000 PETR4 a 30 (resultado 0) com IRRF 6,00 que sobra: ficha "Imposto pago", Lei 11.033 = 6,00.
+- `tests/fiscal_cases/test_irpf_linhas.py` — test_venda_do_termo_entra_na_soma_do_limite_de_isencao: …nunca é isento (IN 1.585 art. 59 §2º IV), mas o valor da venda entra na soma das alienações do mês (Lei 11.033/2004 art. 3º I; IN 1.585 art. 59 I; só a PME tem regra de não computar, art. 67 §3º). Dezembro: venda…
 - `tests/fiscal_cases/test_irpf_linhas.py` — test_venda_no_dia_acima_do_termo_sai_das_antigas_pelo_pm: …das antigas pelo PM: 5.500,00 - 4.500,00 = 1.000,00, isento (vendas de 16.500,00, abaixo de R$ 20 mil; Lei 11.033/2004 art. 3º I). Imposto 150,00; posição zerada (critério do COIR).
 - `tests/fiscal_cases/test_irrf_fichas.py` — módulo: …saldo único (critério do COIR: separar o IRRF de FII só na declaração). Casos conferidos à mão. Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º; fichas "Renda variável…
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_base_da_reparticao_usa_o_bruto_e_ignora_venda_por_exercicio: Lei 11.033/2004 art. 2º §2º: venda por exercício fora da base do 0,005%. Agosto/2026, uma nota: V 1.000 AAAA3 a…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …8º e art. 14 III (JCP a 17,5% pago ou creditado desde 01/01/2026, na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e…
 - `tests/fiscal_cases/test_proventos.py` — test_atualizacao_do_provento_pela_selic_e_tributacao_exclusiva: …(B3). Para 100 ações: bruto 5,684 -> 5,68; retidos 22,5% como renda fixa (Lei 8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º) -> líquido 4,40, IRRF 1,28. Não é dividendo: fora da Lei 15.270.
+- `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …do termo; a isenção alcança só o ganho das vendas comuns. Números conferidos à mão, sem custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I…
 
 ## Lei 11.051/2004
 
@@ -507,7 +513,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 - `data/isencao_pme.csv` — PRNR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; fora da tabela de 2014 da B3; citada por fontes secundárias como enquadrada; sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
 - `data/isencao_pme.csv` — SQIA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Senior Solution, SNSL3); RI Sinqia, citado por fontes secundárias: isentas as compradas entre 10/07/2014 e 05/09/2019 (oferta deliberada em 05/09/2019, Formulário de Referência 2019); sem negócio nos 30 pregões finais de 2023
 - `data/parametros_fiscais.csv` — day_trade_criterio: IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (critério do COIR). Alternativa: ordem_impressa
-- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: IN RFB 1.585/2015 art. 59 §2º I (day trade fora da isenção); demonstrativo do programa IRPF (campo Total em alienações de ações (op. comuns)): day trade não tem isenção e não entra nos R$ 20 mil
+- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)
 - `data/parametros_fiscais.csv` — direito_recebido_custo_zero: IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); critério do COIR
 - `data/parametros_fiscais.csv` — direito_vencido_data: IN RFB 1.585/2015 art. 60 §3º (analogia: perda na data do vencimento); Lei 6.404 art. 171 §4º (prazo decadencial): o direito comprado não exercido vira perda no fim do prazo de subscrição do pacote da B3, ou na data da baixa na B3 sem ele; alternativa baixa_b3 (critério do COIR)
 - `data/parametros_fiscais.csv` — janela_liquidacao_oferta_dias: Sem norma: Critério do COIR para venda antes da liquidação da oferta; a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)
@@ -531,6 +537,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 - `docs/regras-fiscais.md` — R20: …de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&R IRPF…
 - `docs/regras-fiscais.md` — R21: …com aviso se sobrar posição; sem quantidade (a linha da B3 vem sem ela), baixa todo o saldo | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei…
 - `docs/regras-fiscais.md` — R3: R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A
+- `docs/regras-fiscais.md` — R4: …de termo, leilão de fração), excluídos units (R4a), ETF, BDR, FII, direitos e o lote isento de PME (IN 1.585 art. 67 §3º); a isenção alcança só o ganho das vendas comuns à vista (art. 59 §2º I e IV). Critério do…
 - `docs/regras-fiscais.md` — R6: …0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da…
 - `docs/regras-fiscais.md` — R7: …fica fora (parâmetro `custodia_no_custo = false`, critério do COIR) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A
 - `docs/regras-fiscais.md` — R8: …Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF 2022 pergunta 578 (substituição de ações; não…
@@ -551,7 +558,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_termo_liquidado_depois_da_venda_das_acoes_realiza_o_resultado: R18 + venda a descoberto (critério do COIR; IN RFB 1.585/2015 art. 58: custo médio): sem posição, compra a termo de 1.000 a 31,00 (custos 40) em 03/01 e venda…
 - `tests/fiscal_cases/test_day_trade_marcacao.py` — módulo: Day trade pela marcação D da corretora. IN RFB 1.585/2015 art. 65 §3º: o day trade casa "pela ordem" a 1ª compra com a 1ª venda, isto é, na ordem…
 - `tests/fiscal_cases/test_day_trade_parcial.py` — módulo: …D a linha inteira, e só parte dela fecha no dia (critério do COIR; números conferidos à mão). Fontes (IN RFB 1.585/2015): - art. 65 §1º: day trade é a operação iniciada e encerrada no mesmo dia, com o mesmo ativo, na…
-- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_em_day_trade_fica_fora_da_soma_do_limite_de_isencao: Critério do COIR (parâmetro day_trade_na_soma_limite = false): o day trade não tem isenção (IN RFB 1.585/2015 art. 59 §2º I) e não entra na soma do limite de R$ 20 mil, como no campo "Total em alienações de…
+- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_em_day_trade_entra_na_soma_do_limite_de_isencao: Lei 11.033/2004 art. 3º I e IN RFB 1.585/2015 art. 59 I ("total das alienações"); o §2º I só tira o day trade da isenção (parâmetro…
 - `tests/fiscal_cases/test_direito_nao_exercido.py` — módulo: …vira perda em operações comuns na data do fim do prazo de exercício, fora do limite de R$ 20 mil (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei…
 - `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com custo zero (IN 1.585 art. 58…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …ajuste de série de opção e leilão de fração (números conferidos à mão no critério do COIR). Fontes: - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o custo das ações…
@@ -573,6 +580,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 - `tests/fiscal_cases/test_proventos.py` — módulo: …na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de…
 - `tests/fiscal_cases/test_raiz55.py` — módulo: …os mesmos. Na nota, a quantidade é a de ações e o preço é por 100 ações; o custo é o valor impresso (IN RFB 1.585/2015 art. 58 caput). A PNA continua ação para a isenção de R$ 20 mil (art. 59 I).
 - `tests/fiscal_cases/test_saldos_iniciais.py` — módulo: …o COIR sem o histórico de notas. Custódia inicial: a posição em 31/12 entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58), o mesmo do Bens e Direitos, sem resultado e sem efeito no day trade (art. 65 §2º).…
+- `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I ("total das alienações desse ativo") e §2º I e IV (a isenção não se aplica a day trade,…
 
 ## IN RFB 1.700/2017
 
@@ -615,7 +623,8 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 
 - `docs/regras-fiscais.md` — Critérios do COIR: Units fora da isenção: coincide com a RFB (SC Cosit 145/2021: só "ativos da espécie ações").
 - `docs/regras-fiscais.md` — R19: …tipo do papel); categoria COMUM ou DAY_TRADE, nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65;…
-- `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …15% sobre o ganho líquido, 20% em day trade, sem isenção e fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O…
+- `docs/regras-fiscais.md` — R4: …desse ativo" (critério do COIR); parâmetro `day_trade_na_soma_limite = true`; a leitura contrária (SC Cosit 145/2021 §13, por analogia) fica registrada | Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º,…
+- `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …20% em day trade, sem isenção, e a venda do direito fica fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O…
 
 ## SC Cosit 148/2025
 
@@ -704,24 +713,27 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 
 - `coir/engine/apuracao.py` — módulo: …a declaração anual (IN RFB 1.585/2015; critério do COIR). A DARF usa um saldo único; as fichas do programa IRPF recebem o IRRF que cada uma consumiu (`fichas.py`). - DARF 6015: abaixo de R$ 10 acumula, inclusive para…
 - `coir/engine/fichas.py` — módulo: IRRF por ficha do programa IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei…
-- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: IN RFB 1.585/2015 art. 59 §2º I (day trade fora da isenção); demonstrativo do programa IRPF (campo Total em alienações de ações (op. comuns)): day trade não tem isenção e não entra nos R$ 20 mil
 - `data/parametros_fiscais.csv` — opcoes_linha_acoes_tipos_objeto: programa IRPF, ficha Renda variável: "Mercado de opções - ações" para opção sobre ação; ETF, índice e outros em "Mercado de opções - outros" (P&R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, coerente com o Bens e Direitos do programa (código 03.01, ações inclusive units)
 - `docs/regras-fiscais.md` — Critérios do COIR: um PDF por ano, na ordem da ficha de renda variável do programa IRPF, em
+- `docs/regras-fiscais.md` — Critérios do COIR: programa IRPF. Parâmetro `day_trade_na_soma_limite = true`; o motor avisa quando o day trade
 - `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora: 6. Fiagro e FII: o motor continua a apurá-los juntos, como a ficha única do programa IRPF. A
 - `docs/regras-fiscais.md` — R17: R17 | Fichas/códigos da DIRPF mudam por ano | Mapeamento por ano em `data/irpf/<ano>.yaml` | programa IRPF do ano | revisar anualmente
 - `docs/regras-fiscais.md` — Relatórios: conferir no programa IRPF do ano: a ficha FII sem linha de IR fonte de day trade; ordem de
-- `tests/fiscal_cases/test_day_trade_parcial.py` — test_venda_em_day_trade_fica_fora_da_soma_do_limite_de_isencao: …limite de R$ 20 mil, como no campo "Total em alienações de ações (op. comuns)" do demonstrativo do programa IRPF. Março/2026: venda comum de 1.000 AAAA3 a 15,00 = 15.000,00 (PM 10,00, ganho 5.000,00) e day trade de…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: Linha da ficha "Renda variável - operações comuns/day trade" do programa IRPF. Casos conferidos à mão (critérios do COIR), conferidos à mão. Fontes: programa IRPF, ficha de renda…
 - `tests/fiscal_cases/test_irrf_fichas.py` — módulo: IRRF por ficha do programa IRPF com a DARF no saldo único (critério do COIR: separar o IRRF de FII só na declaração). Casos conferidos à…
 
 ## CTN
 
+- `data/parametros_fiscais.csv` — day_trade_na_soma_limite: Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)
 - `docs/regras-fiscais.md` — DARF paga em atraso: multa de mora: A denúncia espontânea (CTN art. 138; STJ REsp 1.149.022/SP; Súmula 360) fica como nota na tela:
+- `docs/regras-fiscais.md` — Critérios do COIR: RFB quis tirar uma venda da soma, escreveu (art. 67 §3º, PME); CTN art. 111 II. O campo "Total em
 - `docs/regras-fiscais.md` — Declaração anual: decaiu e não se retifica nem se paga. Prazo: 5 anos do mês quando houve DARF paga (CTN art. 150
 - `docs/regras-fiscais.md` — Declaração anual: leitura conservadora; o IRRF não conta como pagamento) (seria pagamento indevido, CTN art. 156 V); restituição de pagamento a maior, 5 anos do
 - `docs/regras-fiscais.md` — Declaração anual: pagamento (CTN art. 168 I). Critério do COIR, num
 - `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora: 7. Decadência: no mês sem DARF paga, ainda que com IRRF retido, vale o CTN art. 173 I (5 anos de
+- `docs/regras-fiscais.md` — R4: …por analogia) fica registrada | Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º, art. 67 §3º; CTN art. 111 II | A (leitura literal); M (mérito, sem norma expressa)
 - `tests/fiscal_cases/test_pme_lotes.py` — test_data_da_custodia_decide_a_marca: A custódia inicial segue a janela do CSV pela data do evento. Dentro dela o COIR presume aquisição a partir de 10/07/2014 (com aviso); fora, não presume isenção (CTN art. 111 II).
+- `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …na alienação); art. 63 §3º II a (exercício sem retenção); art. 65 §§8º e 11 (day trade: 20% e IRRF de 1%); CTN art. 111 II (isenção interpretada literalmente). Critério do COIR (leitura literal), parâmetro…
 
 ## Súmula STJ 360
 

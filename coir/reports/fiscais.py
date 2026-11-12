@@ -106,7 +106,7 @@ def _ativa(meses: list[MesApurado], categoria: Categoria) -> bool:
         or r.prejuizo_anterior
         or r.prejuizo_a_compensar
         or r.isento
-        or r.vendas_acoes
+        or r.vendas_limite
         or any(r.por_grupo.values())
         for r in (_cat(m, categoria) for m in meses)
     )
@@ -146,7 +146,11 @@ def resumo_fiscal(d: DadosRelatorio) -> Relatorio:
             Coluna("Mês"),
             *(_dinheiro(NOME_GRUPO[g]) for g in GRUPOS),
             _dinheiro("Resultado"),
-            *((_dinheiro("Vendas de ações"), _dinheiro("Isento")) if comum else ()),
+            *(
+                (_dinheiro("Vendas de ações (soma do limite)"), _dinheiro("Isento"))
+                if comum
+                else ()
+            ),
             _dinheiro("Prejuízo anterior"),
             _dinheiro("Base de cálculo"),
             Coluna("Alíquota", T.PERCENTUAL),
@@ -161,7 +165,7 @@ def resumo_fiscal(d: DadosRelatorio) -> Relatorio:
                     MESES[m.mes - 1],
                     *(r.por_grupo.get(g, ZERO) for g in GRUPOS),
                     r.resultado,
-                    *((r.vendas_acoes, r.isento) if comum else ()),
+                    *((r.vendas_limite, r.isento) if comum else ()),
                     r.prejuizo_anterior,
                     r.base,
                     r.aliquota,
@@ -364,13 +368,13 @@ def irpf_mensal(d: DadosRelatorio) -> Relatorio:
     )
     colunas = (
         Coluna("Mês"),
-        _dinheiro("Total em alienações de ações (Lei 11.033/2004)"),
+        _dinheiro("Total em alienações de ações, com day trade (Lei 11.033/2004)"),
         _dinheiro("Lucro isento (Lei 11.033/2004)"),
         _dinheiro("Lucro isento de PME (Lei 13.043/2014 art. 16)"),
         _dinheiro("Perda em ação de PME (não compensa: IN RFB 1.585/2015 art. 67 §2º)"),
     )
     linhas: list[tuple[Valor, ...]] = [
-        (MESES[m.mes - 1], _cat(m, comum).vendas_acoes, _cat(m, comum).isento, m.isento_pme,
+        (MESES[m.mes - 1], _cat(m, comum).vendas_limite, _cat(m, comum).isento, m.isento_pme,
          m.perda_pme)
         for m in meses
     ]  # fmt: skip

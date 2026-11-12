@@ -149,7 +149,8 @@ def test_venda_no_dia_menor_que_o_termo_usa_o_preco_a_termo() -> None:
 def test_venda_do_termo_entra_na_soma_do_limite_de_isencao() -> None:
     """Decisão de 15/10/2026 (F4), mantida na F8: o ganho da venda no dia da liquidação do termo
     nunca é isento (IN 1.585 art. 59 §2º IV), mas o valor da venda entra na soma das alienações
-    do mês (leitura conservadora; nenhuma fonte decide). Dezembro: venda do termo de 11.000,00 e
+    do mês (Lei 11.033/2004 art. 3º I; IN 1.585 art. 59 I; só a PME tem regra de não computar,
+    art. 67 §3º). Dezembro: venda do termo de 11.000,00 e
     venda de 1.000 BBBB3 a 10,00 = 10.000,00 (PM 9,00: ganho 1.000,00); vendas de 21.000,00 >
     20.000,00: o ganho de BBBB3 também é tributável. Imposto 15% x (1.000 + 1.000) = 300,00."""
     livro = Livro()

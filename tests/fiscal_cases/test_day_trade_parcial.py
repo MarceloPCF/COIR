@@ -52,8 +52,8 @@ def test_venda_500_d_e_compra_200_d_dao_200_de_day_trade_e_300_de_venda_comum() 
     Rateio pelo valor (6.900,00): venda 5,00 e compra 1,90.
     Venda líquida: 4.995,00; 200 -> 1.998,00 no day trade; 300 -> 2.997,00 comuns (bruto 3.000,00).
     Compra com custos: 1.901,90. Day trade: 1.998,00 - 1.901,90 = 96,10; imposto 20% = 19,22.
-    Venda comum: 2.997,00 - 300 x 9,00 = 297,00, isento: o limite soma só o bruto comum, 3.000,00
-    (o day trade fica fora: parâmetro day_trade_na_soma_limite, decisão de 10/11/2026).
+    Venda comum: 2.997,00 - 300 x 9,00 = 297,00, isento: a soma do limite é o bruto comum, 3.000,00,
+    mais a venda do day trade, 2.000,00 = 5.000,00 (Lei 11.033/2004 art. 3º I).
     O estoque não entra no day trade (§2º) e paga a venda comum: fica 700 a 9,00 = 6.300,00."""
     livro = Livro()
     livro.nota(date(2026, 2, 2), livro.op("C", "AAAA3", 1000, "9"))
@@ -66,7 +66,7 @@ def test_venda_500_d_e_compra_200_d_dao_200_de_day_trade_e_300_de_venda_comum() 
     comum = categoria(ap, 2026, 3, Categoria.COMUM)
     assert (comum.vendas_acoes, comum.vendas_limite, comum.isento, comum.imposto) == (
         D("3000.00"),
-        D("3000.00"),
+        D("5000.00"),
         D("297.00"),
         0,
     )
@@ -111,31 +111,20 @@ def test_marcacao_menor_que_o_day_trade_do_dia_avisa_e_vale_a_ordem() -> None:
     assert any("marcação D da nota não fecha" in a for a in ap.avisos)
 
 
-def test_venda_em_day_trade_fica_fora_da_soma_do_limite_de_isencao() -> None:
-    """Decisão do usuário de 10/11/2026 (parâmetro day_trade_na_soma_limite = false): o day trade
-    não tem isenção (IN RFB 1.585/2015 art. 59 §2º I) e não entra na soma do limite de R$ 20 mil,
-    como no campo "Total em alienações de ações (op. comuns)" do demonstrativo do programa IRPF.
+def test_venda_em_day_trade_entra_na_soma_do_limite_de_isencao() -> None:
+    """Lei 11.033/2004 art. 3º I e IN RFB 1.585/2015 art. 59 I ("total das alienações"); o §2º I
+    só tira o day trade da isenção (parâmetro day_trade_na_soma_limite = true; critério do COIR).
 
     Março/2026: venda comum de 1.000 AAAA3 a 15,00 = 15.000,00 (PM 10,00, ganho 5.000,00) e day
     trade de 500 BBBB3 a 20,00/20,10 (venda 10.050,00, ganho 50,00, 20% = 10,00), sem custos.
-    Soma do limite: 15.000,00 <= 20.000,00, o ganho comum é isento e a DARF é 10,00. Com o
-    parâmetro ligado, a soma é 25.050,00, o ganho comum paga 15% = 750,00 e a DARF é 760,00, com
-    aviso."""
+    Soma do limite: 25.050,00 > 20.000,00, o ganho comum paga 15% = 750,00 e a DARF é 760,00, com
+    aviso. Com o parâmetro desligado, a soma é 15.000,00, o ganho comum é isento e a DARF é
+    10,00."""
     livro = Livro()
     livro.nota(date(2026, 2, 2), livro.op("C", "AAAA3", 1000, "10"))
     compra, venda = livro.op("C", "BBBB3", 500, "20"), livro.op("V", "BBBB3", 500, "20.10")
     livro.nota(date(2026, 3, 10), livro.op("V", "AAAA3", 1000, "15"), _d(compra), _d(venda))
     ap = livro.apurar(date(2026, 3, 31))
-    comum = categoria(ap, 2026, 3, Categoria.COMUM)
-    assert (comum.vendas_acoes, comum.vendas_limite, comum.isento, comum.imposto) == (
-        D("15000.00"),
-        D("15000.00"),
-        D("5000.00"),
-        0,
-    )
-    assert not ap.avisos
-    assert mes(ap, 2026, 3).darf == D("10.00")
-    ap = livro.apurar(date(2026, 3, 31), parametros(day_trade_na_soma_limite="true"))
     comum = categoria(ap, 2026, 3, Categoria.COMUM)
     assert (comum.vendas_acoes, comum.vendas_limite, comum.isento, comum.imposto) == (
         D("15000.00"),
@@ -146,3 +135,13 @@ def test_venda_em_day_trade_fica_fora_da_soma_do_limite_de_isencao() -> None:
     assert mes(ap, 2026, 3).darf == D("760.00")
     [aviso] = ap.avisos
     assert aviso.startswith("03/2026: as vendas de ações em day trade (R$ 10.050,00) entram")
+    ap = livro.apurar(date(2026, 3, 31), parametros(day_trade_na_soma_limite="false"))
+    comum = categoria(ap, 2026, 3, Categoria.COMUM)
+    assert (comum.vendas_acoes, comum.vendas_limite, comum.isento, comum.imposto) == (
+        D("15000.00"),
+        D("15000.00"),
+        D("5000.00"),
+        0,
+    )
+    assert not ap.avisos
+    assert mes(ap, 2026, 3).darf == D("10.00")

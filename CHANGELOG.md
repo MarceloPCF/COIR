@@ -10,6 +10,9 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ## [Não lançado]
 
+### Alterado
+- **Limite de isenção de R$ 20 mil**: a venda de ações em day trade passa a entrar na soma das vendas do mês, como já entravam a venda por exercício de opção e a do termo (Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I). O ganho do day trade continua sem isenção. Num mês em que só o day trade leva a soma acima de R$ 20 mil, o lucro das vendas comuns passa a ser tributado, e a apuração avisa. A memória de cálculo mostra a soma e as duas parcelas (operações comuns e day trade).
+
 ### Adicionado
 - **Rótulos das notas escritos de outro jeito**: o COIR passa a reconhecer os rótulos da nota em outras grafias, o que ajuda a ler notas de corretoras que ele ainda não conhece. Valem, por exemplo, "Data do pregão", "Data pregao", "D. pregão", "Dt pregão" e "Datapregão"; "Nº da nota" e "Número da nota"; "Fl."; "Cód. cliente"; e "Tx. liquidação". Também valem acentos e maiúsculas trocados, palavras coladas ou separadas e o rótulo quebrado em duas linhas. As formas aceitas ficam reunidas num só arquivo (`coir/parsing/rotulos.yaml`). Nenhuma delas casa com outro campo: "Data liquidação" não vira data do pregão, e "Taxas BM&F (emol+f.gar)" não vira emolumentos. As notas que o COIR já lia saem iguais.
 - **Restituição de capital pelo pacote público**: a coleta guarda as restituições de capital em dinheiro do histórico da B3 (antes só JCP), e a tela Eventos as propõe como redução de capital, só com o valor, para quem não importou a movimentação.
