@@ -292,6 +292,66 @@ def test_registro_de_atividades_nunca_grava_cpf(tmp_path: Path) -> None:
             h.close()
 
 
+def _erro_do_asyncio(mensagem: str, erro: OSError, winerror: int) -> None:
+    """Como o laço de eventos registra a exceção de um callback (``default_exception_handler``)."""
+    import asyncio
+
+    erro.winerror = winerror  # type: ignore[misc]  # fora do Windows o atributo não existe
+    try:
+        raise erro
+    except OSError as levantado:
+        laco = asyncio.new_event_loop()
+        try:
+            laco.call_exception_handler({"message": mensagem, "exception": levantado})
+        finally:
+            laco.close()
+
+
+def test_conexao_derrubada_pelo_navegador_nao_vira_erro(tmp_path: Path) -> None:
+    """Trocar de tela rápido derruba a conexão, e o asyncio do Windows registra como erro o
+    ConnectionResetError [WinError 10054] de ``_call_connection_lost``: desce para DEBUG e some do
+    registro e da auditoria. Outro erro do asyncio, mesmo de conexão, continua aparecendo."""
+    import logging
+
+    from coir.config import configurar_registro
+    from coir.servicos.manutencao import registro
+
+    derrubada = "Exception in callback _ProactorBasePipeTransport._call_connection_lost()"
+    arquivo = configurar_registro(tmp_path)
+    asyncio_log = logging.getLogger("asyncio")
+    vistos: list[logging.LogRecord] = []
+    coletor = logging.Handler(logging.DEBUG)
+    coletor.emit = vistos.append  # type: ignore[method-assign]
+    try:
+        _erro_do_asyncio(derrubada, ConnectionResetError(104, "derrubada"), 10054)
+        auditoria = tmp_path / "logs" / "auditoria.jsonl"
+        assert '"modulo":"asyncio"' not in auditoria.read_text(encoding="utf-8")
+        _erro_do_asyncio("Accept failed on a socket", OSError(64, "rede"), 64)
+        _erro_do_asyncio(derrubada, ConnectionResetError(104, "outra"), 10053)
+        for h in logging.getLogger().handlers:
+            h.flush()
+        entradas = registro(tmp_path)
+        assert [(e.tipo, e.area, e.mensagem.splitlines()[0]) for e in entradas] == [
+            ("Erro", "Sistema", derrubada),
+            ("Erro", "Sistema", "Accept failed on a socket"),
+        ]
+        assert "10054" not in "\n".join(e.detalhe for e in entradas)
+        assert auditoria.read_text(encoding="utf-8").count('"modulo":"asyncio"') == 2
+
+        asyncio_log.setLevel(logging.DEBUG)  # com --verbose ela aparece, como DEBUG
+        asyncio_log.addHandler(coletor)
+        _erro_do_asyncio(derrubada, ConnectionResetError(104, "derrubada"), 10054)
+        assert [r.levelname for r in vistos if r.getMessage().startswith(derrubada)] == ["DEBUG"]
+    finally:
+        asyncio_log.setLevel(logging.NOTSET)
+        asyncio_log.removeHandler(coletor)
+        asyncio_log.filters.clear()
+        raiz = logging.getLogger()
+        for h in [h for h in raiz.handlers if getattr(h, "baseFilename", "") == str(arquivo)]:
+            raiz.removeHandler(h)
+            h.close()
+
+
 def test_registro_legivel_para_a_tela(tmp_path: Path) -> None:
     """O arquivo cru (com tracebacks) vira entradas com tipo, área e mensagem em português, a mais
     recente primeiro; o erro de uma tela aponta a tela e a última linha do traceback."""

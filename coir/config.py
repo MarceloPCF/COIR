@@ -132,10 +132,35 @@ class _FormatoSemDados(logging.Formatter):
         return RE_CPF.sub("***", texto)
 
 
+CONEXAO_DERRUBADA = "Exception in callback _ProactorBasePipeTransport._call_connection_lost("
+WSAECONNRESET = 10054
+
+
+class _ConexaoDerrubada(logging.Filter):
+    """O navegador derrubou a conexão (troca rápida de tela) e o laço de eventos do Windows
+    (Proactor) registra como erro o ``ConnectionResetError`` [WinError 10054] de fechar o socket
+    já derrubado: não é erro do COIR. Só essa combinação desce para DEBUG (aparece com
+    ``--verbose``); qualquer outro erro do asyncio segue como está."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        erro = record.exc_info[1] if record.exc_info else None
+        if (record.name != "asyncio" or not isinstance(erro, ConnectionResetError)
+                or getattr(erro, "winerror", None) != WSAECONNRESET
+                or not record.getMessage().startswith(CONEXAO_DERRUBADA)):  # fmt: skip
+            return True
+        record.levelno, record.levelname = logging.DEBUG, logging.getLevelName(logging.DEBUG)
+        # o nível do logger já foi conferido com o de antes (ERROR): confere de novo com DEBUG
+        return logging.getLogger(record.name).isEnabledFor(logging.DEBUG)
+
+
+_CONEXAO_DERRUBADA = _ConexaoDerrubada()
+
+
 def configurar_registro(dados: Path) -> Path:
     """Registro de atividades em ``<dados>/logs/coir.log`` (rotativo, 1 MB x 5), que fica neste
     computador, e o de auditoria (``coir.auditoria``), que o usuário pode mandar ao suporte."""
     arquivo = dados / ARQUIVO_REGISTRO
+    logging.getLogger("asyncio").addFilter(_CONEXAO_DERRUBADA)  # não repete se já estiver
     auditoria.configurar(dados, VERSAO)
     arquivo.parent.mkdir(parents=True, exist_ok=True)
     raiz = logging.getLogger()
