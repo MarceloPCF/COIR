@@ -11,4 +11,8 @@ Duas abas:
 
 O titular sai do CPF impresso na nota; se ele não existir, é criado (confira o nome em Cadastros).
 
+**Corretora que o COIR ainda não conhece:** ele tenta ler a nota pelos layouts padrão. Se os totais fecharem, a nota entra com um aviso para você conferir as operações (se algo estiver errado, mande a nota pela tela [Suporte](suporte.md)); se não fecharem, ela é recusada com o motivo, e nada dela é gravado.
+
+Depois de importar notas, os desdobramentos, grupamentos e bonificações com custo publicado das ações em carteira entram sozinhos, e um aviso diz quantos; veja a tela [Eventos](eventos.md).
+
 [Voltar ao índice do manual](../README.md)

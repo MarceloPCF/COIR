@@ -13,7 +13,8 @@ usam o **banco de demonstração**: um ano (2025) de um investidor fictício, ge
 
 ## Telas
 O menu à esquerda agrupa as telas. O topo traz o titular e o ano em uso (valem para todas as
-telas), o tema claro/escuro e o botão de recolher o menu.
+telas), o tema claro/escuro e o botão de recolher o menu. Em cada tela, o botão **Como faço?** abre a
+página deste manual ao lado, sem cobrir o que você está preenchendo.
 
 | Grupo | Tela | Para quê |
 |---|---|---|

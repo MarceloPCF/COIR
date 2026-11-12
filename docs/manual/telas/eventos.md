@@ -10,6 +10,14 @@ O que a B3 mostra e ainda não está no seu histórico, vindo das tabelas públi
 
 Desdobramentos, grupamentos e bonificações com custo publicado pela companhia na CVM **entram sozinhos** para as ações que estavam em carteira na data, ao importar notas e ao abrir esta tela. A tela mostra quantos entraram, com **Desfazer**; o que você apagar não volta. Eventos depois da sua última nota ficam de fora até você importar as notas seguintes, porque o COIR não sabe se você ainda tinha o ativo.
 
+No alto da aba podem aparecer avisos:
+
+- **Movimentação da B3 ausente ou incompleta:** sem a planilha de movimentação do período das notas, subscrições, restituições e ofertas não aparecem. Importe-a em Importar › Planilhas da B3.
+- **Bonificação sem custo atribuído:** já lançada, mas sem o custo, o preço médio da venda sai errado. **Corrigir** abre o evento na aba Lançados.
+- **Ativo que parou de negociar:** posição em ativo sem negócio na bolsa há mais de 90 dias, com o que houve, quando se sabe (falta um evento?). **Ignorar** tira o aviso daqui e do sino.
+
+Entre as propostas também vêm a **restituição de capital** em dinheiro (proposta como redução de capital, só com o valor) e o **direito não exercido**: o direito, recibo ou bônus de subscrição comprado que venceu sem ser exercido nem vendido vira perda em operações comuns na data do fim do prazo de subscrição. A caixa **mostrar lançadas, ignoradas e posteriores** mostra o resto da lista.
+
 Aqui fica o que depende de você:
 
 - **Uma a uma:** clique numa proposta, confira os campos e use **Gravar**, ou **Ignorar proposta** se ela não vale para você. A movimentação da B3 traz a data do crédito; troque pela data ex (primeiro pregão sem o direito).
@@ -19,7 +27,7 @@ Ficam de fora das seguras o que pede algo seu (bonificação sem custo publicado
 
 ## Lançados
 
-Todos os eventos do titular. Clique num deles para corrigir ou excluir. Aqui também entram os que não têm aba própria: desdobramento, grupamento, bonificação, redução de capital e leilão de fração.
+Todos os eventos do titular. Clique num deles para corrigir ou excluir. Aqui também entram os que não têm aba própria: desdobramento, grupamento, bonificação, redução de capital, leilão de fração e direito não exercido.
 
 ## Subscrições
 
