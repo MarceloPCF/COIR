@@ -31,6 +31,16 @@ def seletor(estado: Estado, chave: str, rotulo: str, atual: Path,
                 ui.notify("Pasta trocada." if pasta else "Voltou à pasta padrão.", type="positive")
                 recarregar()
 
+            def usar_digitada() -> None:
+                """Campo vazio ou caminho relativo viraria a pasta onde o COIR foi aberto (o
+                Path("") é a pasta atual): pede o caminho completo."""
+                texto = (campo.value or "").strip().strip('"')
+                if not texto or not Path(texto).is_absolute():
+                    ui.notify("Informe o caminho completo da pasta (ou use Procurar...).",
+                              type="warning")  # fmt: skip
+                    return
+                usar(Path(texto))
+
             async def procurar() -> None:
                 escolhida = await escolher_pasta(Path(campo.value or str(atual)))
                 if escolhida is not None and not campo.is_deleted:
@@ -40,8 +50,7 @@ def seletor(estado: Estado, chave: str, rotulo: str, atual: Path,
             with ui.row().classes("gap-2"):
                 ui.button("Procurar...", icon="folder_open", on_click=procurar).props(
                     "flat dense").mark(f"{chave}-procurar")  # fmt: skip
-                ui.button("Usar esta pasta", icon="check",
-                          on_click=lambda: usar(Path((campo.value or "").strip().strip('"'))),
+                ui.button("Usar esta pasta", icon="check", on_click=usar_digitada,
                           ).props("flat dense").mark(f"{chave}-usar")  # fmt: skip
                 ui.button("Voltar à padrão", icon="undo", on_click=lambda: usar(None)).props(
                     "flat dense")  # fmt: skip

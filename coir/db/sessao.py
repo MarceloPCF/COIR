@@ -18,7 +18,7 @@ from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import Engine, create_engine, event
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import DatabaseError, OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
 from coir.erros import BancoError
@@ -49,8 +49,21 @@ def _config_alembic() -> Config:
 
 
 def revisao_atual(engine: Engine) -> str | None:
-    with engine.connect() as conexao:
-        return MigrationContext.configure(conexao).get_current_revision()
+    """Revisão do esquema; arquivo que não é banco SQLite (corrompido, ou outro arquivo com o nome
+    do banco) e banco travado viram BancoError, que a janela explica em vez de não abrir."""
+    try:
+        with engine.connect() as conexao:
+            return MigrationContext.configure(conexao).get_current_revision()
+    except OperationalError as erro:
+        raise BancoError(
+            f"banco em uso ou inacessível: {engine.url.database} ({erro.orig}); feche outras "
+            "janelas do COIR e tente de novo"
+        ) from erro
+    except DatabaseError as erro:
+        raise BancoError(
+            f"{engine.url.database} não é um banco do COIR ou está corrompido ({erro.orig}); "
+            "restaure um backup da pasta backups"
+        ) from erro
 
 
 def revisao_final() -> str | None:

@@ -250,8 +250,16 @@ def _conta_bmf(texto: str, variante: str) -> str:
 def extrair_pasta(pasta: Path, sufixo: str = ".pdf") -> ResultadoExtracao:
     """Todos os PDFs de nota da pasta, em ordem; outros arquivos e subpastas geram aviso.
     ``sufixo=".txt"``: os textos de nota (base anonimizada de desenvolvimento)."""
+    if not pasta.is_dir():
+        raise ExtracaoError(f"pasta de notas não encontrada: {pasta}")
     total = ResultadoExtracao()
-    for caminho in sorted(pasta.iterdir()):
+    try:
+        conteudo = sorted(pasta.iterdir())
+    except OSError as erro:  # sem permissão de leitura
+        raise ExtracaoError(
+            f"não foi possível ler a pasta {pasta}: {erro.strerror or erro}"
+        ) from erro
+    for caminho in conteudo:
         if not (caminho.is_file() and caminho.suffix.lower() == sufixo):
             total.avisos.append(f"ignorado (não é PDF de nota): {caminho.name}")
             continue

@@ -109,7 +109,9 @@ def test_pagamento_invalido_e_recusado(
     ("texto", "valor"),
     [("1.234,56", "1234.56"), ("1234,56", "1234.56"), ("523.47", "523.47"), ("523.4", "523.4"),
      ("1.234", "1234"), ("1.234.567", "1234567"), ("R$ 92,19", "92.19"), ("92", "92"),
-     ("abc", None), ("", None)],
+     ("abc", None), ("", None), ("-5", "-5"), ("1e400", None), ("1e9", None), ("NaN", None),
+     ("Infinity", None), ("1_000", None), ("1,2,3", None), ("9999999999999999", None),
+     (",5", "0.5"), ("5,", "5"), ("+5", "5"), (".5", "0.5"), ("1.234,", "1234")],
 )  # fmt: skip
 def test_valor_digitado_no_formato_brasileiro(texto: str, valor: str | None) -> None:
     """Revisão I3: "523.47" (ponto decimal) não pode virar 52.347."""

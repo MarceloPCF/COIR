@@ -17,8 +17,12 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Literal
+from xml.etree.ElementTree import ParseError
+from zipfile import BadZipFile
 
 from openpyxl import load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
+from openpyxl.workbook.workbook import Workbook
 
 from coir.domain.b3 import LinhaMovimentacao, LinhaNegociacao, LinhaPosicao, TipoPlanilha
 from coir.erros import ImportacaoError
@@ -58,8 +62,24 @@ def tipo(caminho: Path) -> TipoPlanilha:
                           f"consolidado da B3 (abas: {', '.join(sorted(abas))})")  # fmt: skip
 
 
+def _abrir(caminho: Path, data_only: bool = False) -> Workbook:
+    """Abre o xlsx; arquivo vazio, corrompido ou de outro tipo com nome .xlsx vira erro de
+    importação com o nome do arquivo (em vez de erro inesperado na tela)."""
+    try:
+        return load_workbook(caminho, read_only=True, data_only=data_only)
+    except (BadZipFile, InvalidFileException, KeyError, EOFError, ParseError) as erro:
+        raise ImportacaoError(
+            f"{caminho.name}: não é uma planilha do Excel válida (arquivo vazio, corrompido ou "
+            "de outro tipo)"
+        ) from erro
+    except OSError as erro:  # sem permissão, apagado entre a escolha e a leitura
+        raise ImportacaoError(
+            f"não foi possível ler {caminho.name}: {erro.strerror or erro}"
+        ) from erro
+
+
 def _abas(caminho: Path) -> list[str]:
-    livro = load_workbook(caminho, read_only=True)
+    livro = _abrir(caminho)
     try:
         return list(livro.sheetnames)
     finally:
@@ -67,27 +87,38 @@ def _abas(caminho: Path) -> list[str]:
 
 
 def _linhas(caminho: Path, aba: str, exigidas: tuple[str, ...]) -> Iterator[dict[str, Any]]:
-    livro = load_workbook(caminho, read_only=True, data_only=True)
+    livro = _abrir(caminho, data_only=True)
     try:
-        folha = livro[aba]
-        folha.reset_dimensions()  # type: ignore[union-attr]
-        linhas = folha.iter_rows(values_only=True)  # type: ignore[union-attr]
-        cabecalho = [str(c).strip() if c is not None else "" for c in next(linhas, ())]
-        faltando = [c for c in exigidas if c not in cabecalho]
-        if faltando:
-            raise ImportacaoError(f"{caminho.name}, aba {aba}: colunas ausentes "
-                                  f"{', '.join(faltando)} (a B3 mudou o layout?)")  # fmt: skip
-        for valores in linhas:
-            if valores is None or all(v in (None, "") for v in valores):
-                continue
-            linha = dict(zip(cabecalho, valores, strict=False))
-            if _vazio(linha.get(exigidas[0])) or any(
-                str(v).strip() == "Total" for v in valores if v is not None
-            ):
-                continue  # rodapé do consolidado (linha "Total" ou só com o valor somado)
-            yield linha
+        yield from _linhas_da_folha(livro, caminho, aba, exigidas)
+    except (BadZipFile, ParseError, EOFError) as erro:  # read_only lê a aba aos poucos
+        raise ImportacaoError(
+            f"{caminho.name}, aba {aba}: planilha corrompida (abra no Excel e salve de novo, ou "
+            "exporte outra vez da Área do Investidor)"
+        ) from erro
     finally:
         livro.close()
+
+
+def _linhas_da_folha(
+    livro: Workbook, caminho: Path, aba: str, exigidas: tuple[str, ...]
+) -> Iterator[dict[str, Any]]:
+    folha = livro[aba]
+    folha.reset_dimensions()  # type: ignore[union-attr]
+    linhas = folha.iter_rows(values_only=True)  # type: ignore[union-attr]
+    cabecalho = [str(c).strip() if c is not None else "" for c in next(linhas, ())]
+    faltando = [c for c in exigidas if c not in cabecalho]
+    if faltando:
+        raise ImportacaoError(f"{caminho.name}, aba {aba}: colunas ausentes "
+                              f"{', '.join(faltando)} (a B3 mudou o layout?)")  # fmt: skip
+    for valores in linhas:
+        if valores is None or all(v in (None, "") for v in valores):
+            continue
+        linha = dict(zip(cabecalho, valores, strict=False))
+        if _vazio(linha.get(exigidas[0])) or any(
+            str(v).strip() == "Total" for v in valores if v is not None
+        ):
+            continue  # rodapé do consolidado (linha "Total" ou só com o valor somado)
+        yield linha
 
 
 def _texto(v: Any) -> str:

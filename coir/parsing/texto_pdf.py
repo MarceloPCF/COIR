@@ -55,13 +55,17 @@ def abrir(caminho: Path, senhas: Sequence[str] = ()) -> pdfium.PdfDocument:
         return pdfium.PdfDocument(caminho)
     except pdfium.PdfiumError as erro:
         if erro.err_code != pdfium_c.FPDF_ERR_PASSWORD:
-            raise PdfError(f"PDF ilegível: {caminho.name}") from erro
+            raise PdfError(
+                f"PDF ilegível: {caminho.name} (arquivo vazio, corrompido ou que não é PDF)"
+            ) from erro
     for senha in dict.fromkeys(s for s in senhas if s):
         try:
             return pdfium.PdfDocument(caminho, password=senha)
         except pdfium.PdfiumError as erro:
             if erro.err_code != pdfium_c.FPDF_ERR_PASSWORD:
-                raise PdfError(f"PDF ilegível: {caminho.name}") from erro
+                raise PdfError(
+                    f"PDF ilegível: {caminho.name} (arquivo vazio, corrompido ou que não é PDF)"
+                ) from erro
     raise PdfSenhaError(
         f"PDF protegido por senha: {caminho.name}. Informe a senha do PDF ao importar (campo "
         '"Senha dos PDFs" na tela Importar ou, na linha de comando, coir importar --senha); nas '

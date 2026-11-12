@@ -133,16 +133,23 @@ ORIGENS_TELA = frozenset({"tela", "b3"})  # lançados na tela 7: o CSV com --sub
 
 def ler_csv(caminho: Path) -> list[dict[str, str]]:
     """CSV em UTF-8 (com ou sem BOM), separado por vírgula ou ponto e vírgula (Excel pt-BR)."""
-    with caminho.open(encoding="utf-8-sig", newline="") as arquivo:
-        cabecalho = arquivo.readline()
-        arquivo.seek(0)
-        leitor = csv.DictReader(
-            arquivo, delimiter=";" if cabecalho.count(";") > cabecalho.count(",") else ","
-        )
-        faltam = [c for c in COLUNAS if c not in (leitor.fieldnames or [])]
-        if faltam:
-            raise ImportacaoError(f"{caminho.name}: colunas ausentes: {', '.join(faltam)}")
-        return [{k: (v or "").strip() for k, v in linha.items()} for linha in leitor]
+    try:
+        with caminho.open(encoding="utf-8-sig", newline="") as arquivo:
+            cabecalho = arquivo.readline()
+            arquivo.seek(0)
+            leitor = csv.DictReader(
+                arquivo, delimiter=";" if cabecalho.count(";") > cabecalho.count(",") else ","
+            )
+            faltam = [c for c in COLUNAS if c not in (leitor.fieldnames or [])]
+            if faltam:
+                raise ImportacaoError(f"{caminho.name}: colunas ausentes: {', '.join(faltam)}")
+            return [{k: (v or "").strip() for k, v in linha.items()} for linha in leitor]
+    except OSError as erro:
+        raise ImportacaoError(f"não foi possível ler {caminho}: {erro.strerror or erro}") from erro
+    except UnicodeDecodeError as erro:
+        raise ImportacaoError(
+            f'{caminho.name}: não é um CSV em UTF-8 (salve como "CSV UTF-8" no Excel)'
+        ) from erro
 
 
 def importar_eventos(
