@@ -80,7 +80,7 @@ CAMPOS: dict[str, object] = {
     **_campos(
         RE_GRANDEZA,
         "darf darf_acumulado imposto irrf prejuizo quantidade resultado_comum "
-        "resultado_day_trade resultado_fii valor vendas_acoes",
+        "resultado_day_trade resultado_fii valor vendas_acoes vendas_limite",
     ),
     "diferenca": RE_DIFERENCA,
     **_campos(RE_ATIVO, "ativo ativo_destino"),

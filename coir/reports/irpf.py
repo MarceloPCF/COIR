@@ -430,8 +430,8 @@ def fichas(d: DadosRelatorio) -> FichasIrpf | None:
                   "dele, o imposto decaiu e não há o que retificar nem pagar. O prazo é de 5 anos "
                   "do mês quando houve DARF paga no mês (CTN art. 150 §4º); no mês sem pagamento, "
                   "mesmo com IRRF retido, conta 5 anos a partir de 1º de janeiro do ano seguinte "
-                  "ao do mês (art. 173 I), o que dá até cerca de 12 meses a mais (decisões do "
-                  "usuário de 20/10, 03/11 e 10/11/2026, leitura conservadora)")  # fmt: skip
+                  "ao do mês (art. 173 I), o que dá até cerca de 12 meses a mais (leitura "
+                  "conservadora)")  # fmt: skip
     avisos.append("Imposto pago: o a pagar do mês quando a DARF que o cobriu já foi emitida; no "
                   "programa, informe o valor efetivamente pago no DARF 6015")  # fmt: skip
     return FichasIrpf(
@@ -505,8 +505,7 @@ def declaracao(d: DadosRelatorio) -> Relatorio:
              sum((x.atual for x in f.dividas), ZERO))  # fmt: skip
     secoes.append(Secao("Dívidas e ônus reais", colunas, tuple(linhas), total if linhas else None,
                         nota="Posição vendida em aberto (opção lançada, venda a descoberto) pelo "
-                        "valor recebido; sem norma específica (decisão do usuário de "
-                        "20/10/2026)."))  # fmt: skip
+                        "valor recebido; sem norma específica (critério do COIR)."))  # fmt: skip
     colunas = (Coluna("Código"), Coluna("CNPJ da fonte pagadora"),
                Coluna("Fonte pagadora / descrição"), Coluna("Valor", T.DINHEIRO))  # fmt: skip
     for ficha, titulo in (("isentos", "Rendimentos isentos e não tributáveis"),

@@ -94,6 +94,72 @@ def _linha(texto: str) -> str:
     return " ".join(texto.split())
 
 
+# Anotações de desenvolvimento (quem decidiu, quando, em que fase) ficam no código e em
+# docs/regras-fiscais.md; no documento publicado viram "critério do COIR". A ordem importa.
+_DATA = r"\d{1,2}(?:-\d{1,2})?/\d{1,2}(?:/\d{4})?"  # 19/10/2026, 14-15/10/2026, 20/10
+_DATAS = rf"{_DATA}(?:(?:, | e ){_DATA})*"
+# datas do desenvolvimento (set. a dez./2026): só elas somem quando aparecem soltas entre
+# parênteses; "(19/11/2025)" ou "(01/01/2026)" citam versão de página ou vigência e ficam
+_DEV = r"\d{1,2}(?:-\d{1,2})?/(?:0?9|1[0-2])/2026"
+_DEVS = rf"{_DEV}(?:(?:, | e ){_DEV})*"
+_ESPECIALISTA = r"(?:do especialista(?: fiscal)?|do especialista-fiscal-b3)"
+LIMPEZA: tuple[tuple[re.Pattern[str], str], ...] = tuple(
+    (re.compile(padrao, re.IGNORECASE), troca)
+    for padrao, troca in (
+        # "parecer do especialista de 09/11/2026, seguido pelo usuário", "pareceres de 20 e 21/10"
+        (rf"pareceres(?: {_ESPECIALISTA})?(?: de)? (?:\d{{1,2}} e )?{_DATAS}", "critérios do COIR"),
+        (
+            rf"parecer(?: {_ESPECIALISTA})?(?:,| de)? {_DATAS},? seguido pelo usuário",
+            "critério do COIR",
+        ),
+        (rf"parecer(?: {_ESPECIALISTA})?(?:,| de)? {_DATAS}", "critério do COIR"),
+        (rf"parecer {_ESPECIALISTA}", "critério do COIR"),
+        # "decisão do usuário de 03/11/2026, com parecer…", "decisões da F1 e do usuário, 15/10"
+        (rf"decisões da F\d+ e do usuário(?:, {_DATAS})?", "critérios do COIR"),
+        (rf"decisões do usuário \({_DATAS}\)", "critérios do COIR"),
+        (rf"decisões do usuário(?: de)? {_DATAS}", "critérios do COIR"),
+        (rf"decisão do usuário \({_DATAS}\)", "critério do COIR"),
+        (rf"decisão do usuário(?: de)? {_DATAS}(?:, com critério do COIR)?", "critério do COIR"),
+        (r"decisões do usuário", "critérios do COIR"),
+        (r"decisão do usuário", "critério do COIR"),
+        (rf"(?:desde )?a decisão de {_DATAS}", "o critério do COIR"),
+        (rf"decisão de {_DATAS}", "critério do COIR"),
+        (
+            rf"(?:escolhida|confirmad[oa]|conferid[oa]) pelo usuário(?: em {_DATAS})?",
+            "adotada no COIR",
+        ),
+        (r",? seguido pelo usuário", ""),
+        (r"\bpelo (?:usuário|mantenedor)\b", "no COIR"),
+        (r"\bleitura A\d+,? ", ""),
+        # fases do projeto: "(F8, 20/10/2026)", "da F4 (motor fiscal, 14-15/10/2026)", "na F8"
+        (r" ?\(F\d+[a-z]?(?:, [^()]*?)?\)", ""),
+        (rf" ?\((?:[^()]*?, )?{_DEVS}\)(?=[:.;,]| [A-Z|]|$)", ""),
+        (r"\b(?:da|na|pela|desde a) F\d+[a-z]?\b,? ?", ""),
+        (rf"\bF\d+[a-z]?, {_DATAS}", ""),
+        (rf"decisão delegada ao especialista em {_DATAS}", "critério do COIR"),
+        (r" \(não foi objeto do parecer\)", ""),
+        (r" \(aba [^()]* do v2\)", ""),
+        # títulos de seção de docs/regras-fiscais.md e sobras do corte do trecho
+        (r"^Decisões(?: d[ao] [^:]+)?\s*$", "Critérios do COIR"),
+        (r"Casos do especialista fiscal, conferidos à mão", "Casos conferidos à mão"),
+        (r"Casos do especialista fiscal", "Casos conferidos à mão"),
+        (r"Casos fechados à mão pelo especialista", "Casos fechados à mão"),
+        (rf"^{_DEVS}\)[:*]*\s*", ""),
+        (r" ?\(?\b(?:parecer|pareceres|decisões|decisão)(?: [a-z]+){0,2}…$", "…"),
+    )
+)
+
+
+def _publico(texto: str) -> str:
+    """O trecho como sai no documento publicado, sem as anotações de desenvolvimento."""
+    for padrao, troca in LIMPEZA:
+        texto = padrao.sub(troca, texto)
+    texto = re.sub(r"critério do COIR(?:[,;] critério do COIR)+", "critério do COIR", texto)
+    texto = re.sub(r"\(\s*[,;]?\s*\)", "", texto)
+    texto = re.sub(r"(^|[.:] )crit(é)rio", r"\1Crit\2rio", texto)
+    return re.sub(r" {2,}", " ", texto).strip()
+
+
 def _rel(caminho: Path) -> str:
     return caminho.relative_to(RAIZ).as_posix()
 
@@ -159,7 +225,7 @@ def _docstrings(raiz: Path) -> Iterator[tuple[str, Uso]]:
 
 def _janela(texto: str, norma: str, largura: int = 110) -> str:
     """O trecho em volta da citação (o texto inteiro, se for curto), cortado em palavras."""
-    texto = _linha(texto)
+    texto = _publico(_linha(texto))  # limpa antes de cortar
     if len(texto) <= 2 * largura:
         return texto
     i = max(texto.find(norma.split("/")[0].split(" ")[-1]), 0)
@@ -240,7 +306,7 @@ def gerar(raiz: Path = RAIZ) -> str:
     for norma in sorted(usos, key=_ordem):
         partes += ["", f"## {norma}", ""]
         for u in sorted(usos[norma]):
-            partes.append(f"- `{u.arquivo}` — {u.onde}: {u.trecho}")
+            partes.append(f"- `{u.arquivo}` — {_publico(u.onde)}: {_publico(u.trecho)}")
     return "\n".join(partes) + "\n"
 
 
