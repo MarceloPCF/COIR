@@ -2,7 +2,8 @@
 
 ![Assistente de primeiros passos](imagens/inicio.png)
 
-1. **Baixe e extraia** o `COIR-windows.zip` (página de versões do GitHub) numa pasta sua,
+1. **Baixe e extraia** o `COIR-windows.zip` (botão Baixar do site https://coir.com.br, ou a página
+   de versões do GitHub) numa pasta sua,
    por exemplo `Documentos\COIR`. Dê dois cliques em `COIR.exe`. Se o Windows mostrar o aviso do
    SmartScreen, clique em "Mais informações" e "Executar assim mesmo" (o programa não tem
    assinatura digital; confira o SHA-256 se quiser). Se não abrir, veja
