@@ -15,7 +15,7 @@ from pathlib import Path
 import markdown2
 
 RAIZ = Path(__file__).resolve().parents[2]
-SITE = "https://marcelopcf.github.io/COIR/"
+SITE = "https://coir.com.br/"
 RE_LINK = re.compile(r'href="([^":#]+?)\.md(#[^"]*)?"')
 RE_TITULO = re.compile(r"^# (.+)$", re.M)
 
