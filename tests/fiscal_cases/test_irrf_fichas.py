@@ -70,8 +70,8 @@ def test_nota_mista_reparte_o_irrf_pelas_vendas_comuns() -> None:
 
 def test_irrf_de_fii_usado_em_dezembro_nao_vai_para_a_declaracao() -> None:
     """10/12/2026: V 250 KNRI11 a 160 = 40.000 (PM 168, prejuízo FII -2.000), V 300 WEGE3 a 50 =
-    15.000 (ganho 1.200, isento: vendas <= 20.000; o day trade fica fora da soma, decisão de
-    10/11/2026) e day trade PETR4 1.000 a 30,00/30,50 (ganho 500; 20% = 100,00; IRRF 1% 5,00).
+    15.000 (ganho 1.200) e day trade PETR4 100 a 30,00/35,00 (venda 3.500, ganho 500; 20% =
+    100,00; IRRF 1% 5,00). Vendas de ações 15.000 + 3.500 = 18.500 <= 20.000: WEGE3 isento.
     IRRF 0,005% 2,75: FII 2,00 (40/55) e comuns 0,75. O saldo único deduz 5,00 + 0,75 + 2,00:
     DARF 92,25 (vence 29/01/2027), nada para a declaração; os 2,00 de origem FII ficam na ficha
     de comuns (sem uso duplo)."""
@@ -79,8 +79,8 @@ def test_irrf_de_fii_usado_em_dezembro_nao_vai_para_a_declaracao() -> None:
     livro.nota(date(2026, 11, 3), livro.op("C", "KNRI11", 250, "168", tipo=FII),
                livro.op("C", "WEGE3", 300, "46"))  # fmt: skip
     livro.nota(date(2026, 12, 10), livro.op("V", "KNRI11", 250, "160", tipo=FII),
-               livro.op("V", "WEGE3", 300, "50"), livro.op("C", "PETR4", 1000, "30"),
-               livro.op("V", "PETR4", 1000, "30.50"), irrf="2.75", irrf_dt="5.00")  # fmt: skip
+               livro.op("V", "WEGE3", 300, "50"), livro.op("C", "PETR4", 100, "30"),
+               livro.op("V", "PETR4", 100, "35"), irrf="2.75", irrf_dt="5.00")  # fmt: skip
     ap = livro.apurar(date(2026, 12, 31))
     dez = mes(ap, 2026, 12)
     assert (dez.darf, dez.vencimento) == (D("92.25"), date(2027, 1, 29))

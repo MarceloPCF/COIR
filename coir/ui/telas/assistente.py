@@ -21,10 +21,14 @@ from coir.ui.telas import importar
 
 def _contar_pdfs(pasta: Path) -> str:
     notas = pasta / "_notas-corretagens"
-    if not pasta.is_dir():
-        return "A pasta ainda não existe: o COIR cria ao continuar."
-    qtd = sum(1 for p in notas.glob("*") if p.suffix.lower() == ".pdf") if notas.is_dir() else 0
-    banco = "com banco do COIR" if (pasta / "coir.db").is_file() else "sem banco ainda"
+    try:  # no Linux, nome longo demais ou sem permissão dá OSError em vez de "não existe"
+        if not pasta.is_dir():
+            return "A pasta ainda não existe: o COIR cria ao continuar."
+        qtd = sum(1 for p in notas.glob("*") if p.suffix.lower() == ".pdf") if notas.is_dir() else 0
+        tem_banco = (pasta / "coir.db").is_file()
+    except OSError as erro:
+        return f"Não foi possível ler essa pasta: {erro.strerror or erro}."
+    banco = "com banco do COIR" if tem_banco else "sem banco ainda"
     return f"Pasta encontrada, {banco}; {qtd} PDFs em _notas-corretagens."
 
 

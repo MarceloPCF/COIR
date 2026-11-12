@@ -142,6 +142,9 @@ def dados_banco(
     )  # fmt: skip
 
 
+ANO_MINIMO, ANO_MAXIMO = 1900, 2999  # datas digitadas aceitas (não é parâmetro fiscal)
+
+
 def validar(destino: Path, formatos: tuple[str, ...], chaves: tuple[str, ...] | None) -> None:
     """Destino e opções conferidos antes de carregar o banco e rodar o motor."""
     if dentro_do_repositorio(destino):
@@ -162,17 +165,32 @@ def exportar(
 ) -> list[Path]:  # fmt: skip
     """Grava os relatórios; o nome dos arquivos não leva CPF (só o cabeçalho, dentro deles)."""
     validar(destino, formatos, chaves)
-    destino.mkdir(parents=True, exist_ok=True)
+    try:
+        destino.mkdir(parents=True, exist_ok=True)
+    except OSError as erro:  # unidade inexistente, caminho que é um arquivo, sem permissão
+        raise ExportacaoError(
+            f"não foi possível usar a pasta {destino}: {erro.strerror or erro}"
+        ) from erro
     prefixo = prefixo or f"coir-{dados.ano}-titular{dados.titular}"
     rels = relatorios(dados, chaves)
     saida: list[Path] = []
-    if "xlsx" in formatos:
-        saida.append(escrever_xlsx(rels, destino / f"{prefixo}.xlsx", dados.gerado_em))
-    if "csv" in formatos:
-        for r in rels:
-            saida += escrever_csv(r, destino, prefixo)
-    if "pdf" in formatos:
-        saida += [escrever_pdf(r, destino / f"{prefixo}-{r.chave}.pdf") for r in rels if r.pdf]
+    try:
+        if "xlsx" in formatos:
+            saida.append(escrever_xlsx(rels, destino / f"{prefixo}.xlsx", dados.gerado_em))
+        if "csv" in formatos:
+            for r in rels:
+                saida += escrever_csv(r, destino, prefixo)
+        if "pdf" in formatos:
+            saida += [escrever_pdf(r, destino / f"{prefixo}-{r.chave}.pdf") for r in rels
+                      if r.pdf]  # fmt: skip
+    except OSError as erro:  # o xlsx, o csv e o pdf chegam aqui como OSError
+        nome = Path(erro.filename).name if erro.filename else "um dos arquivos"
+        if isinstance(erro, PermissionError):  # aberto no Excel ou no leitor de PDF
+            raise ExportacaoError(
+                f"{nome} está aberto em outro programa (Excel, leitor de PDF) ou a pasta não "
+                "permite gravar; feche o arquivo e exporte de novo"
+            ) from erro
+        raise ExportacaoError(f"não foi possível gravar {nome}: {erro.strerror or erro}") from erro
     return saida
 
 
@@ -183,6 +201,9 @@ def exportar_carteira(
     """A carteira de uma data e visão (tela Carteira), em arquivos próprios: não sobrescreve os
     relatórios do ano."""
     validar(destino, formatos, ("carteira",))
+    if not ANO_MINIMO <= dia.year <= ANO_MAXIMO:  # ex.: ano 1: o ano anterior nem existe
+        raise ExportacaoError(f"data fora do intervalo: {dia:%d/%m/%Y} (use um ano entre "
+                              f"{ANO_MINIMO} e {ANO_MAXIMO})")  # fmt: skip
     dados = dados_banco(banco, refs, fiscais, dia.year, agora, titular, dia, visao)
     prefixo = f"coir-carteira-{dia:%Y-%m-%d}-por-{visao.value}-titular{titular}"
     return exportar(dados, destino, formatos, ("carteira",), prefixo)

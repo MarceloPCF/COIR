@@ -333,11 +333,11 @@ class ResultadoCategoria(Modelo):
     categoria: Categoria
     por_grupo: dict[Grupo, Decimal]
     resultado: Decimal  # soma dos grupos tributáveis no mês (sem o isento)
-    # só COMUM: vendas de ações à vista em operações comuns no mês (campo "Total em alienações de
-    # ações (op. comuns)" do demonstrativo de renda variável)
+    # só COMUM: vendas de ações à vista em operações comuns no mês (inclui exercício e termo; sem o
+    # day trade)
     vendas_acoes: Decimal = ZERO
-    # só COMUM: soma que decide o limite de R$ 20 mil (as comuns; o day trade só com o parâmetro
-    # day_trade_na_soma_limite, desligado desde a decisão de 10/11/2026)
+    # só COMUM: soma que decide o limite de R$ 20 mil: as comuns mais as vendas de ações em day
+    # trade (parâmetro day_trade_na_soma_limite, ligado)
     vendas_limite: Decimal = ZERO
     isento: Decimal = ZERO  # só COMUM: ganho de ações à vista isento
     prejuizo_anterior: Decimal = ZERO  # saldo (<= 0) de meses anteriores
@@ -477,6 +477,18 @@ class Apuracao(Modelo):
     def avisos(self) -> tuple[str, ...]:
         """Os avisos de todos os titulares."""
         return tuple(texto for _, texto in self.avisos_titular)
+
+    @staticmethod
+    def ano_do_aviso(aviso: str) -> int | None:
+        """Ano a que o aviso se refere, pelo começo do texto: "AAAA-MM-DD", "DD/MM/AAAA" ou
+        "MM/AAAA". Sem data no começo, None (o aviso vale para todos os anos)."""
+        partes = aviso[:10].split(":")[0].strip()
+        if len(partes) >= 4 and partes[:4].isdigit() and partes[4:5] in ("", "-"):
+            return int(partes[:4])
+        pedacos = partes.split("/")
+        if len(pedacos) in (2, 3) and all(p.isdigit() for p in pedacos) and len(pedacos[-1]) == 4:
+            return int(pedacos[-1])
+        return None
 
     def avisos_de(self, titular: int | None) -> tuple[str, ...]:
         """Os avisos de um titular só (sino, Painel e tela Apuração)."""

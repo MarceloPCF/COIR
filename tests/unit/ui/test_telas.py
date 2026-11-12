@@ -16,6 +16,7 @@ from nicegui.elements.upload_files import SmallFileUpload
 from nicegui.testing.user_simulation import user_simulation
 
 from coir import auditoria
+from coir.config import VERSAO
 from coir.domain.fiscal import Apuracao
 from coir.parsing.extrair import ResultadoExtracao
 from coir.servicos import manutencao
@@ -674,6 +675,10 @@ async def test_configuracoes_backup_restaurar_e_tema(
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/configuracoes")
         await user.should_see("Nenhum backup ainda.")
+        await user.should_see("Licença e código-fonte")  # avisos legais da AGPL
+        [fonte] = user.find(marker="codigo-fonte").elements
+        assert isinstance(fonte, ui.link)
+        assert fonte.props["href"] == f"https://github.com/MarceloPCF/COIR/tree/v{VERSAO}"
         user.find(marker="fazer-backup").click()
         await user.should_see("Backup feito", retries=ESPERA)
         from coir.servicos.cadastros import renomear_titular
@@ -715,8 +720,29 @@ async def test_suporte_prepara_confere_e_grava_o_zip(tmp_path: Path) -> None:
         assert zip_.enabled
         user.find(marker="suporte-zip").click()
         await user.should_see("Gravado:")
-        await user.should_see("suporte.coir@gmail.com")
+        await user.should_see("Envie para suporte.coir@gmail.com")  # o alto da tela já tem o e-mail
     assert len(list((estado.dados / "suporte").glob("*/notas-para-suporte-*.zip"))) == 1
+
+
+@pytest.mark.asyncio
+async def test_suporte_mostra_os_contatos(tmp_path: Path) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/suporte")
+        await user.should_see(marker="suporte-contatos")
+        links = {
+            e.props["href"]
+            for linha in user.find(marker="suporte-contatos").elements
+            for e in linha.descendants()
+            if isinstance(e, ui.link)
+        }
+    assert links == {
+        "mailto:suporte.coir@gmail.com",
+        "https://coir.com.br",
+        "https://www.instagram.com/coirapp/",
+        "https://www.youtube.com/@coirapp",
+    }
 
 
 @pytest.mark.asyncio

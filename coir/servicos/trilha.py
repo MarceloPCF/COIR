@@ -52,7 +52,7 @@ def _mes(m: MesApurado) -> None:
     if not auditoria.uma_vez("mes", m.titular, m.ano, m.mes, assinatura):
         return  # o mês não mudou desde o último cálculo nesta sessão
     if not (m.imposto or m.darf or m.darf_acumulado or m.irrf_mes or m.provisorio) and not any(
-        c.resultado or c.vendas_acoes or c.prejuizo_a_compensar for c in m.categorias
+        c.resultado or c.vendas_limite or c.prejuizo_a_compensar for c in m.categorias
     ):
         return  # mês sem nada (o motor apura todos desde a primeira nota)
     por = {c.categoria: c for c in m.categorias}
@@ -64,6 +64,7 @@ def _mes(m: MesApurado) -> None:
         resultado_day_trade=day_trade.resultado if day_trade else None,
         resultado_fii=fii.resultado if fii else None,
         vendas_acoes=comum.vendas_acoes if comum else None,
+        vendas_limite=comum.vendas_limite if comum else None,
         isento=bool(comum and comum.isento > 0),
         prejuizo=sum((c.prejuizo_a_compensar for c in m.categorias), Decimal(0)),
         imposto=m.imposto, irrf=m.irrf_mes, darf=m.darf, darf_acumulado=m.darf_acumulado,

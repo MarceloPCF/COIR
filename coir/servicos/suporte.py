@@ -52,6 +52,10 @@ ARQUIVO_MAPA = Path("_privado") / "mapa-anonimizacao.json"
 ARQUIVO_DADOS = Path("_privado") / "dados-para-ocultar.json"
 ARQUIVO_TERMOS = "termos-sensiveis.txt"  # a mesma lista local de tools/verificar_dados_pessoais
 EMAIL_SUPORTE = "suporte.coir@gmail.com"
+SITE = "https://coir.com.br"
+PERFIL = "@coirapp"  # o mesmo nome no Instagram e no YouTube
+INSTAGRAM = "https://www.instagram.com/coirapp/"
+YOUTUBE = "https://www.youtube.com/@coirapp"
 
 
 def carregar_mapa(caminho: Path) -> MapaAnonimizacao:

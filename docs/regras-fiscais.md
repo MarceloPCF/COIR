@@ -9,7 +9,7 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R1 | Operações comuns (ações, units, ETF, BDR, opções, futuros, termo): 15% sobre ganho líquido mensal | Categoria COMUM, base única com subtotais por mercado | IN RFB 1.585/2015 | A |
 | R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A |
 | R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A |
-| R4 | Isenção: vendas de AÇÕES no mercado à vista ≤ R$ 20.000 no mês (todas as corretoras/contas do CPF) | Soma do valor **bruto** das alienações por titular/mês (fracionário, venda por exercício e venda na liquidação do termo incluídos; a venda em day trade fica fora, parâmetro `day_trade_na_soma_limite = false`, decisão de 10/11/2026); a isenção não alcança units, ETF, BDR, FII, opções, futuros, termo e day trade | Lei 11.033/2004 art. 3º I | A |
+| R4 | Isenção: vendas de AÇÕES no mercado à vista ≤ R$ 20.000 no mês (todas as corretoras/contas do CPF) | Soma do valor **bruto** de todas as vendas de ações do titular no mês, em qualquer modalidade (comum, fracionário, day trade, exercício, liquidação de termo, leilão de fração), excluídos units (R4a), ETF, BDR, FII, direitos e o lote isento de PME (IN 1.585 art. 67 §3º); a isenção alcança só o ganho das vendas comuns à vista (art. 59 §2º I e IV). Critério do COIR, leitura literal da lei ("valor das alienações"; a IN admite as duas leituras) (parecer de 12/11/2026, seguido pelo usuário); parâmetro `day_trade_na_soma_limite = true`; a leitura contrária (SC Cosit 145/2021 §13, por analogia) fica registrada | Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º, art. 67 §3º; CTN art. 111 II | A (leitura literal); M (mérito, sem norma expressa) |
 | R4a | Units NÃO entram na isenção | Parâmetro `units_na_isencao = false` | decisão do usuário (05/10/2026) | A |
 | R5 | Prejuízo de mês isento continua compensável | Parâmetro `prejuizo_mes_isento_compensavel = true` | Lei 8.981/1995 art. 72 §4º; Manual MIR 2026; decisão do usuário (14/10/2026) | A |
 | R6 | IRRF 0,005% s/ vendas comuns (dispensado se ≤ R$ 1; não incide no exercício nem em PME) e 1% s/ ganho de DT | Ler da nota; os dois abatem o imposto total do mês (o de DT consumido primeiro); saldo aos meses seguintes do ano; em dezembro, o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT: divergência de orientação registrada | M |
@@ -141,7 +141,7 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   - IRRF de day trade abate o imposto total do mês (leitura da lei, da IN e do P&R 714); o de day
     trade é consumido primeiro, porque o saldo dele em dezembro só pode ser pedido em restituição.
   - Venda por exercício (e na liquidação de termo): ganho sempre tributável; o valor entra na
-    soma do limite (nenhuma fonte decide; leitura conservadora do usuário).
+    soma do limite (leitura literal; desde 12/11/2026 o day trade também entra, R4).
   - Futuros no encerramento (Lei 11.051/2004 art. 32), encerramento parcial pelo preço médio.
   - Units fora da isenção: coincide com a RFB (SC Cosit 145/2021: só "ativos da espécie ações").
   - Venda a descoberto (sem norma específica, leitura A1): resultado na recompra; o limite de
@@ -288,6 +288,10 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   Além das diferenças de rateio e do exercício acima, as de método foram:
   - total de alienações do limite de R$ 20 mil: o COIR tira as units (R4a) e soma a venda por
     exercício de call (R4); o outro sistema faz o contrário;
+  - day trade no limite (desde 12/11/2026): o COIR soma a venda de ações em day trade (R4), e o
+    outro sistema não. A linha de alienações continua batendo (o comparador usa a soma das vendas
+    comuns), mas no mês em que só o day trade passa do limite o COIR tributa o ganho comum e o outro
+    sistema o isenta: as linhas de isento e de imposto divergem;
   - opção sobre ETF (ex.: BOVA11) vai para "opções - outros" no COIR (objeto não é ação);
   - ativo em duas corretoras ao mesmo tempo: o COIR usa o PM único por titular (IN 1.585 art. 58)
     e o outro sistema calcula por corretora; o resultado cai em outro mês, com a mesma soma;
@@ -493,12 +497,16 @@ cinco perguntas principais:
    sem a fração: aí o usuário lança a fração.
 4. Vencimento da DARF: pelo mês do pregão, como antes (IN 1.585 art. 56 §5º; IN 2.164/2023 art. 3º;
    P&R pergunta 730). A pergunta 745 (mês da liquidação) dá um prazo maior; o COIR paga antes.
-5. Venda de ação em day trade: o day trade não tem isenção e **não entra** na soma do limite de
-   R$ 20 mil (decisão do usuário de 10/11/2026, revendo a primeira resposta do mesmo dia; IN 1.585
-   art. 59 §2º I; campo "Total em alienações de ações (op. comuns)" do demonstrativo do programa
-   IRPF). Parâmetro `day_trade_na_soma_limite = false`; ligado, o motor soma o day trade em
-   `vendas_limite` e avisa quando ele fez o mês passar do limite. A leitura contrária (P&R 2026
-   pergunta 707, "total das alienações") fica registrada na revisão.
+5. Venda de ação em day trade: o day trade não tem isenção, mas o valor da venda **entra** na soma
+   do limite de R$ 20 mil, como o exercício e o termo (parecer do especialista de 12/11/2026,
+   seguido pelo usuário, que substitui a decisão de 10/11/2026). Base: Lei 11.033 art. 3º I e IN
+   1.585 art. 59 I ("total das alienações desse ativo"); o §2º I e IV só afasta a isenção; quando a
+   RFB quis tirar uma venda da soma, escreveu (art. 67 §3º, PME); CTN art. 111 II. O campo "Total em
+   alienações de ações (op. comuns)" citado em 10/11 é do relatório de um sistema externo, não do
+   programa IRPF. Parâmetro `day_trade_na_soma_limite = true`; o motor avisa quando o day trade
+   fez o mês passar do limite; a tela mostra a soma e as duas parcelas. Efeito: mais imposto no mês
+   em que só o day trade leva a soma acima do limite e há ganho comum; nunca menos imposto com
+   `prejuizo_mes_isento_compensavel = true`. Casos em `tests/fiscal_cases/test_soma_limite_isencao.py`.
 
 ### Perguntas 6 a 20 da revisão: leitura conservadora (10/11/2026)
 

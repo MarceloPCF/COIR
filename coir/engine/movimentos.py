@@ -810,9 +810,10 @@ def _movimento_day_trade(
     # day trade com ações de PME no período: isento (leitura literal do art. 59 §2º I, que só
     # afasta o limite de R$ 20 mil; decisão do usuário de 15/10/2026)
     pme = all(p.base.op.pme_ate is not None and dia <= p.base.op.pme_ate for p in compras)
-    # a venda de ação em day trade só entra na soma do limite de R$ 20 mil com o parâmetro
-    # day_trade_na_soma_limite (desligado: decisão do usuário de 10/11/2026, o day trade não tem
-    # isenção e não entra nos R$ 20 mil, como no campo "op. comuns" do demonstrativo)
+    # a venda de ação em day trade entra na soma do limite de R$ 20 mil (parâmetro
+    # day_trade_na_soma_limite, ligado: leitura literal de "total das alienações" da Lei 11.033
+    # art. 3º I e da IN 1.585 art. 59 I; o §2º I só tira o day trade da isenção, e só a PME tem
+    # regra de não computar, art. 67 §3º), mas o ganho dele nunca é isento
     acao = tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT) and primeiro.op.mercado in MERCADOS_ACAO_A_VISTA
     na_soma = acao and not pme and livro.parametros.booleano("day_trade_na_soma_limite", dia)
     livro.registrar(chave, dia, origem,

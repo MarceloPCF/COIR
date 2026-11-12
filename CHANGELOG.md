@@ -8,22 +8,68 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
-## [Não lançado]
+## [3.1.1] - 2026-11-12
 
 ### Adicionado
 - **Rótulos das notas escritos de outro jeito**: o COIR passa a reconhecer os rótulos da nota em outras grafias, o que ajuda a ler notas de corretoras que ele ainda não conhece. Valem, por exemplo, "Data do pregão", "Data pregao", "D. pregão", "Dt pregão" e "Datapregão"; "Nº da nota" e "Número da nota"; "Fl."; "Cód. cliente"; e "Tx. liquidação". Também valem acentos e maiúsculas trocados, palavras coladas ou separadas e o rótulo quebrado em duas linhas. As formas aceitas ficam reunidas num só arquivo (`coir/parsing/rotulos.yaml`). Nenhuma delas casa com outro campo: "Data liquidação" não vira data do pregão, e "Taxas BM&F (emol+f.gar)" não vira emolumentos. As notas que o COIR já lia saem iguais.
 - **Restituição de capital pelo pacote público**: a coleta guarda as restituições de capital em dinheiro do histórico da B3 (antes só JCP), e a tela Eventos as propõe como redução de capital, só com o valor, para quem não importou a movimentação.
 - **Aviso de movimentação da B3 ausente**: a tela Eventos avisa quando a movimentação importada não cobre o período das notas (sem ela, subscrições, restituições e ofertas não aparecem).
-
 - **Eventos em abas:** A conferir, Lançados, Subscrições, Transferências, Conversões e Ofertas (IPO), cada uma com um formulário curto e sem o C/V.
 - **Lançar as seguras:** lança de uma vez os desdobramentos e grupamentos das tabelas da B3 que não pedem nada do usuário, com lista para conferir antes e opção de desfazer.
 - **Oferta pública (IPO e follow-on):** a compra, que não aparece em nota, entra no preço médio, mesmo em ativo ainda sem nota.
 - **Termo em aberto na Carteira:** a compra a termo ainda não liquidada aparece numa linha própria, logo abaixo do ativo, com a data da liquidação; não entra na posição, no PM nem no total até liquidar, como na B3.
 - **Direito de subscrição não exercido:** o direito, recibo ou bônus comprado que vence sem ser exercido nem vendido vira perda em operações comuns, como a opção que vira pó, na data do fim do prazo de exercício. A tela Eventos propõe o evento "Direito não exercido" a partir da baixa na movimentação da B3, já com a data do prazo de subscrição das tabelas da B3; ele também pode ser lançado à mão. Os direitos recebidos sem custo não dão resultado.
 - **Como faço?:** em cada tela, um botão abre a página do manual ao lado, sem cobrir o que você está preenchendo.
+- **Licença e código-fonte em Configurações:** a tela mostra o copyright, a licença (AGPL-3.0-or-later), que o programa vem sem garantia e o link do código-fonte da versão instalada, como a AGPL pede.
+- **Histórico de nomes de pregão da B3 desde 2008** (`nomes_pregao_b3.csv`), pela data do negócio, e todos os ETFs de renda fixa listados.
+- **RAIZ4 -> RAIZ55, PETZ3 -> AUAU3** (com a repartição do custo do resgate em dinheiro, em Eventos), trocas de nome confirmadas pelo histórico (IMCH3, OGSA3, BRIT3, NINJ3, REAG3, FICT3) e tipo do NFTS11.
+- **Aviso de ativo que parou de negociar:** posição em ativo sem negócio há mais de 90 dias aparece no sino e na tela Eventos, com o que houve, quando se sabe.
+- A coleta semanal lista no PR todo ativo que saiu do cadastro, para revisão.
+- **Operações por ativo, mês a mês:** em Operações finalizadas (também nos arquivos exportados) e na Apuração mensal, uma linha por dia e ativo, com custo médio, preço final, lucratividade e resultado, em blocos por mês e mercado. Clicar numa linha abre as operações dela.
+- **Reprocessar notas já importadas**: marque a opção na tela Importar (ou use
+  `coir importar --reprocessar`) para ler os PDFs de novo e ficar com a releitura, quando o COIR
+  leu algo errado ou a corretora corrigiu a nota. Há backup antes, a lista diz o que mudou e a nota
+  que a releitura não confirma continua como está. A versão anterior fica guardada e aparece na
+  tela Notas, e a lista avisa quando há DARF paga do mês da nota em diante.
+- **Corretora ainda sem perfil**: o COIR tenta ler a nota pelos layouts que já conhece. Se os totais
+  da nota fecharem, ela entra com um aviso para você conferir; se não, ela é recusada dizendo o que
+  não deu certo, e nada dela é gravado.
+- **Registro de auditoria para o suporte**: o COIR registra em `logs/auditoria.jsonl` o que faz
+  (importações, notas rejeitadas, conciliação com a B3, propostas de eventos, apuração por mês, DARF
+  e erros). Nem no seu computador ele tem CPF, nome, conta, endereço, e-mail, nomes de arquivos,
+  textos ou valores exatos; mostra os códigos dos ativos e as datas dos problemas. Tela **Suporte >
+  Enviar o registro ao suporte**: grava o arquivo para você conferir e o `.zip`, depois de uma
+  conferência de privacidade, e abre o e-mail; você anexa e envia.
+- **Instagram e YouTube:** o COIR tem perfil **@coirapp** nas duas redes, com dicas e vídeos de uso.
+  Os links estão no alto da tela **Suporte**, no rodapé do site e no manual.
+
+### Alterado
+- **Limite de isenção de R$ 20 mil**: a venda de ações em day trade passa a entrar na soma das vendas do mês, como já entravam a venda por exercício de opção e a do termo (Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I). O ganho do day trade continua sem isenção. Num mês em que só o day trade leva a soma acima de R$ 20 mil, o lucro das vendas comuns passa a ser tributado, e a apuração avisa. A memória de cálculo mostra a soma e as duas parcelas (operações comuns e day trade). É critério do COIR (a lei soma "o valor das alienações"; nenhuma norma diz expressamente se o day trade entra), com o parâmetro `day_trade_na_soma_limite`, e vale para todos os meses: um mês antigo tratado como isento pode passar a ter imposto e aparecer como DARF em atraso; confira a Apuração depois de atualizar.
+- **Eventos entram sozinhos:** desdobramento, grupamento e bonificação com custo publicado são lançados automaticamente para as ações em carteira na data, ao importar notas e ao abrir a tela Eventos. O que você apagar não volta. Subscrição, bonificação sem custo, cisão e incorporação continuam na conferência.
+- **Eventos depois da última nota** não aparecem como pendência: o COIR não sabe se você ainda tinha o ativo. Com as notas seguintes, eles passam a valer.
+- **A janela abre maximizada**, em vez do tamanho fixo que não cabia nas telas menores.
+- **Centavos de arredondamento não recusam mais a nota.** A diferença entre os valores impressos vira a linha de custo "Ajuste de arredondamento", e a nota fecha com o líquido impresso. Só o que passar do que o arredondamento explica consome a tolerância de R$ 0,05 por nota, com aviso; acima dela, a nota é recusada.
+- **Endereço do site:** o site e o manual passam a ficar em https://coir.com.br; o endereço antigo (marcelopcf.github.io/COIR) leva ao novo.
 
 ### Corrigido
-
+- **Avisos de licença de terceiros completos no pacote**: o `AVISOS-DE-TERCEIROS.txt` trazia só nome e licença das bibliotecas, incluía ferramentas de desenvolvimento que não vão no .zip e deixava de fora o que não é pacote Python. Agora traz o texto integral de cada licença, com os avisos de copyright, de tudo o que vai no .zip e só disso: bibliotecas Python, o próprio Python e as bibliotecas que ele incorpora (OpenSSL, SQLite, zlib...), o runtime da Microsoft, o carregador do PyInstaller, o WebView2, os JavaScript e as fontes da interface (Vue, Quasar, AG Grid, ECharts, Material Icons, Roboto...). A montagem do pacote falha se algum arquivo ficar sem licença declarada.
+- **Pacote menor e sem o que não usa**: saem do .zip as fontes do reportlab (o PDF usa a Helvetica embutida), os componentes JavaScript do NiceGUI que o COIR não usa (Mermaid, Plotly, three.js, Leaflet, CodeMirror e outros) e o PyInstaller, o pytest e o setuptools, que entravam por engano junto com o pywebview, o anyio e o cffi.
+- **COIR parava de responder ("conexão perdida" sem volta) depois de trocar de tela rápido**: quando o navegador derrubava uma conexão antes de o programa terminar de aceitá-la ("Accept failed on a socket", [WinError 64]), o Python 3.13 no Windows fechava a porta do servidor, e a janela não reconectava mais. É um defeito do Python (python/cpython#93821), corrigido só a partir do 3.14; o COIR agora aplica a mesma correção: nesses erros do navegador, o servidor aceita a próxima conexão. Qualquer outra falha no accept continua aparecendo no registro.
+- **Erro "ConnectionResetError: [WinError 10054]" no registro de atividades**: trocar de tela rápido faz o navegador derrubar a conexão, e o Windows registrava isso como erro do Sistema ("Exception in callback _ProactorBasePipeTransport._call_connection_lost()"), assim como a conexão abandonada antes de ser aceita ("Task exception was never retrieved"). Não são erros do COIR: essas duas mensagens, e só elas, agora ficam fora do registro e da auditoria (aparecem no console com `--verbose`). Outros erros de conexão continuam aparecendo.
+- **Varredura de erros da interface:** valores errados em todos os campos, arquivos fora do padrão em todos os envios e cliques rápidos entre telas, titular e ano não mostram mais "Erro inesperado". Cada caso abaixo virou mensagem na própria tela:
+  - planilha .xlsx vazia, corrompida ou de outro tipo enviada como planilha da B3: diz que o arquivo não é uma planilha do Excel válida;
+  - exportar os relatórios com a planilha do ano anterior aberta no Excel: pede para fechar o arquivo;
+  - exportar para uma unidade que não existe ou para um arquivo: diz qual pasta não pôde ser usada;
+  - Relatórios com o campo da pasta vazio volta à pasta padrão; caminho incompleto é recusado (antes os arquivos iam para a pasta onde o COIR foi aberto);
+  - Importar: "Usar esta pasta" com o campo vazio ou incompleto pede o caminho completo (antes passava a usar a pasta do programa);
+  - Carteira: data fora do intervalo (ex.: ano 1) é recusada (antes a exportação dava erro);
+  - números digitados em notação científica ("1e400"), "NaN" ou com 16 dígitos ou mais são recusados (antes o Salvar dos saldos iniciais dava erro);
+  - Eventos: ticker sem tipo de ativo não impede mais a tela de abrir; o aviso aparece no lugar da lista de ativos que saíram da bolsa;
+  - Configurações: aplicar as tabelas novas e trocar de tela antes de terminar não dá mais erro ao mostrar o aviso;
+  - PDF vazio, corrompido ou que não é PDF: a mensagem diz isso, além de "PDF ilegível".
+- **Banco corrompido:** se o `coir.db` estiver corrompido (ou outro arquivo tiver esse nome), o COIR abre a tela "o banco não abriu", com o caminho dos backups, em vez de não abrir.
+- **Linha de comando:** pasta ou arquivo inexistente, banco que não é do COIR e CSV de eventos fora do UTF-8 dão mensagem curta, sem o erro técnico do Python. `coir titular adicionar` recusa nome vazio, como a tela.
+- **Aviso sobre o titular na importação:** fala do titular escolhido na tela; a opção `--titular` aparece só como a forma da linha de comando.
 - **Aviso "An element has been deleted but is still being used" no registro de atividades**: trocar o titular ou o ano, ou gravar algo, enquanto o sino de pendências ainda contava fazia a contagem antiga terminar mexendo no sino já refeito. O mesmo podia acontecer em qualquer tela que grava, importa ou exporta numa thread (DARF, Eventos, Importar, Proventos, Configurações, Relatórios, Carteira, Notas, Suporte, Cadastros, Outros custos) quando a tela mudava antes de terminar. Agora o trabalho termina (o que foi gravado continua gravado), e só a parte que mostraria o resultado numa tela que não existe mais é deixada de lado.
 - **Erro no Painel ao abrir**: trocar o titular ou o ano, ou a tela se refazer, enquanto o Painel ainda calculava dava "ValueError: list.remove(x): x not in list" no registro de atividades. O cálculo antigo agora termina sem mexer na tela nova; o mesmo vale para Apuração, Conciliação, Futuros, Proventos e Declaração.
 - **Restituição de capital e amortização propostas pela B3**: a proposta vinha com a quantidade da linha da B3, que é a posição, e o evento tirava essas ações da carteira; a venda seguinte virava venda a descoberto. Agora a proposta leva só o valor.
@@ -46,46 +92,12 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **Coleta das tabelas públicas:** feriado não trava mais a coleta, a falha abre uma issue e o dia seguinte tenta de novo.
 - **Mensagem de ativo não encontrado:** diz o que fazer e só sugere nome muito parecido.
 - **Tela Importar:** arquivo com parte das notas recusada mostra "N notas gravadas; outras recusadas".
-
 - **Propostas de eventos sumiam:** um ativo que o motor não consegue apurar parava a busca, e os eventos seguintes de toda a carteira deixavam de ser propostos. Agora só as propostas daquele ativo esperam.
 - **Ações de PME na Apuração mensal:** o resultado isento (e a perda) agora aparece na coluna própria e na memória de cálculo do mês.
-
 - **Tabela de ações de PME incompleta:** só tinha PRIO3 e AGRO3. Entraram SQIA3 (compras até 05/09/2019), CRDE3, FRTA3, GSHP3, NUTR3 e PRNR3, e a data de corte de AGRO3 passou a 04/02/2021. Vendas dessas ações até 31/12/2023 podem mudar de tributadas para isentas: reprocesse a apuração e confira.
 - **Ações de PME com lote isento e tributado:** o COIR agora controla os dois lotes em separado (IN RFB 1.585/2015 art. 69-A §4º), e a custódia inicial e os eventos entram no lote certo. Antes, o ativo saía do cálculo.
 - **Ajuste de custo do fim da isenção de PME:** em 01/01/2024, o lote isento sobe à média dos 30 pregões, quando maior que o custo pago (Lei 13.043/2014 art. 17 §6º). Muda o preço médio e o imposto de vendas depois de 2023.
-
 - **Custódia inicial com código antigo:** CNTO3 lançado em 31/12/2019 criava um ativo separado do SBFG3 das notas. Agora a custódia segue a tabela de trocas. Quem já lançou deve apagar a linha e lançar de novo.
-
-### Alterado
-
-- **Eventos entram sozinhos:** desdobramento, grupamento e bonificação com custo publicado são lançados automaticamente para as ações em carteira na data, ao importar notas e ao abrir a tela Eventos. O que você apagar não volta. Subscrição, bonificação sem custo, cisão e incorporação continuam na conferência.
-- **Eventos depois da última nota** não aparecem como pendência: o COIR não sabe se você ainda tinha o ativo. Com as notas seguintes, eles passam a valer.
-- **A janela abre maximizada**, em vez do tamanho fixo que não cabia nas telas menores.
-- **Centavos de arredondamento não recusam mais a nota.** A diferença entre os valores impressos vira a linha de custo "Ajuste de arredondamento", e a nota fecha com o líquido impresso. Só o que passar do que o arredondamento explica consome a tolerância de R$ 0,05 por nota, com aviso; acima dela, a nota é recusada.
-
-### Adicionado
-
-- **Histórico de nomes de pregão da B3 desde 2008** (`nomes_pregao_b3.csv`), pela data do negócio, e todos os ETFs de renda fixa listados.
-- **RAIZ4 -> RAIZ55, PETZ3 -> AUAU3** (com a repartição do custo do resgate em dinheiro, em Eventos), trocas de nome confirmadas pelo histórico (IMCH3, OGSA3, BRIT3, NINJ3, REAG3, FICT3) e tipo do NFTS11.
-- **Aviso de ativo que parou de negociar:** posição em ativo sem negócio há mais de 90 dias aparece no sino e na tela Eventos, com o que houve, quando se sabe.
-- A coleta semanal lista no PR todo ativo que saiu do cadastro, para revisão.
-- **Operações por ativo, mês a mês:** em Operações finalizadas (também nos arquivos exportados) e na Apuração mensal, uma linha por dia e ativo, com custo médio, preço final, lucratividade e resultado, em blocos por mês e mercado. Clicar numa linha abre as operações dela.
-- **Reprocessar notas já importadas**: marque a opção na tela Importar (ou use
-  `coir importar --reprocessar`) para ler os PDFs de novo e ficar com a releitura, quando o COIR
-  leu algo errado ou a corretora corrigiu a nota. Há backup antes, a lista diz o que mudou e a nota
-  que a releitura não confirma continua como está. A versão anterior fica guardada e aparece na
-  tela Notas, e a lista avisa quando há DARF paga do mês da nota em diante.
-- **Corretora ainda sem perfil**: o COIR tenta ler a nota pelos layouts que já conhece. Se os totais
-  da nota fecharem, ela entra com um aviso para você conferir; se não, ela é recusada dizendo o que
-  não deu certo, e nada dela é gravado.
-- **Registro de auditoria para o suporte**: o COIR registra em `logs/auditoria.jsonl` o que faz
-  (importações, notas rejeitadas, conciliação com a B3, propostas de eventos, apuração por mês, DARF
-  e erros). Nem no seu computador ele tem CPF, nome, conta, endereço, e-mail, nomes de arquivos,
-  textos ou valores exatos; mostra os códigos dos ativos e as datas dos problemas. Tela **Suporte >
-  Enviar o registro ao suporte**: grava o arquivo para você conferir e o `.zip`, depois de uma
-  conferência de privacidade, e abre o e-mail; você anexa e envia.
-
-### Corrigido
 - **PDF com senha**: a mensagem agora também ensina o caminho da linha de comando,
   `coir importar --senha`, além do campo "Senha dos PDFs" da tela Importar.
 - **Corretora não identificada**: a mensagem mostra o código da B3 também quando ele vem na mesma
@@ -307,6 +319,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.1.1]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.1
 [3.1.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.0
 [3.0.1]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.1
 [3.0.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.0

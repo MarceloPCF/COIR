@@ -14,7 +14,7 @@ from nicegui import app, native, ui
 from coir.config import VERSAO, configurar_registro
 from coir.erros import CoirError
 from coir.servicos.estado import Estado
-from coir.ui import tema
+from coir.ui import conexao, tema
 from coir.ui.app import montar, montar_erro
 
 log = logging.getLogger(__name__)
@@ -59,6 +59,7 @@ def desbloquear_dlls(pasta: Path) -> int:
 
 def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None,
             abrir: bool = True) -> None:  # fmt: skip
+    conexao.instalar_filtro()
     configurar_registro(estado.dados)
     log.info("COIR %s aberto (pasta de dados: %s)", VERSAO, estado.dados)
     if sys.platform == "win32" and getattr(sys, "frozen", False):
@@ -89,4 +90,6 @@ def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None
         # cálculo pesado (apuração do histórico inteiro) pode segurar o servidor alguns segundos:
         # a janela espera reconectar em vez de perder a página ("conexão perdida")
         reconnect_timeout=30,
+        # no Windows, a conexão que o navegador abandona não derruba mais o servidor
+        loop=conexao.FABRICA_DO_LACO,
     )  # fmt: skip

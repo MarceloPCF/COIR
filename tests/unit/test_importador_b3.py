@@ -236,3 +236,45 @@ def test_numero_em_texto_milhar_e_decimal(texto: str, esperado: Decimal) -> None
     assert b3._numero(texto, "teste") == esperado  # pyright: ignore[reportPrivateUsage]
     with pytest.raises(ImportacaoError, match="ilegível"):
         b3._numero("1.2.3", "teste")  # pyright: ignore[reportPrivateUsage]
+
+
+@pytest.mark.parametrize("conteudo", [b"", b"\x00\x01lixo", b"%PDF-1.4 renomeado para xlsx"])
+def test_xlsx_vazio_corrompido_ou_de_outro_tipo_vira_erro_de_importacao(
+    tmp_path: Path, conteudo: bytes
+) -> None:
+    """Antes: BadZipFile do openpyxl, que a tela mostrava como erro inesperado (varredura de
+    11/2026)."""
+    arquivo = tmp_path / "movimentacao.xlsx"
+    arquivo.write_bytes(conteudo)
+    with pytest.raises(ImportacaoError, match="não é uma planilha do Excel válida"):
+        b3.tipo(arquivo)
+
+
+def test_xlsx_com_a_aba_corrompida_vira_erro_de_importacao(tmp_path: Path) -> None:
+    """Zip válido com o XML da aba cortado: o openpyxl (read_only) só percebe ao ler as linhas,
+    com ParseError; vira ImportacaoError com o nome do arquivo (revisão da varredura 11/2026)."""
+    import io
+    import zipfile
+
+    livro = Workbook()
+    folha = livro.active
+    assert folha is not None
+    folha.title = "Movimentação"
+    folha.append(list(b3.COLUNAS[TipoPlanilha.MOVIMENTACAO]))
+    folha.append(["Credito"] * 8)
+    original = io.BytesIO()
+    livro.save(original)
+    saida = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(original.getvalue())) as zin, zipfile.ZipFile(saida, "w") as z:
+        for item in zin.infolist():
+            dados = zin.read(item.filename)
+            if item.filename.startswith("xl/worksheets/sheet"):
+                dados = dados[: len(dados) // 2]
+            z.writestr(item, dados)
+    arquivo = tmp_path / "quebrado.xlsx"
+    arquivo.write_bytes(saida.getvalue())
+    assert b3.tipo(arquivo) is TipoPlanilha.MOVIMENTACAO
+    with pytest.raises(
+        ImportacaoError, match=r"quebrado.xlsx, aba Movimentação: planilha corrompida"
+    ):
+        b3.movimentacao(arquivo)

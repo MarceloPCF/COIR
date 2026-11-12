@@ -40,7 +40,8 @@ def resumo_mes(ap: Apuracao, ano: int, mes: int, codigo_darf: str) -> str:
             linhas.append(f"{NOMES[c.categoria]}: resultado {_r(c.resultado)} ({grupos or '-'})")
             if c.categoria is Categoria.COMUM:
                 linhas.append(
-                    f"  vendas de ações à vista {_r(c.vendas_acoes)}; isento {_r(c.isento)}"
+                    f"  vendas de ações à vista {_r(c.vendas_limite)} (day trade "
+                    f"{_r(c.vendas_limite - c.vendas_acoes)}); isento {_r(c.isento)}"
                 )
             linhas.append(
                 f"  prejuízo anterior {_r(c.prejuizo_anterior)}; base {_r(c.base)} x "

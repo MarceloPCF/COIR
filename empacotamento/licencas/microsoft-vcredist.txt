@@ -1,0 +1,9 @@
+Microsoft Visual C++ Runtime (VCRUNTIME140.dll, VCRUNTIME140_1.dll e msvcp140-*.dll) e, quando
+presentes, Universal CRT (ucrtbase.dll e api-ms-win-crt-*.dll)
+
+Copyright (C) Microsoft Corporation. Código redistribuível da Microsoft ("Microsoft Distributable
+Code"), incluído nas condições descritas na seção "Additional Conditions for this Windows binary
+build" da licença do Python, reproduzida neste arquivo. Quem redistribuir o COIR não pode alterar os
+avisos de copyright, de marca ou de patente desses arquivos, usar as marcas da Microsoft no nome do
+programa, distribuí-los para rodar fora de sistemas da Microsoft nem incluí-los em programas
+maliciosos, enganosos ou ilegais.

@@ -45,8 +45,27 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         ui.button(
             "Abrir a pasta",
             icon="folder_open",
-            on_click=lambda: abrir(Path(pasta.value or ".")),
+            on_click=lambda: abrir_pasta(),
         ).props("flat")
+
+    def abrir_pasta() -> None:
+        pasta_escolhida = escolhida()
+        if pasta_escolhida is not None:  # caminho incompleto: só o aviso, sem abrir outra pasta
+            abrir(pasta_escolhida)
+
+    def escolhida() -> Path | None:
+        """A pasta digitada; vazia volta à padrão. Caminho relativo seria gravado na pasta do
+        programa (onde o COIR.exe foi aberto), então é recusado."""
+        texto = (pasta.value or "").strip()
+        if not texto:
+            pasta.set_value(str(destino_padrao))
+            return destino_padrao
+        caminho = Path(texto)
+        if not caminho.is_absolute():
+            ui.notify(r"Informe o caminho completo da pasta (ex.: C:\Users\voce\Documentos).",
+                      type="warning")  # fmt: skip
+            return None
+        return caminho
 
     def ao_escolher(chave: str) -> Callable[[], Awaitable[None]]:
         return lambda: mostrar(chave)
@@ -102,12 +121,15 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         if not escolhidos:
             ui.notify("Escolha ao menos um formato.", type="warning")
             return
+        destino = escolhida()
+        if destino is None:
+            return
         d = await preparar()
         if d is None or botao.is_deleted:
             return
         botao.set_enabled(False)
         try:
-            arquivos = await run.io_bound(exportar, d, Path(pasta.value or "."), escolhidos)
+            arquivos = await run.io_bound(exportar, d, destino, escolhidos)
         except (CoirError, OSError) as erro:
             ui.notify(f"Exportação não feita: {erro}", type="negative", multi_line=True)
             return
@@ -115,7 +137,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             if not botao.is_deleted:  # a tela pode ter sido refeita durante a gravação
                 botao.set_enabled(True)
         if arquivos is not None:
-            ui.notify(f"{len(arquivos)} arquivo(s) gravado(s) em {pasta.value}", type="positive")
+            ui.notify(f"{len(arquivos)} arquivo(s) gravado(s) em {destino}", type="positive")
 
     botao.on_click(gravar)
     ui.timer(0.01, lambda: mostrar("resumo-fiscal"), once=True)

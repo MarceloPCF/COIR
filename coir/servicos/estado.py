@@ -425,7 +425,7 @@ class Estado:
         anos = sorted({x.ano for x in atrasadas})
         antiga = min(((x.ano, x.mes) for x in atrasadas), default=None)
         avisos = apuracao.avisos_de(titular)
-        anos_avisos = sorted({int(a[:4]) for a in avisos if a[:4].isdigit()})
+        anos_avisos = sorted({a for a in map(Apuracao.ano_do_aviso, avisos) if a is not None})
         itens = [
             Pendencia(len(atrasadas), "DARF(s) em atraso"
                       + (f" ({', '.join(map(str, anos))})" if anos else ""), "/darf",

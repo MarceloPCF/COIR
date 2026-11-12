@@ -180,7 +180,11 @@ def _linha_transferencia(e: EventoLancado) -> tuple[Valor, ...]:
 
 def _linha_conversao(e: EventoLancado) -> tuple[Valor, ...]:
     d = e.dados
-    natureza = TIPOS[d.tipo] if d.natureza is None else NATUREZAS[d.natureza]
+    natureza = (
+        NATUREZAS[d.natureza]
+        if d.natureza is not None and d.natureza in NATUREZAS
+        else TIPOS[d.tipo]
+    )
     return (d.data, f"{d.ticker} → {d.ticker_destino or ''}", e.conta_nome, d.quantidade,
             d.quantidade_destino, natureza)  # fmt: skip
 
@@ -681,7 +685,15 @@ class _Conferir:
 
     def _desenhar_saidas(self) -> None:
         t = self.tela
-        saidas = t.estado.ativos_que_sairam()
+        try:
+            saidas = t.estado.ativos_que_sairam()
+        except CoirError as erro:  # ex.: ticker sem tipo de ativo; o resto da tela abre
+            self.secao_saidas.clear()
+            self.secao_saidas.set_visibility(True)
+            with self.secao_saidas:
+                ui.label(f"Não foi possível conferir os ativos que saíram da bolsa: {erro}"
+                         ).classes("coir-negativo text-sm")  # fmt: skip
+            return
         self.secao_saidas.clear()
         self.secao_saidas.set_visibility(bool(saidas))
         with self.secao_saidas:

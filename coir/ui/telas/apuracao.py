@@ -39,7 +39,7 @@ COLUNAS_ANO = (
     Coluna("Comum", T.DINHEIRO),
     Coluna("Day trade", T.DINHEIRO),
     Coluna("FII", T.DINHEIRO),
-    Coluna("Vendas de ações", T.DINHEIRO),
+    Coluna("Vendas de ações (soma do limite)", T.DINHEIRO),
     Coluna("Isento", T.DINHEIRO),
     Coluna("PME (isento)", T.DINHEIRO),
     Coluna("Imposto", T.DINHEIRO),
@@ -101,7 +101,7 @@ def _linha_ano(m: MesApurado) -> tuple[Valor, ...]:
         _resultado(m, Categoria.COMUM),
         _resultado(m, Categoria.DAY_TRADE),
         _resultado(m, Categoria.FII),
-        comum.vendas_acoes if comum else ZERO,
+        comum.vendas_limite if comum else ZERO,
         comum.isento if comum else ZERO,
         m.isento_pme + m.perda_pme,
         m.imposto,
@@ -121,7 +121,7 @@ def _total_ano(meses: list[MesApurado]) -> tuple[Valor, ...]:
         soma(lambda m: _resultado(m, Categoria.COMUM)),
         soma(lambda m: _resultado(m, Categoria.DAY_TRADE)),
         soma(lambda m: _resultado(m, Categoria.FII)),
-        soma(lambda m: c.vendas_acoes if (c := _cat(m, Categoria.COMUM)) else ZERO),
+        soma(lambda m: c.vendas_limite if (c := _cat(m, Categoria.COMUM)) else ZERO),
         soma(lambda m: c.isento if (c := _cat(m, Categoria.COMUM)) else ZERO),
         soma(lambda m: m.isento_pme + m.perda_pme),
         soma(lambda m: m.imposto),
@@ -181,7 +181,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 ao_clicar=lambda i: abrir(int(str(i)), mapa),
             ).mark("grade-apuracao")
             for aviso in apuracao.avisos_de(estado.titular):
-                if aviso[:4] == str(estado.ano) or not aviso[:4].isdigit():  # avisos do ano
+                ano_aviso = Apuracao.ano_do_aviso(aviso)
+                if ano_aviso is None or ano_aviso == estado.ano:  # avisos do ano (ou sem data)
                     ui.label(f"Atenção: {aviso}").classes("coir-carimbo text-sm")
 
     def abrir(indice: int, mapa: dict[int, int]) -> None:
@@ -223,8 +224,11 @@ def _memoria(estado: Estado, m: MesApurado, movs: list[Movimento], mapa: dict[in
     comum = _cat(m, Categoria.COMUM)
     with ui.row().classes("w-full items-stretch gap-3"):
         with _bloco("1. Limite de isenção (ações à vista)"):
-            vendas = comum.vendas_acoes if comum else ZERO
+            vendas = comum.vendas_limite if comum else ZERO
             _par("Vendas de ações no mês (todas as corretoras)", _r(vendas))
+            if comum and comum.vendas_limite != comum.vendas_acoes:
+                _par("Vendas em operações comuns", _r(comum.vendas_acoes))
+                _par("Vendas em day trade", _r(comum.vendas_limite - comum.vendas_acoes))
             _par("Limite", _r(limite))
             if comum and comum.isento:
                 _par("Ganho isento", _r(comum.isento), "coir-positivo")
@@ -235,14 +239,15 @@ def _memoria(estado: Estado, m: MesApurado, movs: list[Movimento], mapa: dict[in
                 _par("Ações de PME: perda (não compensa ganhos)", _r(m.perda_pme),
                      "coir-negativo")  # fmt: skip
             veredito = (
-                "dentro do limite: ganho de ações isento"
+                "dentro do limite: ganho das vendas comuns de ações isento (day trade, exercício "
+                "e termo são tributados)"
                 if vendas <= limite
-                else ("acima do limite: ganho tributável")
+                else "acima do limite: ganho tributável"
             )
             ui.label(veredito).classes("coir-subtitulo text-xs")
-            ui.label("Lei 11.033/2004 art. 3º I; units fora do limite.").classes(
-                "coir-subtitulo text-xs"
-            )
+            units = "units no limite" if params.booleano("units_na_isencao", dia) else (
+                "units fora do limite")  # fmt: skip
+            ui.label(f"Lei 11.033/2004 art. 3º I; {units}.").classes("coir-subtitulo text-xs")
         for r in m.categorias:
             with _bloco(f"{2 + list(Categoria).index(r.categoria)}. {NOME_CATEGORIA[r.categoria]}"):
                 for g in GRUPOS:

@@ -140,12 +140,14 @@ def importar_arquivos(
         invalidos = sum(1 for n in lote.notas if n.chave in lote.clientes) - len(clientes)
         if invalidos:
             rel.avisos.append(f"{invalidos} nota(s) com CPF impresso inválido (ex.: anonimizado): "
-                              "titular pela conta ou por --titular")  # fmt: skip
+                              "o titular sai pela conta ou pelo titular escolhido (--titular na "
+                              "linha de comando)")  # fmt: skip
         sem_cpf = [n for n in lote.notas if n.chave not in lote.clientes]
         if sem_cpf:
             rel.avisos.append(f"{len(sem_cpf)} nota(s) sem CPF do cliente reconhecido (ex.: nota "
                               f"{sem_cpf[0].numero} de {sem_cpf[0].arquivo}): titular pela conta "
-                              "ou por --titular; confira se o layout mudou")  # fmt: skip
+                              "ou pelo titular escolhido (--titular na linha de comando); confira "
+                              "se o layout mudou")  # fmt: skip
 
         conhecidas = repo.series(sessao)
         novas = {s: c for s, c in classes_das_series(lote.notas, refs).items()

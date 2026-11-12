@@ -105,6 +105,31 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     mostrar_backups()
 
     _registro(estado)
+    _licenca()
+
+
+def _licenca() -> None:
+    """Avisos legais da AGPL (seção 0, "Appropriate Legal Notices"): copyright, sem garantia,
+    licença e onde está o código-fonte desta versão."""
+    with (
+        _secao(
+            "Licença e código-fonte",
+            "Copyright © MarceloPCF. O COIR é software livre: você pode usar, copiar, estudar, "
+            "modificar e redistribuir nos termos da GNU Affero General Public License, versão 3 "
+            "ou posterior (AGPL-3.0-or-later). É oferecido sem nenhuma garantia, nos termos da "
+            "licença. O texto da licença (LICENSE.txt) e os avisos das bibliotecas de terceiros "
+            "(AVISOS-DE-TERCEIROS.txt) estão na pasta do programa.",
+        ),
+        ui.row().classes("items-center gap-4 text-sm"),
+    ):
+        ui.link(
+            "Código-fonte desta versão",
+            f"https://github.com/{atualizacao.REPOSITORIO}/tree/v{VERSAO}",
+            new_tab=True,
+        ).mark("codigo-fonte")
+        ui.link(
+            "Texto da licença", "https://www.gnu.org/licenses/agpl-3.0.html", new_tab=True
+        ).mark("texto-licenca")
 
 
 def _registro(estado: Estado) -> None:
@@ -258,15 +283,20 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 "aplicar-tabelas")  # fmt: skip
 
     async def aplicar() -> None:
+        # o aviso sai na página, não no botão: a tela pode ser refeita (ou trocada) durante a
+        # aplicação, e avisar pelo botão apagado dava RuntimeError (registro de 11/2026)
+        pagina = ui.context.client
         try:
             await run.io_bound(atualizacao.aplicar, estado.dados)
             estado.recarregar_referencias()
             await run.io_bound(estado.preparar, estado.agora())  # renormaliza as notas, se preciso
-        except CoirError as erro:
-            ui.notify(str(erro), type="negative", multi_line=True)
+        except (CoirError, OSError) as erro:  # OSError: pasta de dados sem permissão, disco
+            with pagina:
+                ui.notify(f"Tabelas não aplicadas: {erro}", type="negative", multi_line=True)
             return
         ao_mudar()
-        ui.notify("Tabelas atualizadas. Carteira e apuração refeitas.", type="positive")
+        with pagina:
+            ui.notify("Tabelas atualizadas. Carteira e apuração refeitas.", type="positive")
         if not novo.is_deleted:  # a tela pode ter sido refeita durante a aplicação
             novo.clear()
             mostrar()

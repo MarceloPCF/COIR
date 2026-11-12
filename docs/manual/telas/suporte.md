@@ -6,6 +6,10 @@ Para um problema no COIR: um erro numa tela, um resultado estranho, ou uma nota 
 lê errado. Você manda o registro ou a nota **sem os seus dados pessoais**, e quem desenvolve o COIR
 corrige.
 
+No alto da tela ficam os contatos: o e-mail do suporte, o site [coir.com.br](https://coir.com.br) e os
+perfis **@coirapp** no [Instagram](https://www.instagram.com/coirapp/) e no
+[YouTube](https://www.youtube.com/@coirapp), com dicas e vídeos de uso.
+
 ## Enviar o registro ao suporte
 
 O COIR registra o que faz: importações, notas rejeitadas, propostas de eventos, cálculos e erros.

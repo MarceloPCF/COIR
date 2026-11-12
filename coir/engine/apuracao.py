@@ -4,7 +4,9 @@ Fontes (alíquotas e limites vêm de data/parametros_fiscais.csv, com a fonte de
 - Alíquotas: 15% comum (Lei 11.033/2004 art. 2º II), 20% day trade e 20% FII (IN RFB
   1.585/2015, arts. 56 a 65).
 - Isenção: ganho líquido em ações no mercado à vista quando as alienações do mês somam até
-  R$ 20 mil (Lei 11.033/2004 art. 3º I); units, ETF, BDR, FII, opções, futuros e day trade fora.
+  R$ 20 mil (Lei 11.033/2004 art. 3º I). A soma conta toda venda de ação, inclusive em day trade,
+  exercício e termo (IN RFB 1.585/2015 art. 59 I), mas o ganho destes nunca é isento (§2º I e IV);
+  units, ETF, BDR, FII, opções e futuros ficam fora da soma e da isenção.
 - Prejuízo: compensa só na mesma categoria, sem prazo (IN RFB 1.585/2015); prejuízo de mês isento
   compensa se `prejuizo_mes_isento_compensavel` (Lei 8.981/1995 art. 72 §4º).
 - IRRF (0,005% e 1%): deduz do imposto do mês; o saldo passa aos meses seguintes do ano; o de
@@ -233,20 +235,22 @@ def _bonificacao_lei_15270(
 def _limite_pelo_day_trade(
     meses: Sequence[MesApurado], params: ParametrosFiscais
 ) -> list[tuple[int, str]]:
-    """Meses em que a venda de ações em day trade, somada às vendas comuns (só com o parâmetro
-    day_trade_na_soma_limite ligado; o padrão é desligado), fez o mês passar do limite de isenção:
-    o aviso explica por que o ganho comum foi tributado."""
+    """Meses em que a venda de ações em day trade, somada às vendas comuns (parâmetro
+    day_trade_na_soma_limite, ligado por padrão), fez o mês passar do limite de isenção: o aviso
+    explica por que o ganho comum foi tributado. Sem ganho comum à vista no mês, nada a avisar."""
     saida: list[tuple[int, str]] = []
     for mes in meses:
         comum = next(r for r in mes.categorias if r.categoria is Categoria.COMUM)
         limite = params.decimal("limite_isencao_acoes", fim_do_mes(mes.ano, mes.mes))
-        if comum.vendas_acoes <= limite < comum.vendas_limite:
+        ganho_a_vista = comum.por_grupo.get(Grupo.A_VISTA, ZERO)
+        # sem ganho comum à vista (mês só de day trade, ou com perda) não há isenção perdida
+        if comum.vendas_acoes <= limite < comum.vendas_limite and ganho_a_vista > 0:
             dt = comum.vendas_limite - comum.vendas_acoes
             saida.append((mes.titular, (
                 f"{mes.mes:02d}/{mes.ano}: as vendas de ações em day trade ({_reais(dt)}) entram "
                 f"na soma do limite de isenção de {_reais(limite)} e fizeram o mês passar dele "
-                "(parâmetro day_trade_na_soma_limite): o ganho de ações em operações "
-                "comuns do mês, se houver, não é isento"
+                "(Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I): o ganho de ações "
+                "em operações comuns do mês, se houver, não é isento"
             )))  # fmt: skip
     return saida
 
@@ -383,7 +387,7 @@ def conta_na_isencao(m: Movimento, params: ParametrosFiscais) -> bool:
 
 def _vendas_no_limite(m: Movimento, params: ParametrosFiscais) -> Decimal:
     """Valor bruto que entra na soma do limite de R$ 20 mil (units só com o parâmetro; a venda
-    em day trade só traz valor com o parâmetro ``day_trade_na_soma_limite``)."""
+    em day trade traz valor com o parâmetro ``day_trade_na_soma_limite``, ligado por padrão)."""
     if m.categoria not in (Categoria.COMUM, Categoria.DAY_TRADE):
         return ZERO
     if m.tipo is TipoAtivo.UNIT and not params.booleano("units_na_isencao", m.data):
