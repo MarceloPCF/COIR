@@ -13,13 +13,13 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 6.404/1976 | 9 | [lei-6404-1976.md](normas/lei-6404-1976.md) |
 | Lei 7.713/1988 | 2 | [lei-7713-1988.md](normas/lei-7713-1988.md) |
 | Lei 8.668/1993 | 2 | [lei-8668-1993.md](normas/lei-8668-1993.md) |
-| Lei 8.981/1995 | 10 | [lei-8981-1995.md](normas/lei-8981-1995.md) |
+| Lei 8.981/1995 | 11 | [lei-8981-1995.md](normas/lei-8981-1995.md) |
 | Lei 9.249/1995 | 18 | [lei-9249-1995.md](normas/lei-9249-1995.md) |
 | Lei 9.250/1995 | 8 | [lei-9250-1995.md](normas/lei-9250-1995.md) |
 | Lei 9.430/1996 | 19 | [lei-9430-1996.md](normas/lei-9430-1996.md) |
 | Lei 9.779/1999 | 1 | [lei-9779-1999.md](normas/lei-9779-1999.md) |
 | Lei 9.959/2000 | 5 | [lei-9959-2000.md](normas/lei-9959-2000.md) |
-| Lei 11.033/2004 | 40 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
+| Lei 11.033/2004 | 41 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
 | Lei 11.051/2004 | 5 | [lei-11051-2004.md](normas/lei-11051-2004.md) |
 | Lei 11.196/2005 | 1 | [lei-11196-2005.md](normas/lei-11196-2005.md) |
 | Lei 11.478/2007 | 7 | [lei-11478-2007.md](normas/lei-11478-2007.md) |
@@ -31,7 +31,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 15.265/2025 | 15 | [lei-15265-2025.md](normas/lei-15265-2025.md) |
 | Lei 15.270/2025 | 16 | [lei-15270-2025.md](normas/lei-15270-2025.md) |
 | MP 497/2010 | 5 | [mp-497-2010.md](normas/mp-497-2010.md) |
-| IN RFB 1.585/2015 | 102 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
+| IN RFB 1.585/2015 | 104 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
 | IN RFB 1.700/2017 | 2 | [in-rfb-1700-2017.md](normas/in-rfb-1700-2017.md) |
 | IN RFB 1.916/2019 | 1 | [in-rfb-1916-2019.md](normas/in-rfb-1916-2019.md) |
 | Res. CMN 4.880/2020 | 1 | [res-cmn-4880-2020.md](normas/res-cmn-4880-2020.md) |
@@ -237,6 +237,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 - `docs/regras-fiscais.md` — R5: R5 | Prejuízo de mês isento continua compensável | Parâmetro `prejuizo_mes_isento_compensavel = true` | Lei 8.981/1995 art. 72 §4º; Manual MIR 2026; critério do COIR | A
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t1_prejuizo_em_mes_isento_compensa: R5: prejuízo de ações em mês isento continua compensável (Lei 8.981/1995 art. 72 §4º; Manual MIR 2026; critério do COIR). Mar/24: ações -1.200 (vendas 15.000), opções…
 - `tests/fiscal_cases/test_proventos.py` — test_atualizacao_do_provento_pela_selic_e_tributacao_exclusiva: …por ação, pago no mesmo dia (B3). Para 100 ações: bruto 5,684 -> 5,68; retidos 22,5% como renda fixa (Lei 8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º) -> líquido 4,40, IRRF 1,28. Não é dividendo: fora da Lei…
+- `tests/fiscal_cases/test_soma_limite_isencao.py` — test_perda_comum_com_day_trade_acima_do_limite_nao_reduz_imposto: …soma 21.000,00, sem aviso (não há ganho comum). A perda é compensável mesmo em mês dentro do limite (Lei 8.981/1995 art. 72 §4º; parâmetro prejuizo_mes_isento_compensavel). Abril: venda de CCCC3 a 25,00 (25.000,00;…
 
 ## Lei 9.249/1995
 
@@ -346,6 +347,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 - `tests/fiscal_cases/test_proventos.py` — módulo: …8º e art. 14 III (JCP a 17,5% pago ou creditado desde 01/01/2026, na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e…
 - `tests/fiscal_cases/test_proventos.py` — test_atualizacao_do_provento_pela_selic_e_tributacao_exclusiva: …(B3). Para 100 ações: bruto 5,684 -> 5,68; retidos 22,5% como renda fixa (Lei 8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º) -> líquido 4,40, IRRF 1,28. Não é dividendo: fora da Lei 15.270.
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …do termo; a isenção alcança só o ganho das vendas comuns. Números conferidos à mão, sem custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I…
+- `tests/fiscal_cases/test_soma_limite_isencao.py` — test_day_trade_de_unit_ou_etf_fica_fora_da_soma: …= true, a unit entra: soma 23.000,00, isento 0, 15% x 5.000,00 = 750,00 + 40,00 - 2,00 = DARF 788,00 (Lei 11.033/2004 art. 3º I).
 
 ## Lei 11.051/2004
 
@@ -581,6 +583,8 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 - `tests/fiscal_cases/test_raiz55.py` — módulo: …os mesmos. Na nota, a quantidade é a de ações e o preço é por 100 ações; o custo é o valor impresso (IN RFB 1.585/2015 art. 58 caput). A PNA continua ação para a isenção de R$ 20 mil (art. 59 I).
 - `tests/fiscal_cases/test_saldos_iniciais.py` — módulo: …o COIR sem o histórico de notas. Custódia inicial: a posição em 31/12 entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58), o mesmo do Bens e Direitos, sem resultado e sem efeito no day trade (art. 65 §2º).…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I ("total das alienações desse ativo") e §2º I e IV (a isenção não se aplica a day trade,…
+- `tests/fiscal_cases/test_soma_limite_isencao.py` — test_day_trade_de_unit_ou_etf_fica_fora_da_soma: …(venda 8.000,00; ganho 200,00; IRRF 2,00). Units (R4a, parâmetro units_na_isencao = false) e ETF (IN RFB 1.585/2015 art. 59 §2º II) não são ações para o limite: soma 15.000,00, ganho comum isento 5.000,00, imposto…
+- `tests/fiscal_cases/test_soma_limite_isencao.py` — test_mes_so_de_day_trade_acima_do_limite_nao_avisa: …19,50 / 20,00, venda 25.000,00, ganho 625,00; imposto 20% = 125,00; IRRF de 1% sobre o ganho = 6,25 (IN RFB 1.585/2015 art. 65 §§8º e 11); DARF 118,75. A soma passa do limite, mas não há ganho comum que pudesse ser…
 
 ## IN RFB 1.700/2017
 
@@ -623,7 +627,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 
 - `docs/regras-fiscais.md` — Critérios do COIR: Units fora da isenção: coincide com a RFB (SC Cosit 145/2021: só "ativos da espécie ações").
 - `docs/regras-fiscais.md` — R19: …tipo do papel); categoria COMUM ou DAY_TRADE, nunca FII; parâmetro `direito_recebido_custo_zero` | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65;…
-- `docs/regras-fiscais.md` — R4: …desse ativo" (critério do COIR); parâmetro `day_trade_na_soma_limite = true`; a leitura contrária (SC Cosit 145/2021 §13, por analogia) fica registrada | Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º,…
+- `docs/regras-fiscais.md` — R4: …leituras) (critério do COIR); parâmetro `day_trade_na_soma_limite = true`; a leitura contrária (SC Cosit 145/2021 §13, por analogia) fica registrada | Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º,…
 - `tests/fiscal_cases/test_direitos_subscricao.py` — módulo: …20% em day trade, sem isenção, e a venda do direito fica fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O…
 
 ## SC Cosit 148/2025
