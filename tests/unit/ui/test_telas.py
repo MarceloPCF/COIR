@@ -720,8 +720,29 @@ async def test_suporte_prepara_confere_e_grava_o_zip(tmp_path: Path) -> None:
         assert zip_.enabled
         user.find(marker="suporte-zip").click()
         await user.should_see("Gravado:")
-        await user.should_see("suporte.coir@gmail.com")
+        await user.should_see("Envie para suporte.coir@gmail.com")  # o alto da tela já tem o e-mail
     assert len(list((estado.dados / "suporte").glob("*/notas-para-suporte-*.zip"))) == 1
+
+
+@pytest.mark.asyncio
+async def test_suporte_mostra_os_contatos(tmp_path: Path) -> None:
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/suporte")
+        await user.should_see(marker="suporte-contatos")
+        links = {
+            e.props["href"]
+            for linha in user.find(marker="suporte-contatos").elements
+            for e in linha.descendants()
+            if isinstance(e, ui.link)
+        }
+    assert links == {
+        "mailto:suporte.coir@gmail.com",
+        "https://coir.com.br",
+        "https://www.instagram.com/coirapp/",
+        "https://www.youtube.com/@coirapp",
+    }
 
 
 @pytest.mark.asyncio

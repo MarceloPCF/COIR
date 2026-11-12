@@ -41,9 +41,20 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         "Para um problema no COIR: um erro numa tela, um resultado estranho, ou uma nota que ele "
         "não lê ou lê errado (uma corretora nova, um layout diferente)."
     ).classes("coir-subtitulo")
+    _contatos()
     _registro(estado)
     _dados(estado)
     _envio(estado)
+
+
+def _contatos() -> None:
+    """Onde achar o COIR: e-mail do suporte, site e os perfis (o mesmo nome no Instagram e no
+    YouTube)."""
+    with ui.row().classes("items-center gap-x-4 gap-y-1 text-sm").mark("suporte-contatos"):
+        ui.link(suporte.EMAIL_SUPORTE, f"mailto:{suporte.EMAIL_SUPORTE}")
+        ui.link("coir.com.br", suporte.SITE, new_tab=True)
+        ui.link(f"Instagram {suporte.PERFIL}", suporte.INSTAGRAM, new_tab=True)
+        ui.link(f"YouTube {suporte.PERFIL}", suporte.YOUTUBE, new_tab=True)
 
 
 # --------------------------------------------------------------------------- registro de auditoria

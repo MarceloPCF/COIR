@@ -140,6 +140,9 @@ LGPD = (
     "serviço externo e só recebe o que foi digitado."
 )
 EMAIL_SUPORTE = "suporte.coir@gmail.com"
+PERFIL = "@coirapp"  # o mesmo nome no Instagram e no YouTube
+INSTAGRAM = "https://www.instagram.com/coirapp/"
+YOUTUBE = "https://www.youtube.com/@coirapp"
 PEDIDO_TEXTO = (
     "A sua corretora não foi lida? Conte qual é e o que o COIR mostrou. Não mande a nota nem "
     "dados pessoais (nome, CPF, conta). Para mandar a nota, use a tela <strong>Suporte</strong> "
@@ -491,7 +494,7 @@ def inicial(raiz: str, exemplo: bool) -> str:
 <footer>
   <div class="wrap">
     <span>COIR é gratuito e software livre (licença AGPL-3.0). <a href="{GH}">Código-fonte</a> · <a href="{raiz}legacy/index.html">Versão 2 (planilha)</a> · <a href="{raiz}docs/manual/se-nao-abrir.html">Se não abrir</a></span>
-    <span>Suporte: <a href="mailto:{EMAIL_SUPORTE}">{EMAIL_SUPORTE}</a> · Não substitui a orientação de um contador.</span>
+    <span>Suporte: <a href="mailto:{EMAIL_SUPORTE}">{EMAIL_SUPORTE}</a> · <a href="{INSTAGRAM}">Instagram</a> e <a href="{YOUTUBE}">YouTube</a>: {PERFIL} · Não substitui a orientação de um contador.</span>
   </div>
 </footer>
 
