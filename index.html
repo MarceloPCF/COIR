@@ -338,7 +338,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
     <form id="form-avisos" class="avisos" method="post">
       <label for="avisos-email">Seu e-mail</label>
       <div class="linha-form">
-        <input id="avisos-email" type="email" name="email" required autocomplete="email" placeholder="voce@exemplo.com">
+        <input id="avisos-email" type="email" name="email" required autocomplete="email" pattern="[^@ ]+@[^@ ]+[.][^@ ]+" title="E-mail completo, como voce@exemplo.com" maxlength="254" placeholder="voce@exemplo.com">
         <button type="submit" class="botao principal">Quero ser avisado</button>
       </div>
       <input type="hidden" name="_subject" value="COIR: aviso de versão nova">
@@ -355,14 +355,14 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
     <p class="intro">A sua corretora não foi lida? Conte qual é e o que o COIR mostrou. Não mande a nota nem dados pessoais (nome, CPF, conta). Para mandar a nota, use a tela <strong>Suporte</strong> do COIR: ela troca os seus dados por fictícios, cobre-os com tarja nas imagens e prepara o e-mail para <a href="mailto:suporte.coir@gmail.com">suporte.coir@gmail.com</a>.</p>
     <form id="form-pedido" class="avisos" method="post">
       <label for="pedido-corretora">Corretora</label>
-      <input id="pedido-corretora" type="text" name="corretora" required placeholder="Ex.: Nova Corretora">
+      <input id="pedido-corretora" type="text" name="corretora" required maxlength="80" placeholder="Ex.: Nova Corretora">
       <label for="pedido-segmento">Segmento e ano das notas</label>
-      <input id="pedido-segmento" type="text" name="segmento" placeholder="Ex.: Bovespa, 2024 e 2025">
+      <input id="pedido-segmento" type="text" name="segmento" maxlength="120" placeholder="Ex.: Bovespa, 2024 e 2025">
       <label for="pedido-mensagem">O que o COIR mostrou (a mensagem da importação)</label>
-      <textarea id="pedido-mensagem" name="mensagem" rows="4"></textarea>
+      <textarea id="pedido-mensagem" name="mensagem" rows="4" maxlength="2000"></textarea>
       <label for="pedido-email">Seu e-mail, se quiser resposta (opcional)</label>
       <div class="linha-form">
-        <input id="pedido-email" type="email" name="email" autocomplete="email" placeholder="voce@exemplo.com">
+        <input id="pedido-email" type="email" name="email" autocomplete="email" pattern="[^@ ]+@[^@ ]+[.][^@ ]+" title="E-mail completo, como voce@exemplo.com" maxlength="254" placeholder="voce@exemplo.com">
         <button type="submit" class="botao principal">Enviar pedido</button>
       </div>
       <input type="hidden" name="_subject" value="COIR: pedido de corretora">
@@ -394,6 +394,19 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
   // como o Formspree: https://formspree.io/f/<código>). Vazio: o formulário fica "em breve".
   // O mesmo endereço recebe os avisos e os pedidos de corretora (o assunto separa os dois).
   var FORM_AVISOS = 'https://formspree.io/f/mdeeenqe';
+  var PRAZO_MS = 20000;  // sem resposta nesse tempo, o envio é dado como perdido
+  var FALHOU = 'Não foi possível enviar agora. Tente mais tarde.';
+  // A resposta de erro do Formspree (JSON): { errors: [{ code, field, message }] }; 429 = muitos
+  // envios seguidos (o limite é de 20 por minuto).
+  function mensagemDeErro(status, corpo) {
+    if (status === 429) return 'Muitos envios seguidos. Espere um minuto e tente de novo.';
+    var erros = (corpo && corpo.errors) || [];
+    for (var i = 0; i < erros.length; i++) {
+      if (erros[i].code === 'TYPE_EMAIL') return 'Confira o e-mail: ele parece incompleto ou com erro de digitação.';
+      if (/^REQUIRED_FIELD/.test(erros[i].code || '')) return 'Preencha os campos obrigatórios.';
+    }
+    return FALHOU;
+  }
   function ligar(idForm, idSituacao, pronto) {
     var form = document.getElementById(idForm);
     var situacao = document.getElementById(idSituacao);
@@ -404,18 +417,50 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-bet
       return;
     }
     form.action = FORM_AVISOS;
+    var botao = form.querySelector('button[type=submit]');
+    var enviando = false;
+    var obrigatorios = Array.prototype.filter.call(form.elements, function (e) { return e.required; });
+    obrigatorios.forEach(function (e) {
+      e.addEventListener('input', function () { e.setCustomValidity(''); });
+    });
     form.addEventListener('submit', function (ev) {
       if (!window.fetch) return;
       ev.preventDefault();
+      if (enviando) return;  // clique duplo: um envio só
+      // campo obrigatório só com espaços passa no "required" do navegador
+      var vazio = obrigatorios.filter(function (e) { return !String(e.value).trim(); })[0];
+      if (vazio) {
+        vazio.setCustomValidity('Preencha este campo.');
+        vazio.reportValidity();
+        return;
+      }
+      enviando = true;
+      if (botao) botao.disabled = true;
       situacao.textContent = 'Enviando...';
+      var controle = window.AbortController ? new AbortController() : null;
+      var relogio = controle ? setTimeout(function () { controle.abort(); }, PRAZO_MS) : null;
       fetch(FORM_AVISOS, { method: 'POST', body: new FormData(form),
-                           headers: { 'Accept': 'application/json' } })
+                           headers: { 'Accept': 'application/json' },
+                           signal: controle ? controle.signal : undefined })
         .then(function (r) {
-          if (!r.ok) throw new Error();
-          form.reset();
-          situacao.textContent = pronto;
+          if (r.ok) {
+            form.reset();
+            situacao.textContent = pronto;
+            return;
+          }
+          return r.json().catch(function () { return null; }).then(function (corpo) {
+            situacao.textContent = mensagemDeErro(r.status, corpo);
+          });
         })
-        .catch(function () { situacao.textContent = 'Não foi possível enviar agora. Tente mais tarde.'; });
+        .catch(function (erro) {
+          situacao.textContent = erro && erro.name === 'AbortError'
+            ? 'O envio demorou demais. Confira a conexão e tente de novo.' : FALHOU;
+        })
+        .then(function () {
+          if (relogio) clearTimeout(relogio);
+          enviando = false;
+          if (botao) botao.disabled = false;
+        });
     });
   }
   ligar('form-avisos', 'avisos-situacao', 'Pronto: você vai receber um aviso quando sair versão nova.');
