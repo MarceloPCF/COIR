@@ -237,12 +237,14 @@ def _limite_pelo_day_trade(
 ) -> list[tuple[int, str]]:
     """Meses em que a venda de ações em day trade, somada às vendas comuns (parâmetro
     day_trade_na_soma_limite, ligado por padrão), fez o mês passar do limite de isenção: o aviso
-    explica por que o ganho comum foi tributado."""
+    explica por que o ganho comum foi tributado. Sem ganho comum à vista no mês, nada a avisar."""
     saida: list[tuple[int, str]] = []
     for mes in meses:
         comum = next(r for r in mes.categorias if r.categoria is Categoria.COMUM)
         limite = params.decimal("limite_isencao_acoes", fim_do_mes(mes.ano, mes.mes))
-        if comum.vendas_acoes <= limite < comum.vendas_limite:
+        ganho_a_vista = comum.por_grupo.get(Grupo.A_VISTA, ZERO)
+        # sem ganho comum à vista (mês só de day trade, ou com perda) não há isenção perdida
+        if comum.vendas_acoes <= limite < comum.vendas_limite and ganho_a_vista > 0:
             dt = comum.vendas_limite - comum.vendas_acoes
             saida.append((mes.titular, (
                 f"{mes.mes:02d}/{mes.ano}: as vendas de ações em day trade ({_reais(dt)}) entram "

@@ -14,7 +14,7 @@ day_trade_na_soma_limite = true.
 from datetime import date
 from decimal import Decimal
 
-from coir.domain.fiscal import Categoria, OperacaoMotor
+from coir.domain.fiscal import Categoria, OperacaoMotor, TipoAtivo
 from tests.fiscal_cases.apoio import Livro, categoria, mes, parametros
 
 D = Decimal
@@ -105,3 +105,76 @@ def test_venda_por_exercicio_entra_na_soma_e_o_ganho_nunca_e_isento() -> None:
     assert (m.imposto, m.darf, m.vencimento) == (D("1080.00"), D("1080.00"), date(2026, 7, 31))
     [pos] = livro.carteira(date(2026, 6, 30))
     assert (pos.ticker, pos.quantidade, pos.custo) == ("BBBB3", 600, D("15000.00"))
+
+
+def _dt(livro: Livro, dia: date, ticker: str, quantidade: int, *, tipo: TipoAtivo | None = None,
+        irrf_dt: str = "0", antes: tuple[OperacaoMotor, ...] = ()) -> None:  # fmt: skip
+    """Nota com as operações ``antes`` e um day trade (marcado D) de ``ticker``: compra a 19,50 e
+    venda a 20,00."""
+    livro.nota(dia, *antes, _d(livro.op("C", ticker, quantidade, "19.50", tipo=tipo)),
+               _d(livro.op("V", ticker, quantidade, "20", tipo=tipo)), irrf_dt=irrf_dt)  # fmt: skip
+
+
+def test_day_trade_de_unit_ou_etf_fica_fora_da_soma() -> None:
+    """Caso C. Venda comum de 1.000 AAAA3 a 15,00 (15.000,00; ganho 5.000,00) + day trade de 400 de
+    uma unit ou de um ETF, 19,50 / 20,00 (venda 8.000,00; ganho 200,00; IRRF 2,00). Units (R4a,
+    parâmetro units_na_isencao = false) e ETF (IN RFB 1.585/2015 art. 59 §2º II) não são ações para
+    o limite: soma 15.000,00, ganho comum isento 5.000,00, imposto do day trade 20% x 200,00 =
+    40,00,
+    DARF 40,00 - 2,00 = 38,00. Com units_na_isencao = true, a unit entra: soma 23.000,00, isento 0,
+    15% x 5.000,00 = 750,00 + 40,00 - 2,00 = DARF 788,00 (Lei 11.033/2004 art. 3º I)."""
+    for tipo in (TipoAtivo.UNIT, TipoAtivo.ETF):
+        livro = Livro()
+        livro.nota(date(2026, 2, 2), livro.op("C", "AAAA3", 1000, "10"))
+        _dt(livro, date(2026, 3, 10), "UUUU11", 400, tipo=tipo, irrf_dt="2.00",
+            antes=(livro.op("V", "AAAA3", 1000, "15"),))  # fmt: skip
+        ap = livro.apurar(date(2026, 3, 31))
+        comum = categoria(ap, 2026, 3, Categoria.COMUM)
+        assert (comum.vendas_limite, comum.isento, comum.imposto) == (
+            D("15000.00"), D("5000.00"), 0), tipo  # fmt: skip
+        assert categoria(ap, 2026, 3, Categoria.DAY_TRADE).imposto == D("40.00")
+        assert mes(ap, 2026, 3).darf == D("38.00")
+        assert not ap.avisos
+        if tipo is TipoAtivo.UNIT:
+            ap = livro.apurar(date(2026, 3, 31), parametros(units_na_isencao="true"))
+            comum = categoria(ap, 2026, 3, Categoria.COMUM)
+            assert (comum.vendas_limite, comum.isento, comum.imposto) == (
+                D("23000.00"), 0, D("750.00"))  # fmt: skip
+            assert mes(ap, 2026, 3).darf == D("788.00")
+
+
+def test_mes_so_de_day_trade_acima_do_limite_nao_avisa() -> None:
+    """Caso E. Só day trade: 1.250 BBBB3 a 19,50 / 20,00, venda 25.000,00, ganho 625,00; imposto 20%
+    = 125,00; IRRF de 1% sobre o ganho = 6,25 (IN RFB 1.585/2015 art. 65 §§8º e 11); DARF 118,75.
+    A soma passa do limite, mas não há ganho comum que pudesse ser isento: nenhum aviso."""
+    livro = Livro()
+    _dt(livro, date(2026, 3, 10), "BBBB3", 1250, irrf_dt="6.25")
+    ap = livro.apurar(date(2026, 3, 31))
+    comum = categoria(ap, 2026, 3, Categoria.COMUM)
+    assert (comum.vendas_acoes, comum.vendas_limite, comum.isento) == (0, D("25000.00"), 0)
+    assert categoria(ap, 2026, 3, Categoria.DAY_TRADE).imposto == D("125.00")
+    assert mes(ap, 2026, 3).darf == D("118.75")
+    assert not ap.avisos
+
+
+def test_perda_comum_com_day_trade_acima_do_limite_nao_reduz_imposto() -> None:
+    """Caso F. Fevereiro: compra 1.000 AAAA3 a 10,00 e 1.000 CCCC3 a 22,00. Março: venda comum de
+    AAAA3 a 8,00 (8.000,00; perda 2.000,00) + day trade de 650 BBBB3, 19,50 / 20,00 (13.000,00;
+    ganho 325,00): soma 21.000,00, sem aviso (não há ganho comum). A perda é compensável mesmo em
+    mês dentro do limite (Lei 8.981/1995 art. 72 §4º; parâmetro prejuizo_mes_isento_compensavel).
+    Abril: venda de CCCC3 a 25,00 (25.000,00; ganho 3.000,00): base 3.000,00 - 2.000,00 =
+    1.000,00, imposto 15% = 150,00. Com o parâmetro day_trade_na_soma_limite = false, o mesmo
+    imposto: a soma do day trade nunca reduz o imposto."""
+    livro = Livro()
+    livro.nota(date(2026, 2, 2), livro.op("C", "AAAA3", 1000, "10"),
+               livro.op("C", "CCCC3", 1000, "22"))  # fmt: skip
+    _dt(livro, date(2026, 3, 10), "BBBB3", 650, irrf_dt="3.25",
+        antes=(livro.op("V", "AAAA3", 1000, "8"),))  # fmt: skip
+    livro.nota(date(2026, 4, 10), livro.op("V", "CCCC3", 1000, "25"))
+    for params in (None, parametros(day_trade_na_soma_limite="false")):
+        ap = livro.apurar(date(2026, 4, 30), params)
+        marco = categoria(ap, 2026, 3, Categoria.COMUM)
+        assert (marco.isento, marco.prejuizo_a_compensar) == (0, D("-2000.00"))
+        abril = categoria(ap, 2026, 4, Categoria.COMUM)
+        assert (abril.base, abril.imposto) == (D("1000.00"), D("150.00"))
+        assert not ap.avisos

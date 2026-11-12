@@ -478,6 +478,18 @@ class Apuracao(Modelo):
         """Os avisos de todos os titulares."""
         return tuple(texto for _, texto in self.avisos_titular)
 
+    @staticmethod
+    def ano_do_aviso(aviso: str) -> int | None:
+        """Ano a que o aviso se refere, pelo começo do texto: "AAAA-MM-DD", "DD/MM/AAAA" ou
+        "MM/AAAA". Sem data no começo, None (o aviso vale para todos os anos)."""
+        partes = aviso[:10].split(":")[0].strip()
+        if len(partes) >= 4 and partes[:4].isdigit() and partes[4:5] in ("", "-"):
+            return int(partes[:4])
+        pedacos = partes.split("/")
+        if len(pedacos) in (2, 3) and all(p.isdigit() for p in pedacos) and len(pedacos[-1]) == 4:
+            return int(pedacos[-1])
+        return None
+
     def avisos_de(self, titular: int | None) -> tuple[str, ...]:
         """Os avisos de um titular só (sino, Painel e tela Apuração)."""
         return tuple(texto for dono, texto in self.avisos_titular if dono == titular)

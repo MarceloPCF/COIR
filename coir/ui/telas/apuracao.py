@@ -181,7 +181,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                 ao_clicar=lambda i: abrir(int(str(i)), mapa),
             ).mark("grade-apuracao")
             for aviso in apuracao.avisos_de(estado.titular):
-                if aviso[:4] == str(estado.ano) or not aviso[:4].isdigit():  # avisos do ano
+                ano_aviso = Apuracao.ano_do_aviso(aviso)
+                if ano_aviso is None or ano_aviso == estado.ano:  # avisos do ano (ou sem data)
                     ui.label(f"Atenção: {aviso}").classes("coir-carimbo text-sm")
 
     def abrir(indice: int, mapa: dict[int, int]) -> None:
@@ -238,14 +239,15 @@ def _memoria(estado: Estado, m: MesApurado, movs: list[Movimento], mapa: dict[in
                 _par("Ações de PME: perda (não compensa ganhos)", _r(m.perda_pme),
                      "coir-negativo")  # fmt: skip
             veredito = (
-                "dentro do limite: ganho de ações isento"
+                "dentro do limite: ganho das vendas comuns de ações isento (day trade, exercício "
+                "e termo são tributados)"
                 if vendas <= limite
-                else ("acima do limite: ganho tributável")
+                else "acima do limite: ganho tributável"
             )
             ui.label(veredito).classes("coir-subtitulo text-xs")
-            ui.label("Lei 11.033/2004 art. 3º I; units fora do limite.").classes(
-                "coir-subtitulo text-xs"
-            )
+            units = "units no limite" if params.booleano("units_na_isencao", dia) else (
+                "units fora do limite")  # fmt: skip
+            ui.label(f"Lei 11.033/2004 art. 3º I; {units}.").classes("coir-subtitulo text-xs")
         for r in m.categorias:
             with _bloco(f"{2 + list(Categoria).index(r.categoria)}. {NOME_CATEGORIA[r.categoria]}"):
                 for g in GRUPOS:
