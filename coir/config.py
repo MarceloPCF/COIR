@@ -132,18 +132,6 @@ class _FormatoSemDados(logging.Formatter):
         return RE_CPF.sub("***", texto)
 
 
-class _SemConexaoFechada(logging.Filter):
-    """No Windows, o asyncio registra como ERRO cada conexão que a janela ou o navegador fecha no
-    meio (recarregar, trocar de página, fechar o COIR): "ConnectionResetError [WinError 10054]"
-    em ``_call_connection_lost``. Não é erro do COIR e assustava quem filtra "Só avisos e erros";
-    sai do registro. Qualquer outro erro do asyncio continua."""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        erro = record.exc_info[1] if record.exc_info else None
-        return not (isinstance(erro, ConnectionResetError)
-                    and "_call_connection_lost" in record.getMessage())  # fmt: skip
-
-
 def configurar_registro(dados: Path) -> Path:
     """Registro de atividades em ``<dados>/logs/coir.log`` (rotativo, 1 MB x 5), que fica neste
     computador, e o de auditoria (``coir.auditoria``), que o usuário pode mandar ao suporte."""
@@ -158,8 +146,6 @@ def configurar_registro(dados: Path) -> Path:
     manipulador.setFormatter(_FormatoSemDados("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     manipulador.setLevel(logging.INFO)
     raiz.addHandler(manipulador)
-    if not any(isinstance(f, _SemConexaoFechada) for f in logging.getLogger("asyncio").filters):
-        logging.getLogger("asyncio").addFilter(_SemConexaoFechada())
     logging.getLogger("alembic").setLevel(logging.WARNING)  # "Context impl" a cada conexão
     if raiz.level > logging.INFO or raiz.level == logging.NOTSET:
         raiz.setLevel(logging.INFO)
