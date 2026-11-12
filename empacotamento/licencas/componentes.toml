@@ -1,0 +1,219 @@
+# Componentes de terceiros do pacote do COIR que não são pacotes Python com licença nos metadados
+# (os pacotes Python o tools/empacotar.py lê dos próprios metadados). Cada componente traz os
+# arquivos do pacote que cobre (`caminhos`, glob a partir da pasta COIR/ do zip) e o texto oficial
+# da licença (`arquivos`, nesta pasta; "@python" e "@pyinstaller" vêm do ambiente que monta o
+# pacote). Ao montar, o empacotar falha se um componente não achar nenhum arquivo (lista velha) ou
+# se um arquivo de terceiro do pacote não estiver coberto (componente novo do NiceGUI, por exemplo).
+# Atualizar versão e texto ao subir o NiceGUI, o pywebview ou o Python: a montagem falha se as
+# versões instaladas forem outras que as de [conferido].
+#
+# Limite: componentes que dividem uma pasta (os cinco do ECharts em echart/dist, Material e Roboto em
+# static/fonts) não acusam biblioteca nova dentro dela; a trava de versão em [conferido] é que pede a
+# revisão ao subir o NiceGUI.
+
+# Arquivos de terceiros que são do próprio pacote Python (licença nos metadados dele), dentro das
+# pastas que a verificação olha arquivo por arquivo.
+proprios = [
+    "_internal/nicegui/static/nicegui.js",
+    "_internal/nicegui/static/nicegui.css",
+    "_internal/nicegui/static/headwind.css",
+    "_internal/nicegui/static/fonts.css",
+    "_internal/nicegui/static/favicon.ico",
+    "_internal/nicegui/static/sad_face.svg",
+    "_internal/nicegui/static/utils/*",
+    "_internal/webview/lib/WebBrowserInterop.*.dll",
+    "_internal/webview/lib/pywebview-android.jar",
+]
+
+# Pastas em que todo arquivo tem de estar em `proprios` ou num componente abaixo.
+vigiadas = [
+    "_internal/nicegui/static/**",
+    "_internal/nicegui/elements/*/dist/**",
+    "_internal/nicegui/elements/*/lib/**",
+    "_internal/webview/lib/**",
+]
+
+# Pacotes que nunca podem ir no .zip, além dos grupos de dependência do pyproject (dev, videos):
+# ferramentas de montar e testar e o que elas puxam.
+proibidos = [
+    "pyinstaller", "pyinstaller-hooks-contrib", "pefile", "altgraph", "setuptools",
+    "pytest", "pluggy", "iniconfig", "hypothesis",
+]
+
+# Pacote Python cujos metadados não trazem o texto da licença: texto oficial do repositório dele.
+# proxy_tools: o PyPI declara MIT, mas o LICENSE.txt do repositório
+# (https://github.com/jtushman/proxy_tools/blob/master/LICENSE.txt) é BSD; vai o texto do repositório.
+[pacotes_sem_texto]
+proxy-tools = "proxy-tools.txt"
+
+# Versões para as quais esta lista foi conferida arquivo por arquivo (11/11/2026).
+[conferido]
+python = "3.13"
+nicegui = "3.18.0"
+pywebview = "6.2.1"
+
+[[componente]]
+nome = "Python"
+versao = "3.13"
+licenca = "PSF-2.0 (e as licenças das bibliotecas incorporadas, abaixo)"
+fonte = "https://www.python.org/ e https://github.com/python/cpython/blob/v3.13.16/Doc/license.rst"
+arquivos = ["@python", "python-incorporado.txt", "outros-python.txt"]
+# "@dlls-do-python": cada arquivo da pasta DLLs do Python que monta o pacote (_ssl.pyd,
+# libcrypto, sqlite3.dll...), pelo nome exato; extensão de terceiro no topo não cai aqui.
+caminhos = ["_internal/python3.dll", "_internal/python313.dll", "_internal/base_library.zip", "@dlls-do-python"]
+
+[[componente]]
+nome = "Microsoft Visual C++ Runtime e Universal CRT"
+versao = "14"
+licenca = "Microsoft Distributable Code"
+fonte = "https://learn.microsoft.com/cpp/windows/redistributing-visual-cpp-files"
+arquivos = ["microsoft-vcredist.txt"]
+# api-ms-win-crt-*.dll e ucrtbase.dll só entram se o PyInstaller os coletar (Windows sem UCRT)
+caminhos = [
+    "_internal/VCRUNTIME140.dll", "_internal/VCRUNTIME140_1.dll",
+    "_internal/rapidfuzz.libs/msvcp140-*.dll", "_internal/api-ms-win-*.dll", "_internal/ucrtbase.dll",
+]
+
+[[componente]]
+nome = "PyInstaller (carregador dos executáveis)"
+versao = "6"
+licenca = "GPL-2.0-or-later WITH Bootloader-exception"
+fonte = "https://pyinstaller.org/"
+arquivos = ["@pyinstaller"]
+caminhos = ["COIR.exe", "coir-cli.exe"]
+
+[[componente]]
+nome = "Microsoft WebView2 SDK"
+versao = "1.0.3856.49"
+licenca = "BSD-3-Clause"
+fonte = "https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.3856.49"
+arquivos = ["webview2.txt"]
+caminhos = ["_internal/webview/lib/Microsoft.Web.WebView2.*.dll", "_internal/webview/lib/runtimes/*/native/WebView2Loader.dll"]
+
+[[componente]]
+nome = "Vue.js"
+versao = "3.5.22"
+licenca = "MIT"
+fonte = "https://unpkg.com/vue@3.5.22/LICENSE"
+arquivos = ["vue.txt"]
+caminhos = ["_internal/nicegui/static/vue.esm-browser*.js"]
+
+[[componente]]
+nome = "Quasar Framework"
+versao = "2.18.5"
+licenca = "MIT"
+fonte = "https://unpkg.com/quasar@2.18.5/LICENSE"
+arquivos = ["quasar.txt"]
+caminhos = ["_internal/nicegui/static/quasar.*", "_internal/nicegui/static/lang/*"]
+
+[[componente]]
+nome = "Socket.IO (cliente)"
+versao = "4.8.1"
+licenca = "MIT"
+fonte = "https://unpkg.com/socket.io-client@4.8.1/LICENSE"
+arquivos = ["socket.io-client.txt"]
+caminhos = ["_internal/nicegui/static/socket.io.min.js"]
+
+[[componente]]
+nome = "Tailwind CSS (navegador)"
+versao = "4.1.13"
+licenca = "MIT"
+fonte = "https://unpkg.com/@tailwindcss/browser@4.1.13/LICENSE"
+arquivos = ["tailwindcss-browser.txt"]
+caminhos = ["_internal/nicegui/static/tailwindcss.min.js"]
+
+[[componente]]
+nome = "Dart Sass"
+versao = "1.94.0"
+licenca = "MIT (e as licenças dos pacotes Dart incorporados, no mesmo texto)"
+fonte = "https://unpkg.com/sass@1.94.0/LICENSE"
+arquivos = ["sass.txt"]
+caminhos = ["_internal/nicegui/static/sass.*.js"]
+
+[[componente]]
+nome = "Immutable.js"
+versao = "5.1.9"
+licenca = "MIT"
+fonte = "https://unpkg.com/immutable@5.1.9/LICENSE"
+arquivos = ["immutable.txt"]
+caminhos = ["_internal/nicegui/static/immutable.es.js"]
+
+[[componente]]
+nome = "DOMPurify"
+versao = "3.4.16"
+licenca = "Apache-2.0 OR MPL-2.0 (usada aqui: Apache-2.0)"
+fonte = "https://unpkg.com/dompurify@3.4.16/LICENSE"
+arquivos = ["dompurify.txt"]
+caminhos = ["_internal/nicegui/static/dompurify.mjs"]
+
+[[componente]]
+nome = "UnoCSS"
+versao = "66.6.0"
+licenca = "MIT"
+fonte = "https://unpkg.com/@unocss/core@66.6.0/LICENSE"
+arquivos = ["unocss.txt"]
+caminhos = ["_internal/nicegui/static/unocss/*"]
+
+[[componente]]
+nome = "Material Icons e Material Symbols"
+versao = "(Google Fonts)"
+licenca = "Apache-2.0"
+fonte = "https://github.com/google/material-design-icons/blob/master/LICENSE"
+arquivos = ["material-icons.txt"]
+caminhos = ["_internal/nicegui/static/fonts/*.woff2"]
+
+[[componente]]
+nome = "Roboto"
+versao = "(Google Fonts)"
+licenca = "OFL-1.1"
+fonte = "https://github.com/google/fonts/blob/main/ofl/roboto/OFL.txt"
+arquivos = ["roboto.txt"]
+caminhos = ["_internal/nicegui/static/fonts/*.woff2"]
+
+[[componente]]
+nome = "AG Grid Community"
+versao = "34.2.0"
+licenca = "MIT"
+fonte = "https://unpkg.com/ag-grid-community@34.2.0/LICENSE.txt"
+arquivos = ["ag-grid-community.txt"]
+caminhos = ["_internal/nicegui/elements/aggrid/dist/*"]
+
+[[componente]]
+nome = "Apache ECharts"
+versao = "6.1.0"
+licenca = "Apache-2.0 (com trechos do d3.js, BSD-3-Clause)"
+fonte = "https://unpkg.com/echarts@6.1.0/LICENSE"
+arquivos = ["echarts.txt", "echarts-NOTICE.txt", "echarts-d3.txt"]
+caminhos = ["_internal/nicegui/elements/echart/dist/*"]
+
+[[componente]]
+nome = "ZRender"
+versao = "6.1.0"
+licenca = "BSD-3-Clause"
+fonte = "https://unpkg.com/zrender@6.1.0/LICENSE"
+arquivos = ["zrender.txt"]
+caminhos = ["_internal/nicegui/elements/echart/dist/*"]
+
+[[componente]]
+nome = "tslib"
+versao = "2.3.0"
+licenca = "0BSD"
+fonte = "https://unpkg.com/tslib@2.3.0/LICENSE.txt"
+arquivos = ["tslib.txt"]
+caminhos = ["_internal/nicegui/elements/echart/dist/*"]
+
+[[componente]]
+nome = "ECharts GL"
+versao = "2.1.0"
+licenca = "BSD-3-Clause"
+fonte = "https://unpkg.com/echarts-gl@2.1.0/LICENSE"
+arquivos = ["echarts-gl.txt"]
+caminhos = ["_internal/nicegui/elements/echart/dist/*"]
+
+[[componente]]
+nome = "ClayGL"
+versao = "1.3.0"
+licenca = "BSD-2-Clause"
+fonte = "https://unpkg.com/claygl@1.3.0/LICENSE"
+arquivos = ["claygl.txt"]
+caminhos = ["_internal/nicegui/elements/echart/dist/*"]

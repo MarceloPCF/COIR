@@ -1,10 +1,11 @@
 """Monta o pacote do COIR para Windows: PyInstaller em modo pasta, .zip para as GitHub Releases.
 
 O zip leva `COIR.exe` (janela), `coir-cli.exe` (linha de comando), `_internal/` (Python e
-bibliotecas), `LEIA-ME.txt`, `LICENSE`, os avisos de licença das bibliotecas e o endereço do
-código-fonte da versão (AGPL). Depois de montar, o teste de fumaça roda os executáveis com o PATH
-sem Python, numa pasta de dados temporária: versão, migração de um banco antigo (com backup) e a
-interface respondendo. Nada da pasta de dados do usuário é lido nem gravado.
+bibliotecas), `LEIA-ME.txt`, `LICENSE`, `AVISOS-DE-TERCEIROS.txt` (texto integral das licenças de
+terceiros; ver tools/licencas.py) e o endereço do código-fonte da versão (AGPL). Depois de montar,
+o teste de fumaça roda os executáveis com o PATH sem Python, numa pasta de dados temporária:
+versão, migração de um banco antigo (com backup) e a interface respondendo. Nada da pasta de dados
+do usuário é lido nem gravado.
 
 Uso: uv run python -m tools.empacotar [--sem-fumaca] [--saida dist]
 """
@@ -23,8 +24,9 @@ import urllib.request
 import zipfile
 from contextlib import closing
 from datetime import datetime
-from importlib import metadata
 from pathlib import Path
+
+from tools import licencas
 
 RAIZ = Path(__file__).resolve().parents[1]
 SPEC = RAIZ / "empacotamento" / "coir.spec"
@@ -56,25 +58,6 @@ def pyinstaller(trabalho: Path) -> Path:
     return trabalho / "dist" / "COIR"
 
 
-def avisos_de_terceiros() -> str:
-    """Nome, versão e licença de cada biblioteca embutida (o texto completo de cada licença está
-    nos metadados do próprio pacote, dentro de _internal)."""
-    linhas = ["Bibliotecas de terceiros incluídas no COIR (nome, versão e licença declarada)", ""]
-    vistos: set[str] = set()
-    for d in sorted(metadata.distributions(), key=lambda d: d.metadata["Name"].lower()):
-        nome = d.metadata["Name"]
-        if nome.lower() in vistos or nome.lower() == "coir":
-            continue
-        vistos.add(nome.lower())
-        licenca = d.metadata.get("License-Expression") or d.metadata.get("License") or ""
-        if not licenca or len(licenca) > 80:  # texto da licença inteiro no campo: usa a classe
-            classes = [c.split(" :: ")[-1] for c in d.metadata.get_all("Classifier") or []
-                       if c.startswith("License ::")]  # fmt: skip
-            licenca = ", ".join(classes) or "ver os metadados do pacote"
-        linhas.append(f"{nome} {d.version} — {licenca}")
-    return "\n".join(linhas) + "\n"
-
-
 def leia_me(numero: str) -> str:
     return f"""COIR {numero} — Controle de Operações e Imposto de Renda (B3)
 
@@ -100,7 +83,7 @@ quando você pede, ou ao abrir, se você ligar essa opção em Configurações.
 def montar_zip(pasta: Path, numero: str, saida: Path) -> Path:
     shutil.copy2(RAIZ / "LICENSE", pasta / "LICENSE.txt")
     (pasta / "LEIA-ME.txt").write_text(leia_me(numero), encoding="utf-8")
-    (pasta / "AVISOS-DE-TERCEIROS.txt").write_text(avisos_de_terceiros(), encoding="utf-8")
+    (pasta / "AVISOS-DE-TERCEIROS.txt").write_text(licencas.avisos(pasta, numero), encoding="utf-8")
     saida.mkdir(parents=True, exist_ok=True)
     destino = saida / f"COIR-{numero}-windows.zip"
     with zipfile.ZipFile(destino, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
