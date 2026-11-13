@@ -16,8 +16,8 @@ A nota não foi lida? Use o **Pedido de corretora** no site
   explica como mandar só o texto da nota com esses dados trocados por valores genéricos (veja
   "Fixture anonimizada" abaixo).
 
-Um anonimizador dentro do programa está previsto para depois da 3.0
-([roteiro](roteiro-pos-3.0.md)).
+A tela **Suporte** do programa faz essa cópia sozinha: troca nome, CPF, conta e endereço, mostra as
+imagens tarjadas para você conferir e abre o e-mail para o suporte.
 
 ## Para quem desenvolve
 
