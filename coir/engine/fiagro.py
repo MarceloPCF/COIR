@@ -1,4 +1,4 @@
-"""Avisos de FII e Fiagro na declaração anual (decisões do usuário de 10/11/2026, leitura
+"""Avisos de FII e Fiagro na declaração anual (critérios do COIR de 10/11/2026, leitura
 conservadora). O motor apura FII e Fiagro na mesma categoria, como a ficha única do programa
 IRPF; o tipo do fundo só é conhecido pelo cadastro da B3 (tipo FIAGRO), então o que segue são
 avisos, sem mudar o cálculo.

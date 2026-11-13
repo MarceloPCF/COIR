@@ -2,7 +2,7 @@
 trade, sem isenção, e a venda do direito fica fora da soma do limite de R$ 20 mil (SC Cosit
 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e
 65). O direito recebido sem nota de compra entra com custo zero (IN 1.585 art. 58 §7º, por
-analogia: parecer do especialista de 09/11/2026, seguido pelo usuário)."""
+analogia: parecer do especialista de 09/11/2026)."""
 
 from datetime import date
 

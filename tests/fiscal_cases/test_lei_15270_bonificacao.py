@@ -1,4 +1,4 @@
-"""Aviso da Lei 15.270/2025 para bonificação em ações (decisão do usuário de 10/11/2026, leitura
+"""Aviso da Lei 15.270/2025 para bonificação em ações (critério do COIR de 10/11/2026, leitura
 conservadora): desde 2026, a bonificação feita com lucros é emprego de lucros e conta no limite
 mensal de R$ 50 mil de dividendos da mesma empresa (P&R Altas Rendas, perguntas 12 a 14). O COIR
 não sabe a origem da bonificação (lucros ou reservas de capital), então só avisa."""

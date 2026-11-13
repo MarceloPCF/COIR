@@ -7,7 +7,7 @@ algébrica dos ajustes diários entre a abertura e o encerramento ou liquidaçã
 
 Implementação: por titular e contrato (ex.: WINM24), os ajustes da posição aberta (AJUPOS e o ajuste
 do dia do negócio que abriu) e os custos rateados da abertura ficam acumulados; no encerramento
-parcial sai a parte proporcional (preço médio, decisão do usuário de 15/10/2026), somada ao ajuste
+parcial sai a parte proporcional (preço médio, critério do COIR de 15/10/2026), somada ao ajuste
 e aos custos do negócio que encerra. No vencimento, sai o que sobrar. Day trade (IN 1.585 art. 65
 §§10 e 11) e taxas sem negócio (permanência) têm resultado no próprio dia.
 """

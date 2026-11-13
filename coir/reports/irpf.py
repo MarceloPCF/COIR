@@ -183,7 +183,7 @@ def _bens(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]) -> list[Be
 
 def _dividas(d: DadosRelatorio, mapa: MapeamentoIrpf) -> list[DividaIrpf]:
     """Posições vendidas em 31/12 (opção lançada, venda a descoberto) pelo valor recebido, em
-    Dívidas e ônus reais (decisão do usuário de 20/10/2026; sem norma específica)."""
+    Dívidas e ônus reais (critério do COIR de 20/10/2026; sem norma específica)."""
     if mapa.dividas is None:
         return []
     item = next(i for i in mapa.dividas.itens if i.tipo == "POSICAO_VENDIDA")
@@ -216,7 +216,7 @@ def _dividas(d: DadosRelatorio, mapa: MapeamentoIrpf) -> list[DividaIrpf]:
 
 
 def _jcp_a_receber(d: DadosRelatorio, mapa: MapeamentoIrpf) -> list[BemIrpf]:
-    """JCP creditado e ainda não pago em 31/12 (decisão do usuário de 19/10/2026; IN SRF 41/1998
+    """JCP creditado e ainda não pago em 31/12 (critério do COIR de 19/10/2026; IN SRF 41/1998
     art. 3º parágrafo único): a receber em cada 31/12 desde o ano do crédito até o ano anterior ao
     do pagamento (há companhia que paga mais de um ano depois)."""
     item = mapa.bens.item("JCP_A_RECEBER")
@@ -287,7 +287,7 @@ def _rendimentos(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]
                     and m.evento is TipoEvento.BONIFICACAO]  # fmt: skip
     linha("isentos", "bonificacao", bonificacoes)
     # código 20: só os meses com ganho isento positivo; a perda de mês isento (parâmetro
-    # prejuizo_mes_isento_compensavel desligado) não reduz o total (decisão do usuário de
+    # prejuizo_mes_isento_compensavel desligado) não reduz o total (critério do COIR de
     # 10/11/2026, recomendação do especialista)
     isento = sum((max(_cat(m, Categoria.COMUM).isento, ZERO) for m in _meses(d)), ZERO)
     if isento:

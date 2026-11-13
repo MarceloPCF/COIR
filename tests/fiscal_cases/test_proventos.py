@@ -5,7 +5,7 @@ art. 14 III (JCP a 17,5% pago ou creditado desde 01/01/2026, na data do pagament
 Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei
 15.265/2025 arts. 20 e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de capital
 reduz o custo); Lei 15.270/2025 (Lei 9.250 art. 6º-A: IRRF de 10% sobre o total dos dividendos da
-mesma PJ no mês acima de R$ 50 mil). Decisões do usuário de 19/10/2026: JCP declarado no ano do
+mesma PJ no mês acima de R$ 50 mil). Critérios do COIR de 19/10/2026: JCP declarado no ano do
 crédito; reembolso de dividendos de 2026 isento por equivalência; BDR fora da v3.0.
 """
 
@@ -230,7 +230,7 @@ def test_reembolso_de_dividendo_pela_movimentacao_e_lei_15270() -> None:
     """Reembolso de dividendo identificado pelo dividendo do mesmo dia na própria movimentação:
     dividendo de 50,00 por ação; reembolso de 25.000,00 = 500 ações emprestadas inteiras (como JCP
     a 15% seriam 588,24 ações: não). Com outro dividendo de 5.000,00 no mês, em 2026 o aviso da
-    Lei 15.270 soma os três (55.000,00 no mês, acima de R$ 50 mil; decisão do usuário de
+    Lei 15.270 soma os três (55.000,00 no mês, acima de R$ 50 mil; critério do COIR de
     21/10/2026)."""
     lista, avisos = _proventos(
         mov(date(2026, 4, 10), "Dividendo", "ITSA4 - ITAUSA", "500", "50", "25000"),
@@ -248,7 +248,7 @@ def test_jcp_com_data_com_em_janeiro_e_retencao_do_ano_anterior_so_avisa() -> No
     IN SRF 41/1998 art. 3º; IN RFB 1.700/2017 art. 75 §10). 3a: retenção de 17,5% (líquido 412,50):
     ano 2026, bruto 500,00, sem aviso. 3b: retenção de 15% (líquido 425,00): continua em 2026 pela
     regra, bruto estimado 425 / 0,825 = 515,15, com aviso de que a empresa tratou o crédito como
-    de 2025 (decisão do usuário de 21/10/2026: só avisar)."""
+    de 2025 (critério do COIR de 21/10/2026: só avisar)."""
     credito = date(2026, 1, 5)
     [a], _ = _proventos(_jcp(date(2026, 1, 30), "0.5", "412.5", credito))
     assert (a.ano_declaracao, a.aliquota, a.bruto, a.a_receber_em_31_12) == (

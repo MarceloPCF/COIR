@@ -1023,7 +1023,7 @@ def _por_empresa(lista: list[Provento], jcp: bool = False) -> Secao | None:
 
 def proventos(d: DadosRelatorio) -> Relatorio:
     """Proventos do ano para o IRPF (declarados no ano: o JCP creditado no ano e pago no seguinte
-    entra no ano do crédito, decisão do usuário de 19/10/2026)."""
+    entra no ano do crédito, critério do COIR de 19/10/2026)."""
     do_ano = [p for p in d.proventos if p.ano_declaracao == d.ano]
     secoes: list[Secao] = []
     blocos = (

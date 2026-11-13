@@ -1,7 +1,7 @@
 """Avisos da declaração anual: obrigatoriedade pelos dados de bolsa e total informativo do IR
 mínimo (Lei 9.250 art. 16-A).
 
-Obrigatoriedade (decisão do usuário de
+Obrigatoriedade (critério do COIR de
 10/11/2026, leitura conservadora). Os critérios vêm de data/parametros_fiscais.csv, pelo
 ano-calendário (ficha docs/normas/in-rfb-dirpf-anuais.md):
 
@@ -66,7 +66,7 @@ def aviso_irpf_minimo(
     """Total informativo dos ganhos líquidos em bolsa que entram na base do IR mínimo (Lei
     9.250/1995 art. 16-A §1º I, incluído pela Lei 15.270/2025, desde o ano-calendário 2026): os
     ganhos tributados (resultado positivo do mês, por categoria) e os isentos (ações até o limite e
-    PME); o imposto apurado sobre eles é dedutível (§3º IV). Decisão do usuário de 10/11/2026: só
+    PME); o imposto apurado sobre eles é dedutível (§3º IV). Critério do COIR de 10/11/2026: só
     informa, o COIR não calcula o IR mínimo (fora do escopo, R14)."""
     renda = _vigente(params, "irpf_minimo_renda_anual", date(ano, 12, 31))
     if renda is None:

@@ -4,7 +4,7 @@ Juros (art. 61 §3º c/c art. 5º §3º): a Selic acumulada de cada mês, da do 
 vencimento até a do mês anterior ao do pagamento (soma simples, tabela mensal do BCB em
 data/selic_mensal.csv), mais 1% no mês do pagamento; pago no mesmo mês do vencimento, sem juros.
 Base: o principal (não a multa); centavos truncados (o Sicalc trunca: 12,3457 -> 12,34, conferido
-pelo usuário em 17/10/2026). Data não útil vale no próximo dia útil, o que pode mudar o mês.
+no Sicalc em 17/10/2026). Data não útil vale no próximo dia útil, o que pode mudar o mês.
 Selic de mês posterior ao último da tabela: o valor sai sem ela, marcado como estimativa.
 
 - 0,33% por dia de atraso sobre o principal, limitada a 20% (caput e §2º). Os percentuais vêm
@@ -12,10 +12,10 @@ Selic de mês posterior ao último da tabela: o valor sai sem ela, marcado como 
 - Contagem (§1º): a lei conta "a partir do primeiro dia subseqüente ao do vencimento"; a
   Receita (Sicalc; página "Como calcular multa de mora") conta do primeiro dia ÚTIL seguinte ao
   vencimento até o pagamento. Parâmetro ``multa_mora_inicio_contagem`` (``rfb`` ou ``lei``);
-  decisão do usuário (17/10/2026): ``rfb``, o que a Receita cobra de fato.
-- Pagamento em dia não útil vale no próximo dia útil (glossário do Sicalc; decisão do usuário).
+  critério do COIR (17/10/2026): ``rfb``, o que a Receita cobra de fato.
+- Pagamento em dia não útil vale no próximo dia útil (glossário do Sicalc; critério do COIR).
 - Centavos: a lei é omissa; o Sicalc trunca (``multa_mora_arredondamento = ROUND_DOWN``,
-  conferido pelo usuário em 17/10/2026).
+  conferido no Sicalc em 17/10/2026).
 - DARF abaixo do mínimo acumulada não tem multa: o vencimento é o do período em que o total
   chega ao mínimo (art. 68 §1º), e é esse vencimento que entra aqui.
 """

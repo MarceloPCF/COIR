@@ -50,6 +50,12 @@ def test_publico_tira_as_anotacoes_de_desenvolvimento() -> None:
         "Day trade pela marcação D (F9, decisão do usuário de 25/10/2026). IN RFB":
             "Day trade pela marcação D. IN RFB",
         "Decisões da F4 (motor fiscal, 14-15/10/2026)": "Critérios do COIR",
+        # redação do código desde 13/11/2026: a data fica no código, sai do documento
+        "custo mantido (TRF1; critério do COIR de 19/10/2026). A RFB diverge":
+            "custo mantido (TRF1; critério do COIR). A RFB diverge",
+        "Proventos (critérios do COIR de 19/10/2026).": "Proventos (critérios do COIR).",
+        "Day trade pela marcação D (F9, critério do COIR de 25/10/2026). IN RFB":
+            "Day trade pela marcação D. IN RFB",
         "Casos do especialista fiscal (pareceres de 20 e 21/10/2026)":
             "Casos conferidos à mão (critérios do COIR)",
         "Manual MIR 2026; decisão do usuário (14/10/2026)": "Manual MIR 2026; critério do COIR",

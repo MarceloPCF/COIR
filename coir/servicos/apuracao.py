@@ -178,7 +178,7 @@ def _ajustes(nota: NotaExtraida, refs: Referencias) -> tuple[AjusteFuturo, ...]:
 def custos_dedutiveis(nota: NotaExtraida, total: Decimal, params: ParametrosFiscais) -> Decimal:
     """Custos da nota que entram no custo e reduzem a alienação. A taxa de custódia não é custo
     da operação (SC Cosit 227/2018 §§17-18): sai do total enquanto o parâmetro
-    ``custodia_no_custo`` for falso (decisão do usuário de 10/11/2026, leitura conservadora)."""
+    ``custodia_no_custo`` for falso (critério do COIR de 10/11/2026, leitura conservadora)."""
     if params.booleano("custodia_no_custo", nota.data_pregao):
         return total
     resumo = nota.resumo_bovespa or nota.resumo_bmf
@@ -267,7 +267,7 @@ EVENTOS_DO_LOTE_PME = (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO, TipoEvento
 
 
 def _aviso_custodia_pme(ticker: str, dia: date, isencao: IsencaoPME) -> str:
-    """A custódia não traz a data de compra: dentro da janela presume isenção (decisão do usuário
+    """A custódia não traz a data de compra: dentro da janela presume isenção (critério do COIR
     de 08/11/2026, parecer do especialista); fora dela, não."""
     if dia > isencao.vendas_ate:
         return ""

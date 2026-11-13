@@ -14,7 +14,7 @@ Fontes:
 - Termo: as ações entram na carteira na liquidação, pelo preço a termo + custos da nota. Vendas
   à vista na mesma data consomem primeiro o lote do termo, pelo preço a termo (art. 62 I, linha do
   termo, sem isenção); o excedente sai da posição anterior pelo PM. O que sobra do lote fica no
-  custo médio (art. 62 §1º e art. 58). Decisões do usuário de 20 e 21/10/2026.
+  custo médio (art. 62 §1º e art. 58). Critérios do COIR de 20 e 21/10/2026.
 """
 
 from calendar import monthrange
@@ -358,7 +358,7 @@ OpsDoDia = list[tuple[date, _Op]]
 
 def _desde_zerado(livro: Livro, meses: Meses) -> None:
     """O evento que falta pode ser anterior ao dia em que o motor parou: os meses do ativo desde
-    a última vez que a posição zerou também ficam incompletos (decisão do usuário de 03/11/2026,
+    a última vez que a posição zerou também ficam incompletos (critério do COIR de 03/11/2026,
     parecer do especialista)."""
     for (titular, ativo), corte in livro.cortes.items():
         movs = [m for m in livro.movimentos
@@ -373,7 +373,7 @@ def _venda_isolada(livro: Livro, dia: date, o: _Op) -> None:
     do usuário de 03/11/2026). O IRRF da nota continua crédito do mês. O ativo sem tipo conta
     como ação: se for, não contar isentaria vendas de ações acima do limite (imposto a menos, com
     multa de ofício); se não for, contar só faz pagar a mais, o que se restitui (parecer do
-    especialista de 09/11/2026, seguido pelo usuário). A apuração avisa o mês em que isso decide
+    especialista de 09/11/2026). A apuração avisa o mês em que isso decide
     o limite."""
     op = o.op
     if op.cv != "V" or op.mercado == "TERMO":
@@ -524,7 +524,7 @@ def _antecipar_ofertas(
 ) -> None:  # fmt: skip
     """A negociação pode começar antes da liquidação da oferta: a venda do dia que deixaria a
     posição vendida é das ações da oferta, então a aquisição entra antes dela, e o ganho fica no
-    mês do pregão da venda (decisão do usuário de 08/11/2026; IN RFB 1.585/2015 art. 58). Antecipa
+    mês do pregão da venda (critério do COIR de 08/11/2026; IN RFB 1.585/2015 art. 58). Antecipa
     só o que cobre a venda, da oferta mais próxima para a mais distante. A posição vendida há mais
     tempo que a janela não é venda das ações da oferta: o motor falha alto em _evento."""
     hoje = dias[dia]
@@ -809,7 +809,7 @@ def _movimento_day_trade(
     origem = "op:" + ",".join(str(o.op.id) for o in sorted(grupo, key=lambda o: o.op.id))
     tipo = primeiro.op.tipo
     # day trade com ações de PME no período: isento (leitura literal do art. 59 §2º I, que só
-    # afasta o limite de R$ 20 mil; decisão do usuário de 15/10/2026)
+    # afasta o limite de R$ 20 mil; critério do COIR de 15/10/2026)
     pme = all(p.base.op.pme_ate is not None and dia <= p.base.op.pme_ate for p in compras)
     # a venda de ação em day trade entra na soma do limite de R$ 20 mil (parâmetro
     # day_trade_na_soma_limite, ligado: leitura literal de "total das alienações" da Lei 11.033
@@ -833,7 +833,7 @@ def _aplicar(livro: Livro, dia: date, p: _Peca) -> None:
     if o.op.cv != "V" or o.op.mercado in MERCADOS_EXERCICIO or lote is None or not lote.quantidade:
         _aplicar_parte(livro, dia, chave, p)
         return
-    # venda na data da liquidação do termo (decisão do usuário de 21/10/2026, parecer do
+    # venda na data da liquidação do termo (critério do COIR de 21/10/2026, parecer do
     # especialista): consome primeiro o lote do termo, pela ordem dos negócios; o excedente sai da
     # posição anterior pelo PM, como venda à vista comum
     q = min(p.quantidade, lote.quantidade)
@@ -856,7 +856,7 @@ def _fatia(p: _Peca, quantidade: Decimal, regra: str) -> _Peca:
 def _vender_por_lote(livro: Livro, dia: date, chave: Chave, p: _Peca) -> None:
     """IN 1.585 art. 69-A §4º: cada lote tem o seu PM. A IN não fixa qual sai primeiro
     (parâmetro pme_lote_ordem_venda). Padrão ``proporcional``: a venda se reparte entre os lotes na
-    proporção das quantidades, como na SC Cosit 148/2025 (analogia; decisão do usuário de
+    proporção das quantidades, como na SC Cosit 148/2025 (analogia; critério do COIR de
     10/11/2026, leitura conservadora), com a parte isenta arredondada para baixo na unidade da
     quantidade vendida. ``isento_primeiro`` e ``tributado_primeiro`` continuam como opções
     (decisão de 08/11/2026). O que passar da posição é venda a descoberto, como em qualquer ativo;
@@ -915,7 +915,7 @@ def _aplicar_parte(
 ) -> None:  # fmt: skip
     """Aplica a peça à posição. Com `custo_termo`, é a venda de ações do lote do termo na data da
     liquidação: sai pelo preço a termo, vai para a linha "Mercado a termo" da ficha do IRPF e nunca
-    é isenta (IN 1.585 art. 62 I e art. 59 §2º IV; decisão do usuário de 20/10/2026)."""
+    é isenta (IN 1.585 art. 62 I e art. 59 §2º IV; critério do COIR de 20/10/2026)."""
     o = p.base
     pos = livro.posicoes[chave]
     if (o.op.cv == "V" and custo_termo is None and lote is None and pos.quantidade > 0
@@ -925,9 +925,9 @@ def _aplicar_parte(
     # ação ou unit no mercado à vista (units só entram com o parâmetro units_na_isencao)
     acao = o.op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT) and o.op.mercado in MERCADOS_ACAO_A_VISTA
     # IN 1.585 art. 59 §2º IV: a isenção não se aplica à alienação por exercício de opção; o valor
-    # continua na soma do limite (decisão do usuário de 15/10/2026, leitura conservadora)
+    # continua na soma do limite (critério do COIR de 15/10/2026, leitura conservadora)
     isentavel = acao and o.op.mercado not in MERCADOS_EXERCICIO
-    # venda a descoberto (leitura A1, decisão do usuário de 15/10/2026, sem norma específica): o
+    # venda a descoberto (leitura A1, critério do COIR de 15/10/2026, sem norma específica): o
     # resultado sai na recompra, mas o limite de isenção é o do mês da venda
     mes_limite = pos.descoberto_desde if o.op.cv == "C" and pos.quantidade < 0 else None
     pme = False
@@ -1138,7 +1138,7 @@ def _cisao(livro: Livro, chave: Chave, grupo: list[Evento]) -> None:
 def _leilao_fracao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
     """Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo
     PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro
-    leilao_fracao_isentavel (decisão do usuário de 19/10/2026: entra no limite do mês do crédito,
+    leilao_fracao_isentavel (critério do COIR de 19/10/2026: entra no limite do mês do crédito,
     que é a data do evento)."""
     chave = _chave_evento(livro, e)
     pos = _origem_do_evento(livro, e, chave)
@@ -1251,7 +1251,7 @@ def _evento(livro: Livro, e: Evento) -> None:
     if e.tipo is TipoEvento.CUSTODIA_INICIAL and (
         e.cv != "C" or e.tipo_ativo in (TipoAtivo.OPCAO, TipoAtivo.FUTURO)
     ):
-        # decisão do usuário (25/10/2026): só posição comprada à vista; opção, futuro e posição
+        # critério do COIR (25/10/2026): só posição comprada à vista; opção, futuro e posição
         # vendida em aberto pedem as notas desde a abertura (prêmio, ajustes diários)
         raise MotorError(f"custódia inicial de {e.ticker} ({e.data}): só compra de ações, ETF, "
                          "BDR, units e FII; para opções, futuros e posição vendida, importe as "
@@ -1277,7 +1277,7 @@ def _evento(livro: Livro, e: Evento) -> None:
             raise MotorError(f"redução de capital de {e.ticker} ({e.data}) maior que o custo")
         # amortização de FI-Infra ou FIP-IE acima do custo: o custo vai a zero e o excedente é
         # rendimento (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), de alíquota zero para
-        # a pessoa física; o COIR não o lança, só avisa (decisão do usuário de 10/11/2026)
+        # a pessoa física; o COIR não o lança, só avisa (critério do COIR de 10/11/2026)
         excedente = -(pos.custo + custo)
         custo = -pos.custo
         if livro.visao is Visao.TITULAR:

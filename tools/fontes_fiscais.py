@@ -114,6 +114,9 @@ LIMPEZA: tuple[tuple[re.Pattern[str], str], ...] = tuple(
         ),
         (rf"parecer(?: {_ESPECIALISTA})?(?:,| de)? {_DATAS}", "critério do COIR"),
         (rf"parecer {_ESPECIALISTA}", "critério do COIR"),
+        # "critério do COIR de 03/11/2026" (código e testes), "critérios do COIR, 15/10/2026"
+        (rf"(critérios?) do COIR(?:,| de| em)? {_DATAS}", r"\1 do COIR"),
+        (rf"(critérios?) do COIR \({_DATAS}\)", r"\1 do COIR"),
         # "decisão do usuário de 03/11/2026, com parecer…", "decisões da F1 e do usuário, 15/10"
         (rf"decisões da F\d+ e do usuário(?:, {_DATAS})?", "critérios do COIR"),
         (rf"decisões do usuário \({_DATAS}\)", "critérios do COIR"),

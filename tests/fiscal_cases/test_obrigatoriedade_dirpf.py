@@ -1,4 +1,4 @@
-"""Aviso de obrigatoriedade da declaração pelos dados de bolsa (decisão do usuário de 10/11/2026,
+"""Aviso de obrigatoriedade da declaração pelos dados de bolsa (critério do COIR de 10/11/2026,
 leitura conservadora; IN RFB anuais da DIRPF art. 2º, ficha docs/normas/in-rfb-dirpf-anuais.md):
 até o exercício 2022, qualquer operação em bolsa obriga; desde 2023, vendas acima de R$ 40 mil no
 ano ou ganho líquido sujeito ao imposto."""
@@ -43,7 +43,7 @@ def test_desde_o_exercicio_2023_so_vendas_acima_de_40_mil_ou_ganho_tributavel() 
 
 
 def test_ir_minimo_informa_os_ganhos_de_bolsa_desde_2026() -> None:
-    """Lei 9.250 art. 16-A §1º I (Lei 15.270/2025), decisão do usuário de 10/11/2026: total
+    """Lei 9.250 art. 16-A §1º I (Lei 15.270/2025), critério do COIR de 10/11/2026: total
     informativo. 2026: C 1.000 PETR4 a 10,00; V 500 a 20,00 em março (10.000, isento 5.000) e V
     500 a 50,00 em maio (25.000, tributado 20.000, imposto 3.000). Base: 25.000,00. Em 2025,
     nada."""

@@ -341,7 +341,7 @@ def _validar(d: DadosEvento) -> None:
         if not d.valor:
             raise erro("informe o valor pago")
     if d.tipo is TipoEvento.CUSTODIA_INICIAL:
-        # decisões do usuário (25/10/2026): só em 31/12 e só posição comprada
+        # critérios do COIR (25/10/2026): só em 31/12 e só posição comprada
         if (d.data.month, d.data.day) != (12, 31):
             raise erro("a custódia inicial é a posição em 31/12 (a do Bens e Direitos da última "
                        "declaração)")  # fmt: skip
@@ -368,7 +368,7 @@ def _validar(d: DadosEvento) -> None:
     if d.tipo is not TipoEvento.CISAO and d.percentual_custo is not None:
         raise erro("percentual do custo só vale na cisão")
     if d.tipo is TipoEvento.CISAO and not (d.percentual_custo and 0 < d.percentual_custo < 1):
-        # decisão do usuário (P4, 19/10/2026): sem o percentual divulgado, não calcula
+        # critério do COIR (P4, 19/10/2026): sem o percentual divulgado, não calcula
         raise erro("informe o percentual do custo que vai para o ativo recebido (aviso aos "
                    "acionistas da companhia)")  # fmt: skip
 
@@ -1225,7 +1225,7 @@ def _fator(ev: dict[str, str], tipo: TipoEvento | None) -> str:
 
 def _fracao(total: Decimal) -> tuple[Decimal, str]:
     """Quantidade do evento com a fração: ela fica na posição até o leilão, que a vende pelo custo
-    médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º; decisão do usuário de
+    médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º; critério do COIR de
     10/11/2026). Sem isso, o leilão tirava a fração das ações inteiras e a posição ficava
     fracionada."""
     inteiro = total.to_integral_value(ROUND_FLOOR)
