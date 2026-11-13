@@ -45,6 +45,7 @@ from coir.domain.fiscal import (
     TipoEvento,
     Visao,
 )
+from coir.domain.formato import reais
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import RE_SERIE_OPCAO, Referencias
 from coir.engine.calendario import proximo_pregao
@@ -1248,8 +1249,8 @@ def _resgate(
     pago = date.fromisoformat(ev["data_subscricao"]) if ev["data_subscricao"] else data_ex
     nota = (
         f"o valor proposto é a parte do custo que sai de {destino} ({ev['fator']}%), não o "
-        f"dinheiro. O dinheiro (R$ {dinheiro}, pago em {pago:%d/%m/%Y}) é resgate de ações: menos "
-        "este custo, dá "
+        f"dinheiro. O dinheiro ({reais(dinheiro)}, pago em {pago:%d/%m/%Y}) é resgate de "
+        "ações: menos este custo, dá "
         "ganho ou perda fora da bolsa, no programa GCAP da Receita. O COIR não calcula esse "
         "resultado, a perda não compensa ganhos da bolsa, e há isenção até R$ 35 mil no mês"
     )

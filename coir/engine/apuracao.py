@@ -40,6 +40,7 @@ from coir.domain.fiscal import (
     TipoEvento,
     TributacaoExclusiva,
 )
+from coir.domain.formato import reais
 from coir.domain.parametros import Calendario, ParametrosFiscais
 from coir.engine.calendario import fim_do_mes, vencimento_darf
 from coir.engine.fichas import Retido, SaldoPorFicha, irrf_retido
@@ -199,10 +200,9 @@ def _limite_pelo_sem_tipo(
             nomes = ", ".join(sorted(tickers[chave]))
             saida.append((mes.titular, (
                 f"{mes.mes:02d}/{mes.ano}: a venda de {nomes}, sem tipo de ativo nas tabelas, foi "
-                f"somada às vendas de ações e fez o mês passar do limite de isenção de R$ "
-                f"{limite:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                + ". Se não for ação, o ganho com ações deste mês seria isento: atualize as "
-                "tabelas em Configurações ou mande a nota pela tela Suporte"
+                f"somada às vendas de ações e fez o mês passar do limite de isenção de "
+                f"{reais(limite)}. Se não for ação, o ganho com ações deste mês seria isento: "
+                "atualize as tabelas em Configurações ou mande a nota pela tela Suporte"
             )))  # fmt: skip
     return saida
 
@@ -224,9 +224,9 @@ def _bonificacao_lei_15270(
             continue
         limite = Decimal(vigentes[0].valor)
         saida.append((m.titular, (
-            f"{m.data:%m/%Y}: bonificação de {m.ticker} com valor atribuído de {_reais(m.valor)}. "
+            f"{m.data:%m/%Y}: bonificação de {m.ticker} com valor atribuído de {reais(m.valor)}. "
             "Se foi feita com lucros, conta com os dividendos da mesma empresa no mês para o "
-            f"limite de {_reais(limite)} da Lei 15.270/2025 (P&R Altas Rendas, perguntas 12 a "
+            f"limite de {reais(limite)} da Lei 15.270/2025 (P&R Altas Rendas, perguntas 12 a "
             "14); confira no aviso da companhia"
         )))  # fmt: skip
     return saida
@@ -247,16 +247,12 @@ def _limite_pelo_day_trade(
         if comum.vendas_acoes <= limite < comum.vendas_limite and ganho_a_vista > 0:
             dt = comum.vendas_limite - comum.vendas_acoes
             saida.append((mes.titular, (
-                f"{mes.mes:02d}/{mes.ano}: as vendas de ações em day trade ({_reais(dt)}) entram "
-                f"na soma do limite de isenção de {_reais(limite)} e fizeram o mês passar dele "
+                f"{mes.mes:02d}/{mes.ano}: as vendas de ações em day trade ({reais(dt)}) entram "
+                f"na soma do limite de isenção de {reais(limite)} e fizeram o mês passar dele "
                 "(Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I): o ganho de ações "
                 "em operações comuns do mês, se houver, não é isento"
             )))  # fmt: skip
     return saida
-
-
-def _reais(v: Decimal) -> str:
-    return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _exclusiva(m: Movimento) -> TributacaoExclusiva:

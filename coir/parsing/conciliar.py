@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from itertools import product
 
+from coir.domain.formato import reais
 from coir.domain.nota import (
     ROTULO_AJUSTE,
     CategoriaCusto,
@@ -121,9 +122,9 @@ def _fechar(
         campos = ", ".join(d.campo for d in diferencas if d.nao_explicado > 0)
         avisos = (
             *avisos,
-            f"nota {nota.numero} de {nota.arquivo}: diferença de R$ {nao_explicado} em {campos}, "
-            "além do arredondamento e dentro da tolerância de R$ 0,05; a nota entrou, com o valor "
-            "impresso no líquido. Confira o total da nota",
+            f"nota {nota.numero} de {nota.arquivo}: diferença de {reais(nao_explicado)} em "
+            f"{campos}, além do arredondamento e dentro da tolerância de R$ 0,05; a nota entrou, "
+            "com o valor impresso no líquido. Confira o total da nota",
         )
     return custos + extras, avisos
 

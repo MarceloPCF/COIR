@@ -38,7 +38,7 @@ def test_rendimento_de_fiagro_antes_de_11_06_2021_nao_e_isento() -> None:
     avisos = avisos_fii_fiagro(1, 2021, (), (_rendimento(date(2021, 5, 14), "AGRO11", "80.00"),
                                              _rendimento(date(2021, 7, 14), "AGRO11", "80.00")),
                                {"AGRO11"}, REFS.parametros)  # fmt: skip
-    assert avisos[0].startswith("14/05/2021: rendimento do Fiagro AGRO11 (R$ 80.00) antes")
+    assert avisos[0].startswith("14/05/2021: rendimento do Fiagro AGRO11 (R$ 80,00) antes")
     assert len([a for a in avisos if "antes da isenção" in a]) == 1
     assert "50 cotistas" in avisos[-1]
 

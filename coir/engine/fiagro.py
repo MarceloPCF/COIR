@@ -18,6 +18,7 @@ from datetime import date
 from decimal import Decimal
 
 from coir.domain.fiscal import ZERO, Categoria, Movimento
+from coir.domain.formato import reais
 from coir.domain.parametros import ParametrosFiscais
 from coir.domain.proventos import Provento, TipoProvento
 
@@ -56,7 +57,7 @@ def avisos_fii_fiagro(
     for p in rendimentos:
         if p.codigo in fiagro and _vigente(params, "fiagro_rendimento_isento", p.data) == "false":
             avisos.append(
-                f"{p.data:%d/%m/%Y}: rendimento do Fiagro {p.codigo} (R$ {p.liquido}) antes da "
+                f"{p.data:%d/%m/%Y}: rendimento do Fiagro {p.codigo} ({reais(p.liquido)}) antes da "
                 "isenção, que vale desde 11/06/2021 (Lei 11.033/2004 art. 3º III, red. Lei "
                 "14.130/2021): não é isento; declare como rendimento tributável"
             )

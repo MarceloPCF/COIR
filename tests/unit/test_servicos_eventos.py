@@ -582,7 +582,7 @@ def test_dinheiro_de_incorporacao_propoe_a_parte_do_custo_nao_o_dinheiro(demo: P
     assert resgate.dados.tipo is TipoEvento.REDUCAO_CAPITAL
     assert (resgate.dados.cv, resgate.data) == ("V", date(2023, 6, 1))
     assert resgate.dados.valor != Decimal("150.00")  # o dinheiro: 300 x 0,50
-    assert "R$ 150.00" in resgate.nota and "GCAP" in resgate.nota and "20/06/2023" in resgate.nota
+    assert "O dinheiro (R$ 150,00, pago em 20/06/2023)" in resgate.nota and "GCAP" in resgate.nota
     assert resgate.situacao == "pendente"
 
 

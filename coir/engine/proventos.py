@@ -40,6 +40,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from coir.domain.b3 import LinhaMovimentacao
 from coir.domain.fiscal import ZERO, TipoAtivo
+from coir.domain.formato import reais
 from coir.domain.parametros import ParametrosFiscais, TiposAtivo
 from coir.domain.proventos import LinhaB3, Provento, TipoProvento
 from coir.erros import MotorError
@@ -370,8 +371,8 @@ def _lei_15270(saida: list[Provento], params: ParametrosFiscais) -> list[str]:
         else:
             continue
         avisos.append(
-            f"{mes:02d}/{ano}: dividendos de {raiz} somam {soma} no mês, {situacao} "
-            f"de R$ {limite} (Lei 15.270/2025: IRRF de {aliquota * 100:.0f}% sobre o "
+            f"{mes:02d}/{ano}: dividendos de {raiz} somam {reais(soma)} no mês, {situacao} "
+            f"de {reais(limite)} (Lei 15.270/2025: IRRF de {aliquota * 100:.0f}% sobre o "
             "total; dividendos de lucros até 2025 aprovados até 31/12/2025 ficam fora)"
         )
     return avisos

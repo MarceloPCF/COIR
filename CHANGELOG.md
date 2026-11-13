@@ -8,6 +8,11 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [Não lançado]
+
+### Corrigido
+- **Valores em reais nos avisos no padrão brasileiro**: alguns avisos mostravam "R$ 112626.22" em vez de "R$ 112.626,22". Valia para a obrigatoriedade da declaração e o IR mínimo (Declaração anual), o excedente da amortização de FI-Infra e FIP-IE, o rendimento de Fiagro antes da isenção, os dividendos perto do limite da Lei 15.270/2025, a diferença de centavos ao importar a nota e o dinheiro do resgate de ações. Os valores não mudam, só a forma de escrever.
+
 ## [3.1.1] - 2026-11-12
 
 ### Adicionado
