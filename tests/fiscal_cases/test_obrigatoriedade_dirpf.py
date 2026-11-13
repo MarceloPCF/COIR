@@ -33,7 +33,8 @@ def test_desde_o_exercicio_2023_so_vendas_acima_de_40_mil_ou_ganho_tributavel() 
     for mes in (3, 4, 5):
         livro.nota(date(2025, mes, 10), livro.op("V", "PETR4", 900, "16.67"))
     aviso = _aviso(livro, 2025)
-    assert aviso is not None and "vendas em bolsa de R$ 45009.00" in aviso
+    assert aviso is not None
+    assert "vendas em bolsa de R$ 45.009,00 no ano, acima de R$ 40.000,00" in aviso
     assert "ganho" not in aviso.split(":")[1].split("(")[0]
     livro.nota(date(2026, 1, 12), livro.op("C", "VALE3", 900, "10"))
     livro.nota(date(2026, 3, 10), livro.op("V", "VALE3", 900, "27.78"))
@@ -58,5 +59,6 @@ def test_ir_minimo_informa_os_ganhos_de_bolsa_desde_2026() -> None:
     assert aviso_irpf_minimo(1, 2025, ap.meses, REFS.parametros) is None
     aviso = aviso_irpf_minimo(1, 2026, ap.meses, REFS.parametros)
     assert aviso is not None
-    assert "R$ 25000.00 (tributados R$ 20000.00 e isentos R$ 5000.00)" in aviso
-    assert "R$ 3000.00" in aviso
+    assert "só para quem recebe mais de R$ 600.000,00 no ano" in aviso
+    assert "R$ 25.000,00 (tributados R$ 20.000,00 e isentos R$ 5.000,00)" in aviso
+    assert "o imposto apurado sobre eles, R$ 3.000,00, é dedutível" in aviso

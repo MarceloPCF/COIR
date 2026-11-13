@@ -98,7 +98,8 @@ def test_p3_lei_15270_dividendos_da_mesma_empresa_no_mes() -> None:
     lista, avisos = _proventos(*linhas)
     assert [p.tipo for p in lista].count(TipoProvento.DIVIDENDO) == 3
     [aviso] = [a for a in avisos if "Lei 15.270" in a]
-    assert aviso.startswith("04/2026: dividendos de ITSA somam 49500") and "possível" in aviso
+    assert aviso.startswith("04/2026: dividendos de ITSA somam R$ 49.500,00 no mês")
+    assert "possível retenção" in aviso and "de R$ 50.000,00 (Lei 15.270/2025" in aviso
     _, avisos2 = _proventos(*linhas, mov(date(2026, 4, 28), "Dividendo", "ITSA4 - ITAUSA",
                                              "1000", "1", "1000", i=5))  # fmt: skip
     assert any("acima do limite" in a for a in avisos2)
@@ -238,7 +239,7 @@ def test_reembolso_de_dividendo_pela_movimentacao_e_lei_15270() -> None:
     )  # fmt: skip
     [reembolso] = [p for p in lista if p.tipo is TipoProvento.REEMBOLSO_BTC]
     assert reembolso.reembolso_de == "DIVIDENDO"
-    assert any("ITSA somam 55000" in a and "acima do limite" in a for a in avisos)
+    assert any("ITSA somam R$ 55.000,00" in a and "acima do limite" in a for a in avisos)
 
 
 def test_jcp_com_data_com_em_janeiro_e_retencao_do_ano_anterior_so_avisa() -> None:

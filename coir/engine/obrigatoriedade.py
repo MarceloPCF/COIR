@@ -17,6 +17,7 @@ from datetime import date
 from decimal import Decimal
 
 from coir.domain.fiscal import ZERO, MesApurado, Movimento
+from coir.domain.formato import reais
 from coir.domain.parametros import ParametrosFiscais
 
 
@@ -50,7 +51,7 @@ def aviso_obrigatoriedade(
                 if m.titular == titular and m.ano == ano for r in m.categorias)  # fmt: skip
     motivos: list[str] = []
     if vendas > limite:
-        motivos.append(f"vendas em bolsa de R$ {vendas:.2f} no ano, acima de R$ {limite:.2f}")
+        motivos.append(f"vendas em bolsa de {reais(vendas)} no ano, acima de {reais(limite)}")
     if ganho:
         motivos.append("ganho líquido sujeito ao imposto em algum mês")
     if not motivos:
@@ -77,8 +78,8 @@ def aviso_irpf_minimo(
     if not tributado and not isento:
         return None
     imposto = sum((m.imposto for m in do_ano), ZERO)
-    return (f"IR mínimo (Lei 9.250/1995 art. 16-A, desde 2026), só para quem recebe mais de R$ "
-            f"{Decimal(renda):.2f} no ano: os ganhos líquidos em bolsa de {ano} entram na base, "
-            f"R$ {tributado + isento:.2f} (tributados R$ {tributado:.2f} e isentos R$ "
-            f"{isento:.2f}); o imposto apurado sobre eles, R$ {imposto:.2f}, é dedutível (§3º "
+    return (f"IR mínimo (Lei 9.250/1995 art. 16-A, desde 2026), só para quem recebe mais de "
+            f"{reais(Decimal(renda))} no ano: os ganhos líquidos em bolsa de {ano} entram na base, "
+            f"{reais(tributado + isento)} (tributados {reais(tributado)} e isentos "
+            f"{reais(isento)}); o imposto apurado sobre eles, {reais(imposto)}, é dedutível (§3º "
             "IV). Total informativo: o COIR não calcula o IR mínimo")  # fmt: skip

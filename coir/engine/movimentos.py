@@ -40,6 +40,7 @@ from coir.domain.fiscal import (
     TipoEvento,
     Visao,
 )
+from coir.domain.formato import reais
 from coir.domain.parametros import ParametrosFiscais
 from coir.engine.posicao import Baixa, Posicao
 from coir.engine.rateio import ratear
@@ -1282,7 +1283,7 @@ def _evento(livro: Livro, e: Evento) -> None:
         if livro.visao is Visao.TITULAR:
             livro.avisos.append(
                 f"{e.data:%d/%m/%Y}: amortização de {e.ticker} acima do custo: o custo foi a zero "
-                f"e o excedente de R$ {excedente:.2f} é rendimento do fundo (Lei 11.478/2007 art. "
+                f"e o excedente de {reais(excedente)} é rendimento do fundo (Lei 11.478/2007 art. "
                 "2º §2º; Lei 12.431/2011 art. 3º), com alíquota zero para a pessoa física: declare "
                 "na mesma linha dos rendimentos do fundo (exclusiva 06)"
             )  # fmt: skip

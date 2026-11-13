@@ -112,4 +112,4 @@ def test_amortizacao_acima_do_custo_zera_o_custo_e_avisa_o_excedente() -> None:
     ap = livro.apurar(date(2025, 6, 30))
     [aviso] = [a for a in ap.avisos if "amortização" in a]
     assert aviso.startswith("15/06/2025: amortização de JURO11 acima do custo")
-    assert "R$ 200.00" in aviso
+    assert "excedente de R$ 200,00 é rendimento" in aviso
