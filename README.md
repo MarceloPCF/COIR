@@ -91,3 +91,6 @@ código-fonte dessas modificações sob a mesma licença.
 
 O código da v2 em [`legacy/`](legacy/) continua sob a licença MIT ([legacy/LICENSE](legacy/LICENSE)).
 Decisão registrada em [docs/adr/0002-licenca-agpl.md](docs/adr/0002-licenca-agpl.md).
+
+Para contribuir com código, leia o [CONTRIBUTING.md](CONTRIBUTING.md): toda contribuição entra pelo
+Termo de Licença de Contribuição, que permite ao mantenedor publicar o COIR também sob outra licença.
