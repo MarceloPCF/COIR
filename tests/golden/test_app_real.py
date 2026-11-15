@@ -73,10 +73,10 @@ CONTEUDO = {
 
 @pytest.mark.asyncio
 async def test_cada_tela_abre_com_os_dados_reais(
-    copia: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    copia_descartavel: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv(VAR_CONFIG, str(tmp_path / "config.json"))
-    estado = _estado(copia)
+    estado = _estado(copia_descartavel)  # a tela Eventos lança os eventos automáticos
     assert set(CONTEUDO) == {t.rota for t in (*TELAS, INICIO)}
     async with user_simulation(lambda: montar(estado)) as user:
         for rota, texto in CONTEUDO.items():

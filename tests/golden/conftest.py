@@ -1,6 +1,7 @@
 """Cópia do banco real (COIR_DADOS) com as planilhas da B3 importadas, para os golden do app e da
 conciliação. Roda sempre na CÓPIA (tmp): nunca migra nem grava o banco real."""
 
+import shutil
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -50,4 +51,14 @@ def copia(tmp_path_factory: pytest.TempPathFactory) -> Path:
     titulares = estado.titulares()
     if planilhas and len(titulares) == 1:  # as planilhas da pasta são do titular único
         importar_planilhas(destino, planilhas, titulares[0].id, AGORA)
+    return destino
+
+
+@pytest.fixture
+def copia_descartavel(copia: Path, tmp_path: Path) -> Path:
+    """Cópia só deste teste, para quem grava no banco (abrir a tela Eventos lança os eventos
+    automáticos; apagar eventos): a cópia da sessão fica igual para os demais golden, em qualquer
+    ordem."""
+    destino = tmp_path / NOME_BANCO
+    shutil.copyfile(copia, destino)
     return destino
