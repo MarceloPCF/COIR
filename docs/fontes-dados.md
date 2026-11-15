@@ -127,7 +127,7 @@ Restituição de capital em dinheiro: a aba de proventos da B3 (`REST CAP DIN`) 
 companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020, Tarpon 2019, GTD
 2013...) fica registrada em `sem_evento.csv` como redução de capital, sem proposta no app.
 
-Licenças e atribuição (`data/LICENCA-DADOS.md` acompanha as tabelas):
+Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 - CVM: contém informações do Portal de Dados Abertos da CVM (https://dados.cvm.gov.br), sob a
   Open Database License (ODbL) 1.0; as linhas derivadas ficam sob a mesma licença;

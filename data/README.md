@@ -4,7 +4,7 @@ Tabelas de referência **públicas** e versionadas (ativos, aliases, corretoras,
 parâmetros fiscais com vigência). Nunca colocar aqui dados pessoais: esses ficam na pasta `COIR_DADOS`.
 
 Origem e licença de cada grupo de tabelas (CVM e Banco Central sob ODbL; B3 sob os termos de uso dela):
-[`LICENCA-DADOS.md`](LICENCA-DADOS.md).
+[`LICENCA_DADOS.md`](LICENCA_DADOS.md).
 
 | Arquivo | Uso | Colunas |
 |---|---|---|
