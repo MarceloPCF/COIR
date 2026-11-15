@@ -11,6 +11,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 ## [Não lançado]
 
 ### Corrigido
+- **Notas da Clear de 2018 a 2020 que eram recusadas**: três formas do resumo financeiro passaram a ser lidas. A linha do I.R.R.F. com o seu D/C na coluna dos indicadores (a recusa dizia "6 rótulos para 6 valores soltos e 7 D/C"); a projeção do IRRF de day trade escrita com ponto decimal; e a taxa de transferência de ativos, que nessas notas fica fora do Total CBLC e é descontada no líquido (a recusa mostrava diferença de centavos no Total CBLC).
 - **Valores em reais nos avisos no padrão brasileiro**: alguns avisos mostravam "R$ 112626.22" em vez de "R$ 112.626,22". Valia para a obrigatoriedade da declaração e o IR mínimo (Declaração anual), o excedente da amortização de FI-Infra e FIP-IE, o rendimento de Fiagro antes da isenção, os dividendos perto do limite da Lei 15.270/2025, a diferença de centavos ao importar a nota e o dinheiro do resgate de ações. Os valores não mudam, só a forma de escrever.
 
 ## [3.1.1] - 2026-11-12

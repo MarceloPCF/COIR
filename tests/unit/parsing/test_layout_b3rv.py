@@ -269,3 +269,62 @@ def test_copia_anonimizada_sem_dado_pessoal_e_fiel() -> None:
         assert dado not in copia, dado
     assert _unica(copia).numero == "273207"
     assert _resumo(copia).liquido.assinado == Decimal("-2496.01")
+
+
+def test_irrf_com_dc_na_coluna_dos_indicadores() -> None:
+    """Em parte das notas a linha do IRRF tem o seu D/C na coluna: 6 rótulos e 7 indicadores. O da
+    posição do IRRF (o quinto) sai, e cada custo continua com o seu."""
+    com_dc = NOTA.replace(
+        "Total\n0,00\n0,00\n0,00\n0,00\n0,00\n0,00\nD\nD\nD\nD\nD\nD\n",
+        "Total\n1,20\n0,30\n0,00\n0,15\n0,05\n1,70\nD\nD\nD\nD\nC\nD\nD\n",
+    ).replace("Líquido para 2.496,01 D", "Líquido para 2.497,71 D")
+    r = _resumo(com_dc)
+    custos = {c.rotulo: c.valor for c in r.custos}
+    assert custos["ISS"] == Decimal("0.15") and custos["Outros"] == Decimal("0.05")
+    assert r.total_despesas.assinado == Decimal("-1.70")
+    assert r.irrf == Decimal("0.02")
+
+
+def test_dc_a_mais_sem_linha_de_irrf_nao_entra() -> None:
+    sem_irrf = NOTA.replace("I.R.R.F. s/ operações, base 505,00 0,02\n", "").replace(
+        "0,00\n0,00\nD\nD\nD\nD\nD\nD\nResumo", "0,00\n0,00\nD\nD\nD\nD\nD\nD\nD\nResumo"
+    )
+    res = extrair_textos("nota.pdf", [sem_irrf])
+    assert res.notas == []
+    assert "valores soltos" in res.rejeitadas[0].motivo
+
+
+def test_taxa_de_transferencia_fica_fora_do_total_cblc_e_entra_no_liquido() -> None:
+    """A taxa de transferência de ativos é impressa depois do quadro: não soma no Total CBLC
+    (2.495,87 continua) e é descontada no líquido: 2.496,01 + 0,12 = 2.496,13."""
+    com_taxa = NOTA.replace(
+        "Taxa de Transferência de Ativos 0,00 D", "Taxa de Transferência de Ativos 0,12 D"
+    ).replace("Líquido para 2.496,01 D", "Líquido para 2.496,13 D")
+    r = _resumo(com_taxa)
+    assert r.total_cblc.assinado == Decimal("-2495.87")
+    [taxa] = [c for c in r.custos if c.categoria is CategoriaCusto.TRANSFERENCIA]
+    assert (taxa.valor, taxa.grupo) == (Decimal("0.12"), "liquido")
+    assert not any(c.rotulo == ROTULO_AJUSTE for c in r.custos)
+
+
+def test_taxa_de_transferencia_que_nao_esta_no_liquido_nao_entra() -> None:
+    sem_desconto = NOTA.replace(
+        "Taxa de Transferência de Ativos 0,00 D", "Taxa de Transferência de Ativos 0,12 D"
+    )
+    res = extrair_textos("nota.pdf", [sem_desconto])
+    assert res.notas == []
+    assert "líquido" in res.rejeitadas[0].motivo
+
+
+def test_irrf_de_day_trade_com_ponto_decimal() -> None:
+    """O layout b3rv imprime a projeção do IRRF de day trade com ponto decimal."""
+    com_dt = NOTA.replace(
+        "Líquido para 2.496,01 D",
+        "IRRF Day-Trade: Base R$ -35.10 Projeção R$ 0.00\nLíquido para 2.496,01 D",
+    )
+    assert _resumo(com_dt).irrf_day_trade == Decimal(0)
+    com_valor = NOTA.replace(
+        "Líquido para 2.496,01 D",
+        "IRRF Day-Trade: Base R$ 1234.50 Projeção R$ 12.34\nLíquido para 2.496,01 D",
+    )
+    assert _resumo(com_valor).irrf_day_trade == Decimal("12.34")
