@@ -194,7 +194,8 @@ def _bovespa(nota: NotaExtraida) -> NotaExtraida:
         and (r.irrf > 2 * folga or despesas + r.irrf == lido_despesas)
     )
     com_despesas = despesas + (r.irrf if irrf_nas_despesas else ZERO)
-    base = r.total_cblc.assinado - lido_bolsa - lido_despesas
+    # custo impresso fora dos subtotais (taxa de transferência do layout b3rv): só no líquido
+    base = r.total_cblc.assinado - lido_bolsa - lido_despesas - _soma(custos, "liquido")
     # IRRF fora das despesas: algumas corretoras descontam do líquido, outras só no mês (BTG, Ágora)
     tentativas = [
         (com_irrf, base - (r.irrf if com_irrf and not irrf_nas_despesas else ZERO)
