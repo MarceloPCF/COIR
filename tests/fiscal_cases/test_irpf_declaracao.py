@@ -166,7 +166,7 @@ def test_ano_sem_mapeamento_avisa() -> None:
 
 def test_opcao_lancada_vai_para_dividas_pelo_premio() -> None:
     """Caso E (parte lançada): V 1.000 VALEA600 a 0,30 em 05/12/2025, vence em 16/01/2026. Não é
-    bem (P&R 720 / MIR); por decisão do usuário (20/10/2026, sem norma) vai para Dívidas e ônus
+    bem (P&R 720 / MIR); por critério do COIR (20/10/2026, sem norma) vai para Dívidas e ônus
     reais, código 16, pelo prêmio recebido: 0,00 em 31/12/2024 e 300,00 em 31/12/2025; em 2026 a
     posição virou pó e a dívida vai a 0,00."""
     livro = Livro()
@@ -200,7 +200,7 @@ def test_jcp_pago_mais_de_um_ano_depois_do_credito_fica_a_receber_nos_dois_31_12
 
 
 def test_codigo_20_soma_so_os_meses_com_ganho_isento() -> None:
-    """Decisão do usuário de 10/11/2026 (recomendação do especialista): com o parâmetro
+    """Critério do COIR de 10/11/2026 (recomendação do especialista): com o parâmetro
     prejuizo_mes_isento_compensavel desligado, a perda de mês isento entra negativa no isento do
     mês, mas não reduz o código 20. Janeiro/2025: C 100 AAAA3 a 10,00 e V 100 a 20,00 (ganho isento
     1.000,00); fevereiro: C 100 a 10,00 e V 100 a 7,00 (perda de 300,00 em mês isento). Código 20 =

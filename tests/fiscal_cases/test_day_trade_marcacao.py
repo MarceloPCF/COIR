@@ -1,4 +1,4 @@
-"""Day trade pela marcação D da corretora (F9, decisão do usuário de 25/10/2026).
+"""Day trade pela marcação D da corretora (F9, critério do COIR de 25/10/2026).
 
 IN RFB 1.585/2015 art. 65 §3º: o day trade casa "pela ordem" a 1ª compra com a 1ª venda, isto
 é, na ordem cronológica dos negócios. A nota não traz o horário; a corretora, que o tem e retém o

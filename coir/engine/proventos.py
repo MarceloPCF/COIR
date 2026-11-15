@@ -1,4 +1,4 @@
-"""Proventos a partir da movimentação da B3 (decisões do usuário de 19/10/2026).
+"""Proventos a partir da movimentação da B3 (critérios do COIR de 19/10/2026).
 
 - Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR, ETF ou
   FII: fora da v3.0, listado com aviso (BDR não é isento: Lei 9.249/1995 art. 10 só alcança
@@ -62,7 +62,7 @@ def _origem_reembolso(x: LinhaMovimentacao, params: ParametrosFiscais,
     """Reembolso de BTC: substitui dividendo ou JCP? O valor é a quantidade emprestada vezes o
     valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º
     §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica; nenhuma ou
-    mais de uma: ("", 0), com aviso (parecer do especialista e decisão do usuário de 21/10/2026)."""
+    mais de uma: ("", 0), com aviso (parecer do especialista e critério do COIR de 21/10/2026)."""
     valor = x.valor or ZERO
     taxas = {t for t in (_vigente(params, "aliquota_irrf_jcp", x.data),
                          _vigente(params, "aliquota_irrf_jcp", date(x.data.year - 1, 12, 31)))
@@ -91,7 +91,7 @@ def _informada(item: LinhaB3, de: str, acoes: int, candidatos: Candidatos,
     """Origem do reembolso informada pelo usuário (informe da empresa ou extrato da corretora):
     prevalece sobre a identificada pelo valor, com aviso quando a contradiz ou quando não há
     provento dessa origem da empresa no dia. A quantidade só fica quando as duas coincidem
-    (parecer do especialista e pendência do usuário, F9)."""
+    (parecer do especialista e critério do COIR, F9)."""
     x, informada = item.linha, item.reembolso_informado
     nome = NOME_ORIGEM[informada]
     if de and de != informada:
@@ -330,7 +330,7 @@ def _jcp_com_credito(item: LinhaB3, credito: date, params: ParametrosFiscais) ->
     art. 9º §2º; a receber em 31/12 se pago depois: art. 3º parágrafo único), com a alíquota da
     data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art. 8º). Retenção implícita
     com a alíquota do ano anterior: só aviso (a empresa tratou o crédito como do ano anterior;
-    decisão do usuário de 21/10/2026). Crédito depois do pagamento falha alto."""
+    critério do COIR de 21/10/2026). Crédito depois do pagamento falha alto."""
     x = item.linha
     if credito > x.data:
         raise MotorError(f"{x.data}: JCP de {x.codigo} (mov:{item.id}) creditado em {credito}, "

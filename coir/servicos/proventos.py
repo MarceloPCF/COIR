@@ -74,7 +74,7 @@ def creditos_b3(
     """Completa a data do crédito dos JCP sem correção do usuário pela B3. O crédito é a mais tarde
     entre a aprovação e a data com: antes da data com o acionista não está definido e não há
     crédito individualizado (IN SRF 41/1998 art. 3º; IN RFB 1.700/2017 art. 75 §10; Lei
-    6.404/1976 art. 205; decisão do usuário de 21/10/2026). Casamento: mesma empresa e data de
+    6.404/1976 art. 205; critério do COIR de 21/10/2026). Casamento: mesma empresa e data de
     pagamento no pacote; havendo mais de um (ON e PN), o de valor por ação mais próximo do preço
     da movimentação, dentro de 1%. Sem pagamento no pacote (anos que ele não alcança), vale o
     ``historico`` (sem data de pagamento): mesma empresa e classe, valor por ação dentro de 1% e a

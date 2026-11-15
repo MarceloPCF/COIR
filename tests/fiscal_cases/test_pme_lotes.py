@@ -45,7 +45,7 @@ from tests.fiscal_cases.apoio import REFS, D, Livro, categoria, mes, parametros
 PME_ATE = date(2023, 12, 31)
 MEDIA = D(44)  # média fictícia dos 30 pregões: a real vem de data/isencao_pme.csv
 # os casos do parecer de 08/11/2026 foram escritos com o lote isento saindo primeiro; o padrão
-# passou a ser a repartição proporcional (SC Cosit 148/2025; decisão do usuário de 10/11/2026)
+# passou a ser a repartição proporcional (SC Cosit 148/2025; critério do COIR de 10/11/2026)
 ISENTO_PRIMEIRO = parametros(pme_lote_ordem_venda="isento_primeiro")
 
 
@@ -487,7 +487,7 @@ def test_sem_oferta_subsequente_a_compra_vale_ate_o_fim_do_prazo(ticker: str) ->
 
 
 def test_padrao_proporcional_reparte_a_venda_entre_os_lotes() -> None:
-    """Padrão `proporcional` (SC Cosit 148/2025 §§32-33, por analogia; decisão do usuário de
+    """Padrão `proporcional` (SC Cosit 148/2025 §§32-33, por analogia; critério do COIR de
     10/11/2026, leitura conservadora). Isento: 1.000 a 20 (PM 20). Tributado: 2.000 a 30 (PM 30).
     Junho/2021: V 600 a 35 = 21.000. Isentas: 600 x 1.000/3.000 = 200 (arredondado para baixo);
     tributadas 400. Lote isento: 7.000 - 4.000 = 3.000 isento de PME. Lote tributado: 14.000 -

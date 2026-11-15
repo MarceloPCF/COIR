@@ -1,7 +1,7 @@
 """IRRF por ficha do programa IRPF (comuns/day trade e FII), com a DARF no saldo único.
 
 A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015
-arts. 63 §8º e 65 §8º; decisão do usuário de 16/10/2026: separar só na declaração). O programa
+arts. 63 §8º e 65 §8º; critério do COIR de 16/10/2026: separar só na declaração). O programa
 IRPF tem uma ficha para comuns/day trade e outra para FII, cada uma com o próprio IR fonte e
 saldo. Para as fichas fecharem com a DARF sem usar o mesmo IRRF duas vezes, cada IRRF retido
 vira um lote (mês, natureza, ficha de origem) e o valor deduzido do saldo único é atribuído aos

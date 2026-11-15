@@ -3,13 +3,13 @@
 - Tipo: só NORMAL, DAY TRADE, AJUPOS e taxa de permanência; qualquer outro (entrega física,
   exercício de opção sobre futuro) falha alto: a nota não entra calada como ajuste.
 - Contrato: raiz de 3 letras + mês e ano (WINM24) ou PPPP (permanência). Opção sobre futuro
-  (ex.: ICFK26C300) fica fora do escopo e falha alto (decisão do usuário, 19/10/2026).
+  (ex.: ICFK26C300) fica fora do escopo e falha alto (critério do COIR, 19/10/2026).
 - Câmbio implícito: na nota, o valor de cada negócio é o ajuste ao preço de ajuste do dia (PA),
   ``valor = (PA - preço) x quantidade x multiplicador x câmbio`` (compra; a venda tem o sinal
   trocado). O PA aparece na linha AJUPOS do mesmo contrato; sem ela, os negócios do dia que se
   fecham (quantidade líquida zero) dispensam o PA. Contrato cotado em R$: o câmbio tem de dar 1, o
   que confere o multiplicador nota a nota; em US$ (café, soja CME): o mesmo câmbio em todas as
-  linhas. Diferença acima do arredondamento é erro de conciliação (decisão do usuário, 19/10/2026).
+  linhas. Diferença acima do arredondamento é erro de conciliação (critério do COIR, 19/10/2026).
 """
 
 import re

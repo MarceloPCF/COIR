@@ -1,5 +1,5 @@
 """Custos da nota que vão para o motor: a taxa de custódia fica fora (SC Cosit 227/2018 §§17-18;
-parâmetro custodia_no_custo, decisão do usuário de 10/11/2026, leitura conservadora)."""
+parâmetro custodia_no_custo, critério do COIR de 10/11/2026, leitura conservadora)."""
 
 from decimal import Decimal
 from pathlib import Path

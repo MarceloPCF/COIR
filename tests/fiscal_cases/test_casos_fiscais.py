@@ -29,7 +29,7 @@ def _t1() -> Livro:
 
 def test_t1_prejuizo_em_mes_isento_compensa() -> None:
     """R5: prejuízo de ações em mês isento continua compensável (Lei 8.981/1995 art. 72 §4º;
-    Manual MIR 2026; decisão do usuário). Mar/24: ações -1.200 (vendas 15.000), opções -300.
+    Manual MIR 2026; critério do COIR). Mar/24: ações -1.200 (vendas 15.000), opções -300.
     Abr/24: ganho 2.000 -> base 500, IR 75,00 - IRRF 1,50 = DARF 73,50 em 31/05/2024."""
     ap = _t1().apurar(date(2024, 4, 30))
     marco = categoria(ap, 2024, 3, Categoria.COMUM)
@@ -66,7 +66,7 @@ def test_t2_limite_pelo_valor_bruto_das_vendas(preco: str, isento: bool) -> None
 
 
 def test_t2_units_fora_do_limite_e_tributadas() -> None:
-    """R4a: units não entram no limite nem na isenção (decisão do usuário; parâmetro
+    """R4a: units não entram no limite nem na isenção (critério do COIR; parâmetro
     units_na_isencao). Vendas de ações 16.000 (isentas) + units 5.000 (ganho tributado)."""
     livro = Livro()
     livro.nota(date(2024, 1, 2), livro.op("C", "AAAA3", 1000, "15"),
@@ -83,7 +83,7 @@ def test_t3_irrf_comum_e_day_trade_abatem_o_imposto_total() -> None:
     """R6: IRRF de 0,005% e de 1% abatem o imposto do mês (saldo único). DT ganho 1.000:
     IR 200 - 10 (1%) - 2 (0,005%) = 188.
 
-    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): na nota real só de day
+    Entrada simplificada (critério do COIR de 10/11/2026: só anotar): na nota real só de day
     trade não há o 0,005% (IN 1.585 art. 63 §1º; o day trade tem o 1% do art. 65 §8º); aqui ele
     só exercita o saldo único."""
     livro = Livro()
@@ -268,7 +268,7 @@ def test_t8_day_trade_de_fii_fica_na_categoria_fii() -> None:
 
 # ------------------------------------------------------------------------------------ T9 (R18)
 def test_t9_termo_entra_na_carteira_na_liquidacao() -> None:
-    """R18 (decisão do usuário, 14/10/2026): posição 1.000 a PM 25; compra a termo de 1.000 a
+    """R18 (critério do COIR, 14/10/2026): posição 1.000 a PM 25; compra a termo de 1.000 a
     31,00 com custos 40. Venda de 500 antes da liquidação usa PM 25; depois da liquidação,
     PM (12.500 + 31.040) / 1.500 = 29,02666667."""
     livro = Livro()
@@ -283,7 +283,7 @@ def test_t9_termo_entra_na_carteira_na_liquidacao() -> None:
 
 
 def test_termo_liquidado_depois_da_venda_das_acoes_realiza_o_resultado() -> None:
-    """R18 + venda a descoberto (leitura A1, decisão do usuário de 15/10/2026; IN RFB 1.585/2015
+    """R18 + venda a descoberto (leitura A1, critério do COIR de 15/10/2026; IN RFB 1.585/2015
     art. 58: custo médio): sem posição, compra a termo de 1.000 a 31,00 (custos 40) em 03/01 e
     venda das 1.000 a 35,00 em 01/02, antes da liquidação (04/03). A liquidação cobre a posição
     vendida: resultado 35.000 - 31.040 = 3.960 em 03/2024, com o limite de isenção de 02/2024
@@ -332,7 +332,7 @@ def test_saldo_de_irrf_passa_no_ano_e_dezembro_vai_para_a_declaracao() -> None:
     0,005% vai para a declaração (IN 1.585 art. 63 §8º III); o de day trade só restituição
     (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715).
 
-    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): IRRF em nota só de compra
+    Entrada simplificada (critério do COIR de 10/11/2026: só anotar): IRRF em nota só de compra
     não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
     ele só exercita o saldo de IRRF."""
     livro = Livro()
@@ -368,7 +368,7 @@ def test_futuros_resultado_no_encerramento_da_posicao() -> None:
 
 def test_futuros_encerramento_parcial_pelo_preco_medio_e_vencimento() -> None:
     """Encerramento parcial: sai a parte proporcional dos ajustes acumulados (preço médio,
-    decisão do usuário); no vencimento sai o resto. Custos rateados pelo volume; ajuste de day
+    critério do COIR); no vencimento sai o resto. Custos rateados pelo volume; ajuste de day
     trade vai para DAY_TRADE (IN 1.585 art. 65 §§10 e 11)."""
     livro = Livro()
     venc = date(2024, 6, 12)
@@ -455,7 +455,7 @@ def _tres_contas() -> Livro:
 
 def test_pm_fiscal_unico_por_titular_e_a_conta_de_origem_no_movimento() -> None:
     """IN RFB 1.585/2015 art. 58: custo médio de aquisição do contribuinte, sem separar por
-    corretora (decisões da F1 e do usuário, 15/10/2026). Compras: 100 a 10 (XP conta 1), 100 a 20
+    corretora (critérios do COIR, 15/10/2026). Compras: 100 a 10 (XP conta 1), 100 a 20
     (XP conta 2), 200 a 30 (BTG): PM (1.000 + 2.000 + 6.000) / 400 = 22,50. Venda de 100 a 25 na
     conta 1: ganho 2.500 - 2.250 = 250 (isento: vendas 2.500). O movimento guarda a conta e a
     corretora de origem; a posição que sobra é 300 a 22,50."""
@@ -534,7 +534,7 @@ def test_etf_de_renda_fixa_fica_fora_da_apuracao() -> None:
 def test_venda_a_descoberto_resultado_na_recompra_e_limite_do_mes_da_venda(
     preco_venda: str, imposto: str
 ) -> None:
-    """Venda a descoberto (sem norma específica; leitura A1 escolhida pelo usuário em 15/10/2026:
+    """Venda a descoberto (sem norma específica; leitura A1, critério do COIR de 15/10/2026:
     resultado na recompra, por analogia com IN 1.585 art. 62 II e P&R IRPF 2026 pergunta 725;
     limite pelo mês da venda). Maio: venda a descoberto de 1.000 BBAS3 (25.000 ou 15.000). Junho:
     recompra a 23 e venda de 200 VALE3 por 5.000 com ganho 200. Com 25.000: os 2.000 são tributáveis
@@ -621,7 +621,7 @@ def test_irrf_de_day_trade_e_consumido_primeiro() -> None:
     declaração). Nov: IRRF 0,005% 3 e day trade 2, imposto 4 -> sobra 1 de 0,005% e 0 de day
     trade.
 
-    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): IRRF em nota só de compra
+    Entrada simplificada (critério do COIR de 10/11/2026: só anotar): IRRF em nota só de compra
     não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
     ele só exercita o saldo de IRRF."""
     livro = Livro()
@@ -699,7 +699,7 @@ def test_pme_day_trade_isento() -> None:
     """Day trade de PME no período: isento (art. 59 §2º I só afasta o inciso I; decisão do
     usuário). Os lotes isento e tributado estão em tests/fiscal_cases/test_pme_lotes.py.
 
-    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): a Lei 13.043/2014 art. 17
+    Entrada simplificada (critério do COIR de 10/11/2026: só anotar): a Lei 13.043/2014 art. 17
     §8º afasta o IRRF de 1% na venda isenta de PME; o IRRF de day trade da nota só confirma que a
     isenção não depende dele."""
     livro = Livro()

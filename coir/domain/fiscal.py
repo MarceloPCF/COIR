@@ -31,11 +31,11 @@ class TipoAtivo(StrEnum):
     FUTURO = "FUTURO"
     # direito, recibo e bônus de subscrição (de ação ou de cota de FII): 15% ou 20% em day trade,
     # sem isenção e fora do limite (SC Cosit 145 e 166/2021; recibo pela posição B do parecer do
-    # especialista de 09/11/2026, seguido pelo usuário)
+    # especialista de 09/11/2026)
     DIREITO = "DIREITO"
     # cota de FI-Infra (Lei 12.431/2011 art. 3º) ou de FIP-IE/FIP-PD&I (Lei 11.478/2007 art. 2º),
     # pela lista de fundos da B3: alíquota zero para pessoa física, fora do limite e da
-    # compensação de prejuízo (parecer do especialista de 09/11/2026, seguido pelo usuário)
+    # compensação de prejuízo (parecer do especialista de 09/11/2026)
     FUNDO_INFRA = "FUNDO_INFRA"
     SEM_TIPO = "SEM_TIPO"  # fora das tabelas: o motor isola o ativo, sem palpite de tributação
 
@@ -162,7 +162,7 @@ class SaldoInicial(Modelo):
     (comum, day trade e FII não se compensam entre si; IN RFB 1.585/2015 arts. 37 §2º, 64 e 65).
     Vem da ficha de renda variável de dezembro da última declaração. ``darf_acumulado`` é o imposto
     devido e ainda não pago por ficar abaixo do mínimo da DARF: continua acumulando no ano seguinte
-    (Lei 9.430/1996 art. 68 §1º; decisão do usuário de 10/11/2026, leitura conservadora)."""
+    (Lei 9.430/1996 art. 68 §1º; critério do COIR de 10/11/2026, leitura conservadora)."""
 
     titular: int
     ano: int
@@ -300,7 +300,7 @@ class PosicaoAtivo(Modelo):
 
 class TermoAberto(Modelo):
     """Compra a termo ainda não liquidada numa data: fica fora da carteira e do PM até a
-    liquidação, mas a tela a mostra numa linha própria, como a B3 (decisão do usuário, F2)."""
+    liquidação, mas a tela a mostra numa linha própria, como a B3 (critério do COIR, F2)."""
 
     titular: int
     corretora: str

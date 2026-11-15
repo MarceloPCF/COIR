@@ -1,4 +1,4 @@
-"""Avisos de FII e Fiagro na declaração (decisões do usuário de 10/11/2026, leitura conservadora):
+"""Avisos de FII e Fiagro na declaração (critérios do COIR de 10/11/2026, leitura conservadora):
 compensação cruzada sem norma (IN RFB 1.585/2015 art. 37 §2º), rendimento de Fiagro antes da
 isenção (Lei 11.033/2004 art. 3º III, red. Lei 14.130/2021, DOU 11/06/2021) e requisitos da
 isenção (art. 3º §1º: 50 cotistas até 2023, 100 desde 2024)."""

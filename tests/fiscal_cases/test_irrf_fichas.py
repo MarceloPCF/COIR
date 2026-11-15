@@ -1,4 +1,4 @@
-"""IRRF por ficha do programa IRPF com a DARF no saldo único (decisão do usuário de 16/10/2026:
+"""IRRF por ficha do programa IRPF com a DARF no saldo único (critério do COIR de 16/10/2026:
 separar o IRRF de FII só na declaração). Casos do especialista fiscal, conferidos à mão.
 
 Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º;
@@ -124,7 +124,7 @@ def test_irrf_de_day_trade_nao_abate_fii_antes_do_0005() -> None:
     na venda de FII e IRRF de day trade de 5,00. A ficha FII consome 10,00 do 0,005% dela; o day
     trade fica para restituição (5,00) e 10,00 de 0,005% para a declaração.
 
-    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): IRRF em nota só de compra
+    Entrada simplificada (critério do COIR de 10/11/2026: só anotar): IRRF em nota só de compra
     não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
     ele só exercita o saldo de IRRF."""
     livro = Livro()
@@ -201,7 +201,7 @@ def test_day_trade_usado_no_imposto_de_fii_gera_aviso() -> None:
     (V 100 XPML11 a 105, PM 100: ganho 500, 20% = 100,00) e IRRF só de day trade (5,00) -> DARF
     95,00 e aviso.
 
-    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): IRRF em nota só de compra
+    Entrada simplificada (critério do COIR de 10/11/2026: só anotar): IRRF em nota só de compra
     não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
     ele só exercita o saldo de IRRF."""
     livro = Livro()

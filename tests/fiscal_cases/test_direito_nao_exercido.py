@@ -2,7 +2,7 @@
 DIREITO_NAO_EXERCIDO): o custo pago, com corretagem e emolumentos, vira perda em operações comuns
 na data do fim do prazo de exercício, fora do limite de R$ 20 mil (IN RFB 1.585/2015 art. 60 §3º,
 por analogia com a opção que vira pó; arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art.
-171 §4º). Parecer do especialista de 09/11/2026, seguido pelo usuário."""
+171 §4º). Parecer do especialista de 09/11/2026."""
 
 from datetime import date
 

@@ -72,7 +72,7 @@ def test_evento_que_nao_fecha_com_as_operacoes_nao_e_gravado(demo: Path) -> None
 
 
 def test_cisao_sem_percentual_nao_e_aceita(demo: Path) -> None:
-    """Decisão do usuário (P4, 19/10/2026): sem o percentual divulgado, bloqueia."""
+    """Critério do COIR (P4, 19/10/2026): sem o percentual divulgado, bloqueia."""
     d = DadosEvento(tipo=TipoEvento.CISAO, data=date(2023, 3, 1), conta=AGORA_CONTA,
                     ticker="GGBR4", quantidade=D(300), ticker_destino="GOAU4",
                     quantidade_destino=D(30))  # fmt: skip

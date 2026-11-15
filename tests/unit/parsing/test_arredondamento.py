@@ -1,5 +1,5 @@
 """Centavos de arredondamento não recusam a nota: viram a linha de custo "Ajuste de arredondamento"
-e a nota fecha (decisão do usuário de 07/11/2026). Só o que passar do que o arredondamento explica
+e a nota fecha (critério do COIR de 07/11/2026). Só o que passar do que o arredondamento explica
 consome a tolerância de R$ 0,05 da nota, com aviso.
 
 Números conferidos à mão na fixture agora_2008_04_bovespa: Emolumentos 5,03; Total Bovespa/Soma é a

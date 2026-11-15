@@ -5,12 +5,12 @@ Fontes:
 - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o
   custo das ações originais é atribuído às recebidas na proporção fixada pela assembleia; P&R
   IRPF 2022 pergunta 578 (substituição de ações): não é alienação, a data de aquisição é a original.
-- Incorporação de ações (Lei 6.404 art. 252): custo mantido (TRF1, TRF3, TRF4; decisão do usuário
+- Incorporação de ações (Lei 6.404 art. 252): custo mantido (TRF1, TRF3, TRF4; critério do COIR
   de 19/10/2026); a RFB diverge (SC Cosit 224/2014), parâmetro incorporacao_acoes_tratamento.
 - Ajuste de série de opção pela B3 (Manual de Procedimentos Operacionais da Câmara, item 7.9):
   sem efeito fiscal; o custo é o dos prêmios (art. 60 §2º), só a quantidade e o código mudam.
 - Fração em leilão: alienação pelo custo médio (art. 58 caput), sem norma sobre a isenção:
-  parâmetro leilao_fracao_isentavel (decisão do usuário de 19/10/2026: entra no limite de
+  parâmetro leilao_fracao_isentavel (critério do COIR de 19/10/2026: entra no limite de
   R$ 20 mil do mês do crédito, Lei 11.033/2004 art. 3º I).
 """
 
@@ -177,7 +177,7 @@ def test_cisao_de_uma_conta_so_na_visao_por_titular_falha_alto() -> None:
 
 
 def test_cisao_sem_percentual_bloqueia_ate_informar() -> None:
-    """Decisão do usuário (P4, 19/10/2026): sem o percentual divulgado, não calcula."""
+    """Critério do COIR (P4, 19/10/2026): sem o percentual divulgado, não calcula."""
     livro = Livro()
     livro.nota(date(2025, 6, 2), livro.op("C", "CCCC3", 100, "25"))
     livro.evento(date(2025, 7, 1), "CCCC3", TipoEvento.CISAO, quantidade="100", para="DDDD3",
@@ -258,7 +258,7 @@ def test_c3c_quantidade_truncada_pela_b3_fica_com_o_custo_inteiro() -> None:
 
 
 def test_grupamento_com_fracao_guarda_a_fracao_ate_o_leilao() -> None:
-    """Decisão do usuário de 10/11/2026: a fração do evento fica na posição até o leilão, que a
+    """Critério do COIR de 10/11/2026: a fração do evento fica na posição até o leilão, que a
     vende pelo custo médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º).
     105 AAAA3 a 10,00 (1.050,00); grupamento 10:1 -> 10,5 ações (V 94,5), PM 100,00. Leilão de
     0,5 por 21,37: custo 50,00, perda 28,63; ficam 10 ações por 1.000,00."""

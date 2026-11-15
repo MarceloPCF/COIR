@@ -115,7 +115,7 @@ bens:
 dividas:
   fonte: >-
     Programa IRPF, ficha Dívidas e ônus reais; sem norma específica para posição vendida em
-    31/12 (opção lançada, venda a descoberto): decisão do usuário de 20/10/2026, para fechar a
+    31/12 (opção lançada, venda a descoberto): critério do COIR de 20/10/2026, para fechar a
     variação patrimonial
   itens:
     - tipo: POSICAO_VENDIDA

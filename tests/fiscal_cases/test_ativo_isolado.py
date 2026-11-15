@@ -1,4 +1,4 @@
-"""Ativo isolado: um evento que falta não para a apuração inteira (decisões do usuário de
+"""Ativo isolado: um evento que falta não para a apuração inteira (critérios do COIR de
 03/11/2026, parecer do especialista). O ativo sai do cálculo desde o problema; o valor das vendas
 dele continua no limite de isenção; os meses dele desde a última posição zerada ficam
 incompletos e os seguintes da mesma categoria, dependentes. Venda que passa de comprado a
@@ -94,7 +94,7 @@ def test_venda_que_passa_de_comprado_a_vendido_avisa() -> None:
 
 
 def test_cada_aviso_fica_com_o_titular_dele() -> None:
-    """Decisão do usuário de 05/11/2026: o sino, o Painel e a Apuração mostram só os avisos do
+    """Critério do COIR de 05/11/2026: o sino, o Painel e a Apuração mostram só os avisos do
     titular escolhido. A posição de um titular não cobre a venda do outro, e o ativo isolado de um
     não aparece para o outro."""
     livro = _livro()
@@ -113,7 +113,7 @@ def test_cada_aviso_fica_com_o_titular_dele() -> None:
 
 
 def test_vendida_e_recomprada_no_mesmo_mes_nao_avisa() -> None:
-    """Decisão do usuário de 03/11/2026: só avisa se continuar vendida no fim do mês."""
+    """Critério do COIR de 03/11/2026: só avisa se continuar vendida no fim do mês."""
     livro = Livro()
     livro.nota(date(2025, 1, 10), livro.op("C", "CSNA3", 30, "10"))
     livro.nota(date(2025, 2, 10), livro.op("V", "CSNA3", 300, "10"))
@@ -181,7 +181,7 @@ def test_ativo_sem_tipo_fica_isolado_e_nao_para_a_apuracao() -> None:
 
 def test_venda_do_ativo_sem_tipo_conta_no_limite_e_avisa_quando_decide() -> None:
     """Tipo desconhecido conta como venda de ação no limite (parecer do especialista de
-    09/11/2026, seguido pelo usuário; Lei 11.033/2004 art. 3º I): se for ação, não contar isentaria
+    09/11/2026; Lei 11.033/2004 art. 3º I): se for ação, não contar isentaria
     vendas acima do limite. Vendas de fevereiro: 19.000 de PETR4 + 20.000 de ZZZZ12 = 39.000 >
     20.000, então o ganho de 9.000 de PETR4 é tributável (15% = 1.350,00); sem o ZZZZ12 seria
     isento, e o aviso diz isso."""

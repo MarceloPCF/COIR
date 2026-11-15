@@ -10,7 +10,7 @@ Fontes (alíquotas e limites vêm de data/parametros_fiscais.csv, com a fonte de
 - Prejuízo: compensa só na mesma categoria, sem prazo (IN RFB 1.585/2015); prejuízo de mês isento
   compensa se `prejuizo_mes_isento_compensavel` (Lei 8.981/1995 art. 72 §4º).
 - IRRF (0,005% e 1%): deduz do imposto do mês; o saldo passa aos meses seguintes do ano; o de
-  dezembro vai para a declaração anual (IN RFB 1.585/2015; decisão do usuário). A DARF usa um
+  dezembro vai para a declaração anual (IN RFB 1.585/2015; critério do COIR). A DARF usa um
   saldo único; as fichas do programa IRPF recebem o IRRF que cada uma consumiu (`fichas.py`).
 - DARF 6015: abaixo de R$ 10 acumula, inclusive para o ano seguinte (Lei 9.430/1996 art. 68
   §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915).
@@ -154,7 +154,7 @@ def apurar(
 def _marcar(m: MesApurado, isolados: Sequence[AtivoIsolado]) -> MesApurado:
     """Incompleto: o mês tem operação do ativo isolado fora do cálculo. Dependente: o ativo foi
     isolado num mês anterior e esta categoria tem resultado, imposto ou prejuízo a compensar
-    neste mês, que podem mudar com o resultado que faltou (decisão do usuário de 03/11/2026,
+    neste mês, que podem mudar com o resultado que faltou (critério do COIR de 03/11/2026,
     parecer do especialista: prejuízo e IRRF passam aos meses seguintes)."""
     incompletos: list[str] = []
     dependentes: list[str] = []
@@ -213,7 +213,7 @@ def _bonificacao_lei_15270(
     """Bonificação em ações com valor atribuído, no período da Lei 15.270/2025: a bonificação feita
     com lucros é emprego de lucros e conta no limite mensal de dividendos da mesma empresa (P&R
     Altas Rendas, perguntas 12 a 14). O COIR não sabe se a bonificação veio de lucros ou de
-    reservas de capital, então só avisa (decisão do usuário de 10/11/2026, leitura conservadora)."""
+    reservas de capital, então só avisa (critério do COIR de 10/11/2026, leitura conservadora)."""
     saida: list[tuple[int, str]] = []
     for m in movimentos:
         if m.evento is not TipoEvento.BONIFICACAO or m.valor <= 0:
@@ -331,7 +331,7 @@ def _apurar_titular(
         irrf_ano += retido
         saldo.reter(mes, retido)
         # o IRRF de day trade é consumido primeiro pela ficha de comuns: o saldo dele não vai para
-        # a declaração anual (só restituição), o de 0,005% vai (decisão do usuário, 15/10/2026)
+        # a declaração anual (só restituição), o de 0,005% vai (critério do COIR, 15/10/2026)
         deduzido = saldo.deduzir(mes, imposto - fii, fii)
         devido = imposto - deduzido
         total = devido + acumulado_darf

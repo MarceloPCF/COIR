@@ -1,5 +1,5 @@
 """Imposto abaixo do mínimo da DARF acumulado em 31/12 no saldo inicial (Lei 9.430/1996 art. 68
-§1º; decisão do usuário de 10/11/2026).
+§1º; critério do COIR de 10/11/2026).
 
 Revision ID: 0010
 Revises: 0009
