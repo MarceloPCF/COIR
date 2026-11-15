@@ -16,7 +16,7 @@ from coir.reports.modelo import Coluna, TipoColuna, Valor
 from coir.servicos import eventos
 from coir.servicos.estado import Estado
 from coir.servicos.eventos import AVISO_INCORPORACAO_ACOES, DadosEvento, EventoLancado, Proposta
-from coir.ui import tabela
+from coir.ui import ocupado, tabela
 from coir.ui.entrada import valor_br
 
 T = TipoColuna
@@ -793,10 +793,11 @@ class _Conferir:
         t = self.tela
         estado = t.estado
         try:
-            resultado = await run.io_bound(
-                eventos.lancar_seguras, estado.banco, t.titular, [p.chave for p in seguras],
-                estado.refs, estado.fiscais, estado.pasta_refs,
-            )  # fmt: skip
+            with ocupado.processando("Lançando os eventos"):
+                resultado = await run.io_bound(
+                    eventos.lancar_seguras, estado.banco, t.titular, [p.chave for p in seguras],
+                    estado.refs, estado.fiscais, estado.pasta_refs,
+                )  # fmt: skip
         except CoirError as erro:
             ui.notify(str(erro), type="negative", multi_line=True, timeout=12000)
             return
@@ -930,7 +931,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     async def abrir() -> None:
         """Ao abrir a tela, lança o que não pede nada (notas importadas, tabelas novas)."""
         try:
-            automaticos = await run.io_bound(estado.lancar_eventos_automaticos)
+            with ocupado.processando("Conferindo os eventos das suas notas"):
+                automaticos = await run.io_bound(estado.lancar_eventos_automaticos)
         except CoirError as erro:
             ui.notify(f"Eventos não lançados: {erro}", type="warning", multi_line=True)
         else:

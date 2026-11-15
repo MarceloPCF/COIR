@@ -10,7 +10,7 @@ from coir.erros import CoirError
 from coir.servicos.b3 import RelatorioB3, importar_planilhas
 from coir.servicos.estado import Estado
 from coir.servicos.importacao import copiar_para_pasta
-from coir.ui import pastas
+from coir.ui import ocupado, pastas
 
 TIPOS = {"movimentacao": "movimentação", "negociacao": "negociação", "posicao": "posição"}
 
@@ -23,22 +23,26 @@ def _planilhas(pasta: Path) -> list[Path]:
 
 def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     pasta_b3 = estado.pasta_b3
-    ocupado = {"sim": False}
+    lote = {"ativo": False}
 
     async def importar(arquivos: Sequence[Path]) -> None:
-        if ocupado["sim"] or estado.titular is None:
+        if lote["ativo"] or estado.titular is None:
             if estado.titular is None:
                 ui.notify("Cadastre ou escolha o titular primeiro.", type="warning")
             return
         if not arquivos:
             ui.notify("Nenhuma planilha .xlsx para importar.", type="warning")
             return
-        ocupado["sim"] = True
-        espera = ui.notification("Importando as planilhas da B3...", spinner=True, timeout=None)
+        lote["ativo"] = True
         try:
-            rel = await run.io_bound(
-                importar_planilhas, estado.banco, list(arquivos), estado.titular, estado.agora()
-            )
+            with ocupado.processando("Importando as planilhas da B3"):
+                rel = await run.io_bound(
+                    importar_planilhas,
+                    estado.banco,
+                    list(arquivos),
+                    estado.titular,
+                    estado.agora(),
+                )
         except CoirError as erro:
             ui.notify(
                 f"Importação cancelada, nada foi gravado: {erro}",
@@ -49,8 +53,7 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             )
             return
         finally:
-            ocupado["sim"] = False
-            espera.dismiss()
+            lote["ativo"] = False
         if rel is None:
             return
         estado.invalidar()
