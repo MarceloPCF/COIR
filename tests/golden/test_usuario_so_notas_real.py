@@ -16,7 +16,8 @@ from coir.servicos.estado import Estado
 pytestmark = [pytest.mark.golden, pytest.mark.slow]
 
 
-def test_sem_eventos_as_propostas_continuam_disponiveis(copia: Path) -> None:
+def test_sem_eventos_as_propostas_continuam_disponiveis(copia_descartavel: Path) -> None:
+    copia = copia_descartavel  # apaga os eventos: só na cópia deste teste
     with sqlite3.connect(copia) as banco:
         banco.execute("DELETE FROM evento_corporativo")
     [titular] = Estado(copia).titulares()
