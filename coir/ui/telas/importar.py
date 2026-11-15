@@ -18,7 +18,7 @@ from coir.servicos.importacao import (
     importar_lista,
     por_arquivo,
 )
-from coir.ui import pastas
+from coir.ui import ocupado, pastas
 from coir.ui.telas import importar_b3
 
 ICONES = {
@@ -45,6 +45,7 @@ class _Andamento:
 
     def __call__(self, feitos: int, total: int, arquivo: str) -> None:  # chamado na thread
         self.feitos, self.total, self.arquivo = feitos, total, arquivo
+        ocupado.detalhar(f"{feitos} de {total} arquivos" + ("" if arquivo else ": gravando"))
 
 
 def _pdfs(pasta: Path) -> list[Path]:
@@ -70,18 +71,19 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         andamento(0, len(arquivos), arquivos[0].name)
         travar(True)
         try:
-            rel = await run.io_bound(
-                importar_lista,
-                estado.banco,
-                arquivos,
-                estado.refs,
-                estado.agora(),
-                None,
-                estado.extrator,
-                andamento,
-                list(estado.senhas_informadas),
-                bool(reprocessar.value),
-            )
+            with ocupado.processando("Importando as notas"):
+                rel = await run.io_bound(
+                    importar_lista,
+                    estado.banco,
+                    arquivos,
+                    estado.refs,
+                    estado.agora(),
+                    None,
+                    estado.extrator,
+                    andamento,
+                    list(estado.senhas_informadas),
+                    bool(reprocessar.value),
+                )
         except CoirError as erro:  # lote desfeito: nada gravado
             ui.notify(
                 f"Importação cancelada, nada foi gravado: {erro}",
@@ -101,7 +103,8 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         mostrar(rel)
         if rel.mudou:  # as notas novas podem pôr ativos em carteira na data de um evento
             try:
-                automaticos = await run.io_bound(estado.lancar_eventos_automaticos, True)
+                with ocupado.processando("Conferindo os eventos das notas importadas"):
+                    automaticos = await run.io_bound(estado.lancar_eventos_automaticos, True)
             except CoirError as erro:
                 ui.notify(f"Eventos não lançados: {erro}", type="warning", multi_line=True)
             else:

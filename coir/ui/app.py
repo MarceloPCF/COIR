@@ -14,7 +14,7 @@ from coir import auditoria
 from coir.config import ARQUIVO_REGISTRO
 from coir.erros import CoirError
 from coir.servicos.estado import Estado, Pendencia
-from coir.ui import ajuda, preferencias, tema
+from coir.ui import ajuda, ocupado, preferencias, tema
 from coir.ui.telas import (
     apuracao,
     assistente,
@@ -288,3 +288,4 @@ def montar(estado: Estado) -> None:
         }
         rotas["/notas/{nota}"] = _nota(estado, mudou)
         paginas = ui.sub_pages(rotas).classes("w-full relative")
+    ocupado.montar()  # "Processando dados, aguarde": cobre o menu e a tela enquanto o COIR grava

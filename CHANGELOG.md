@@ -10,6 +10,9 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ## [Não lançado]
 
+### Adicionado
+- **"Processando dados, aguarde"**: enquanto o COIR importa notas ou planilhas da B3, confere os eventos, atualiza as tabelas ou restaura um backup, um aviso cobre a janela, mostra o que está sendo feito (na importação, quantos arquivos já foram) e some quando termina. Antes dava para trocar de tela no meio do processamento, e a operação terminava numa tela que já não existia.
+
 ### Corrigido
 - **Valores em reais nos avisos no padrão brasileiro**: alguns avisos mostravam "R$ 112626.22" em vez de "R$ 112.626,22". Valia para a obrigatoriedade da declaração e o IR mínimo (Declaração anual), o excedente da amortização de FI-Infra e FIP-IE, o rendimento de Fiagro antes da isenção, os dividendos perto do limite da Lei 15.270/2025, a diferença de centavos ao importar a nota e o dinheiro do resgate de ações. Os valores não mudam, só a forma de escrever.
 

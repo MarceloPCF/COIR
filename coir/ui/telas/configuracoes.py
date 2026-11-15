@@ -10,7 +10,7 @@ from coir.erros import CoirError
 from coir.reports.modelo import Coluna
 from coir.servicos import atualizacao, manutencao, versao
 from coir.servicos.estado import Estado
-from coir.ui import preferencias, tabela
+from coir.ui import ocupado, preferencias, tabela
 from coir.ui.abrir import abrir
 
 COLUNAS_REGISTRO = (Coluna("Data e hora"), Coluna("Tipo"), Coluna("Área"), Coluna("O que houve"))
@@ -92,7 +92,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     async def restaurar(b: manutencao.Backup) -> None:
         try:
-            await run.io_bound(manutencao.restaurar, estado.banco, b.caminho, estado.agora())
+            with ocupado.processando("Restaurando o backup"):
+                await run.io_bound(manutencao.restaurar, estado.banco, b.caminho, estado.agora())
         except CoirError as erro:
             ui.notify(f"Restauração não feita: {erro}", type="negative", multi_line=True)
             return
@@ -287,9 +288,11 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         # aplicação, e avisar pelo botão apagado dava RuntimeError (registro de 11/2026)
         pagina = ui.context.client
         try:
-            await run.io_bound(atualizacao.aplicar, estado.dados)
-            estado.recarregar_referencias()
-            await run.io_bound(estado.preparar, estado.agora())  # renormaliza as notas, se preciso
+            with ocupado.processando("Atualizando as tabelas e refazendo os cálculos"):
+                await run.io_bound(atualizacao.aplicar, estado.dados)
+                estado.recarregar_referencias()
+                # renormaliza as notas, se preciso
+                await run.io_bound(estado.preparar, estado.agora())
         except (CoirError, OSError) as erro:  # OSError: pasta de dados sem permissão, disco
             with pagina:
                 ui.notify(f"Tabelas não aplicadas: {erro}", type="negative", multi_line=True)
@@ -303,9 +306,10 @@ def _tabelas(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     async def desfazer() -> None:
         try:
-            await run.io_bound(atualizacao.voltar, estado.dados)
-            estado.recarregar_referencias()
-            await run.io_bound(estado.preparar, estado.agora())
+            with ocupado.processando("Voltando às tabelas anteriores"):
+                await run.io_bound(atualizacao.voltar, estado.dados)
+                estado.recarregar_referencias()
+                await run.io_bound(estado.preparar, estado.agora())
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return
