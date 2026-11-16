@@ -14,9 +14,12 @@ from nicegui import app, run, ui
 from nicegui import helpers as nicegui_helpers
 from nicegui.elements.upload_files import SmallFileUpload
 from nicegui.testing.user_simulation import user_simulation
+from sqlalchemy import select
 
 from coir import auditoria
 from coir.config import VERSAO
+from coir.db.modelos import Operacao
+from coir.db.sessao import conectar
 from coir.domain.fiscal import Apuracao
 from coir.parsing.extrair import ResultadoExtracao
 from coir.servicos import manutencao
@@ -162,6 +165,52 @@ async def test_reprocessar_notas_ja_importadas_pela_tela(tmp_path: Path) -> None
         await user.should_see("Alterada por reprocessamento", retries=ESPERA)
         user.find(marker="ver-versao-anterior").click()
         await user.should_see("lida de", retries=ESPERA)
+
+
+@pytest.mark.asyncio
+async def test_importar_pergunta_o_codigo_do_nome_em_duvida_e_importa_de_novo(
+    tmp_path: Path,
+) -> None:
+    """Nome de pregão que valia para dois códigos na data: a tela pergunta, guarda a escolha e
+    importa de novo a nota recusada (decisão de 16/11/2026)."""
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    estado.refs = estado.refs.model_copy(update={"nomes_historicos": {
+        "empresaydr1": (("2000-01-03", "2026-11-09", "EMPY31"),
+                        ("2000-01-03", "2026-11-09", "EMPY20")),
+    }})  # fmt: skip
+    estado.pasta_notas.mkdir()
+    origem = notas()[0]
+    (estado.pasta_notas / f"{origem.stem}.pdf").write_bytes(origem.read_bytes())
+    certo = estado.extrator
+    assert certo is not None
+
+    def em_duvida(caminho: Path) -> ResultadoExtracao:
+        res = certo(caminho)
+        [nota] = res.notas
+        negocio = nota.negocios_bovespa[0].model_copy(update={"especificacao": "EMPRESA Y DR1"})
+        res.notas = [nota.model_copy(
+            update={"negocios_bovespa": (negocio, *nota.negocios_bovespa[1:])})]  # fmt: skip
+        return res
+
+    estado.extrator = em_duvida
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/importar")
+        user.find(marker="importar-pasta").click()
+        await user.should_see("Qual é o código do ativo?", retries=ESPERA)
+        await user.should_see("EMPRESA Y DR1")
+        assert listar(estado.banco, None, None) == []
+        [escolha] = user.find(marker="codigo-empresaydr1").elements
+        assert isinstance(escolha, ui.radio)
+        escolha.set_value("EMPY20")
+        user.find(marker="gravar-codigos").click()
+        await user.should_see("gravado", retries=ESPERA)
+        await user.should_not_see("Qual é o código do ativo?", retries=ESPERA)
+    assert len(listar(estado.banco, None, None)) == 1
+    with conectar(estado.banco) as fabrica, fabrica() as s:
+        papeis = set(s.scalars(select(Operacao.papel)))
+    assert "EMPY20" in papeis and "EMPY31" not in papeis
 
 
 @pytest.mark.asyncio
