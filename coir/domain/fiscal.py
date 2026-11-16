@@ -194,6 +194,9 @@ class TipoEvento(StrEnum):
     DIREITO_RECEBIDO = "DIREITO_RECEBIDO"
     # direito exercido: sai sem resultado, e o custo dele vai para o recibo (ou a ação) subscrito
     EXERCICIO_DIREITO = "EXERCICIO_DIREITO"
+    # dividendo pago em bens (ações ou cotas de outra empresa): o bem entra na posição e o valor
+    # atribuído no aviso é rendimento isento (Lei 9.249/1995 art. 10)
+    DIVIDENDO_EM_BENS = "DIVIDENDO_EM_BENS"
 
 
 class NaturezaEvento(StrEnum):
@@ -210,8 +213,9 @@ class NaturezaEvento(StrEnum):
 
 
 TIPOS_COM_DESTINO = frozenset(
-    {TipoEvento.INCORPORACAO, TipoEvento.CISAO, TipoEvento.EXERCICIO_DIREITO}
-)
+    {TipoEvento.INCORPORACAO, TipoEvento.CISAO, TipoEvento.EXERCICIO_DIREITO,
+     TipoEvento.DIVIDENDO_EM_BENS}
+)  # fmt: skip
 
 
 class Evento(Modelo):
@@ -221,7 +225,10 @@ class Evento(Modelo):
 
     Incorporação e cisão (sem C/V): ``quantidade`` é a quantidade de origem (a da conta) e
     ``quantidade_destino`` a de B recebida; na cisão, ``percentual_custo`` é a parte do custo de
-    A que vai para B. Leilão de fração (sem C/V): ``quantidade`` vendida por ``valor`` líquido."""
+    A que vai para B. Leilão de fração (sem C/V): ``quantidade`` vendida por ``valor`` líquido.
+    Dividendo em bens (sem C/V): o ativo é a companhia que pagou, o de destino é o bem recebido
+    (``quantidade_destino``), ``valor`` é o atribuído no aviso (o rendimento isento) e
+    ``valor_corrente`` o de mercado na entrega."""
 
     id: int
     data: date
@@ -246,6 +253,7 @@ class Evento(Modelo):
     pme_media_fim: Decimal | None = None  # média dos 30 pregões do fim da isenção (art. 17 §6º)
     aviso: str = ""  # o que a apuração mostra sobre o evento (presunção da custódia de PME)
     percentual_custo: Decimal | None = None  # cisão: fração do custo de A que vai para B (0..1)
+    valor_corrente: Decimal | None = None  # dividendo em bens: valor de mercado na entrega
     observacao: str = ""
     pme_ate: date | None = None  # oferta de PME: vendas isentas até a data (Lei 13.043 art. 16)
 

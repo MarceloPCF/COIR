@@ -861,3 +861,68 @@ def test_oferta_de_pme_leva_a_data_da_isencao_ao_motor(demo: Path) -> None:
         _, evs = entradas(s, REFS, FISCAIS)
     [e] = [x for x in evs if x.tipo is TipoEvento.OFERTA_PUBLICA]
     assert e.pme_ate == date(2023, 12, 31)
+
+
+def _dividendo_em_bens(**troca: object) -> DadosEvento:
+    base = DadosEvento(tipo=TipoEvento.DIVIDENDO_EM_BENS, data=date(2023, 3, 1), conta=AGORA_CONTA,
+                       ticker="GGBR4", valor=D(2000), ticker_destino="KNRI11",
+                       quantidade_destino=D(20), valor_corrente=D(1900))  # fmt: skip
+    return replace(base, **troca)  # type: ignore[arg-type]
+
+
+def test_dividendo_em_bens_poe_o_bem_na_carteira_e_o_valor_nos_dividendos_isentos(
+    demo: Path,
+) -> None:
+    """B10(d) do parecer de 16/11/2026: o bem entra pelo menor entre o valor atribuído e o de
+    mercado, e o valor atribuído vira dividendo isento da companhia que pagou (Lei 9.249/1995
+    art. 10), mesmo sem linha na movimentação da B3."""
+    from coir.domain.proventos import TipoProvento
+    from coir.servicos.proventos import proventos_banco
+
+    evento_id = eventos.salvar(demo, 1, _dividendo_em_bens(), REFS, FISCAIS)
+    posicoes = _carteira(demo, date(2023, 3, 1))
+    assert posicoes["KNRI11"] == (20, D(1900)) and posicoes["GGBR4"] == (300, D(18687))
+    lista, _ = proventos_banco(demo, FISCAIS, 1)
+    [provento] = [p for p in lista if p.origem == f"evento:{evento_id}"]
+    assert (provento.tipo, provento.codigo, provento.liquido, provento.ano_declaracao) == (
+        TipoProvento.DIVIDENDO, "GGBR4", D(2000), 2023)  # fmt: skip
+    assert "20 KNRI11" in provento.observacao
+    [lancado] = [e for e in eventos.listar(demo, 1) if e.id == evento_id]
+    assert lancado.dados.valor_corrente == D(1900)
+
+
+@pytest.mark.parametrize(
+    ("troca", "motivo"),
+    [
+        ({"valor_corrente": None}, "valor de mercado"),
+        ({"valor": D(0)}, "valor atribuído"),
+        ({"ticker_destino": None}, "ativo recebido"),
+        ({"quantidade_destino": None}, "quantidade recebida"),
+        ({"quantidade": D(10)}, "só a quantidade recebida"),
+    ],
+)
+def test_dividendo_em_bens_incompleto_nao_e_gravado(
+    demo: Path, troca: dict[str, object], motivo: str
+) -> None:
+    with pytest.raises(ImportacaoError, match=motivo):
+        eventos.salvar(demo, 1, _dividendo_em_bens(**troca), REFS, FISCAIS)
+    assert eventos.listar(demo, 1) == []
+
+
+def test_valor_de_mercado_so_vale_no_dividendo_em_bens(demo: Path) -> None:
+    with pytest.raises(ImportacaoError, match="só vale no dividendo em bens"):
+        eventos.salvar(demo, 1, replace(_desdobro(), valor_corrente=D(1)), REFS, FISCAIS)
+
+
+def test_dividendo_em_bens_pelo_csv_e_o_mesmo_da_tela(demo: Path) -> None:
+    from coir.db.sessao import conectar
+
+    eventos.salvar(demo, 1, _dividendo_em_bens(), REFS, FISCAIS)
+    linha = {"data": "2023-03-01", "corretora": "AGORA", "conta": "0", "ticker": "GGBR4",
+             "tipo": "DIVIDENDO_EM_BENS", "cv": "", "quantidade": "", "valor": "2000",
+             "corretora_destino": "", "conta_destino": "", "observacao": "", "origem": "",
+             "ticker_destino": "KNRI11", "quantidade_destino": "20",
+             "valor_corrente": "1900.00"}  # fmt: skip
+    with conectar(demo) as fabrica, fabrica() as s:
+        rel = eventos.importar_eventos(s, [linha])
+    assert (rel.novos, rel.ja_no_banco) == (0, 1)

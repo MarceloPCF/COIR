@@ -36,7 +36,11 @@ CARTOES = (
     (TipoProvento.RENDIMENTO_FUNDO_INFRA, "FI-Infra e FIP-IE · exclusiva (06)"),
     (TipoProvento.REEMBOLSO_BTC, "Reembolsos de BTC"),
     (TipoProvento.ATUALIZACAO, "Atualização (Selic) · exclusiva"),
+    (TipoProvento.RENDIMENTO_ETF, "Rendimentos de ETF · exclusiva (06)"),
+    (TipoProvento.RENDIMENTO_ETF_RF, "Rendimentos de ETF de renda fixa · exclusiva (06)"),
 )
+COM_IRRF = (TipoProvento.JCP, TipoProvento.ATUALIZACAO, TipoProvento.RENDIMENTO_ETF,
+            TipoProvento.RENDIMENTO_ETF_RF)  # fmt: skip
 SERIES = (
     (TipoProvento.DIVIDENDO, tema.CLARO.caneta),
     (TipoProvento.JCP, tema.CLARO.carimbo),
@@ -293,7 +297,7 @@ def _cartoes(do_ano: list[Provento]) -> None:
             with ui.column().classes("coir-folha gap-0 min-w-[190px] flex-1"):
                 ui.label(rotulo).classes("coir-campo-rotulo")
                 ui.label(_r(sum((p.liquido for p in lista), ZERO))).classes("coir-numero text-2xl")
-                if tipo in (TipoProvento.JCP, TipoProvento.ATUALIZACAO) and lista:
+                if tipo in COM_IRRF and lista:
                     irrf = sum((p.irrf for p in lista), ZERO)
                     ui.label(f"IRRF {_r(irrf)} (estimado)").classes("coir-subtitulo text-xs")
         a_receber = [p for p in do_ano if p.a_receber_em_31_12]

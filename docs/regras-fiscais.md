@@ -442,8 +442,10 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
 
 ## Proventos (F7a, 19/10/2026)
 `coir/engine/proventos.py`, a partir da movimentação da B3; casos em `tests/fiscal_cases/test_proventos.py`.
-- Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09. BDR, ETF e FII com
-  "Dividendo": fora da v3.0, listados com aviso (BDR não é isento: a Lei 9.249/1995 art. 10 só alcança lucros de pessoa jurídica brasileira).
+- Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09.
+- Dividendo de BDR: não é isento (a Lei 9.249/1995 art. 10 só alcança lucros de pessoa jurídica tributada no País). É rendimento do exterior, sujeito ao carnê-leão e ao ajuste anual pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR só lista, com aviso: faltam o imposto retido no exterior e a tabela progressiva (parecer de 16/11/2026).
+- Rendimento ou dividendo distribuído por ETF de ações desde 01/01/2024: IRRF de 15% na distribuição, definitivo para a pessoa física (Lei 14.754/2023 arts. 18 II, 24 e 32 I); ficha exclusiva 06 pelo líquido (linha `rendimento_etf`, parâmetro `rendimento_etf_exclusivo`). Antes de 2024 a IN 1.585 (arts. 24 a 27) não trata da distribuição: só aviso. De ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN 1.585 arts. 29 III e 30 II), ficha 06 pelo líquido (linha `rendimento_etf_rf`). Nenhum dos dois entra na apuração mensal; vale o informe do administrador. Casos em `tests/fiscal_cases/test_proventos_etf_bdr_bens.py`.
+- Dividendo pago em bens (ações ou cotas de outra empresa): evento `DIVIDENDO_EM_BENS`, lançado na tela Eventos. O valor atribuído no aviso aos acionistas é rendimento isento da companhia que pagou (Lei 9.249/1995 art. 10; linha 09), fora da apuração mensal. O bem entra na posição na data da entrega; o custo é o valor atribuído ou, quando menor, o valor corrente na entrega (IN 1.585 art. 58 §3º IV; Lei 7.713/1988 art. 16 V), com aviso: critério do COIR, conservador (parâmetro `custo_dividendo_em_bens`; `valor_atribuido` usa sempre o do aviso). A posição na companhia que pagou não muda.
 - JCP: exclusivo (código 10, pelo líquido). O preço unitário da B3 é o bruto por ação, o que mostra a
   alíquota retida (15% até 2025; 17,5% desde 2026, LC 224/2025 art. 8º, pela data do pagamento ou do
   crédito). Pago em 2026 com 15% = creditado em 2025: declarado no ano do crédito, com o crédito a
@@ -564,7 +566,7 @@ não tem o dado, avisar em vez de calcular.
 - Perda na venda de ação de PME: não compensa e não aparece como isento negativo (Lei 13.043/2014 art. 17 §2º). O COIR já fazia assim.
 - Venda que cruza o zero no mesmo pregão: vale a ordem dos negócios (a primeira venda zera a posição, a seguinte abre a descoberto pelo próprio preço). Não há norma de preço médio de venda; a média do dia que a corretora mostra é só exibição, e o imposto total é o mesmo.
 - Base do IRRF de 0,005% em opções: a soma dos prêmios recebidos e pagos no dia, se positiva (IN 1.585 art. 63 II e §1º II), e não a venda bruta. Só muda, em centavos, a repartição do IRRF entre a ficha de comuns e a de FII. Nota com um valor só de IRRF para day trade e operação comum: sem caso real, fica como está (as notas lidas trazem os dois valores).
-- Custo do ativo recebido como dividendo: o valor corrente na entrega quando for menor que o atribuído no aviso (conservador), com aviso. Dividendo de BDR: só aviso, sem cálculo. VAMO3 -> AMOB3 (dez/2024): segue só a cisão do pacote; a parte paga como dividendo em ações da Automob não é proposta (decisão do usuário).
+- Custo do ativo recebido como dividendo: o valor corrente na entrega quando for menor que o atribuído no aviso (conservador), com aviso; o lançamento é o evento "Dividendo pago em bens" da tela Eventos, e o valor atribuído vai para os isentos 09. Rendimento de ETF: exclusiva 06 pelo líquido (ETF de ações só desde 2024). Dividendo de BDR: só aviso, sem cálculo. Detalhes na seção Proventos. VAMO3 -> AMOB3 (dez/2024): segue só a cisão do pacote; a parte paga como dividendo em ações da Automob não é proposta (decisão do usuário).
 
 ## Pontos do v2.02 a corrigir (ver docs/PLANO.md, Diagnóstico)
 - Isenção inferida por "IRRF < R$ 1" (falha com 2+ corretoras; pode isentar ETF).

@@ -24,7 +24,13 @@ class TipoProvento(StrEnum):
     REEMBOLSO_BTC = "REEMBOLSO_BTC"  # reembolso de proventos ao doador de ações emprestadas
     ATUALIZACAO = "ATUALIZACAO"  # atualização do provento pela Selic: tributação exclusiva
     RESTITUICAO_CAPITAL = "RESTITUICAO_CAPITAL"  # reduz o custo (IN RFB 1.585/2015 art. 58 §8º)
-    FORA_DO_ESCOPO = "FORA_DO_ESCOPO"  # BDR, ETF, rendimento em ação: listado com aviso
+    # ETF de ações desde 2024: IRRF de 15% na distribuição, definitivo para a pessoa física (Lei
+    # 14.754/2023 arts. 18 II, 24 e 32 I); ficha exclusiva 06 pelo líquido
+    RENDIMENTO_ETF = "RENDIMENTO_ETF"
+    # ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN RFB
+    # 1.585/2015 arts. 29 III e 30 II); ficha exclusiva 06 pelo líquido
+    RENDIMENTO_ETF_RF = "RENDIMENTO_ETF_RF"
+    FORA_DO_ESCOPO = "FORA_DO_ESCOPO"  # BDR, ETF antes de 2024, rendimento em ação: só aviso
 
 
 class LinhaB3(Modelo):

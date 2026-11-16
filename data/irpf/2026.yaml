@@ -167,6 +167,18 @@ exclusivos:
       descricao: "Rendimentos de aplicações financeiras (ETF de renda fixa)"
       por_fonte: true
       parcial: true  # o código também recebe rendimentos fora da bolsa
+    - chave: rendimento_etf
+      codigo: "06"
+      descricao: "Rendimentos de aplicações financeiras (rendimentos distribuídos por ETF)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+      nota: "Lei 14.754/2023 arts. 18 II, 24 e 32 I (IRRF de 15% na distribuição, definitivo, desde 2024); pelo líquido; parecer de 16/11/2026"
+    - chave: rendimento_etf_rf
+      codigo: "06"
+      descricao: "Rendimentos de aplicações financeiras (rendimentos distribuídos por ETF de renda fixa)"
+      por_fonte: true
+      parcial: true  # o código também recebe rendimentos fora da bolsa
+      nota: "Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II (exclusiva na fonte, retida pelo administrador); pelo líquido; parecer de 16/11/2026"
     - chave: ganho_fundo_infra
       codigo: "06"
       descricao: "Rendimentos de aplicações financeiras (ganho em cotas de FI-Infra e FIP-IE, alíquota zero)"

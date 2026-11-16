@@ -230,6 +230,7 @@ class EventoCorporativo(Base):
     quantidade_destino: Mapped[Decimal | None]
     natureza: Mapped[str | None] = mapped_column(String(24))
     percentual_custo: Mapped[Decimal | None]
+    valor_corrente: Mapped[Decimal | None]  # dividendo em bens: valor de mercado na entrega
 
     conta: Mapped[Conta] = relationship(foreign_keys=[conta_id])
     conta_destino: Mapped[Conta | None] = relationship(foreign_keys=[conta_destino_id])

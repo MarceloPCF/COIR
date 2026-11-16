@@ -27,7 +27,9 @@ Ficam de fora das seguras o que pede algo seu (bonificação sem custo publicado
 
 ## Lançados
 
-Todos os eventos do titular. Clique num deles para corrigir ou excluir. Aqui também entram os que não têm aba própria: desdobramento, grupamento, bonificação, redução de capital, leilão de fração e direito não exercido.
+Todos os eventos do titular. Clique num deles para corrigir ou excluir. Aqui também entram os que não têm aba própria: desdobramento, grupamento, bonificação, redução de capital, leilão de fração, direito não exercido e dividendo pago em bens.
+
+**Dividendo pago em bens:** a empresa pagou o dividendo (ou parte dele) com ações ou cotas de outra empresa. Informe a empresa que pagou, a data da entrega, o ativo e a quantidade recebidos, o **valor atribuído** a eles no aviso aos acionistas e o **valor de mercado na entrega** (a quantidade vezes a cotação de fechamento do dia). O valor atribuído é o dividendo: vai para os rendimentos isentos, na tela Proventos e na Declaração. O ativo recebido entra na carteira pelo menor dos dois valores; quando é o de mercado, a Apuração avisa. A parte do dividendo paga em dinheiro não é lançada aqui: ela já vem na movimentação da B3.
 
 ## Subscrições
 
