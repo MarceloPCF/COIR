@@ -1329,6 +1329,15 @@ def _evento(livro: Livro, e: Evento) -> None:
     if e.tipo is TipoEvento.DIREITO_RECEBIDO and (e.cv != "C" or e.valor):
         raise MotorError(f"{_nome(e)}: o direito recebido entra (C) com custo zero; o comprado "
                          "vem na nota de corretagem")  # fmt: skip
+    if e.tipo is TipoEvento.DIREITO_RECEBIDO and any(
+        m.ativo == e.ativo and m.titular == e.titular and m.origem.startswith("direito:")
+        for m in livro.movimentos
+    ):
+        # uma venda anterior já pôs esses direitos no livro, a custo zero: somar de novo deixaria
+        # direitos que não existem na carteira
+        raise MotorError(f"{_nome(e)}: há venda deste direito antes da data do crédito, e os "
+                         "direitos recebidos já entraram nessa venda. Use no evento a data em que "
+                         "a B3 creditou os direitos, anterior à primeira venda")  # fmt: skip
     abre = (e.tipo in ABREM_POSICAO or e.natureza is NaturezaEvento.OUTRA_CLASSE) and e.cv == "C"
     if pos.quantidade == 0 and not abre:
         # só a subscrição, a oferta pública, a custódia inicial e a bonificação noutra classe abrem

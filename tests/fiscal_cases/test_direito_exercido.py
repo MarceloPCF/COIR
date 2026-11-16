@@ -213,3 +213,14 @@ def test_direito_recebido_com_custo_isola_o_ativo() -> None:
                  tipo_ativo=DIR)  # fmt: skip
     [isolado] = livro.apurar(date(2026, 3, 31)).isolados
     assert isolado.ticker == "ABCD1" and "custo zero" in isolado.motivo
+
+
+def test_credito_lancado_depois_de_uma_venda_nao_dobra_os_direitos() -> None:
+    """Venda de 100 direitos em 03/03 sem o crédito lançado: entram a custo zero na venda. Um
+    crédito lançado com data posterior (05/03) somaria outros 200 que não existem: o direito sai da
+    apuração, com o motivo, para a data ser corrigida."""
+    livro = Livro()
+    livro.nota(date(2026, 3, 3), livro.op("V", "ABCD1", 100, "2", tipo=DIR))
+    livro.evento(date(2026, 3, 5), "ABCD1", RECEBIDO, "C", quantidade="200", tipo_ativo=DIR)
+    [isolado] = livro.apurar(date(2026, 3, 31)).isolados
+    assert isolado.ticker == "ABCD1" and "antes da data do crédito" in isolado.motivo
