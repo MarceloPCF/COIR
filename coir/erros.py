@@ -43,6 +43,18 @@ class ReferenciaError(ExtracaoError):
     """Ativo, opção ou contrato sem cadastro nas tabelas de referência (data/)."""
 
 
+class NomeAmbiguoError(ReferenciaError):
+    """O nome de pregão impresso na nota valia para mais de um código na data, e nada desempatou
+    (planilha de negociação da B3, escolha guardada). ``nome``: o nome compacto que ficou em
+    dúvida; ``codigos``: os candidatos."""
+
+    def __init__(
+        self, mensagem: str, especificacao: str, nome: str, codigos: tuple[str, ...]
+    ) -> None:
+        super().__init__(mensagem)
+        self.especificacao, self.nome, self.codigos = especificacao, nome, codigos
+
+
 class BancoError(CoirError):
     """Banco de dados ausente, desatualizado ou com conteúdo inesperado."""
 

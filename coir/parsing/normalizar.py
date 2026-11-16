@@ -9,15 +9,16 @@ data/opcoes_raiz.csv.
 """
 
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from datetime import date
+from functools import partial
 
 from rapidfuzz import process
 
 from coir.domain.fiscal import TipoAjuste
 from coir.domain.nota import NegocioBMF, NegocioBovespa, NotaExtraida, OperacaoExtraida, Segmento
 from coir.domain.referencias import Referencias
-from coir.erros import ReferenciaError
+from coir.erros import NomeAmbiguoError, ReferenciaError
 from coir.parsing import futuros
 from coir.parsing.numeros import compactar
 from coir.parsing.observacoes import marca_suspeita
@@ -28,6 +29,10 @@ RE_DIREITO = re.compile(r"^(?P<base>.+?)\s+D(?P<letra>[A-Z])\s+\d+,\d{2}$")
 RE_OPCAO = re.compile(
     r"^(?P<serie>[A-Z0-9]{4}[A-X]\d{1,4}(?:W\d)?)(?P<e>E)?(?P<classe>ON|PN[A-C]?|UNT)?$"
 )  # W1..W5: opção semanal
+
+# (negócio, posição dele na nota, nome compacto em dúvida, códigos candidatos) -> código ou None
+Desempate = Callable[[NegocioBovespa, int, str, tuple[str, ...]], str | None]
+_Escolher = Callable[[str, tuple[str, ...]], str | None]
 
 
 def classes_das_series(notas: Iterable[NotaExtraida], refs: Referencias) -> dict[str, str]:
@@ -43,12 +48,21 @@ def classes_das_series(notas: Iterable[NotaExtraida], refs: Referencias) -> dict
 
 
 def operacoes(
-    nota: NotaExtraida, refs: Referencias, series: dict[str, str]
+    nota: NotaExtraida,
+    refs: Referencias,
+    series: dict[str, str],
+    desempate: Desempate | None = None,
 ) -> list[OperacaoExtraida]:
+    """``desempate``: quem decide o código quando o nome de pregão valia para mais de um na data
+    (a importação olha a planilha de negociação da B3 e a escolha guardada). Sem ele, ou sem
+    resposta, a nota é recusada com ``NomeAmbiguoError``: o COIR não escolhe no palpite."""
     if nota.segmento is Segmento.BMF:
         futuros.conversao_do_volume(nota, refs)  # confere o câmbio implícito de cada linha
         return [_bmf(nota, n, refs) for n in nota.negocios_bmf if _negocio_bmf(n)]
-    return [_bovespa(nota, n, refs, series) for n in nota.negocios_bovespa]
+    return [
+        _bovespa(nota, n, refs, series, partial(desempate, n, i) if desempate else None)
+        for i, n in enumerate(nota.negocios_bovespa)
+    ]
 
 
 def _negocio_bmf(n: NegocioBMF) -> bool:
@@ -81,12 +95,16 @@ def _bmf(nota: NotaExtraida, n: NegocioBMF, refs: Referencias) -> OperacaoExtrai
 
 
 def _bovespa(
-    nota: NotaExtraida, n: NegocioBovespa, refs: Referencias, series: dict[str, str]
+    nota: NotaExtraida,
+    n: NegocioBovespa,
+    refs: Referencias,
+    series: dict[str, str],
+    escolher: _Escolher | None,
 ) -> OperacaoExtraida:
     mercado = refs.mercados_bovespa.get(n.mercado.upper())
     if mercado is None:
         raise ReferenciaError(f"tipo de mercado {n.mercado!r} sem cadastro em mercados_bovespa.csv")
-    impresso, objeto = _papel(n, mercado, refs, series, nota.data_pregao)
+    impresso, objeto = _papel(n, mercado, refs, series, nota.data_pregao, escolher)
     papel = refs.ticker_na_data(impresso, nota.data_pregao)
     return OperacaoExtraida(
         **_comum(nota),  # type: ignore[arg-type]
@@ -104,7 +122,12 @@ def _bovespa(
 
 
 def _papel(
-    n: NegocioBovespa, mercado: str, refs: Referencias, series: dict[str, str], dia: date
+    n: NegocioBovespa,
+    mercado: str,
+    refs: Referencias,
+    series: dict[str, str],
+    dia: date,
+    escolher: _Escolher | None,
 ) -> tuple[str, str | None]:
     tokens = n.especificacao.split()
     primeiro = tokens[0] if tokens else ""
@@ -124,7 +147,7 @@ def _papel(
         if suspeita is not None:
             raise ReferenciaError(_marca_de_day_trade(n.especificacao, suspeita))
         return _sem_fracionario(primeiro), None
-    return _ticker_por_nome(n, refs, dia), None
+    return _ticker_por_nome(n, refs, dia, escolher), None
 
 
 def _ativo_objeto(serie: str, classe: str | None, refs: Referencias, dia: date) -> str | None:
@@ -164,7 +187,9 @@ def _marca_de_day_trade(especificacao: str, marca: str) -> str:
             "comum")  # fmt: skip
 
 
-def _ticker_por_nome(n: NegocioBovespa, refs: Referencias, dia: date) -> str:
+def _ticker_por_nome(
+    n: NegocioBovespa, refs: Referencias, dia: date, escolher: _Escolher | None
+) -> str:
     achado = _procurar(n.especificacao, refs, dia)
     # o começo das marcas pode ser o fim do nome: "RAIZEN PNA P", "GOOGLE DRN A" + D
     for k in range(len(n.observacao), 0, -1):
@@ -179,24 +204,33 @@ def _ticker_por_nome(n: NegocioBovespa, refs: Referencias, dia: date) -> str:
     if direito is not None:
         achado = refs.direito_na_data(compactar(direito["base"]), direito["letra"], dia)
     if achado is None:
-        raise ReferenciaError(_dois_codigos(n.especificacao, refs, dia)
-                              or _sem_cadastro(n.especificacao, refs))  # fmt: skip
+        ambiguo = _dois_codigos(n.especificacao, refs, dia)
+        if ambiguo is None:
+            raise ReferenciaError(_sem_cadastro(n.especificacao, refs))
+        nome, codigos = ambiguo
+        achado = escolher(nome, codigos) if escolher else None
+        if achado not in codigos:
+            raise NomeAmbiguoError(
+                f"ativo {n.especificacao!r}: em {dia:%d/%m/%Y} este nome de pregão valia para "
+                f"mais de um código ({', '.join(codigos)}), e a nota não diz qual. O COIR não "
+                "escolhe no palpite: importe a planilha de negociação da B3 desse período (o "
+                "código sai do negócio) ou escolha o código na tela Importar, e importe a nota "
+                "de novo",
+                n.especificacao, nome, codigos,
+            )  # fmt: skip
     return achado
 
 
-def _dois_codigos(especificacao: str, refs: Referencias, dia: date) -> str | None:
-    """O nome de pregão valia para mais de um código na data (ex.: dois BDR da mesma companhia): a
-    nota não diz qual, e o COIR não escolhe. Tira os sufixos do fim, como ``_procurar``."""
+def _dois_codigos(
+    especificacao: str, refs: Referencias, dia: date
+) -> tuple[str, tuple[str, ...]] | None:
+    """O nome de pregão valia para mais de um código na data (ex.: dois BDR da mesma companhia):
+    o nome compacto em dúvida e os códigos. Tira os sufixos do fim, como ``_procurar``."""
     chave = compactar(especificacao)
     while True:
         codigos = refs.tickers_do_nome_na_data(chave, dia)
         if len(codigos) > 1:
-            return (
-                f"ativo {especificacao!r}: em {dia:%d/%m/%Y} este nome de pregão valia para mais "
-                f"de um código ({', '.join(codigos)}), e a nota não diz qual. O COIR não escolhe "
-                "no palpite: confira o código no extrato da corretora ou na planilha de "
-                "negociação da B3 e mande a nota pela tela Suporte"
-            )
+            return chave, codigos
         sufixo = next((s for s in refs.sufixos if chave.endswith(s) and len(chave) > len(s)), None)
         if sufixo is None:
             return None
