@@ -61,12 +61,12 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 6.404/1976</td>
-  <td>9</td>
+  <td>11</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-6404-1976.md">lei-6404-1976.md</a></td>
 </tr>
 <tr>
   <td>Lei 7.713/1988</td>
-  <td>2</td>
+  <td>5</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-7713-1988.md">lei-7713-1988.md</a></td>
 </tr>
 <tr>
@@ -166,7 +166,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>IN RFB 1.585/2015</td>
-  <td>104</td>
+  <td>107</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/in-rfb-1585-2015.md">in-rfb-1585-2015.md</a></td>
 </tr>
 <tr>
@@ -211,7 +211,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>SC Cosit 145/2021</td>
-  <td>4</td>
+  <td>5</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/sc-cosit-145-2021.md">sc-cosit-145-2021.md</a></td>
 </tr>
 <tr>
@@ -517,7 +517,9 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: médio (IN 1.585 art. 58 caput; Lei 6.404 art. 169 §3º). A subscrição continua só com ações</li>
 <li><code>docs/regras-fiscais.md</code> — Declaração anual: 75 §10), o que pede a deliberação e a data com (Lei 6.404/1976 art. 205, por analogia: o artigo trata de dividendo). A data do crédito vem</li>
 <li><code>docs/regras-fiscais.md</code> — R21: …RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art. 171 §4º; P&amp;R IRPF 2026 pergunta 727; critério do COIR | M (sem norma específica)</li>
+<li><code>docs/regras-fiscais.md</code> — R22: …1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º (analogia com a opção de compra exercida); Lei 6.404/1976 art. 171; SC Cosit 145/2021 e 166/2021; critério do COIR | A (custo do direito nas ações,…</li>
 <li><code>docs/regras-fiscais.md</code> — R8: …2024 e 2026; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A</li>
+<li><code>tests/fiscal_cases/test_direito_exercido.py</code> — módulo: …de compra exercida: o prêmio soma ao preço de exercício, sem resultado). - O exercício não é alienação (Lei 6.404/1976 art. 171): sem resultado, fora do limite de R$ 20 mil e sem IRRF. - O recibo é ativo próprio até…</li>
 <li><code>tests/fiscal_cases/test_direito_nao_exercido.py</code> — módulo: …1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art. 171 §4º). Critério do COIR.</li>
 <li><code>tests/fiscal_cases/test_eventos_societarios.py</code> — módulo: …578 (substituição de ações): não é alienação, a data de aquisição é a original. - Incorporação de ações (Lei 6.404 art. 252): custo mantido (TRF1, TRF3, TRF4; critério do COIR); a RFB diverge (SC Cosit 224/2014),…</li>
 <li><code>tests/fiscal_cases/test_eventos_societarios.py</code> — test<em>grupamento</em>com<em>fracao</em>guarda<em>a</em>fracao<em>ate</em>o_leilao: …do evento fica na posição até o leilão, que a vende pelo custo médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º). 105 AAAA3 a 10,00 (1.050,00); grupamento 10:1 -> 10,5 ações (V 94,5), PM 100,00.…</li>
@@ -526,6 +528,9 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 <h2 id="lei-77131988">Lei 7.713/1988</h2>
 
 <ul>
+<li><code>coir/engine/movimentos.py</code> — <em>exercicio</em>direito: …sem resultado, e o recibo (ou a ação) subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção…</li>
+<li><code>docs/regras-fiscais.md</code> — R22: …direitos comprados; direito e recibo fora das tabelas têm o tipo pelo final do código (1, 2, 9 e 10) | Lei 7.713/1988 art. 16 caput, §2º e §4º; IN RFB 1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º…</li>
+<li><code>tests/fiscal_cases/test_direito_exercido.py</code> — módulo: …do crédito. - Custo das ações subscritas = preço de subscrição pago + custo médio dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção…</li>
 <li><code>tests/fiscal_cases/test_petz_auau.py</code> — módulo: …pela companhia: 0,71 / 4,39 = 16,17312073%. - O resgate da PN é alienação: dinheiro menos o custo da PN (Lei 7.713/1988 art. 3º §3º; SC Cosit 37/2020, CETIP/BM&amp;FBOVESPA, com a mesma estrutura de ON + PN resgatável).…</li>
 <li><code>tests/fiscal_cases/test_raiz55.py</code> — módulo: …e primeiro de RAIZ55 em 03/11/2026. Nada muda na quantidade nem nos direitos. Regra: não há alienação (Lei 7.713/1988 art. 3º §3º), e o custo e a quantidade continuam os mesmos. Na nota, a quantidade é a de ações e o…</li>
 </ul>
@@ -839,6 +844,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 <li><code>coir/engine/movimentos.py</code> — <em>day</em>trade: …marcou D formam o day trade quando a marcação é consistente; senão, a ordem dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º).</li>
 <li><code>coir/engine/movimentos.py</code> — <em>direito</em>nao_exercido: …emolumentos, pelo PM) vira perda em operações comuns na data do evento, o fim do prazo de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; art. 64 caput; SC Cosit 166/2021; critério do…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>direitos</em>recebidos: …pagar nada. A parte da venda que passa da posição (e das compras do dia) entra antes, com custo zero (IN RFB 1.585/2015 art. 58 §7º, por analogia: a norma não trata do direito recebido; critério do COIR), em vez de…</li>
+<li><code>coir/engine/movimentos.py</code> — <em>exercicio</em>direito: …subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção de compra exercida). O exercício não é…</li>
 <li><code>coir/engine/movimentos.py</code> — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…</li>
 <li><code>coir/engine/movimentos.py</code> — _incorporacao: …fusão, conversão ou ajuste de série: a quantidade de A sai sem resultado e B entra com o mesmo custo (IN RFB 1.585/2015 art. 58 §6º; ajuste de série da B3: sem efeito fiscal, o custo é o dos prêmios, art. 60 §2º). A…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>leilao</em>fracao: Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro leilao<em>fracao</em>isentavel (critério do COIR:…</li>
@@ -887,6 +893,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 <li><code>docs/regras-fiscais.md</code> — R2: R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A</li>
 <li><code>docs/regras-fiscais.md</code> — R20: …de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&amp;R IRPF…</li>
 <li><code>docs/regras-fiscais.md</code> — R21: …com aviso se sobrar posição; sem quantidade (a linha da B3 vem sem ela), baixa todo o saldo | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei…</li>
+<li><code>docs/regras-fiscais.md</code> — R22: …das tabelas têm o tipo pelo final do código (1, 2, 9 e 10) | Lei 7.713/1988 art. 16 caput, §2º e §4º; IN RFB 1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º (analogia com a opção de compra exercida); Lei…</li>
 <li><code>docs/regras-fiscais.md</code> — R3: R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A</li>
 <li><code>docs/regras-fiscais.md</code> — R4: …de termo, leilão de fração), excluídos units (R4a), ETF, BDR, FII, direitos e o lote isento de PME (IN 1.585 art. 67 §3º); a isenção alcança só o ganho das vendas comuns à vista (art. 59 §2º I e IV). Critério do…</li>
 <li><code>docs/regras-fiscais.md</code> — R6: …0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&amp;R IRPF 2026 perguntas 714 e 715; a página "Retenções" da…</li>
@@ -910,6 +917,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 <li><code>tests/fiscal_cases/test_day_trade_marcacao.py</code> — módulo: Day trade pela marcação D da corretora. IN RFB 1.585/2015 art. 65 §3º: o day trade casa "pela ordem" a 1ª compra com a 1ª venda, isto é, na ordem…</li>
 <li><code>tests/fiscal_cases/test_day_trade_parcial.py</code> — módulo: …D a linha inteira, e só parte dela fecha no dia (critério do COIR; números conferidos à mão). Fontes (IN RFB 1.585/2015): - art. 65 §1º: day trade é a operação iniciada e encerrada no mesmo dia, com o mesmo ativo, na…</li>
 <li><code>tests/fiscal_cases/test_day_trade_parcial.py</code> — test<em>venda</em>em<em>day</em>trade<em>entra</em>na<em>soma</em>do<em>limite</em>de_isencao: Lei 11.033/2004 art. 3º I e IN RFB 1.585/2015 art. 59 I ("total das alienações"); o §2º I só tira o day trade da isenção (parâmetro…</li>
+<li><code>tests/fiscal_cases/test_direito_exercido.py</code> — módulo: …= preço de subscrição pago + custo médio dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção de compra exercida: o prêmio soma ao…</li>
 <li><code>tests/fiscal_cases/test_direito_nao_exercido.py</code> — módulo: …vira perda em operações comuns na data do fim do prazo de exercício, fora do limite de R$ 20 mil (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei…</li>
 <li><code>tests/fiscal_cases/test_direitos_subscricao.py</code> — módulo: …soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com custo zero (IN 1.585 art. 58…</li>
 <li><code>tests/fiscal_cases/test_eventos_societarios.py</code> — módulo: …ajuste de série de opção e leilão de fração (números conferidos à mão no critério do COIR). Fontes: - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o custo das ações…</li>
@@ -994,6 +1002,7 @@ companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020,
 <ul>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: Units fora da isenção: coincide com a RFB (SC Cosit 145/2021: só "ativos da espécie ações").</li>
 <li><code>docs/regras-fiscais.md</code> — R19: …tipo do papel); categoria COMUM ou DAY_TRADE, nunca FII; parâmetro <code>direito_recebido_custo_zero</code> | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65;…</li>
+<li><code>docs/regras-fiscais.md</code> — R22: …6º e 7º, e art. 60 II a e §1º (analogia com a opção de compra exercida); Lei 6.404/1976 art. 171; SC Cosit 145/2021 e 166/2021; critério do COIR | A (custo do direito nas ações, conversão do recibo, data do crédito);…</li>
 <li><code>docs/regras-fiscais.md</code> — R4: …leituras) (critério do COIR); parâmetro <code>day_trade_na_soma_limite = true</code>; a leitura contrária (SC Cosit 145/2021 §13, por analogia) fica registrada | Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º,…</li>
 <li><code>tests/fiscal_cases/test_direitos_subscricao.py</code> — módulo: …20% em day trade, sem isenção, e a venda do direito fica fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O…</li>
 </ul>

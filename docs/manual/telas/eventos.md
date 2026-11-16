@@ -31,7 +31,15 @@ Todos os eventos do titular. Clique num deles para corrigir ou excluir. Aqui tam
 
 ## Subscrições
 
-Ações novas que você decidiu comprar pelo direito de acionista. Informe a data, a conta, o ativo, as ações subscritas e o valor pago.
+Direitos de subscrição que você recebeu e ações novas que comprou com eles. São três lançamentos, e a movimentação da B3 propõe cada um na aba **A conferir**:
+
+- **Direito de subscrição recebido:** os direitos que a companhia ou o fundo creditou para você, sem custo, na data do crédito. O direito comprado em bolsa não é lançado aqui: ele já vem na nota de corretagem.
+- **Subscrição com direito (exercício):** você usou os direitos para subscrever. Informe os direitos usados, o recibo recebido e o **valor pago** (a B3 não informa esse valor: é a quantidade vezes o preço de subscrição). O custo dos direitos comprados soma ao valor pago, e o exercício não gera imposto.
+- **Recibo que virou ação:** quando as ações são creditadas, o recibo vira ação com o mesmo custo. Esse lançamento fica na aba **Conversões**. Até lá, as ações novas não entram no preço médio das antigas, e o recibo vendido antes é tributado como direito (15%, sem isenção).
+
+A opção **Subscrição** simples (ações subscritas e valor pago, direto na ação) continua valendo para quem não tem o direito nem o recibo na movimentação.
+
+Se você vender um direito recebido sem ter lançado o crédito, o COIR o considera com custo zero na própria venda. Quando também há direitos comprados, ele avisa: sem a data do crédito, o custo médio dos direitos sai errado.
 
 ## Transferências
 
