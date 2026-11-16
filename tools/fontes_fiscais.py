@@ -169,6 +169,8 @@ def _rel(caminho: Path) -> str:
 
 def _csvs(raiz: Path) -> Iterator[tuple[str, Uso]]:
     for caminho in sorted((raiz / "data").glob("*.csv")):
+        if caminho.name == "procedencia.csv":  # origem dos arquivos, não fonte de regra fiscal
+            continue
         with caminho.open(encoding="utf-8", newline="") as f:
             leitor = csv.DictReader(f)
             if "fonte" not in (leitor.fieldnames or ()):

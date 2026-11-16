@@ -1,0 +1,33 @@
+arquivo,categoria,licenca,fonte
+LICENCA_DADOS.md,projeto,AGPL-3.0-or-later,COIR
+README.md,projeto,AGPL-3.0-or-later,COIR
+pacote.json,projeto,AGPL-3.0-or-later,COIR
+procedencia.csv,projeto,AGPL-3.0-or-later,COIR
+tolerancias.toml,projeto,AGPL-3.0-or-later,COIR
+ativos.csv,curadoria,AGPL-3.0-or-later,nomes de pregão impressos nas notas de corretagem (herdada da v2.1.1)
+classes_acao.csv,curadoria,AGPL-3.0-or-later,convenção dos códigos de negociação (classe -> dígito)
+contratos_futuros.csv,curadoria,AGPL-3.0-or-later,especificações dos contratos futuros
+emissores.csv,curadoria,AGPL-3.0-or-later,"CNPJ conferido à mão (Receita Federal, CVM)"
+instituicoes_b3.csv,curadoria,AGPL-3.0-or-later,código da corretora impresso nas notas de corretagem
+mercados_bovespa.csv,curadoria,AGPL-3.0-or-later,tipo de mercado impresso nas notas de corretagem
+opcoes_raiz.csv,curadoria,AGPL-3.0-or-later,raiz das opções -> ativo-objeto (herdada da v2.1.1)
+saidas_b3.csv,curadoria,AGPL-3.0-or-later,"curada, com a fonte de cada linha na coluna fonte"
+sufixos_especificacao.csv,curadoria,AGPL-3.0-or-later,sufixos de governança impressos nas notas de corretagem
+tipos_ativo.csv,curadoria,AGPL-3.0-or-later,"curada, com a companhia na coluna observacao"
+trocas_ticker.csv,curadoria,AGPL-3.0-or-later,"curada, com a fonte de cada linha na coluna fonte"
+vencimentos_opcoes_excecoes.csv,curadoria,AGPL-3.0-or-later,datas de vencimento de opções fora da regra
+feriados.csv,norma,AGPL-3.0-or-later,"leis federais de feriados, Res. CMN 4.880/2020 e calendário de pregão publicado pela bolsa"
+irpf,norma,AGPL-3.0-or-later,"programa IRPF e instruções da Receita Federal, por exercício"
+isencao_pme.csv,norma,AGPL-3.0-or-later,"Lei 13.043/2014 art. 16 e IN RFB 1.585/2015, com a fonte de cada linha"
+parametros_fiscais.csv,norma,AGPL-3.0-or-later,"legislação, com a fonte de cada linha na coluna fonte"
+vencimentos_opcoes.csv,norma,AGPL-3.0-or-later,"regra de vencimento das opções, com a fonte na coluna fonte"
+selic_mensal.csv,bcb,ODbL-1.0,"Banco Central do Brasil, SGS série 4390"
+eventos_b3.csv,por_linha,ODbL-1.0 nas linhas da CVM; termos da B3 nas demais,"coluna origem: b3 (B3), cvm_fre e cvm_ipe (CVM, dados abertos)"
+ativos_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)
+emissores_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)
+instrumentos_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)
+nomes_pregao_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)
+opcoes_raiz_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)
+proventos_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)
+proventos_historico_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)
+tipos_ativo_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)

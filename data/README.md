@@ -17,6 +17,7 @@ Origem e licença de cada grupo de tabelas (CVM e Banco Central sob ODbL; B3 sob
 | `contratos_futuros.csv` | raiz do contrato → mercado, multiplicador, moeda da cotação (BRL/USD), liquidação (FINANCEIRA/FISICA) e linha da apuração (indice, dolar, commodity), com vigência | `raiz`, `mercado`, `multiplicador`, `moeda`, `liquidacao`, `grupo`, `inicio`, `fim` |
 | `selic_mensal.csv` | Selic acumulada no mês (% a.m.), para os juros de mora da DARF; só meses completos (a API devolve o mês corrente parcial), contíguos, 2 casas | `mes` (AAAA-MM), `taxa` |
 | `trocas_ticker.csv` | ticker impresso que valia como outro até uma data | `ticker_impresso`, `ticker`, `ate` |
+| `procedencia.csv` | categoria (`projeto`, `curadoria`, `norma`, `cvm`, `bcb`, `b3` ou `por_linha`), licença e fonte de cada arquivo desta pasta; `por_linha` = a origem está numa coluna da própria tabela. Arquivo novo sem linha aqui faz o teste falhar (`uv run python -m tools.procedencia`) | `arquivo`, `categoria`, `licenca`, `fonte` |
 | `pacote.json` | formato do esquema de `data/` e data da última coleta pública (o app só usa pacote baixado do mesmo formato e mais novo) | `formato`, `data` |
 | `instrumentos_b3.csv` | **gerado**: ações, units, BDR, ETF e fundos do Cadastro de Instrumentos da B3, com ISIN; histórico (nunca apaga) | `ticker`, `isin`, `categoria`, `especificacao`, `emissor`, `nome`, `visto_desde`, `visto_ate` |
 | `ativos_b3.csv` | **gerado**: nome de pregão da companhia + classe → ticker (por baixo de `ativos.csv`) | `nome_pregao`, `ticker` |
