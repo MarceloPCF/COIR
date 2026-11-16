@@ -12,7 +12,7 @@ from nicegui import ui
 from nicegui.testing import User
 from nicegui.testing.user_simulation import user_simulation
 
-from coir.domain.fiscal import TipoEvento, Visao
+from coir.domain.fiscal import NaturezaEvento, TipoEvento, Visao
 from coir.referencias import carregar, carregar_fiscais
 from coir.servicos import eventos
 from coir.servicos.apuracao import carteira_banco
@@ -195,3 +195,53 @@ async def test_bonificacao_gravada_sem_custo_e_avisada_e_abre_para_corrigir(
         await user.should_see("lançada sem custo atribuído", retries=ESPERA)
         user.find(marker="corrigir-sem-custo").click()
         await user.should_see("Corrigir: Bonificação", retries=ESPERA)
+
+
+@pytest.mark.asyncio
+async def test_aba_subscricoes_direito_recebido_exercicio_e_recibo(
+    demo: Path, tmp_path: Path
+) -> None:
+    """Os três lançamentos pela tela: 100 direitos GGBR2 recebidos em 03/04/2023; exercício de 85
+    em 02/05 pagando 1.700,00 (recibo GGBR10 com 85 por 1.700,00); em 16/06 o recibo vira GGBR4,
+    que passa de 300 a 385 ações com 1.700,00 a mais de custo."""
+    estado = _estado(demo)
+    estado.titular, estado.ano = 1, 2023
+    estado.pasta_refs = _pacote_eventos(tmp_path, [])
+    _, custo_antes = _posicao(demo, "GGBR4", date(2023, 4, 1))
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/eventos")
+        await user.should_see("Subscrições (0)", retries=ESPERA)
+        user.find(marker="aba-subscricoes").click()
+        # o formulário abre no exercício; troca para o direito recebido
+        _seletor(user, "subscricoes-tipo-evento").set_value(TipoEvento.DIREITO_RECEBIDO.value)
+        await user.should_see("Direitos recebidos", retries=ESPERA)
+        await user.should_not_see(marker="subscricoes-valor-evento")  # entra com custo zero
+        _campo(user, "subscricoes-data-evento").set_value("2023-04-03")
+        _seletor(user, "subscricoes-conta-evento").set_value(AGORA_CONTA)
+        user.find(marker="subscricoes-ativo-evento").type("GGBR2")
+        user.find(marker="subscricoes-quantidade-evento").type("100")
+        user.find(marker="subscricoes-gravar-evento").click()
+        await user.should_see("Subscrições (1)", retries=ESPERA)
+        # volta ao exercício: direitos usados, recibo recebido e valor pago
+        await user.should_see("Direitos exercidos", retries=ESPERA)
+        _campo(user, "subscricoes-data-evento").set_value("2023-05-02")
+        _seletor(user, "subscricoes-conta-evento").set_value(AGORA_CONTA)
+        user.find(marker="subscricoes-ativo-evento").type("GGBR2")
+        user.find(marker="subscricoes-quantidade-evento").type("85")
+        user.find(marker="subscricoes-valor-evento").type("1.700,00")
+        user.find(marker="subscricoes-recebido-evento").type("GGBR10")
+        user.find(marker="subscricoes-qtd-recebida-evento").type("85")
+        user.find(marker="subscricoes-gravar-evento").click()
+        await user.should_see("Subscrições (2)", retries=ESPERA)
+    assert _posicao(demo, "GGBR10", date(2023, 5, 31)) == (D(85), D(1700))
+    assert _posicao(demo, "GGBR2", date(2023, 5, 31)) == (D(15), D(0))
+    recibo = eventos.DadosEvento(
+        tipo=TipoEvento.INCORPORACAO, data=date(2023, 6, 16), conta=AGORA_CONTA, ticker="GGBR10",
+        quantidade=D(85), ticker_destino="GGBR4", quantidade_destino=D(85),
+        natureza=NaturezaEvento.RECIBO_SUBSCRICAO,
+    )  # fmt: skip
+    eventos.salvar(demo, 1, recibo, REFS, FISCAIS)
+    assert _posicao(demo, "GGBR4", date(2023, 6, 30)) == (D(385), custo_antes + D(1700))
+    tipos = [e.dados.tipo for e in eventos.listar(demo, 1)]
+    assert set(tipos) == {TipoEvento.DIREITO_RECEBIDO, TipoEvento.EXERCICIO_DIREITO,
+                          TipoEvento.INCORPORACAO}  # fmt: skip
