@@ -32,7 +32,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 15.270/2025 | 16 | [lei-15270-2025.md](normas/lei-15270-2025.md) |
 | MP 497/2010 | 3 | [mp-497-2010.md](normas/mp-497-2010.md) |
 | IN RFB 1.022/2010 | 5 | [in-rfb-1022-2010.md](normas/in-rfb-1022-2010.md) |
-| IN RFB 1.585/2015 | 117 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
+| IN RFB 1.585/2015 | 118 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
 | IN RFB 1.700/2017 | 2 | [in-rfb-1700-2017.md](normas/in-rfb-1700-2017.md) |
 | IN RFB 1.916/2019 | 1 | [in-rfb-1916-2019.md](normas/in-rfb-1916-2019.md) |
 | Res. CMN 4.880/2020 | 1 | [res-cmn-4880-2020.md](normas/res-cmn-4880-2020.md) |
@@ -647,6 +647,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I ("total das alienações desse ativo") e §2º I e IV (a isenção não se aplica a day trade,…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — test_day_trade_de_unit_ou_etf_fica_fora_da_soma: …(venda 8.000,00; ganho 200,00; IRRF 2,00). Units (R4a, parâmetro units_na_isencao = false) e ETF (IN RFB 1.585/2015 art. 59 §2º II) não são ações para o limite: soma 15.000,00, ganho comum isento 5.000,00, imposto…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — test_mes_so_de_day_trade_acima_do_limite_nao_avisa: …19,50 / 20,00, venda 25.000,00, ganho 625,00; imposto 20% = 125,00; IRRF de 1% sobre o ganho = 6,25 (IN RFB 1.585/2015 art. 65 §§8º e 11); DARF 118,75. A soma passa do limite, mas não há ganho comum que pudesse ser…
+- `tests/fiscal_cases/test_venda_cruza_zero.py` — módulo: …mesmo pregão que cruzam o zero: vale a ordem dos negócios. Não há norma de "preço médio de venda": a IN RFB 1.585/2015 art. 58 trata do custo médio de aquisição, e o único critério de ordem escrito é o do art. 65 §3º…
 
 ## IN RFB 1.700/2017
 

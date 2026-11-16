@@ -233,6 +233,16 @@ def _termo(p: carteira.LinhaPosicao) -> None:
                   on_click=lambda: ui.navigate.to(f"/notas/{nota}")).props("flat")  # fmt: skip
 
 
+# parecer do especialista de 16/11/2026: não há norma de "preço médio de venda"; a ordem dos
+# negócios é o único critério de ordem escrito (IN RFB 1.585/2015 art. 65 §3º)
+NOTA_ORDEM_DOS_NEGOCIOS = (
+    "Vendas no mesmo pregão que passam de zero: vale a ordem dos negócios da nota. As primeiras "
+    "vendas zeram a posição pelo preço médio de compra, e o que vem depois abre uma venda a "
+    "descoberto pelo preço de cada negócio. A corretora costuma mostrar a média das vendas do "
+    "dia; por isso o resultado de cada parte pode diferir do dela, mas a soma é a mesma."
+)
+
+
 def _trilha(p: carteira.LinhaPosicao, passos: list[Movimento], mapa: dict[int, int]) -> None:
     onde = " · ".join(x for x in (p.corretora, p.numero_conta and f"conta {p.numero_conta}") if x)
     with ui.row().classes("items-baseline gap-3"):
@@ -268,3 +278,4 @@ def _trilha(p: carteira.LinhaPosicao, passos: list[Movimento], mapa: dict[int, i
     ui.label("Clique num passo para abrir a nota de origem (eventos não têm nota).").classes(
         "coir-subtitulo text-xs"
     )
+    ui.label(NOTA_ORDEM_DOS_NEGOCIOS).classes("coir-subtitulo text-xs").mark("nota-ordem-negocios")
