@@ -10,7 +10,7 @@ Uso: ``with ocupado.processando("Importando as notas"): await run.io_bound(...)`
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from nicegui import ui
 
@@ -19,13 +19,21 @@ INTERVALO = 0.2  # segundos entre as leituras da situação pela janela
 
 @dataclass
 class _Situacao:
-    operacoes: int = 0
-    texto: str = ""
+    textos: list[str] = field(default_factory=list[str])  # um por operação em andamento
     detalhe: str = ""
 
     @property
+    def operacoes(self) -> int:
+        return len(self.textos)
+
+    @property
     def ativo(self) -> bool:
-        return self.operacoes > 0
+        return bool(self.textos)
+
+    @property
+    def texto(self) -> str:
+        """O da operação mais recente; quando ela termina, volta o da que a envolve."""
+        return self.textos[-1] if self.textos else ""
 
 
 SITUACAO = _Situacao()  # um programa, um usuário: a situação é a mesma em todas as janelas
@@ -34,14 +42,13 @@ SITUACAO = _Situacao()  # um programa, um usuário: a situação é a mesma em t
 @contextmanager
 def processando(texto: str) -> Iterator[None]:
     """Mostra a cortina com ``texto`` até o bloco terminar, com ou sem erro."""
-    SITUACAO.operacoes += 1
-    SITUACAO.texto, SITUACAO.detalhe = texto, ""
+    SITUACAO.textos.append(texto)
+    SITUACAO.detalhe = ""
     try:
         yield
     finally:
-        SITUACAO.operacoes -= 1
-        if not SITUACAO.ativo:
-            SITUACAO.texto = SITUACAO.detalhe = ""
+        SITUACAO.textos.pop()
+        SITUACAO.detalhe = ""
 
 
 def detalhar(detalhe: str) -> None:

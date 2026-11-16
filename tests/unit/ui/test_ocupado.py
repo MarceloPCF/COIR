@@ -27,5 +27,7 @@ def test_operacoes_aninhadas_so_liberam_no_fim_da_ultima() -> None:
     with ocupado.processando("Atualizando as tabelas"):
         with ocupado.processando("Conferindo os eventos"):
             assert ocupado.SITUACAO.operacoes == 2
+            assert ocupado.SITUACAO.texto == "Conferindo os eventos"
         assert ocupado.SITUACAO.ativo
+        assert ocupado.SITUACAO.texto == "Atualizando as tabelas"  # volta o da operação de fora
     assert not ocupado.SITUACAO.ativo
