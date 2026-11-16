@@ -66,12 +66,12 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 7.713/1988</td>
-  <td>5</td>
+  <td>13</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-7713-1988.md">lei-7713-1988.md</a></td>
 </tr>
 <tr>
   <td>Lei 8.668/1993</td>
-  <td>2</td>
+  <td>3</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-8668-1993.md">lei-8668-1993.md</a></td>
 </tr>
 <tr>
@@ -81,7 +81,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 9.249/1995</td>
-  <td>18</td>
+  <td>24</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-9249-1995.md">lei-9249-1995.md</a></td>
 </tr>
 <tr>
@@ -136,7 +136,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 13.043/2014</td>
-  <td>31</td>
+  <td>36</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-13043-2014.md">lei-13043-2014.md</a></td>
 </tr>
 <tr>
@@ -146,7 +146,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 14.754/2023</td>
-  <td>2</td>
+  <td>9</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-14754-2023.md">lei-14754-2023.md</a></td>
 </tr>
 <tr>
@@ -171,7 +171,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>IN RFB 1.585/2015</td>
-  <td>108</td>
+  <td>117</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/in-rfb-1585-2015.md">in-rfb-1585-2015.md</a></td>
 </tr>
 <tr>
@@ -548,10 +548,18 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-77131988">Lei 7.713/1988</h2>
 
 <ul>
+<li><code>coir/engine/movimentos.py</code> — <em>dividendo</em>em_bens: …pago, e a norma manda usar o valor corrente na data da aquisição (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); o COIR fica com o menor entre o atribuído e o corrente (parâmetro…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>exercicio</em>direito: …sem resultado, e o recibo (ou a ação) subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção…</li>
+<li><code>coir/engine/proventos.py</code> — módulo: …só alcança PJ tributada no País); é rendimento do exterior, sujeito ao carnê-leão pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR não calcula…</li>
+<li><code>data/parametros_fiscais.csv</code> — custo<em>dividendo</em>em<em>bens: Lei 9.249/1995 art. 10 (o dividendo é isento pelo valor atribuído no aviso). Custo do bem recebido: o valor atribuído ou, quando menor, o valor corrente na data da entrega (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); critério do COIR, conservador. Alternativa: valor</em>atribuido</li>
+<li><code>docs/regras-fiscais.md</code> — Proventos: …no País). É rendimento do exterior, sujeito ao carnê-leão e ao ajuste anual pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR só lista, com…</li>
+<li><code>docs/regras-fiscais.md</code> — Proventos: …o custo é o valor atribuído ou, quando menor, o valor corrente na entrega (IN 1.585 art. 58 §3º IV; Lei 7.713/1988 art. 16 V), com aviso: Critério do COIR, conservador (parâmetro <code>custo_dividendo_em_bens</code>;…</li>
 <li><code>docs/regras-fiscais.md</code> — R22: …janela usa a Subscrição simples, que marca o lote isento (critério conservador: nunca reduz imposto) | Lei 7.713/1988 art. 16 caput, §2º e §4º; IN RFB 1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º…</li>
 <li><code>tests/fiscal_cases/test_direito_exercido.py</code> — módulo: …do crédito. - Custo das ações subscritas = preço de subscrição pago + custo médio dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção…</li>
 <li><code>tests/fiscal_cases/test_petz_auau.py</code> — módulo: …pela companhia: 0,71 / 4,39 = 16,17312073%. - O resgate da PN é alienação: dinheiro menos o custo da PN (Lei 7.713/1988 art. 3º §3º; SC Cosit 37/2020, CETIP/BM&amp;FBOVESPA, com a mesma estrutura de ON + PN resgatável).…</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — módulo: …art. 10 só alcança PJ tributada no País); rendimento do exterior, carnê-leão pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). Só aviso, sem…</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>dividendo</em>de<em>bdr</em>so<em>avisa</em>com<em>a</em>leitura<em>do</em>carne_leao: Lei 9.249/1995 art. 10 (só PJ tributada no País); Lei 7.713/1988 art. 8º. O COIR não calcula: faltam o imposto retido no exterior e a tabela progressiva.</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>dividendo</em>em<em>bens</em>fica<em>pelo</em>valor<em>de</em>mercado<em>quando</em>menor<em>com</em>aviso: Leitura conservadora (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V): mercado na entrega 1.900,00, abaixo do atribuído: custo 1.900,00. Venda por 2.200,00:…</li>
 <li><code>tests/fiscal_cases/test_raiz55.py</code> — módulo: …e primeiro de RAIZ55 em 03/11/2026. Nada muda na quantidade nem nos direitos. Regra: não há alienação (Lei 7.713/1988 art. 3º §3º), e o custo e a quantidade continuam os mesmos. Na nota, a quantidade é a de ações e o…</li>
 </ul>
 
@@ -560,6 +568,7 @@ B3 nem é endossado por ela.</li>
 <ul>
 <li><code>coir/engine/fiagro.py</code> — módulo: …só autoriza compensar perda de FII com ganho de FII; nenhuma norma autoriza compensar Fiagro com FII (a Lei 8.668 art. 20-D só remete às regras gerais). Ano com resultado de sinais opostos entre os dois: aviso. -…</li>
 <li><code>data/parametros_fiscais.csv</code> — aliquota_fii: Lei 8.668/1993 art. 18 II (red. Lei 9.779/1999); inclui day trade de FII</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>dividendo</em>em<em>bens</em>entra<em>pelo</em>valor<em>atribuido</em>quando<em>o</em>de<em>mercado</em>nao<em>e</em>menor: …custo 2.000,00. Venda das 20 cotas a 110,00 = 2.200,00: ganho de FII 200,00, imposto de 20% = 40,00 (Lei 8.668/1993 art. 18 II). A posição na companhia que pagou não muda.</li>
 </ul>
 
 <h2 id="lei-89811995">Lei 8.981/1995</h2>
@@ -581,8 +590,9 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-92491995">Lei 9.249/1995</h2>
 
 <ul>
+<li><code>coir/engine/movimentos.py</code> — <em>dividendo</em>em_bens: …bem entra na posição na data da entrega. O dividendo é rendimento isento pelo valor atribuído no aviso (Lei 9.249/1995 art. 10), fora da apuração mensal. Custo do bem: não houve valor pago, e a norma manda usar o…</li>
 <li><code>coir/engine/proventos.py</code> — <em>jcp</em>com_credito: …B3, a mais tarde entre a aprovação e a data com): declarado no ano do crédito (IN SRF 41/1998 art. 3º; Lei 9.249/1995 art. 9º §2º; a receber em 31/12 se pago depois: art. 3º parágrafo único), com a alíquota da data…</li>
-<li><code>coir/engine/proventos.py</code> — módulo: …da movimentação da B3 (critérios do COIR). - Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR, ETF ou FII: fora da v3.0, listado com aviso (BDR não é isento: Lei 9.249/1995…</li>
+<li><code>coir/engine/proventos.py</code> — módulo: …da movimentação da B3 (critérios do COIR). - Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR: não é isento (o art. 10 só alcança PJ tributada no País); é rendimento do…</li>
 <li><code>data/irpf/2025.yaml</code> — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c</li>
 <li><code>data/irpf/2025.yaml</code> — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74</li>
 <li><code>data/irpf/2026.yaml</code> — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c</li>
@@ -590,15 +600,20 @@ B3 nem é endossado por ela.</li>
 <li><code>data/irpf/2027.yaml</code> — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c</li>
 <li><code>data/irpf/2027.yaml</code> — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74</li>
 <li><code>data/parametros_fiscais.csv</code> — aliquota<em>irrf</em>jcp: Lei 9.249/1995 art. 9º §2º (15% na data do pagamento ou crédito)</li>
+<li><code>data/parametros_fiscais.csv</code> — custo<em>dividendo</em>em<em>bens: Lei 9.249/1995 art. 10 (o dividendo é isento pelo valor atribuído no aviso). Custo do bem recebido: o valor atribuído ou, quando menor, o valor corrente na data da entrega (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); critério do COIR, conservador. Alternativa: valor</em>atribuido</li>
 <li><code>docs/regras-fiscais.md</code> — Declaração anual: como crédito contra a companhia (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art.</li>
 <li><code>docs/regras-fiscais.md</code> — Oferta pública (IPO e follow-on; critério do COIR): com o custo por ação lido do comunicado da companhia na CVM (<code>cvm_ipe</code>), mostrado antes de lançar (Lei 9.249</li>
-<li><code>docs/regras-fiscais.md</code> — Proventos: "Dividendo": fora da v3.0, listados com aviso (BDR não é isento: a Lei 9.249/1995 art. 10 só alcança lucros de pessoa jurídica brasileira).</li>
-<li><code>docs/regras-fiscais.md</code> — Proventos: Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09. BDR, ETF e FII com</li>
+<li><code>docs/regras-fiscais.md</code> — Proventos: Dividendo de BDR: não é isento (a Lei 9.249/1995 art. 10 só alcança lucros de pessoa jurídica tributada no País). É rendimento do exterior, sujeito…</li>
+<li><code>docs/regras-fiscais.md</code> — Proventos: Dividendo de ação ou unit: isento (Lei 9.249/1995 art. 10), código 09.</li>
+<li><code>docs/regras-fiscais.md</code> — Proventos: …na tela Eventos. O valor atribuído no aviso aos acionistas é rendimento isento da companhia que pagou (Lei 9.249/1995 art. 10; linha 09), fora da apuração mensal. O bem entra na posição na data da entrega; o custo é…</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>bonificacao</em>ajusta<em>a</em>quantidade<em>da</em>serie<em>sem</em>custo: R8 (Lei 9.249/1995 art. 10 §1º e IN RFB 1.585/2015 art. 58: o custo atribuído da bonificação vai para as ações) e…</li>
 <li><code>tests/fiscal_cases/test_irpf_declaracao.py</code> — módulo: …63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos do capital); data/irpf/2026.yaml.</li>
 <li><code>tests/fiscal_cases/test_oferta_publica.py</code> — test<em>bonificacao</em>noutra<em>classe</em>abre<em>posicao</em>com<em>o</em>custo: Lei 9.249/1995 art. 10 §1º: o custo é a parcela capitalizada que corresponde ao acionista. Quem tem PN recebe 100…</li>
 <li><code>tests/fiscal_cases/test_proventos.py</code> — módulo: Proventos a partir da movimentação da B3. Fontes: Lei 9.249/1995 arts. 9º e 10 (JCP exclusivo; dividendos isentos); LC 224/2025 art. 8º e art. 14 III (JCP a 17,5%…</li>
 <li><code>tests/fiscal_cases/test_proventos.py</code> — test<em>jcp</em>creditado<em>no</em>ano<em>anterior</em>com<em>a</em>mesma_aliquota: …B3 ou informe), declarado em 2024 e a receber em 31/12/2024 (IN SRF 41/1998 art. 3º e parágrafo único; Lei 9.249/1995 art. 9º §2º).</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — módulo: …IN RFB 1.585/2015 arts. 29 III e 30 II): exclusiva 06, pelo líquido. - Dividendo de BDR: não é isento (a Lei 9.249/1995 art. 10 só alcança PJ tributada no País); rendimento do exterior, carnê-leão pela leitura literal…</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>dividendo</em>de<em>bdr</em>so<em>avisa</em>com<em>a</em>leitura<em>do</em>carne_leao: Lei 9.249/1995 art. 10 (só PJ tributada no País); Lei 7.713/1988 art. 8º. O COIR não calcula: faltam o imposto retido no exterior e a tabela progressiva.</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>dividendo</em>em<em>bens</em>nao<em>entra</em>na<em>apuracao</em>do<em>mes</em>da_entrega: O dividendo é rendimento isento (Lei 9.249/1995 art. 10): sem resultado, sem venda no limite de R$ 20 mil e sem imposto em junho.</li>
 </ul>
 
 <h2 id="lei-92501995">Lei 9.250/1995</h2>
@@ -755,6 +770,8 @@ B3 nem é endossado por ela.</li>
 <li><code>coir/engine/movimentos.py</code> — <em>fim</em>da_isencao: Lei 13.043/2014 art. 17 §6º e IN 1.585 art. 68: no dia seguinte ao fim da isenção, o lote isento sobe à média dos…</li>
 <li><code>coir/engine/posicao.py</code> — fim<em>da</em>isencao: Lei 13.043/2014 art. 17 §6º: o lote isento sobe ao maior entre o custo pago e quantidade x média dos 30 pregões, e os lotes se fundem num PM só (art. 58). Devolve o aumento.</li>
 <li><code>coir/engine/proventos.py</code> — <em>origem</em>reembolso: …é a quantidade emprestada vezes o valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica;…</li>
+<li><code>coir/engine/proventos.py</code> — <em>rendimento</em>etf: …de ETF: tributação exclusiva na fonte, ficha 06 pelo líquido que a B3 creditou. ETF de renda fixa: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei…</li>
+<li><code>coir/engine/proventos.py</code> — módulo: …Antes de 2024: sem norma lida, só aviso. De ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II), ficha exclusiva 06 pelo líquido. Nenhum dos…</li>
 <li><code>data/irpf/2025.yaml</code> — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c</li>
 <li><code>data/irpf/2026.yaml</code> — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c</li>
 <li><code>data/irpf/2027.yaml</code> — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c</li>
@@ -775,6 +792,7 @@ B3 nem é endossado por ela.</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: Perda na venda de ação de PME: não compensa e não aparece como isento negativo (Lei 13.043/2014 art. 17 §2º). O COIR já fazia assim.</li>
 <li><code>docs/regras-fiscais.md</code> — Outros custos dedutíveis: <strong>Corretagem e emolumentos do tomador:</strong> até 2025, custo da operação (Lei 13.043/2014 art. 9º par. único; IN 1.585</li>
 <li><code>docs/regras-fiscais.md</code> — Proventos: Reembolso de BTC ao doador: isento até 2025 (Lei 13.043/2014 art. 7º, reproduzido na IN 1.585</li>
+<li><code>docs/regras-fiscais.md</code> — Proventos: …24 a 27) não trata da distribuição: só aviso. De ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN 1.585 arts. 29 III e 30 II), ficha 06 pelo líquido (linha <code>rendimento_etf_rf</code>).…</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>etf</em>de<em>renda</em>fixa<em>fica</em>fora<em>da</em>apuracao: Lei 13.043/2014 arts. 2º a 4º: ETF de renda fixa tem tributação exclusiva na fonte; o ganho vai para a lista da DIRPF, não para o DARF nem para a isenção.</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>pme</em>day<em>trade</em>isento: …estão em tests/fiscal<em>cases/test</em>pme_lotes.py. Entrada simplificada (critério do COIR: só anotar): a Lei 13.043/2014 art. 17 §8º afasta o IRRF de 1% na venda isenta de PME; o IRRF de day trade da nota só confirma…</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>pme</em>ganho<em>isento</em>e<em>fora</em>do_limite: Lei 13.043/2014 art. 16; IN 1.585 arts. 66 e 67 §3º: ganho na venda de ações de PME é isento e o valor não entra…</li>
@@ -783,6 +801,8 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_pme_lotes.py</code> — módulo: Lotes isento e tributado de ações de PME (critério do COIR). Norma lida: - Lei 13.043/2014 art. 16 caput (isenção até 31/12/2023, mercado à vista de bolsa) e art. 17: caput (aquisição a…</li>
 <li><code>tests/fiscal_cases/test_proventos.py</code> — test<em>reembolso</em>com<em>origem</em>informada<em>pelo</em>usuario: …no COIR, pelo informe ou extrato, prevalece sobre a identificada pelo valor; o tratamento é o da origem (Lei 13.043/2014 art. 7º; Lei 15.265/2025 arts. 20 e 21). Mesmo caso do JCP de 0,520530743 por ação (442,45 =…</li>
 <li><code>tests/fiscal_cases/test_proventos.py</code> — test<em>reembolso</em>de<em>jcp</em>identificado<em>pelo</em>valor<em>por</em>acao: …o reembolso é a quantidade emprestada vezes o valor por ação do provento do dia, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II). JCP de 0,520530743 por ação pago em 14/03/2025 (pacote da B3), 1.000 ações…</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — módulo: …só aviso. - Rendimento distribuído por ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II): exclusiva 06, pelo líquido. - Dividendo de…</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>rendimento</em>de<em>etf</em>de<em>renda</em>fixa<em>e</em>exclusivo<em>em</em>qualquer_ano: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. 500 cotas a 0,20 = bruto 100,00; líquido 85,00. Sem o preço na linha, o bruto fica igual ao líquido.</li>
 </ul>
 
 <h2 id="lei-141302021">Lei 14.130/2021</h2>
@@ -798,8 +818,15 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-147542023">Lei 14.754/2023</h2>
 
 <ul>
+<li><code>coir/engine/proventos.py</code> — <em>rendimento</em>etf: …Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei 14.754/2023 arts. 18 II, 24 e 32 I; parâmetro rendimento<em>etf</em>exclusivo); antes, sem norma lida, fica só o…</li>
+<li><code>coir/engine/proventos.py</code> — módulo: …País); é rendimento do exterior, sujeito ao carnê-leão pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR não calcula (faltam o imposto retido no…</li>
 <li><code>data/parametros_fiscais.csv</code> — fii<em>isencao</em>minimo_cotistas: Lei 11.033/2004 art. 3º §1º I e III (red. Lei 14.754/2023 art. 41; enquadramento até 30/06/2024): 100 cotistas e o grupo de pessoas ligadas sem 30% ou mais das cotas</li>
+<li><code>data/parametros_fiscais.csv</code> — rendimento<em>etf</em>exclusivo: Lei 14.754/2023 arts. 18 II, 24 caput e 32 I: IRRF de 15% na data da distribuição, definitivo para a pessoa física; ficha exclusiva 06 pelo líquido</li>
+<li><code>docs/regras-fiscais.md</code> — Proventos: …do exterior, sujeito ao carnê-leão e ao ajuste anual pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR só lista, com aviso: faltam o imposto…</li>
+<li><code>docs/regras-fiscais.md</code> — Proventos: …por ETF de ações desde 01/01/2024: IRRF de 15% na distribuição, definitivo para a pessoa física (Lei 14.754/2023 arts. 18 II, 24 e 32 I); ficha exclusiva 06 pelo líquido (linha <code>rendimento_etf</code>, parâmetro…</li>
 <li><code>docs/regras-fiscais.md</code> — R16: …antes de 11/06/2021 (<code>fiagro_rendimento_isento</code>) | Lei 11.033/2004 art. 3º (alt. Lei 14.130/2021 e Lei 14.754/2023) | M</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — módulo: …COIR). - Rendimento distribuído por ETF de ações desde 01/01/2024: IRRF de 15% na data da distribuição (Lei 14.754/2023 arts. 18 II e 24 caput), definitivo para a pessoa física (art. 32 I): ficha de tributação…</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>rendimento</em>de<em>etf</em>de<em>acoes</em>desde<em>2024</em>e<em>exclusivo</em>pelo_liquido: Caso B10-b: 1.000 cotas a 0,10 = bruto 100,00; IRRF de 15% = 15,00; líquido 85,00 creditado pela B3. Exclusiva 06: 85,00 (Lei 14.754/2023 arts. 18 II, 24 e 32 I).</li>
 </ul>
 
 <h2 id="lei-152652025">Lei 15.265/2025</h2>
@@ -873,13 +900,15 @@ B3 nem é endossado por ela.</li>
 <li><code>coir/engine/movimentos.py</code> — <em>day</em>trade: …marcou D formam o day trade quando a marcação é consistente; senão, a ordem dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º).</li>
 <li><code>coir/engine/movimentos.py</code> — <em>direito</em>nao_exercido: …emolumentos, pelo PM) vira perda em operações comuns na data do evento, o fim do prazo de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; art. 64 caput; SC Cosit 166/2021; critério do…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>direitos</em>recebidos: …pagar nada. A parte da venda que passa da posição (e das compras do dia) entra antes, com custo zero (IN RFB 1.585/2015 art. 58 §7º, por analogia: a norma não trata do direito recebido; critério do COIR), em vez de…</li>
+<li><code>coir/engine/movimentos.py</code> — <em>dividendo</em>em_bens: …Custo do bem: não houve valor pago, e a norma manda usar o valor corrente na data da aquisição (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); o COIR fica com o menor entre o atribuído e o corrente…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>exercicio</em>direito: …subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção de compra exercida). O exercício não é…</li>
 <li><code>coir/engine/movimentos.py</code> — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…</li>
 <li><code>coir/engine/movimentos.py</code> — _incorporacao: …fusão, conversão ou ajuste de série: a quantidade de A sai sem resultado e B entra com o mesmo custo (IN RFB 1.585/2015 art. 58 §6º; ajuste de série da B3: sem efeito fiscal, o custo é o dos prêmios, art. 60 §2º). A…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>leilao</em>fracao: Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro leilao<em>fracao</em>isentavel (critério do COIR:…</li>
 <li><code>coir/engine/movimentos.py</code> — módulo: …pelo preço do próprio negócio); compras; exercícios; vendas; vencimento (pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da MP 497/2010, a operação entre…</li>
 <li><code>coir/engine/posicao.py</code> — módulo: Posição de um ativo pelo custo médio ponderado (IN RFB 1.585/2015 art. 58: custo médio de aquisição; custos da compra integram o custo, os da venda reduzem a…</li>
-<li><code>coir/engine/proventos.py</code> — módulo: …em ação sem esse par: fora, listado com aviso. - Reembolso de BTC (doador): isento até 2025 (IN RFB 1.585/2015 art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com…</li>
+<li><code>coir/engine/proventos.py</code> — <em>rendimento</em>etf: …na fonte, ficha 06 pelo líquido que a B3 creditou. ETF de renda fixa: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei 14.754/2023 arts. 18 II, 24 e 32 I;…</li>
+<li><code>coir/engine/proventos.py</code> — módulo: …só aviso. De ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II), ficha exclusiva 06 pelo líquido. Nenhum dos dois entra na apuração mensal;…</li>
 <li><code>coir/engine/rateio.py</code> — módulo: Rateio dos custos da nota pelo valor das operações (IN RFB 1.585/2015 art. 56 §§3º e 4º: custos de corretagem e taxas integram o custo de aquisição e reduzem o valor de…</li>
 <li><code>data/irpf/2025.yaml</code> — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&amp;R IRPF 2026 pergunta 715)</li>
 <li><code>data/irpf/2025.yaml</code> — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74</li>
@@ -898,6 +927,7 @@ B3 nem é endossado por ela.</li>
 <li><code>data/isencao_pme.csv</code> — PRIO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (HRT Participações, HRTP3); RI PRIO: isentas as compradas entre 10/07/2014 e 29/01/2021, e as adquiridas a partir de 01/02/2021 não (follow-on precificado em 28/01/2021); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)</li>
 <li><code>data/isencao_pme.csv</code> — PRNR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; fora da tabela de 2014 da B3; citada por fontes secundárias como enquadrada; sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)</li>
 <li><code>data/isencao_pme.csv</code> — SQIA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Senior Solution, SNSL3); RI Sinqia, citado por fontes secundárias: isentas as compradas entre 10/07/2014 e 05/09/2019 (oferta deliberada em 05/09/2019, Formulário de Referência 2019); sem negócio nos 30 pregões finais de 2023</li>
+<li><code>data/parametros_fiscais.csv</code> — custo<em>dividendo</em>em<em>bens: Lei 9.249/1995 art. 10 (o dividendo é isento pelo valor atribuído no aviso). Custo do bem recebido: o valor atribuído ou, quando menor, o valor corrente na data da entrega (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); critério do COIR, conservador. Alternativa: valor</em>atribuido</li>
 <li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>criterio: IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (critério do COIR). Alternativa: ordem_impressa</li>
 <li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>na<em>soma</em>limite: Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)</li>
 <li><code>data/parametros_fiscais.csv</code> — direito<em>recebido</em>custo_zero: IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); critério do COIR</li>
@@ -908,6 +938,7 @@ B3 nem é endossado por ela.</li>
 <li><code>data/parametros_fiscais.csv</code> — pme<em>lote</em>ordem<em>venda: IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; proporcional pela SC Cosit 148/2025 §§32-33 (analogia; critério do COIR, leitura conservadora); alternativas isento</em>primeiro e tributado_primeiro</li>
 <li><code>data/parametros_fiscais.csv</code> — reembolso<em>btc</em>dividendos_isento: IN RFB 1.585/2015 art. 74 caput e §1º I a (Lei 13.043/2014 art. 7º)</li>
 <li><code>data/parametros_fiscais.csv</code> — reembolso<em>btc</em>norma_omissa: IN RFB 1.585/2015 art. 74 caput e §1º I a (reembolso de dividendos de BTC expressamente isento)</li>
+<li><code>data/parametros_fiscais.csv</code> — rendimento<em>etf</em>exclusivo: IN RFB 1.585/2015 arts. 24 a 27 não tratam da distribuição de rendimentos de ETF de ações: sem norma lida, o COIR só avisa</li>
 <li><code>data/trocas_ticker.csv</code> — PETZ3: B3 COTAHIST: último negócio de PETZ3 em 02/01/2026; AUAU3 desde 05/01/2026 (RI: relação 1:1, abertura deduzida de R$ 0,71); CNPJ muda (18328118000109 -> 53153938000108): incorporação tratada como troca curada, custo mantido (IN RFB 1.585/2015 art. 58 §6º); R$ 0,71 por ação à parte: resgate de PN, SC Cosit 37/2020</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: A IN RFB 1.585/2015 art. 56 §§3º e 4º admite deduzir os custos necessários e permite ratear os do</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: é isento (IN RFB 1.585/2015 art. 59 §2º IV); a venda entra na soma do limite do mês dela.</li>
@@ -958,6 +989,7 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_irpf_declaracao.py</code> — módulo: …Fontes: P&amp;R IRPF 2026 perguntas 707, 720 (um item por ação, total das corretoras, custo médio) e 715; IN RFB 1.585/2015 arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração)…</li>
 <li><code>tests/fiscal_cases/test_irpf_linhas.py</code> — módulo: …"Mercado a termo - ações/ouro"); P&amp;R IRPF 2026 pergunta 707 (cotas de fundo de índice não são ações); IN RFB 1.585/2015 art. 62 I e §1º (ganho do comprador a termo pela venda à vista na data da liquidação; vendido…</li>
 <li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — módulo: …de FII só na declaração). Casos conferidos à mão. Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º; fichas "Renda variável - operações comuns/day trade" e "Operações -…</li>
+<li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — test<em>base</em>da<em>reparticao</em>em<em>opcoes</em>e<em>a</em>soma<em>positiva</em>dos<em>premios</em>do_dia: IN RFB 1.585/2015 art. 63 II e §1º II: em opções a base do 0,005% é a soma dos prêmios recebidos e pagos no dia, se…</li>
 <li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — test<em>day</em>trade<em>usado</em>no<em>imposto</em>de<em>fii</em>gera_aviso: Com <code>irrf_day_trade_abate_fii</code> ligado (IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês), o mesmo caso: dezembro/2026 com…</li>
 <li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — test<em>irrf</em>de<em>day</em>trade<em>nao</em>abate<em>fii</em>antes<em>do</em>0005: IN RFB 1.585/2015 art. 65 §8º I e ficha FII sem linha de day trade: dezembro/2026 com imposto só de FII (V 100…</li>
 <li><code>tests/fiscal_cases/test_oferta_publica.py</code> — módulo: Compra em oferta pública (IPO e follow-on), que não aparece em nota de corretagem. IN RFB 1.585/2015 art. 58 caput: o custo é o valor pago, com preço médio ponderado; art. 56 §5º: ganho apurado na…</li>
@@ -967,6 +999,10 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_pme_lotes.py</code> — módulo: …pelo volume negociado nos últimos 30 (trinta) pregões anteriores a 31 de dezembro de 2023"). - IN RFB 1.585/2015 art. 58 caput (média ponderada), arts. 66 a 68 (repetem a lei) e art. 69-A (incluído pela IN RFB…</li>
 <li><code>tests/fiscal_cases/test_pme_lotes.py</code> — test<em>data</em>de<em>corte</em>das<em>ofertas</em>subsequentes: IN RFB 1.585/2015 art. 69-A: compras a partir da oferta subsequente são tributadas; §2º: as anteriores continuam isentas. A data é a que a companhia publicou, quando há.</li>
 <li><code>tests/fiscal_cases/test_proventos.py</code> — módulo: …na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de…</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — módulo: …a pessoa física (art. 32 I): ficha de tributação exclusiva, código 06, pelo líquido. Antes de 2024 a IN RFB 1.585/2015 (arts. 24 a 27) não trata da distribuição: só aviso. - Rendimento distribuído por ETF de renda…</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>dividendo</em>em<em>bens</em>fica<em>pelo</em>valor<em>de</em>mercado<em>quando</em>menor<em>com</em>aviso: Leitura conservadora (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V): mercado na entrega 1.900,00, abaixo do atribuído: custo…</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>rendimento</em>de<em>etf</em>de<em>acoes</em>antes<em>de</em>2024<em>fica</em>so<em>no</em>aviso: Até 31/12/2023 a IN RFB 1.585/2015 arts. 24 a 27 não trata da distribuição: o COIR não classifica (parâmetro rendimento<em>etf</em>exclusivo falso até 2023).</li>
+<li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>rendimento</em>de<em>etf</em>de<em>renda</em>fixa<em>e</em>exclusivo<em>em</em>qualquer_ano: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. 500 cotas a 0,20 = bruto 100,00; líquido 85,00. Sem o preço na linha, o bruto fica igual ao líquido.</li>
 <li><code>tests/fiscal_cases/test_raiz55.py</code> — módulo: …os mesmos. Na nota, a quantidade é a de ações e o preço é por 100 ações; o custo é o valor impresso (IN RFB 1.585/2015 art. 58 caput). A PNA continua ação para a isenção de R$ 20 mil (art. 59 I).</li>
 <li><code>tests/fiscal_cases/test_saldos_iniciais.py</code> — módulo: …o COIR sem o histórico de notas. Custódia inicial: a posição em 31/12 entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58), o mesmo do Bens e Direitos, sem resultado e sem efeito no day trade (art. 65 §2º).…</li>
 <li><code>tests/fiscal_cases/test_soma_limite_isencao.py</code> — módulo: …custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I ("total das alienações desse ativo") e §2º I e IV (a isenção não se aplica a day trade,…</li>

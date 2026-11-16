@@ -2,12 +2,14 @@
 usuário (em COIR_DADOS) -> banco.
 
 Colunas: data, corretora, conta, ticker, tipo, cv, quantidade, valor, corretora_destino,
-conta_destino, observacao, origem e, opcionais, ticker_destino, quantidade_destino, natureza e
-percentual_custo. Ajuste de posição: C soma quantidade e custo (valor), V subtrai (como na aba
-Eventos_B3 do gabarito). Transferência: cv vazio, conta de destino e quantidade (vazia = toda a
-posição). Incorporação e cisão: cv vazio, quantidade de origem, ativo e quantidade recebidos
-(natureza na incorporação; percentual do custo na cisão). Leilão de fração: quantidade e valor
-líquido. Reimportar o mesmo CSV não duplica (chave = hash da linha).
+conta_destino, observacao, origem e, opcionais, ticker_destino, quantidade_destino, natureza,
+percentual_custo e valor_corrente. Ajuste de posição: C soma quantidade e custo (valor), V
+subtrai (como na aba Eventos_B3 do gabarito). Transferência: cv vazio, conta de destino e
+quantidade (vazia = toda a posição). Incorporação e cisão: cv vazio, quantidade de origem, ativo
+e quantidade recebidos (natureza na incorporação; percentual do custo na cisão). Leilão de
+fração: quantidade e valor líquido. Dividendo em bens: cv vazio, ticker da companhia que pagou,
+ativo e quantidade recebidos, valor atribuído no aviso e valor_corrente (o de mercado na
+entrega). Reimportar o mesmo CSV não duplica (chave = hash da linha).
 """
 
 import csv
@@ -56,8 +58,9 @@ from coir.servicos.apuracao import Tickers, entradas
 
 COLUNAS = ("data", "corretora", "conta", "ticker", "tipo", "cv", "quantidade", "valor",
            "corretora_destino", "conta_destino", "observacao", "origem")  # fmt: skip
-EXTRAS = ("ticker_destino", "quantidade_destino", "natureza", "percentual_custo")  # opcionais
-NUMERICAS = {"quantidade", "valor", "quantidade_destino", "percentual_custo"}
+EXTRAS = ("ticker_destino", "quantidade_destino", "natureza", "percentual_custo",
+          "valor_corrente")  # opcionais  # fmt: skip
+NUMERICAS = {"quantidade", "valor", "quantidade_destino", "percentual_custo", "valor_corrente"}
 
 
 @dataclass
@@ -195,6 +198,7 @@ def importar_eventos(
                 natureza=natureza,
                 percentual_custo=_decimal(linha.get("percentual_custo", ""), "percentual_custo",
                                           n),
+                valor_corrente=_decimal(linha.get("valor_corrente", ""), "valor_corrente", n),
                 observacao=linha["observacao"], origem=linha["origem"] or "manual",
             )  # fmt: skip
             try:
@@ -226,7 +230,10 @@ NOTA_DATA_EX = ("a B3 informa a data do crédito: use a data ex (primeiro pregã
 SEM_CV = frozenset({TipoEvento.TRANSFERENCIA, *TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO,
                     TipoEvento.DIREITO_NAO_EXERCIDO})  # fmt: skip
 # direito não exercido sem quantidade baixa todo o saldo: a linha "não exercido" da B3 vem sem ela
-QUANTIDADE_OBRIGATORIA = EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO}
+# no dividendo em bens a quantidade é só a do bem recebido (a de destino)
+QUANTIDADE_OBRIGATORIA = (EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO}) - {
+    TipoEvento.DIVIDENDO_EM_BENS
+}
 AVISO_INCORPORACAO_ACOES = (
     "incorporação de ações (Lei 6.404 art. 252): o COIR mantém o custo (posição do Judiciário); a "
     "Receita trata como alienação com ganho de capital (SC Cosit 224/2014). Avalie com o seu "
@@ -251,6 +258,7 @@ class DadosEvento:
     percentual_custo: Decimal | None = None
     observacao: str = ""
     origem: str = "tela"
+    valor_corrente: Decimal | None = None  # dividendo em bens: valor de mercado na entrega
 
 
 @dataclass(frozen=True)
@@ -308,6 +316,7 @@ def listar(banco: Path, titular: int) -> list[EventoLancado]:
                 quantidade_destino=e.quantidade_destino,
                 natureza=None if e.natureza is None else NaturezaEvento(e.natureza),
                 percentual_custo=e.percentual_custo, observacao=e.observacao, origem=e.origem,
+                valor_corrente=e.valor_corrente,
             )  # fmt: skip
             destino_nome = None if e.conta_destino is None else _nome_conta(e.conta_destino)
             saida.append(EventoLancado(e.id, _nome_conta(e.conta), destino_nome, dados))
@@ -328,7 +337,8 @@ def _validar(d: DadosEvento) -> None:
     elif d.cv not in ("C", "V"):
         raise erro("informe o C/V: C soma, V subtrai")
     for nome, numero in (("quantidade", d.quantidade), ("valor", d.valor),
-                         ("quantidade recebida", d.quantidade_destino)):  # fmt: skip
+                         ("quantidade recebida", d.quantidade_destino),
+                         ("valor de mercado", d.valor_corrente)):  # fmt: skip
         if numero is not None and (not numero.is_finite() or numero < 0):
             raise erro(f"{nome} deve ser um número >= 0")
     if d.tipo in QUANTIDADE_OBRIGATORIA and not d.quantidade:
@@ -343,6 +353,18 @@ def _validar(d: DadosEvento) -> None:
     if d.tipo is TipoEvento.DIREITO_RECEBIDO and (d.cv != "C" or d.valor):
         raise erro("o direito recebido entra com custo zero; o direito comprado vem na nota de "
                    "corretagem")  # fmt: skip
+    if d.tipo is TipoEvento.DIVIDENDO_EM_BENS:
+        if not d.valor:
+            raise erro("informe o valor atribuído aos bens no aviso aos acionistas (é o "
+                       "dividendo, rendimento isento)")  # fmt: skip
+        if not d.valor_corrente:
+            # critério do COIR (16/11/2026): o custo é o menor entre o atribuído e o de mercado
+            raise erro("informe o valor de mercado dos bens na data da entrega (quantidade vezes "
+                       "a cotação de fechamento do dia)")  # fmt: skip
+        if d.quantidade:
+            raise erro("informe só a quantidade recebida")
+    elif d.valor_corrente is not None:
+        raise erro("valor de mercado na entrega só vale no dividendo em bens")
     if d.tipo is TipoEvento.EXERCICIO_DIREITO and not d.valor:
         raise erro("informe o valor pago na subscrição (quantidade vezes o preço de subscrição)")
     if d.tipo is TipoEvento.CUSTODIA_INICIAL:
@@ -365,8 +387,8 @@ def _validar(d: DadosEvento) -> None:
     if d.tipo is TipoEvento.INCORPORACAO and d.natureza is None:
         raise erro("informe a natureza (incorporação, fusão, conversão, ajuste de série...)")
     if d.tipo not in TIPOS_COM_DESTINO and (d.ticker_destino or d.quantidade_destino):
-        raise erro("ativo e quantidade recebidos só valem em incorporação, cisão e exercício de "
-                   "direito de subscrição")  # fmt: skip
+        raise erro("ativo e quantidade recebidos só valem em incorporação, cisão, exercício de "
+                   "direito de subscrição e dividendo em bens")  # fmt: skip
     outra_classe = (d.tipo in (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO)
                     and d.natureza is NaturezaEvento.OUTRA_CLASSE)  # fmt: skip
     if d.tipo is not TipoEvento.INCORPORACAO and d.natureza is not None and not outra_classe:
@@ -395,6 +417,7 @@ def _campos_chave(conta: Conta, destino: Conta | None, d: DadosEvento) -> dict[s
         "quantidade_destino": numero(d.quantidade_destino),
         "natureza": "" if d.natureza is None else d.natureza.value,
         "percentual_custo": numero(d.percentual_custo),
+        "valor_corrente": numero(d.valor_corrente),
     }  # fmt: skip
 
 
@@ -494,6 +517,7 @@ def _preencher(
     )
     registro.quantidade_destino, registro.percentual_custo = (
         d.quantidade_destino, d.percentual_custo)  # fmt: skip
+    registro.valor_corrente = d.valor_corrente
     registro.natureza = None if d.natureza is None else d.natureza.value
     registro.observacao, registro.origem = d.observacao, d.origem
 

@@ -253,6 +253,7 @@ def entradas(
                 quantidade_destino=e.quantidade_destino,
                 natureza=None if e.natureza is None else NaturezaEvento(e.natureza),
                 percentual_custo=e.percentual_custo, observacao=e.observacao,
+                valor_corrente=e.valor_corrente,
                 pme_ate=isencao.vendas_ate if isencao and no_lote else None,
                 pme_media_fim=isencao.media_fim if isencao and no_lote else None,
                 aviso=_aviso_custodia_pme(ticker, e.data, isencao) if isencao

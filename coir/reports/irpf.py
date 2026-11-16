@@ -314,6 +314,8 @@ def _rendimentos(d: DadosRelatorio, mapa: MapeamentoIrpf, avisos: list[str]
         avisos.append("ETF de renda fixa: o COIR estima o ganho bruto; declare o valor líquido do "
                       "informe de rendimentos do administrador")  # fmt: skip
     linha("exclusivos", "etf_rf", etf_rf)
+    linha("exclusivos", "rendimento_etf", proventos(TipoProvento.RENDIMENTO_ETF))
+    linha("exclusivos", "rendimento_etf_rf", proventos(TipoProvento.RENDIMENTO_ETF_RF))
     linha("exclusivos", "atualizacao_proventos", proventos(TipoProvento.ATUALIZACAO))
     anual = next((a for a in d.apuracao.irrf_anual
                   if a.titular == d.titular and a.ano == d.ano), None)  # fmt: skip

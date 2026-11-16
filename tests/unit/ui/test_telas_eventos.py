@@ -245,3 +245,29 @@ async def test_aba_subscricoes_direito_recebido_exercicio_e_recibo(
     tipos = [e.dados.tipo for e in eventos.listar(demo, 1)]
     assert set(tipos) == {TipoEvento.DIREITO_RECEBIDO, TipoEvento.EXERCICIO_DIREITO,
                           TipoEvento.INCORPORACAO}  # fmt: skip
+
+
+@pytest.mark.asyncio
+async def test_dividendo_pago_em_bens_pela_aba_lancados(demo: Path, tmp_path: Path) -> None:
+    """B10(d) do parecer de 16/11/2026: a GGBR4 paga dividendo com 20 cotas de KNRI11, valor
+    atribuído 2.000,00 e valor de mercado na entrega 1.900,00: as cotas entram por 1.900,00."""
+    estado = _estado(demo)
+    estado.titular, estado.ano = 1, 2023
+    estado.pasta_refs = _pacote_eventos(tmp_path, [])
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/eventos")
+        await user.should_see("Transferências (0)", retries=ESPERA)
+        user.find(marker="aba-lancados").click()
+        _seletor(user, "lancados-tipo-evento").set_value(TipoEvento.DIVIDENDO_EM_BENS.value)
+        await user.should_see("Empresa que pagou (código)", retries=ESPERA)
+        await user.should_not_see(marker="lancados-quantidade-evento")
+        _campo(user, "lancados-data-evento").set_value("2023-03-01")
+        _seletor(user, "lancados-conta-evento").set_value(AGORA_CONTA)
+        user.find(marker="lancados-ativo-evento").type("GGBR4")
+        user.find(marker="lancados-valor-evento").type("2.000,00")
+        user.find(marker="lancados-valor-corrente-evento").type("1.900,00")
+        user.find(marker="lancados-recebido-evento").type("KNRI11")
+        user.find(marker="lancados-qtd-recebida-evento").type("20")
+        user.find(marker="lancados-gravar-evento").click()
+        await user.should_see("Eventos lançados (1)", retries=ESPERA)
+    assert _posicao(demo, "KNRI11", date(2023, 3, 31)) == (D(20), D(1900))

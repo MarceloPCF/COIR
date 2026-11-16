@@ -35,6 +35,7 @@ TIPOS = {
     TipoEvento.DIREITO_NAO_EXERCIDO: "Direito não exercido",
     TipoEvento.DIREITO_RECEBIDO: "Direito de subscrição recebido",
     TipoEvento.EXERCICIO_DIREITO: "Subscrição com direito (exercício)",
+    TipoEvento.DIVIDENDO_EM_BENS: "Dividendo pago em bens",
 }
 NATUREZAS = {
     NaturezaEvento.CONVERSAO: "Conversão de classe (ex.: PN em ON)",
@@ -81,6 +82,13 @@ AJUDA = {
                                   "dos direitos comprados soma ao valor pago; o exercício não gera "
                                   "imposto. Quando o recibo virar ação, lance a conversão na aba "
                                   "Conversões.",
+    TipoEvento.DIVIDENDO_EM_BENS: "A empresa pagou o dividendo com ações ou cotas de outra "
+                                  "empresa. Informe a empresa que pagou, o ativo e a quantidade "
+                                  "recebidos, o valor atribuído a eles no aviso aos acionistas "
+                                  "(é o dividendo, rendimento isento) e o valor de mercado na "
+                                  "data da entrega (quantidade vezes a cotação de fechamento). "
+                                  "O custo fica pelo menor dos dois. O dividendo em dinheiro já "
+                                  "vem na movimentação da B3.",
 }  # fmt: skip
 ROTULO_DATA = {
     TipoEvento.SUBSCRICAO: "Data da subscrição",
@@ -90,6 +98,7 @@ ROTULO_DATA = {
     TipoEvento.DIREITO_NAO_EXERCIDO: "Fim do prazo de exercício",
     TipoEvento.DIREITO_RECEBIDO: "Data do crédito",
     TipoEvento.EXERCICIO_DIREITO: "Data do exercício",
+    TipoEvento.DIVIDENDO_EM_BENS: "Data da entrega",
     TipoEvento.CUSTODIA_INICIAL: "Data",
 }
 ROTULO_QUANTIDADE = {
@@ -113,7 +122,9 @@ ROTULO_VALOR = {
     TipoEvento.REDUCAO_CAPITAL: "Valor restituído",
     TipoEvento.LEILAO_FRACAO: "Valor líquido recebido",
     TipoEvento.EXERCICIO_DIREITO: "Valor pago na subscrição",
+    TipoEvento.DIVIDENDO_EM_BENS: "Valor atribuído no aviso (total)",
 }
+ROTULO_ATIVO = {TipoEvento.DIVIDENDO_EM_BENS: "Empresa que pagou (código)"}
 # incorporação e cisão: "Ativo recebido" e "Quantidade recebida"
 ROTULO_RECEBIDO = {
     TipoEvento.EXERCICIO_DIREITO: ("Recibo (ou ação) recebido", "Quantidade subscrita")
@@ -136,7 +147,8 @@ SEM_CUSTO = frozenset(
 COM_OUTRA_CLASSE = frozenset({TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO})
 COM_DESTINO = frozenset({TipoEvento.INCORPORACAO, TipoEvento.CISAO})
 # têm o ativo recebido no formulário; o exercício do direito fica na aba Subscrições, com valor
-COM_RECEBIDO = COM_DESTINO | {TipoEvento.EXERCICIO_DIREITO}
+COM_RECEBIDO = COM_DESTINO | {TipoEvento.EXERCICIO_DIREITO, TipoEvento.DIVIDENDO_EM_BENS}
+SEM_QUANTIDADE = frozenset({TipoEvento.DIVIDENDO_EM_BENS})  # só a quantidade recebida
 SUBSCRICOES = frozenset(
     {TipoEvento.SUBSCRICAO, TipoEvento.EXERCICIO_DIREITO, TipoEvento.DIREITO_RECEBIDO}
 )
@@ -244,7 +256,8 @@ ABAS = (
     Aba(
         "lancados", "Lançados", "Eventos lançados", NOS_LANCADOS,
         (TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO, TipoEvento.BONIFICACAO,
-         TipoEvento.REDUCAO_CAPITAL, TipoEvento.LEILAO_FRACAO, TipoEvento.DIREITO_NAO_EXERCIDO),
+         TipoEvento.REDUCAO_CAPITAL, TipoEvento.LEILAO_FRACAO, TipoEvento.DIREITO_NAO_EXERCIDO,
+         TipoEvento.DIVIDENDO_EM_BENS),
         "Outro evento",
         "Todos os eventos do titular. Clique num deles para corrigir ou excluir.",
         "Nenhum evento lançado.",
@@ -392,6 +405,7 @@ class _Painel:
                     else None
                 ),
                 percentual_custo=None if percentual is None else percentual / 100,
+                valor_corrente=numero("valor_corrente"),
                 observacao=texto("observacao"),
             )
         except ValueError:
@@ -541,7 +555,7 @@ class _Painel:
                 )
             with ui.row().classes("w-full gap-2 flex-nowrap items-center"):
                 c["ticker"] = (
-                    ui.input("Ativo", value=d.ticker)
+                    ui.input(ROTULO_ATIVO.get(d.tipo, "Ativo"), value=d.ticker)
                     .props("outlined dense")
                     .classes("flex-1")
                     .mark(m("ativo-evento"))
@@ -553,13 +567,14 @@ class _Painel:
                         .mark(m("cv-evento"))
                     )
             with ui.row().classes("w-full gap-2 flex-nowrap"):
-                c["quantidade"] = (
-                    ui.input(ROTULO_QUANTIDADE.get(d.tipo, "Quantidade"),
-                             value=_numero(d.quantidade))
-                    .props("outlined dense input-class=text-right")
-                    .classes("flex-1")
-                    .mark(m("quantidade-evento"))
-                )  # fmt: skip
+                if d.tipo not in SEM_QUANTIDADE:
+                    c["quantidade"] = (
+                        ui.input(ROTULO_QUANTIDADE.get(d.tipo, "Quantidade"),
+                                 value=_numero(d.quantidade))
+                        .props("outlined dense input-class=text-right")
+                        .classes("flex-1")
+                        .mark(m("quantidade-evento"))
+                    )  # fmt: skip
                 sem_valor = (d.tipo in COM_DESTINO or d.tipo in (TipoEvento.TRANSFERENCIA,
                                                                  TipoEvento.DIREITO_NAO_EXERCIDO)
                              or (d.tipo in SEM_CUSTO and not d.valor))  # fmt: skip
@@ -570,6 +585,14 @@ class _Painel:
                         .classes("flex-1")
                         .mark(m("valor-evento"))
                     )
+                if d.tipo is TipoEvento.DIVIDENDO_EM_BENS:
+                    c["valor_corrente"] = (
+                        ui.input("Valor de mercado na entrega (total)",
+                                 value=_numero(d.valor_corrente))
+                        .props("outlined dense input-class=text-right")
+                        .classes("flex-1")
+                        .mark(m("valor-corrente-evento"))
+                    )  # fmt: skip
             if d.tipo in COM_RECEBIDO:
                 recebido, quanto = ROTULO_RECEBIDO.get(
                     d.tipo, ("Ativo recebido", "Quantidade recebida")

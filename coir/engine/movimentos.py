@@ -621,6 +621,11 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
     # cisões depois dos demais eventos do dia (agrupadas por posição de origem e destino)
     cisoes: dict[tuple[Chave, int | None], list[Evento]] = defaultdict(list)
     for evento in sorted(d.eventos, key=lambda e: e.id):
+        if evento.tipo is TipoEvento.DIVIDENDO_EM_BENS:
+            # só o bem recebido muda; a companhia que pagou não entra na conta
+            livro.processando(evento.titular, evento.ativo_destino)
+            _dividendo_em_bens(livro, evento, params)
+            continue
         livro.processando(evento.titular, evento.ativo, evento.ativo_destino)
         if evento.tipo is TipoEvento.CISAO:
             # as contas que formam a posição (visão por titular) entram juntas: o custo repartido
@@ -1155,6 +1160,45 @@ def _cisao(livro: Livro, chave: Chave, grupo: list[Evento]) -> None:
                         f"cisão: recebida de {e.ticker} com {p * 100}% do custo", de=de,
                         categoria=Categoria.COMUM, cv="C",
                         quantidade=e.quantidade_destino or ZERO, valor=custo)  # fmt: skip
+
+
+def _dividendo_em_bens(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
+    """Dividendo pago em bens (ações ou cotas de outra empresa): o bem entra na posição na data da
+    entrega. O dividendo é rendimento isento pelo valor atribuído no aviso (Lei 9.249/1995 art.
+    10), fora da apuração mensal. Custo do bem: não houve valor pago, e a norma manda usar o valor
+    corrente na data da aquisição (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V);
+    o COIR fica com o menor entre o atribuído e o corrente (parâmetro custo_dividendo_em_bens,
+    conservador: custo menor, ganho maior na venda), com aviso quando o corrente é o menor
+    (parecer do especialista e decisão de 16/11/2026). A posição na companhia que pagou não
+    muda."""
+    if not e.quantidade_destino or e.quantidade_destino <= 0 or e.valor <= 0:
+        raise MotorError(f"{_nome(e)} sem a quantidade recebida ou o valor atribuído")
+    if e.valor_corrente is None or e.valor_corrente <= 0:
+        raise MotorError(f"{_nome(e)} sem o valor de mercado dos bens na entrega")
+    criterio = params.texto("custo_dividendo_em_bens", e.data)
+    if criterio not in ("menor_valor", "valor_atribuido"):
+        raise MotorError(f"parâmetro custo_dividendo_em_bens: valor {criterio!r} desconhecido")
+    de = (e.conta, e.corretora)
+    destino = _destino(livro, e, livro.chave(e.titular, de, e.ativo), 1)
+    custo = e.valor
+    regra = "custo pelo valor atribuído no aviso"
+    if criterio == "menor_valor" and e.valor_corrente < e.valor:
+        custo = e.valor_corrente
+        regra = "custo pelo valor de mercado na entrega, menor que o atribuído no aviso"
+        aviso = (
+            f"{e.data:%d/%m/%Y}: dividendo de {e.ticker} pago em {e.ticker_destino}: o custo "
+            f"ficou pelo valor de mercado na entrega ({reais(custo)}), menor que o atribuído no "
+            f"aviso ({reais(e.valor)}), que continua sendo o rendimento isento. É a leitura "
+            "conservadora (IN RFB 1.585/2015 art. 58 §3º IV); o parâmetro "
+            "custo_dividendo_em_bens muda o critério"
+        )
+        if livro.visao is Visao.TITULAR and aviso not in livro.avisos:
+            livro.avisos.append(aviso)
+    livro.posicoes[destino].comprar(e.quantidade_destino, custo)
+    livro.registrar(destino, e.data, f"evento:{e.id}",
+                    f"dividendo de {e.ticker} pago em bens (Lei 9.249/1995 art. 10): {regra}, sem "
+                    "resultado", de=de, categoria=Categoria.COMUM, cv="C",
+                    quantidade=e.quantidade_destino, valor=custo, evento=e.tipo)  # fmt: skip
 
 
 def _leilao_fracao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
