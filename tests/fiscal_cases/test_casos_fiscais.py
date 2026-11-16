@@ -228,14 +228,20 @@ def test_t7_ordem_entre_notas_do_mesmo_dia_pelo_numero_da_nota() -> None:
     assert categoria(ap, 2024, 3, Categoria.DAY_TRADE).resultado == D(300)  # 1.400 - 1.100
 
 
-def test_t7_day_trade_em_corretoras_diferentes_so_conta_antes_de_2010() -> None:
-    """MP 497/2010: desde 28/07/2010 o day trade é na mesma corretora; antes, em qualquer."""
-    for dia, dt in ((date(2010, 7, 27), True), (date(2010, 7, 28), False)):
+def test_t7_compra_e_venda_em_corretoras_diferentes_nao_e_day_trade() -> None:
+    """Desde 28/07/2010 a lei exige a mesma corretora (MP 497/2010 art. 21). Antes, a operação
+    iniciada numa instituição e encerrada em outra, com liquidação física, também não era day
+    trade (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010 art. 54 §6º, redação original). Compra de
+    100 a 10,00 numa corretora e venda de 100 a 11,00 em outra, no mesmo dia: operação comum, com
+    ganho de 100,00 isento (vendas de 1.100,00), nas duas datas."""
+    for dia in (date(2010, 7, 27), date(2010, 7, 28)):
         livro = Livro()
         livro.nota(dia, livro.op("C", "AAAA3", 100, "10"), corretora="XP")
         livro.nota(dia, livro.op("V", "AAAA3", 100, "11"), corretora="AGORA", conta=2)
         ap = livro.apurar(dia)
-        assert (categoria(ap, dia.year, dia.month, Categoria.DAY_TRADE).resultado == 100) is dt
+        assert categoria(ap, dia.year, dia.month, Categoria.DAY_TRADE).resultado == 0
+        comum = categoria(ap, dia.year, dia.month, Categoria.COMUM)
+        assert (comum.isento, comum.vendas_acoes) == (D(100), D(1100))
 
 
 def test_t7_exercicio_e_venda_no_mesmo_dia_nao_e_day_trade() -> None:
@@ -254,7 +260,9 @@ def test_t7_exercicio_e_venda_no_mesmo_dia_nao_e_day_trade() -> None:
 # ------------------------------------------------------------------------------------- T8 (R3)
 def test_t8_day_trade_de_fii_fica_na_categoria_fii() -> None:
     """R3: FII (inclusive day trade) a 20%, compensação só entre FII (IN RFB 1.585/2015).
-    Ganho 100: IR 20,00 - IRRF 1,00 = 19,00."""
+    Ganho 100: IR 20,00. O IRRF de day trade de 1,00 não abate o imposto de FII, porque a ficha de
+    FII do programa IRPF não tem essa linha (parâmetro ``irrf_day_trade_abate_fii``): a DARF é de
+    20,00 e o 1,00 fica no saldo de day trade, para restituição."""
     livro = Livro()
     livro.nota(date(2024, 6, 3), livro.op("C", "XPML11", 100, "100", tipo=TipoAtivo.FII),
                livro.op("V", "XPML11", 100, "101", tipo=TipoAtivo.FII),
@@ -263,7 +271,7 @@ def test_t8_day_trade_de_fii_fica_na_categoria_fii() -> None:
     fii = categoria(ap, 2024, 6, Categoria.FII)
     assert (fii.resultado, fii.imposto) == (D(100), D("20.00"))
     assert categoria(ap, 2024, 6, Categoria.DAY_TRADE).resultado == 0
-    assert mes(ap, 2024, 6).darf == D("19.00")
+    assert mes(ap, 2024, 6).darf == D("20.00")
 
 
 # ------------------------------------------------------------------------------------ T9 (R18)
@@ -497,10 +505,12 @@ def test_transferencia_entre_contas_da_mesma_corretora_nao_muda_a_visao_por_corr
         (2, 100, D(10))]  # fmt: skip
 
 
-def test_day_trade_entre_corretoras_antes_de_2010_fica_sem_conta_de_origem() -> None:
-    """MP 497/2010: antes de 28/07/2010 o day trade junta corretoras; o movimento fica sem conta
-    e sem corretora (a origem lista as duas operações). O pó de uma série comprada numa conta só
-    fica nessa conta."""
+def test_compra_e_venda_em_corretoras_diferentes_antes_de_2010_nao_e_day_trade() -> None:
+    """IN SRF 25/2001 art. 31 §6º (e IN RFB 1.022/2010 art. 54 §6º, redação original): a operação
+    iniciada numa instituição e encerrada em outra, com liquidação física, não é day trade. Compra
+    de 100 a 10,00 na XP e venda de 100 a 11,00 no BTG em 02/03/2009: operação comum, ganho de
+    100,00 (isento: vendas de 1.100,00). O pó de uma série comprada numa conta só fica nessa
+    conta."""
     livro = Livro()
     livro.nota(date(2009, 3, 2), livro.op("C", "AAAA3", 100, "10"), conta=1, corretora="XP")
     livro.nota(date(2009, 3, 2), livro.op("V", "AAAA3", 100, "11"), conta=3, corretora="BTG")
@@ -511,8 +521,9 @@ def test_day_trade_entre_corretoras_antes_de_2010_fica_sem_conta_de_origem() -> 
         corretora="BTG",
     )
     movs = livro.movimentos(date(2009, 3, 31))
-    dt = next(m for m in movs if m.categoria is Categoria.DAY_TRADE)
-    assert (dt.resultado, dt.conta, dt.corretora) == (D(100), None, None)
+    assert not [m for m in movs if m.categoria is Categoria.DAY_TRADE]
+    venda = next(m for m in movs if m.cv == "V" and m.ticker == "AAAA3")
+    assert (venda.categoria, venda.resultado, venda.corretora) == (Categoria.COMUM, D(100), "BTG")
     po = next(m for m in movs if m.origem == "vencimento")
     assert (po.conta, po.corretora, po.resultado) == (3, "BTG", D(-100))
 

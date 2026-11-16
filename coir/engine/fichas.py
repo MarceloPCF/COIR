@@ -122,12 +122,18 @@ class SaldoPorFicha:
                 usado += lote.consumir(ficha, mes, falta - usado)
         return usado
 
-    def deduzir(self, mes: int, imposto_comuns: Decimal, imposto_fii: Decimal) -> Decimal:
-        """Deduz do imposto do mês (o total é min(imposto, saldo), como no saldo único)."""
+    def deduzir(self, mes: int, imposto_comuns: Decimal, imposto_fii: Decimal,
+                day_trade_abate_fii: bool = False) -> Decimal:  # fmt: skip
+        """Deduz do imposto do mês. O IRRF de day trade só abate o imposto de FII com
+        ``day_trade_abate_fii`` (parâmetro ``irrf_day_trade_abate_fii``): a ficha de FII do
+        programa IRPF não tem a linha, e sem ele o que sobra do 1% segue para os meses seguintes
+        e, em dezembro, para restituição."""
         c, f = Ficha.COMUNS, Ficha.FII
         falta = {c: imposto_comuns, f: imposto_fii}
-        for ficha, dt, origem in ((c, True, c), (c, False, c), (f, False, f), (c, False, f),
-                                  (f, False, c), (f, True, c)):  # fmt: skip
+        passos = [(c, True, c), (c, False, c), (f, False, f), (c, False, f), (f, False, c)]
+        if day_trade_abate_fii:
+            passos.append((f, True, c))
+        for ficha, dt, origem in passos:
             falta[ficha] -= self._pegar(ficha, mes, falta[ficha], dt, origem)
         return imposto_comuns + imposto_fii - falta[c] - falta[f]
 

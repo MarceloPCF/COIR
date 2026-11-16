@@ -16,7 +16,7 @@ REFS = referencias.carregar()
 def test_parametros_por_vigencia() -> None:
     p = FISCAIS.parametros
     assert p.decimal("limite_isencao_acoes", date(2020, 1, 31)) == Decimal("20000.00")
-    assert p.booleano("day_trade_mesma_corretora", date(2010, 7, 27)) is False
+    assert p.booleano("day_trade_mesma_corretora", date(2010, 7, 27)) is True  # IN SRF 25/2001
     assert p.booleano("day_trade_mesma_corretora", date(2010, 7, 28)) is True
     with pytest.raises(ReferenciaError, match="sem vigência"):
         p.decimal("aliquota_comum", date(2004, 12, 31))

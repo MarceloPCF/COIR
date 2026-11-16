@@ -5,8 +5,9 @@ negócios, art. 65 §3º; o excedente vira comum pelo preço do próprio negóci
 exercícios; vendas; vencimento (pó).
 
 Fontes:
-- Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora desde a
-  MP 497/2010; antes, qualquer corretora); §13: exercício de opção não é day trade.
+- Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da
+  MP 497/2010, a operação entre corretoras com liquidação física também não era day trade: IN SRF
+  25/2001 art. 31 §6º); §13: exercício de opção não é day trade.
 - Exercício (art. 60 II a-d e §§1º e 3º): titular de call soma o prêmio ao custo; lançador de
   call soma o prêmio à alienação; titular de put subtrai o prêmio da alienação; lançador de put
   subtrai do custo.

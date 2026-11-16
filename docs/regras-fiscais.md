@@ -118,7 +118,10 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   a ordem impressa nas notas do dia (número da nota e linha). Parâmetro `day_trade_criterio`
   (decisão do usuário de 25/10/2026, parecer do especialista; antes, só a ordem impressa). O
   excedente vira comum pelo preço do próprio negócio. Substitui a "média do dia". Antes de
-  28/07/2010 conta em qualquer corretora (MP 497/2010 art. 21). Exercício de opção não é day trade
+  28/07/2010 também só conta na mesma corretora: a operação iniciada numa instituição e encerrada
+  em outra, com liquidação física, não era day trade (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010
+  art. 54 §6º, redação original; parecer do especialista de 16/11/2026, que substitui a leitura
+  anterior). Exercício de opção não é day trade
   (IN 1.585 art. 65 §13). Day trade de FII fica na categoria FII. Sem compensação entre comum e day
   trade (Lei 9.959/2000 art. 8º §§6º e 7º).
 - **IRRF:** saldo único (0,005% e 1%) abate o imposto total do mês; o saldo passa aos meses
@@ -477,8 +480,9 @@ sobre o ganho do dia e é deduzido no mês (confirmado pelo usuário); day trade
 intermediadora" (Lei 9.959/2000 art. 8º §1º) compara a corretora da nota: XP, Clear e Rico são
 corretoras diferentes, com código e contas próprios (decisão do usuário). Ficam para depois:
 - Rateio dos custos de futuros por contrato e por categoria, configurável (hoje pelo volume).
-- Day trade entre corretoras antes de 28/07/2010: a ordem dos negócios entre notas de corretoras
-  diferentes segue o número da nota (as notas não trazem horário).
+- Day trade entre corretoras antes de 28/07/2010: resolvido em 16/11/2026 (só na mesma corretora,
+  pela norma da época). Fica de fora a marcação manual do par entre corretoras liquidado pelo saldo,
+  que pede o extrato da liquidante; sem caso real.
 - Incorporação, cisão ou leilão de lote isento de PME dentro do prazo da isenção: falha alto (sem norma nem caso real).
 - Venda a termo: falha alto (só a compra a termo está implementada).
 - `data/feriados.csv` cobre até 2027: estender antes de apurar dezembro de 2027.
@@ -551,6 +555,15 @@ não tem o dado, avisar em vez de calcular.
 19. Dados de teste irreais: só anotados nas docstrings.
 20. IR mínimo: total informativo dos ganhos líquidos em bolsa do ano (tributados e isentos), desde
     2026 (parâmetro `irpf_minimo_renda_anual`); o COIR não calcula o IR mínimo.
+
+## Decisões do parecer de 16/11/2026 (B8 a B14)
+
+- IRRF de day trade não abate o imposto de FII na DARF (parâmetro `irrf_day_trade_abate_fii = false`): a ficha de FII do programa IRPF não tem a linha; a lei permite (IN 1.585 art. 65 §8º I), e o parâmetro ligado devolve o comportamento anterior, com aviso. Substitui, nesse ponto, a decisão de 16/10/2026.
+- Day trade só na mesma corretora também antes de 28/07/2010 (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010 art. 54 §6º, redação original).
+- Rateio dos custos de futuros: fica pelo valor financeiro, o único critério escrito (IN 1.585 art. 56 §4º). A planilha externa rateia de outro jeito, com a mesma soma: diferença de método, não erro.
+- Perda na venda de ação de PME: não compensa e não aparece como isento negativo (Lei 13.043/2014 art. 17 §2º). O COIR já fazia assim.
+- Venda que cruza o zero no mesmo pregão: vale a ordem dos negócios (a primeira venda zera a posição, a seguinte abre a descoberto pelo próprio preço). Não há norma de preço médio de venda; a média do dia que a corretora mostra é só exibição, e o imposto total é o mesmo.
+- Custo do ativo recebido como dividendo: o valor corrente na entrega quando for menor que o atribuído no aviso (conservador), com aviso. Dividendo de BDR: só aviso, sem cálculo. VAMO3 -> AMOB3 (dez/2024): segue só a cisão do pacote; a parte paga como dividendo em ações da Automob não é proposta (decisão do usuário).
 
 ## Pontos do v2.02 a corrigir (ver docs/PLANO.md, Diagnóstico)
 - Isenção inferida por "IRRF < R$ 1" (falha com 2+ corretoras; pode isentar ETF).

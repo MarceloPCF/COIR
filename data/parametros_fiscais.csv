@@ -7,7 +7,7 @@ units_na_isencao,false,2005-01-01,,critério do COIR: units fora do limite e da 
 custodia_no_custo,false,2005-01-01,,SC Cosit 227/2018 §§17-18 (taxa de custódia não é custo nem despesa da operação; fundamento geral); critério do COIR (leitura conservadora)
 day_trade_na_soma_limite,true,2005-01-01,,"Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)"
 prejuizo_mes_isento_compensavel,true,2005-01-01,,Lei 8.981/1995 art. 72 §4º; Manual MIR 2026
-day_trade_mesma_corretora,false,2000-01-01,2010-07-27,Lei 9.959/2000 art. 8º §1º I a (redação original): day trade em qualquer corretora
+day_trade_mesma_corretora,true,2000-01-01,2010-07-27,"Lei 9.959/2000 art. 8º §1º I a (redação original: a quantidade negociada tem de ter sido liquidada); IN SRF 25/2001 art. 31 §6º e IN RFB 1.022/2010 art. 54 §6º (redação original): operação iniciada numa instituição e encerrada em outra, com liquidação física e movimentação da custódia, não é day trade"
 day_trade_mesma_corretora,true,2010-07-28,,MP 497/2010 art. 21 (conv. Lei 12.350/2010 art. 45): mesma corretora
 darf_minimo,10.00,1997-01-01,,Lei 9.430/1996 art. 68 caput e §1º (abaixo do mínimo acumula)
 darf_codigo,6015,2005-01-01,,P&R IRPF 2026 pergunta 730; Agenda Tributária RFB (código de renda variável PF)
@@ -32,6 +32,7 @@ day_trade_criterio,marcacao_corretora,2000-01-01,,"IN RFB 1.585/2015 art. 65 §3
 pme_lote_ordem_venda,proporcional,2014-07-10,,"IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; proporcional pela SC Cosit 148/2025 §§32-33 (analogia; critério do COIR, leitura conservadora); alternativas isento_primeiro e tributado_primeiro"
 janela_liquidacao_oferta_dias,7,2000-01-01,,"Sem norma: critério do COIR para venda antes da liquidação da oferta; a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)"
 direito_recebido_custo_zero,true,2005-01-01,,IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); critério do COIR
+irrf_day_trade_abate_fii,false,2000-01-01,,"IN RFB 1.585/2015 art. 65 §8º I (a lei permite deduzir do imposto do mês); programa IRPF: a ficha de fundos imobiliários não tem linha de IR fonte de day trade (leiaute DIRPF, registro 42); critério do COIR, conservador: o 1% só abate o imposto de operações comuns e day trade, e o que sobrar em dezembro é restituição"
 direito_vencido_data,fim_do_prazo,2005-01-01,,"IN RFB 1.585/2015 art. 60 §3º (analogia: perda na data do vencimento); Lei 6.404 art. 171 §4º (prazo decadencial): o direito comprado não exercido vira perda no fim do prazo de subscrição do pacote da B3, ou na data da baixa na B3 sem ele; alternativa baixa_b3 (critério do COIR)"
 fiagro_rendimento_isento,false,2021-03-29,2021-06-10,Lei 14.130/2021 (cria o Fiagro em 29/03/2021; a extensão da isenção da Lei 11.033 art. 3º III foi vetada e o veto derrubado só no DOU de 11/06/2021); critério do COIR (leitura conservadora)
 fiagro_rendimento_isento,true,2021-06-11,,"Lei 11.033/2004 art. 3º III (red. Lei 14.130/2021 art. 4º; veto derrubado, DOU 11/06/2021)"
