@@ -773,6 +773,7 @@ BLOCOS_CARTEIRA: tuple[tuple[str, Callable[[PosicaoAtivo], bool]], ...] = (
     ),
     ("Fundos imobiliários e Fiagro", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.FII),
     ("FI-Infra e FIP-IE", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.FUNDO_INFRA),
+    ("FIP e FIDC", lambda p: p.quantidade > 0 and p.tipo in (TipoAtivo.FIP, TipoAtivo.FIDC)),
     ("Opções", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.OPCAO),
     (
         "Direitos, recibos e bônus de subscrição",

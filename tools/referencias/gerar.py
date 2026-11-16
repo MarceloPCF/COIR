@@ -11,8 +11,8 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
   imprimem, de 2008 em diante) e da lista de ETF de renda fixa (fora do COTAHIST); nunca apaga;
 - ``tipos_ativo_b3.csv``: UNIT, BDR, ETF e FII pela categoria da B3 (fundo pelo cadastro de fundos
   da B3, pelo COTAHIST ou pelo nome); direito, recibo e bônus de subscrição viram DIREITO; FI-Infra
-  e FIP-IE, só pela lista de fundos da B3, viram FUNDO_INFRA; FIP comum e FIDC ficam de fora: sem
-  palpite, o motor isola o ativo;
+  e FIP-IE, só pela lista de fundos da B3, viram FUNDO_INFRA; FIP comum e FIDC, também só pela
+  lista, viram FIP e FIDC (fora dela ficam sem tipo: sem palpite, o motor isola o ativo);
 - ``opcoes_raiz_b3.csv``: raiz de 4 letras -> ativo-objeto (só raiz com um objeto só);
 - ``eventos_b3.csv``: desdobramentos, grupamentos, bonificações, cisões e subscrições (nunca apaga),
   com a origem de cada linha (``b3``, ``cvm_fre``, ``cvm_ipe``; ``b3+cvm_fre`` quando as duas
@@ -215,7 +215,7 @@ class Emissor:
     emissor: str  # código de 4 letras (Asst no cadastro de instrumentos; sigla do fundo)
     cnpj: str
     razao_social: str
-    tipo: str  # COMPANHIA, FII, FIAGRO, ETF, ETF-RF, ETF-FII, FI-INFRA, FIP-IE
+    tipo: str  # COMPANHIA, FII, FIAGRO, ETF, ETF-RF, ETF-FII, FI-INFRA, FIP-IE, FIP, FIDC
 
 
 def ler_emissores(empresas: Iterable[Mapping[str, object]], fundos: Iterable[Mapping[str, object]],
@@ -607,6 +607,8 @@ def _tipo_do_fundo(r: Mapping[str, str], emissores: Mapping[str, str]) -> str | 
         return "FUNDO_INFRA"  # alíquota zero para PF: só pela lista da B3, nunca pelo nome
     if emissor == "FIAGRO" or (emissor == "FII" and classe == "CI"):
         return "FII"
+    if emissor in ("FIP", "FIDC"):
+        return emissor  # cota de fundo, fora do limite de R$ 20 mil: só pela lista da B3
     nome = _sem_acento(r["nome"])
     if re.search(r"\bFII\b", nome):
         return "FII"

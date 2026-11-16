@@ -37,6 +37,14 @@ class TipoAtivo(StrEnum):
     # pela lista de fundos da B3: alíquota zero para pessoa física, fora do limite e da
     # compensação de prejuízo (parecer do especialista de 09/11/2026)
     FUNDO_INFRA = "FUNDO_INFRA"
+    # cota de FIP comum (não o de infraestrutura), pela lista de fundos da B3: vendida em bolsa
+    # por pessoa física, ganho líquido a 15% (IN RFB 1.585/2015 art. 32 §1º I a; Lei 11.312/2006
+    # art. 2º §1º I), sem isenção e fora do limite de R$ 20 mil (cota de fundo não é ação: Lei
+    # 11.033/2004 art. 3º I; SC Cosit 145 e 166/2021); parecer do especialista de 13/11/2026
+    FIP = "FIP"
+    # cota de FIDC, pela lista de fundos da B3: sem norma expressa para a venda em bolsa por
+    # pessoa física; o motor isola por desenho (parâmetro fidc_venda_bolsa), fora do limite
+    FIDC = "FIDC"
     SEM_TIPO = "SEM_TIPO"  # fora das tabelas: o motor isola o ativo, sem palpite de tributação
 
 

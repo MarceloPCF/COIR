@@ -73,9 +73,11 @@ TIPO_BEM: dict[TipoAtivo, TipoBem] = {
     TipoAtivo.ACAO: "ACAO", TipoAtivo.UNIT: "UNIT", TipoAtivo.BDR: "BDR",
     TipoAtivo.OPCAO: "OPCAO", TipoAtivo.ETF: "ETF", TipoAtivo.ETF_RF: "ETF_RF",
     TipoAtivo.FII: "FII", TipoAtivo.DIREITO: "DIREITO", TipoAtivo.FUNDO_INFRA: "FI_INFRA",
+    TipoAtivo.FIP: "FIP",
 }  # fmt: skip
 QUANTIDADE_DE = {"UNIT": "units", "BDR": "BDRs", "ETF": "cotas", "ETF_RF": "cotas",
                  "FII": "cotas", "FIAGRO": "cotas", "FI_INFRA": "cotas", "FIP_IE": "cotas",
+                 "FIP": "cotas",
                  "DIREITO": "direitos, recibos ou bônus de subscrição"}  # fmt: skip
 ART_58 = "(IN RFB 1.585/2015 art. 58)"
 

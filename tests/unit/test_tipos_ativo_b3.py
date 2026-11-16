@@ -173,8 +173,10 @@ def test_tipo_e_estrito_e_a_apuracao_usa_a_versao_que_isola() -> None:
         tipos.tipo("ZZZZ11")
 
 
-def test_coleta_de_fundos_guarda_so_o_fip_de_infraestrutura() -> None:
-    """A B3 lista os FIP com o tipo ("FIP IE", "FIP MT"): o comum paga 15% e fica de fora."""
+def test_coleta_de_fundos_separa_o_fip_de_infraestrutura_do_comum_e_traz_o_fidc() -> None:
+    """A B3 lista os FIP com o tipo ("FIP IE", "FIP MT"): o de infraestrutura tem alíquota zero;
+    o comum paga 15% e fica como FIP. O FIDC vem da lista própria; o que já veio numa lista
+    anterior (Fiagro em forma de FIDC) não entra de novo (parecer de 13/11/2026)."""
     import base64
     import json
 
@@ -189,11 +191,27 @@ def test_coleta_de_fundos_guarda_so_o_fip_de_infraestrutura() -> None:
                               {"id": 2, "acronym": "NVRP", "fundName": "NOVA RAPOSO FIP",
                                "typeName": "FIP MT"}],
                       "FI-INFRA": [{"id": 3, "acronym": "JURO", "fundName": "SPARTA INFRA",
-                                    "typeName": "FI-INFRA"}]}.get(tipo, [])  # fmt: skip
+                                    "typeName": "FI-INFRA"}],
+                      "FIAGRO": [{"id": 4, "acronym": "BRFT", "fundName": "FARMTECH FIDC",
+                                  "typeName": "FIAGRO"}],
+                      "FIDC": [{"id": 5, "acronym": "XFDC", "fundName": "FIDC X"},
+                               {"id": 6, "acronym": "BRFT", "fundName": "FARMTECH FIDC"}],
+                      }.get(tipo, [])  # fmt: skip
             return json.dumps({"page": {"totalPages": 1}, "results": fundos}).encode()
         return json.dumps({"cnpj": "1", "tradingName": consulta["idCEM"]}).encode()
 
     lista, falhas = fontes.fundos(obter, pausa=0)
     assert falhas == []
     assert {(f["acronym"], f["typeName"]) for f in lista} == {
-        ("XPIE", "FIP-IE"), ("JURO", "FI-INFRA")}  # fmt: skip
+        ("XPIE", "FIP-IE"), ("NVRP", "FIP"), ("JURO", "FI-INFRA"), ("BRFT", "FIAGRO"),
+        ("XFDC", "FIDC")}  # fmt: skip
+
+
+@pytest.mark.parametrize("tipo_b3", ["FIP", "FIDC"])
+def test_fip_comum_e_fidc_pela_lista_da_b3(tipo_b3: str) -> None:
+    """Cota de fundo, fora do limite de R$ 20 mil (Lei 11.033/2004 art. 3º I; SC Cosit 145 e
+    166/2021): o tipo vem só da lista de fundos da B3; pelo nome, fica sem tipo."""
+    fundo = _fundo("NVRP11", "NOVA RAPOSO FDO INV PART MULTIESTRATEGIA", emissor="NVRP")
+    assert _tipos([fundo], emissores=[{"emissor": "NVRP", "tipo": tipo_b3}]) == {
+        "NVRP11": tipo_b3}  # fmt: skip
+    assert _tipos([fundo]) == {}

@@ -34,8 +34,10 @@ AGENTE = "COIR/3.0 (tabelas de referencia publicas; github.com/MarceloPCF/COIR)"
 B3_ARQUIVOS = "https://arquivos.b3.com.br/api/download"
 B3_EMPRESAS = "https://sistemaswebb3-listados.b3.com.br/listedCompaniesProxy/CompanyCall"
 B3_FUNDOS = "https://sistemaswebb3-listados.b3.com.br/fundsListedProxy/Search"
-TIPOS_FUNDO = ("FII", "FIAGRO", "ETF", "ETF-RF", "ETF-FII", "FI-INFRA", "FIP")  # viram ativo
+# viram ativo; o FIDC por último: o Fiagro em forma de FIDC já veio na lista de Fiagro
+TIPOS_FUNDO = ("FII", "FIAGRO", "ETF", "ETF-RF", "ETF-FII", "FI-INFRA", "FIP", "FIDC")
 # do FIP, só o de infraestrutura tem alíquota zero (Lei 11.478/2007 art. 2º); o comum paga 15%
+# como ganho líquido (IN RFB 1.585/2015 art. 32 §1º I a) e fica com o tipo FIP
 FIP_ALIQUOTA_ZERO = {"FIP IE": "FIP-IE", "FIP PD&I": "FIP-PDI", "FIP PDI": "FIP-PDI"}
 BCB_SELIC = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json"
 CVM_FRE = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FRE/DADOS/fre_cia_aberta_{ano}.zip"
@@ -165,12 +167,15 @@ def _consultar(url: str, origem: str, obter: Baixar, pausa: float, tentativas: i
 def fundos(
     obter: Baixar = baixar, pausa: float = 0.2, tentativas: int = 2, por_pagina: int = 120
 ) -> tuple[list[Mapping[str, object]], list[str]]:
-    """Fundos listados (FII, Fiagro, ETF, FI-Infra e FIP-IE) com o CNPJ: a lista de cada tipo não
-    traz o CNPJ, que vem do detalhe de cada fundo (uma consulta por fundo, como a página de fundos
-    da B3). O FIP vem com o tipo da B3 ("FIP IE", "FIP MT"): só o de alíquota zero fica."""
+    """Fundos listados (FII, Fiagro, ETF, FI-Infra, FIP e FIDC) com o CNPJ: a lista de cada tipo
+    não traz o CNPJ, que vem do detalhe de cada fundo (uma consulta por fundo, como a página de
+    fundos da B3). O FIP vem com o tipo da B3 ("FIP IE", "FIP MT"): o de alíquota zero fica como
+    FIP-IE ou FIP-PDI e os demais como FIP. Fundo que já veio numa lista anterior (o Fiagro em
+    forma de FIDC) não entra de novo como FIP ou FIDC."""
     saida: list[Mapping[str, object]] = []
     falhas: list[str] = []
     seguidas = 0
+    vistos: set[str] = set()
     for tipo in TIPOS_FUNDO:
         pagina, total, lista = 1, 1, []
         while pagina <= total:
@@ -190,9 +195,10 @@ def fundos(
             sigla = str(f.get("acronym") or "")
             rotulo = tipo
             if tipo == "FIP":
-                rotulo = FIP_ALIQUOTA_ZERO.get(str(f.get("typeName") or "").strip(), "")
-                if not rotulo:
-                    continue  # FIP comum (multiestratégia...): 15%, fica fora até ter regra
+                rotulo = FIP_ALIQUOTA_ZERO.get(str(f.get("typeName") or "").strip(), "FIP")
+            if rotulo in ("FIP", "FIDC") and sigla in vistos:
+                continue
+            vistos.add(sigla)
             consulta = {"language": "pt-br", "idFNET": str(f.get("id")), "idCEM": sigla,
                         "typeFund": tipo}  # fmt: skip
             detalhe = _consultar(f"{B3_FUNDOS}/GetDetailFund/{_b64(consulta)}", f"fundo {sigla}",

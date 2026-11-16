@@ -30,7 +30,8 @@
   valor líquido. Preço x quantidade acima do líquido sugere retenção (fundo desenquadrado): aviso.
   Amortização dessas cotas: reduz o custo (FIP-IE: Lei 11.478 art. 2º §2º e IN 1.585 art. 33
   §§2º-3º; FI-Infra: Lei 12.431 art. 3º e IN 1.585 art. 34), listada e proposta como redução de
-  capital (parecer do especialista de 09/11/2026).
+  capital (parecer do especialista de 09/11/2026). Amortização de FIP comum: também listada e
+  proposta como redução de capital, pela parcela de custo do informe (ver engine/movimentos).
 - Restituição de capital: reduz o custo das ações (IN 1.585 art. 58 §8º): listada e proposta como
   evento de redução de capital; não é rendimento.
 - Linhas "- Transferido": o provento acompanhando a transferência de custódia, em pares que se
@@ -164,7 +165,8 @@ def proventos(
         if x.movimentacao not in (DIVIDENDO, JCP, RENDIMENTO, REEMBOLSO, RESTITUICAO, AMORTIZACAO):
             continue
         if (x.movimentacao == AMORTIZACAO
-                and tipos.tipo_ou_sem(x.codigo) is not TipoAtivo.FUNDO_INFRA):  # fmt: skip
+                and tipos.tipo_ou_sem(x.codigo) not in (TipoAtivo.FUNDO_INFRA,
+                                                         TipoAtivo.FIP)):  # fmt: skip
             continue  # amortização de outros fundos: fora, como antes
         if not x.entrada:
             raise MotorError(
@@ -260,6 +262,11 @@ def _provento(
                 "atualização do provento pela Selic: tributação exclusiva na fonte "
                 "(código 06 ou 12, conforme o informe da empresa)",
             )
+        elif tipo_ativo in (TipoAtivo.FIP, TipoAtivo.FIDC):
+            obs = (f"rendimento de {nome_tipo}: tributado na fonte pelo administrador do fundo "
+                   "(Lei 14.754/2023 arts. 24 e 26; antes de 2024, IN RFB 1.585/2015 arts. 16 e "
+                   "32); o COIR não classifica: declare pelo informe, na ficha de tributação "
+                   "exclusiva, pelo valor líquido")  # fmt: skip
         else:
             obs = f"rendimento em {nome_tipo} sem dividendo ou JCP no mesmo dia: fora"
     elif x.movimentacao == REEMBOLSO:
