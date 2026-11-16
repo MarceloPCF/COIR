@@ -13,4 +13,4 @@
 
 ## Licença da contribuição
 
-- [ ] Li e aceito o **Termo de Licença de Contribuição, versão 1.0**, do [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md#licença-das-contribuições): concedo ao mantenedor do COIR licença não exclusiva, gratuita e irrevogável sobre esta contribuição, com direito de distribuí-la sob a AGPL ou sob outra licença.
+- [ ] Li e aceito o **Termo de Licença de Contribuição, versão 1.0**, do [CONTRIBUTING.md](https://github.com/MarceloPCF/COIR/blob/main/CONTRIBUTING.md#licen%C3%A7a-das-contribui%C3%A7%C3%B5es): concedo ao mantenedor do COIR licença não exclusiva, gratuita e irrevogável sobre esta contribuição, com direito de distribuí-la sob a AGPL ou sob outra licença.

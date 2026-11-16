@@ -58,10 +58,11 @@ Ao marcar a caixa de aceite no pedido de contribuição, você (a pessoa que con
 concorda que:
 
 1. **Objeto.** Este termo vale para todo código, texto, imagem, tabela de dados ou outro material
-   que você enviar ao repositório MarceloPCF/COIR por pedido de contribuição, commit, patch ou
-   anexo de issue, com a intenção de que seja incorporado ao projeto (a "Contribuição").
+   que você enviar ao repositório MarceloPCF/COIR por pedido de contribuição (pull request), com
+   a intenção de que seja incorporado ao projeto (a "Contribuição"). Código enviado de outro
+   jeito (patch, anexo de issue) só entra depois de um pedido de contribuição com o aceite.
 2. **Licença.** Você concede ao mantenedor e titular do COIR (MarceloPCF no GitHub) e a
-   quem ele vier a transferir a titularidade do projeto, uma **licença não exclusiva, gratuita,
+   quem ele vier a transferir a titularidade do projeto uma **licença não exclusiva, gratuita,
    irrevogável, válida em todos os países e pelo prazo total de proteção dos direitos autorais**,
    para usar, reproduzir, modificar, adaptar, traduzir, incluir em outras obras, distribuir,
    publicar, exibir, oferecer como serviço pela internet e comercializar a Contribuição, em todas
