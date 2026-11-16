@@ -331,6 +331,7 @@ async def test_carteira_abre_a_trilha_do_pm(demo: Path) -> None:
         linha = grade.options["rowData"][0]
         user.find(marker="grade-carteira").trigger("rowClicked", {"data": linha})
         await user.should_see(f"Trilha do PM: {linha['c0']}", retries=ESPERA)
+        await user.should_see("vale a ordem dos negócios da nota")  # parecer de 16/11/2026
 
 
 @pytest.mark.asyncio
