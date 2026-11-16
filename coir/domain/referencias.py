@@ -91,6 +91,12 @@ class Referencias(BaseModel):
         perto = min(periodos, key=distancia)
         return perto[2] if distancia(perto) <= DIAS_NOME_PROXIMO else None
 
+    def tickers_do_nome_na_data(self, chave: str, dia: date) -> tuple[str, ...]:
+        """Os códigos que usavam o nome de pregão em ``dia`` (mais de um: o nome não decide)."""
+        hoje = dia.isoformat()
+        periodos = self.nomes_historicos.get(chave, ())
+        return tuple(sorted({t for desde, ate, t in periodos if desde <= hoje <= ate}))
+
     def direito_na_data(self, base: str, letra: str, dia: date) -> str | None:
         """Direito de subscrição que a nota imprime com o preço no nome ("IRBBRASIL RE DO 6,93"): o
         ticker do direito de ``base`` (nome compacto da empresa ou do fundo) negociado em ``dia``.

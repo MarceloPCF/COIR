@@ -319,3 +319,20 @@ def test_direito_sem_um_unico_candidato_nao_e_chutado(especificacao: str, dia: d
     nova = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": dia})
     with pytest.raises(ReferenciaError, match="não encontrado"):
         operacoes(nova, DIREITOS, {})
+
+
+def test_nome_de_dois_codigos_na_data_diz_quais_sao() -> None:
+    """Dois BDR da mesma companhia com o mesmo nome de pregão no período: a nota é recusada dizendo
+    os dois códigos, em vez de "ativo não encontrado"."""
+    refs = REFS.model_copy(update={"nomes_historicos": {
+        "empresaydr1": (
+            ("2021-10-04", "2026-11-09", "EMPY31"), ("2023-07-03", "2024-09-12", "EMPY20"),
+        ),
+    }})  # fmt: skip
+    nota = _nota("agora_2008_04_bovespa")
+    neg = nota.negocios_bovespa[0].model_copy(update={"especificacao": "EMPRESA Y DR1"})
+    antes = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": date(2022, 5, 5)})
+    assert operacoes(antes, refs, {})[0].papel == "EMPY31"  # fora do período em comum: decide
+    durante = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": date(2023, 8, 1)})
+    with pytest.raises(ReferenciaError, match=r"mais de um código \(EMPY20, EMPY31\)"):
+        operacoes(durante, refs, {})
