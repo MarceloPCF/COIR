@@ -363,7 +363,9 @@ def _colunas(trecho: Sequence[str]) -> list[tuple[str, Montante]]:
     um valor e um D/C por rótulo, a nota não entra: casar errado trocaria um custo por outro.
 
     A linha do IRRF às vezes tem o seu D/C na coluna dos indicadores, na posição dela, e às vezes
-    não: com um D/C a mais que os rótulos e uma linha de IRRF no bloco, o da posição dela sai."""
+    não (nas notas reais conferidas, 8 com e 78 sem, sempre "D"): com um D/C a mais que os rótulos
+    e uma linha de IRRF no bloco, o da posição dela sai, desde que seja "D" (o IRRF é sempre
+    débito). Um "C" ali não é do IRRF: a nota não entra."""
     rotulos: list[tuple[str, str | None]] = []
     soltos: list[str] = []
     indicadores: list[DC] = []
@@ -379,7 +381,11 @@ def _colunas(trecho: Sequence[str]) -> list[tuple[str, Montante]]:
         else:
             na_linha = re.search(rf"\s(?P<valor>{RE_DECIMAL})$", s)
             rotulos.append((s[: na_linha.start()], na_linha["valor"]) if na_linha else (s, None))
-    if posicao_irrf is not None and len(indicadores) == len(rotulos) + 1:
+    if (
+        posicao_irrf is not None
+        and len(indicadores) == len(rotulos) + 1
+        and indicadores[posicao_irrf] == "D"
+    ):
         del indicadores[posicao_irrf]
     faltam_valor = sum(valor is None for _, valor in rotulos)
     if faltam_valor != len(soltos) or len(rotulos) != len(indicadores):
