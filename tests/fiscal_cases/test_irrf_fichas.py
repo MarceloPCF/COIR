@@ -181,6 +181,28 @@ def test_base_da_reparticao_usa_o_bruto_e_ignora_venda_por_exercicio() -> None:
     assert (fii.irrf_mes, ago.ficha(Ficha.COMUNS).irrf_mes) == (D("0.50"), D("0.50"))
 
 
+def test_base_da_reparticao_em_opcoes_e_a_soma_positiva_dos_premios_do_dia() -> None:
+    """IN RFB 1.585/2015 art. 63 II e §1º II: em opções a base do 0,005% é a soma dos prêmios
+    recebidos e pagos no dia, se positiva. Setembro/2026, uma nota: V 100 XPML11 a 100 (bruto
+    10.000, PM 100: sem imposto, cada ficha fica com o IRRF retido nela), V 10.000
+    AAAAJ30 a 1,00 (recebe 10.000) e C 10.000 AAAAJ32 a 0,40 (paga 4.000).
+    Base: 10.000 de FII + 6.000 de prêmios (não os 10.000 da venda). IRRF 0,80: FII 0,80 x
+    10.000/16.000 = 0,50; comuns 0,30. No dia 15, só compra de opção (paga 1.000): a soma
+    negativa não reduz a base do mês."""
+    livro = Livro()
+    v = date(2026, 10, 16)
+    livro.nota(date(2026, 8, 3), livro.op("C", "XPML11", 100, "100", tipo=FII))
+    livro.nota(date(2026, 9, 10), livro.op("V", "XPML11", 100, "100", tipo=FII),
+               livro.op("V", "AAAAJ30", 10000, "1", mercado="CALL", vencimento=v),
+               livro.op("C", "AAAAJ32", 10000, "0.40", mercado="CALL", vencimento=v),
+               irrf="0.80")  # fmt: skip
+    livro.nota(date(2026, 9, 15),
+               livro.op("C", "AAAAJ34", 10000, "0.10", mercado="CALL", vencimento=v))  # fmt: skip
+    setembro = mes(livro.apurar(date(2026, 9, 30)), 2026, 9)
+    assert (setembro.ficha(Ficha.FII).irrf_mes, setembro.ficha(Ficha.COMUNS).irrf_mes) == (
+        D("0.50"), D("0.30"))  # fmt: skip
+
+
 def test_darf_de_janeiro_paga_o_acumulado_de_dezembro() -> None:
     """Lei 9.430/1996 art. 68 §1º: dezembro/2025 com imposto 6,00 acumula e entra na DARF de
     janeiro/2026 (6,00 + 8,25 = 14,25): o "pago" de dezembro é 6,00 no relatório de 2025."""

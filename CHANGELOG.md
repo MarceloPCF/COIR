@@ -16,6 +16,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ### Alterado
 - **IRRF de day trade e imposto de fundos imobiliários**: o 1% retido em day trade deixa de abater o imposto de FII e Fiagro na DARF. A ficha de fundos imobiliários do programa da Receita não tem linha para esse IRRF, e a DARF ficava menor que o "a pagar" que o programa calcula. O 1% continua abatendo o imposto de operações comuns e de day trade; o que sobrar segue para os meses seguintes e, em dezembro, vira restituição. O imposto total do ano não muda, só a época. Um mês antigo com day trade de FII pode passar a mostrar DARF maior: confira a Apuração depois de atualizar. O parâmetro `irrf_day_trade_abate_fii` volta ao comportamento anterior.
+- **IRRF de 0,005% em nota com opções e fundos imobiliários**: a parte do IRRF que vai para a ficha de fundos imobiliários passa a considerar, nas opções, a soma dos prêmios recebidos e pagos no dia (IN RFB 1.585/2015 art. 63), e não o valor das vendas. Muda centavos entre as duas fichas; a DARF é a mesma.
 - **Day trade entre corretoras antes de 28/07/2010**: compra numa corretora e venda em outra no mesmo dia deixa de ser day trade também nesse período, como já era depois dele. Pela norma da época (IN SRF 25/2001 art. 31 §6º), a operação encerrada em outra instituição, com liquidação física, não era day trade. Só afeta meses já decaídos; pode mudar o prejuízo e o preço médio transportados de quem tem notas daquele tempo.
 
 ### Corrigido

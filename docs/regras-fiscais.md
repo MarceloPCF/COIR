@@ -563,6 +563,7 @@ não tem o dado, avisar em vez de calcular.
 - Rateio dos custos de futuros: fica pelo valor financeiro, o único critério escrito (IN 1.585 art. 56 §4º). A planilha externa rateia de outro jeito, com a mesma soma: diferença de método, não erro.
 - Perda na venda de ação de PME: não compensa e não aparece como isento negativo (Lei 13.043/2014 art. 17 §2º). O COIR já fazia assim.
 - Venda que cruza o zero no mesmo pregão: vale a ordem dos negócios (a primeira venda zera a posição, a seguinte abre a descoberto pelo próprio preço). Não há norma de preço médio de venda; a média do dia que a corretora mostra é só exibição, e o imposto total é o mesmo.
+- Base do IRRF de 0,005% em opções: a soma dos prêmios recebidos e pagos no dia, se positiva (IN 1.585 art. 63 II e §1º II), e não a venda bruta. Só muda, em centavos, a repartição do IRRF entre a ficha de comuns e a de FII. Nota com um valor só de IRRF para day trade e operação comum: sem caso real, fica como está (as notas lidas trazem os dois valores).
 - Custo do ativo recebido como dividendo: o valor corrente na entrega quando for menor que o atribuído no aviso (conservador), com aviso. Dividendo de BDR: só aviso, sem cálculo. VAMO3 -> AMOB3 (dez/2024): segue só a cisão do pacote; a parte paga como dividendo em ações da Automob não é proposta (decisão do usuário).
 
 ## Pontos do v2.02 a corrigir (ver docs/PLANO.md, Diagnóstico)

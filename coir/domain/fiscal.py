@@ -277,7 +277,8 @@ class Movimento(Modelo):
     isentavel: bool = False  # resultado de ação à vista (comum): isento se vendas <= limite
     mes_limite: date | None = None  # recompra de venda a descoberto: o limite é o do mês da venda
     isento_pme: bool = False  # venda de ações de PME (Lei 13.043): fora da apuração e do limite
-    base_irrf: Decimal = ZERO  # venda comum bruta na base do IRRF 0,005% (repartição por ficha)
+    base_irrf: Decimal = ZERO  # venda comum bruta na base do IRRF 0,005% (repartição por ficha);
+    # em opção, o prêmio com sinal (a compra é negativa: a base é a soma do dia, se positiva)
     evento: TipoEvento | None = None  # passo de um evento corporativo: o tipo
     quantidade_apos: Decimal
     custo_apos: Decimal  # custo total da posição (negativo se vendida)

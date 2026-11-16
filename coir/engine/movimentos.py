@@ -981,9 +981,13 @@ def _aplicar_parte(
     # usuário de 25/10/2026); passar de comprado a vendido e continuar vendido no fim do mês
     # costuma ser evento que falta: só avisa, o cálculo não muda (decisão de 03/11/2026)
     # base do IRRF 0,005% (Lei 11.033/2004 art. 2º §§1º e 2º): venda comum, sem exercício, PME
-    # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas
+    # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas.
+    # Em opções a base é a soma dos prêmios do dia, se positiva (IN RFB 1.585/2015 art. 63 II e
+    # §1º II): a compra entra negativa e a soma por dia é feita na repartição
     base_irrf = p.bruto if (o.op.cv == "V" and o.op.mercado not in MERCADOS_EXERCICIO and not pme
                             and o.op.tipo not in SEM_IRRF_DA_VENDA) else ZERO  # fmt: skip
+    if o.op.cv == "C" and o.op.tipo is TipoAtivo.OPCAO and o.op.mercado not in MERCADOS_EXERCICIO:
+        base_irrf = -p.bruto
     termo = custo_termo is not None
     livro.registrar(chave, dia, f"op:{o.op.id}", p.regra, de=_de(o),
                     categoria=_categoria(o.op.tipo, day_trade=False), cv=o.op.cv,
