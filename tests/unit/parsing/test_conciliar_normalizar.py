@@ -282,6 +282,8 @@ DIREITOS = REFS.model_copy(update={"nomes_historicos": {
     "empresaxdirpre": (("2023-03-01", "2023-03-20", "EMPX2"),),
     "fiifundoyci": (("2018-07-31", "2026-11-09", "FNDY11"),),
     "fiifundoydir": (("2019-01-21", "2019-02-08", "FNDY12"),),
+    # outra empresa, com o nome começando igual: não é o direito de "EMPRESA Z"
+    "empresazdirecionalon": (("2010-01-04", "2026-11-09", "DIRZ3"),),
 }})  # fmt: skip
 
 
@@ -311,6 +313,7 @@ def test_direito_de_subscricao_com_o_preco_no_nome(
         ("EMPRESA X DO 6,93", date(2021, 5, 5)),  # nenhum direito negociado na data
         ("EMPRESA X DM 12,00", date(2023, 3, 10)),  # duas classes e a letra não decide
         ("OUTRA EMPRESA DO 6,93", date(2020, 7, 20)),  # empresa sem direito na tabela
+        ("EMPRESA Z DO 6,93", date(2020, 7, 20)),  # só há "EMPRESA Z DIRECIONAL ON": outra empresa
     ],
 )
 def test_direito_sem_um_unico_candidato_nao_e_chutado(especificacao: str, dia: date) -> None:

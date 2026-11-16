@@ -11,6 +11,12 @@ from pydantic import BaseModel, ConfigDict
 
 RE_SERIE_OPCAO = re.compile(r"^[A-Z0-9]{4}[A-X]\d")
 DIAS_NOME_PROXIMO = 365
+# o que a B3 escreve depois do nome no direito de subscrição (nome compacto): DIR, DIR ORD,
+# DIR PRE, DIR P/A, DIR UNT, DIR CI, DIR DEB, DIR BNS, DIR 11... Só isso: "X DIRECIONAL ON"
+# é outra empresa, não o direito de X
+RE_SUFIXO_DIREITO = re.compile(
+    r"dir(?:ord|pre|pr|prb|pna|pnb|pa|pb|p/[a-z]|unt|untdb|ci|deb|bns|[a-z]?\d{2,3})?"
+)
 
 
 def opcao_de_compra(serie: str) -> bool:
@@ -107,7 +113,7 @@ class Referencias(BaseModel):
         achados = {
             (nome, ticker)
             for nome, periodos in self.nomes_historicos.items()
-            if nome.startswith(base + "dir")
+            if nome.startswith(base) and RE_SUFIXO_DIREITO.fullmatch(nome[len(base) :])
             for desde, ate, ticker in periodos
             if desde <= hoje <= ate
         }
