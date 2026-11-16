@@ -5,8 +5,9 @@ negócios, art. 65 §3º; o excedente vira comum pelo preço do próprio negóci
 exercícios; vendas; vencimento (pó).
 
 Fontes:
-- Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora desde a
-  MP 497/2010; antes, qualquer corretora); §13: exercício de opção não é day trade.
+- Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da
+  MP 497/2010, a operação entre corretoras com liquidação física também não era day trade: IN SRF
+  25/2001 art. 31 §6º); §13: exercício de opção não é day trade.
 - Exercício (art. 60 II a-d e §§1º e 3º): titular de call soma o prêmio ao custo; lançador de
   call soma o prêmio à alienação; titular de put subtrai o prêmio da alienação; lançador de put
   subtrai do custo.
@@ -1329,6 +1330,15 @@ def _evento(livro: Livro, e: Evento) -> None:
     if e.tipo is TipoEvento.DIREITO_RECEBIDO and (e.cv != "C" or e.valor):
         raise MotorError(f"{_nome(e)}: o direito recebido entra (C) com custo zero; o comprado "
                          "vem na nota de corretagem")  # fmt: skip
+    if e.tipo is TipoEvento.DIREITO_RECEBIDO and any(
+        m.ativo == e.ativo and m.titular == e.titular and m.origem.startswith("direito:")
+        for m in livro.movimentos
+    ):
+        # uma venda anterior já pôs esses direitos no livro, a custo zero: somar de novo deixaria
+        # direitos que não existem na carteira
+        raise MotorError(f"{_nome(e)}: há venda deste direito antes da data do crédito, e os "
+                         "direitos recebidos já entraram nessa venda. Use no evento a data em que "
+                         "a B3 creditou os direitos, anterior à primeira venda")  # fmt: skip
     abre = (e.tipo in ABREM_POSICAO or e.natureza is NaturezaEvento.OUTRA_CLASSE) and e.cv == "C"
     if pos.quantidade == 0 and not abre:
         # só a subscrição, a oferta pública, a custódia inicial e a bonificação noutra classe abrem

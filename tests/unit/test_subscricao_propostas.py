@@ -127,3 +127,48 @@ def test_mapa_das_linhas_da_subscricao() -> None:
     assert mapa("Direitos de Subscrição - Exercido", False, "XPTO1") is None
     assert mapa("Cessão de Direitos", True, "XPTO1") is None
     assert mapa("Atualização", True, "XPTO3") is None  # só com o recibo que a originou
+
+
+def _banco_com(tmp_path: Path, linhas: list[list[object]]) -> Path:
+    banco = criar(tmp_path / "demo")
+    arquivo = planilha(
+        banco.parent / "movimentacao-2023.xlsx", {"Movimentação": [CAB_MOV, *linhas]}
+    )
+    importar_planilhas(banco, [arquivo], 1, AGORA)
+    return banco
+
+
+def test_credito_do_direito_dias_antes_nao_esconde_o_exercicio(tmp_path: Path) -> None:
+    """Crédito em 24/04 e recibo em 02/05 (8 dias): lançar o crédito não pode marcar o exercício
+    como lançado; o exercício lançado não marca a conversão de 09/05 (7 dias depois)."""
+    banco = _banco_com(tmp_path, [
+        ["Credito", "24/04/2023", "Direito de Subscrição", DIREITO, AGORA_B3, 100, "-", "-"],
+        ["Credito", "02/05/2023", "Recibo de Subscrição", RECIBO, AGORA_B3, 85, "-", "-"],
+        ["Credito", "09/05/2023", "Atualização", ACAO, AGORA_B3, 85, "-", "-"],
+    ])  # fmt: skip
+    p = {x.dados.tipo: x for x in eventos.propostas(banco, 1, REFS)}
+    eventos.salvar(banco, 1, p[TipoEvento.DIREITO_RECEBIDO].dados, REFS, FISCAIS)
+    p = {x.dados.tipo: x for x in eventos.propostas(banco, 1, REFS)}
+    assert p[TipoEvento.DIREITO_RECEBIDO].situacao == "lançado"
+    assert p[TipoEvento.EXERCICIO_DIREITO].situacao == "pendente"
+    exercicio = p[TipoEvento.EXERCICIO_DIREITO].dados
+    eventos.salvar(banco, 1, DadosEvento(**{**exercicio.__dict__, "valor": D(1700)}), REFS, FISCAIS)
+    p = {x.dados.tipo: x for x in eventos.propostas(banco, 1, REFS)}
+    assert p[TipoEvento.EXERCICIO_DIREITO].situacao == "lançado"
+    assert p[TipoEvento.INCORPORACAO].situacao == "pendente"
+    eventos.salvar(banco, 1, p[TipoEvento.INCORPORACAO].dados, REFS, FISCAIS)
+    assert {x.situacao for x in eventos.propostas(banco, 1, REFS)} == {"lançado"}
+
+
+def test_recibo_vendido_em_parte_converte_so_o_que_sobrou(tmp_path: Path) -> None:
+    """Recibo de 85 e ações creditadas de 60 (25 recibos vendidos antes): a conversão proposta é
+    de 60, a quantidade das ações. Quantidade maior que a do recibo não é conversão."""
+    banco = _banco_com(tmp_path, [
+        ["Credito", "02/05/2023", "Recibo de Subscrição", RECIBO, AGORA_B3, 85, "-", "-"],
+        ["Credito", "16/06/2023", "Atualização", ACAO, AGORA_B3, 60, "-", "-"],
+        ["Credito", "20/06/2023", "Atualização", ACAO, AGORA_B3, 90, "-", "-"],
+    ])  # fmt: skip
+    lista = eventos.propostas(banco, 1, REFS)
+    [conversao] = [x.dados for x in lista if x.dados.tipo is TipoEvento.INCORPORACAO]
+    assert (conversao.data, conversao.quantidade, conversao.quantidade_destino) == (
+        date(2023, 6, 16), 60, 60)  # fmt: skip

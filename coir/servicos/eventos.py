@@ -648,7 +648,7 @@ AMORTIZACAO_FUNDO = ("amortização de cotas de FI-Infra ou FIP-IE: reduz o cust
                      "11.478/2007 art. 2º §2º e IN RFB 1.585/2015 art. 33, FIP-IE; Lei 12.431/2011 "
                      "art. 3º e IN art. 34, FI-Infra); o que passar do "
                      "custo é rendimento (confira o informe do administrador)")  # fmt: skip
-RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z]{4})(?P<classe>9|10)$")  # recibo de subscrição ON/PN
+RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z0-9]{4})(?P<classe>9|10)$")  # recibo de subscrição ON/PN
 JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data ex)
 
 
@@ -667,24 +667,24 @@ def propostas(
         contas = list(s.scalars(select(Conta).where(Conta.titular_id == titular)
                                 .options(selectinload(Conta.corretora))))  # fmt: skip
         # a compra numa oferta não é o evento proposto: não esconde uma bonificação de dias depois
-        lancados = [(e.ativo_id, e.ativo_destino_id, e.data) for e in s.scalars(
+        eventos_lancados = list(s.scalars(
             select(EventoCorporativo).where(EventoCorporativo.conta_id.in_([c.id for c in contas]),
                                             EventoCorporativo.tipo != TipoEvento.OFERTA_PUBLICA)
-        )]  # fmt: skip
+        ))  # fmt: skip
+        lancados = [(e.ativo_id, e.ativo_destino_id, e.data) for e in eventos_lancados]
         saida: list[Proposta] = []
         bonificacoes = _bonificacoes_do_pacote(fiscais, pasta)
         linhas = list(s.scalars(
             select(MovimentacaoB3).where(MovimentacaoB3.titular_id == titular)
             .order_by(MovimentacaoB3.data.desc(), MovimentacaoB3.id)
         ))  # fmt: skip
-        recibos = [m for m in linhas if m.entrada and RE_RECIBO.match(_codigo_b3(m))
-                   and m.movimentacao.strip().lower() == "recibo de subscrição"]  # fmt: skip
+        convertidos = _recibos_convertidos(linhas)
         for m in linhas:
             codigo = _codigo_b3(m)
             corretora = refs.corretora_b3(m.instituicao)
             das_contas = [c for c in contas if c.corretora.nome == corretora]
             conta = das_contas[0].id if len(das_contas) == 1 else None
-            convertido = _recibo_convertido(m, codigo, recibos)
+            convertido = convertidos.get(m.chave)
             mapa = ((TipoEvento.INCORPORACAO, None) if convertido
                     else _mapa_proposta(m, codigo, fiscais))  # fmt: skip
             if mapa is None:
@@ -692,7 +692,7 @@ def propostas(
             tipo, cv = mapa
             if convertido or tipo is TipoEvento.EXERCICIO_DIREITO:
                 saida.append(_proposta_do_recibo(s, refs, m, codigo, conta, corretora, convertido,
-                                                 ignoradas, lancados))  # fmt: skip
+                                                 ignoradas, eventos_lancados))  # fmt: skip
                 continue
             ticker = codigo
             recebido = tipo is TipoEvento.INCORPORACAO  # a B3 mostra o crédito de B
@@ -770,27 +770,71 @@ def _codigo_b3(m: MovimentacaoB3) -> str:
     return m.codigo or m.produto.split(" - ")[0].strip()
 
 
-def _recibo_convertido(
-    m: MovimentacaoB3, codigo: str, recibos: Sequence[MovimentacaoB3]
-) -> str | None:
-    """Código do recibo de subscrição que virou as ações desta linha: uma "Atualização" de
-    entrada na ação, com a mesma quantidade de um recibo da mesma companhia e classe creditado até
-    JANELA_RECIBO dias antes. Sem esse par, None (a "Atualização" serve a outras coisas)."""
-    if not m.entrada or m.movimentacao.strip().lower() != "atualização":
-        return None
-    for r in recibos:
-        recibo = RE_RECIBO.match(_codigo_b3(r))
-        if (recibo and codigo == recibo["raiz"] + ACAO_DO_RECIBO[recibo["classe"]]
-                and r.quantidade == m.quantidade
-                and 0 <= (m.data - r.data).days <= JANELA_RECIBO):  # fmt: skip
-            return _codigo_b3(r)
-    return None
+def _recibos_convertidos(linhas: Sequence[MovimentacaoB3]) -> dict[str, str]:
+    """Chave da linha -> código do recibo de subscrição que virou as ações dela: uma "Atualização"
+    de entrada na ação, de um recibo da mesma companhia e classe creditado até JANELA_RECIBO dias
+    antes. A quantidade pode ser menor que a do recibo (parte dele pode ter sido vendida), e cada
+    recibo só cobre conversões até a quantidade dele: depois disso, a "Atualização" é outra coisa.
+    Vale o recibo mais recente que ainda cobre a linha."""
+    recibos = [m for m in linhas if m.entrada and RE_RECIBO.match(_codigo_b3(m))
+               and m.movimentacao.strip().lower() == "recibo de subscrição"]  # fmt: skip
+    resta = {r.chave: r.quantidade for r in recibos}
+    saida: dict[str, str] = {}
+    for m in sorted(linhas, key=lambda x: (x.data, x.id)):
+        if not m.entrada or m.movimentacao.strip().lower() != "atualização" or m.quantidade <= 0:
+            continue
+        codigo = _codigo_b3(m)
+        candidatos = [
+            r for r in recibos
+            if (recibo := RE_RECIBO.match(_codigo_b3(r)))
+            and codigo == recibo["raiz"] + ACAO_DO_RECIBO[recibo["classe"]]
+            and m.quantidade <= resta[r.chave]
+            and 0 <= (m.data - r.data).days <= JANELA_RECIBO
+        ]  # fmt: skip
+        if candidatos:
+            usado = max(candidatos, key=lambda r: r.data)
+            resta[usado.chave] -= m.quantidade
+            saida[m.chave] = _codigo_b3(usado)
+    return saida
+
+
+def _lancado_do_recibo(
+    s: Session, dia: date, lancados: Sequence[EventoCorporativo], *,
+    exercicio: tuple[str, str, str] | None = None, conversao_de: str | None = None,
+) -> bool:  # fmt: skip
+    """O evento certo já está lançado perto da data? Olha o tipo, não só o ativo: o crédito do
+    direito dias antes não é o exercício, e o exercício não é a conversão. Exercício: evento de
+    exercício no direito ou no recibo, ou a subscrição do jeito antigo, direto na ação. Conversão:
+    incorporação de natureza recibo saindo do recibo."""
+    perto = timedelta(days=JANELA)
+
+    def ativos(ticker: str) -> set[int]:
+        achado = repo.ativo_existente(s, ticker, dia)
+        return {achado} if achado is not None else _ativos_do_ticker(s, ticker)
+
+    proximos = [e for e in lancados if abs(e.data - dia) <= perto]
+    if conversao_de is not None:
+        recibo = ativos(conversao_de)
+        return any(
+            e.tipo == TipoEvento.INCORPORACAO and e.ativo_id in recibo
+            and e.natureza == NaturezaEvento.RECIBO_SUBSCRICAO
+            for e in proximos
+        )  # fmt: skip
+    if exercicio is None:
+        return False
+    direito, recibo, acao = (ativos(t) for t in exercicio)
+    return any(
+        (e.tipo == TipoEvento.EXERCICIO_DIREITO
+         and (e.ativo_id in direito or e.ativo_destino_id in recibo))
+        or (e.tipo == TipoEvento.SUBSCRICAO and e.ativo_id in acao)
+        for e in proximos
+    )  # fmt: skip
 
 
 def _proposta_do_recibo(
     s: Session, refs: Referencias, m: MovimentacaoB3, codigo: str, conta: int | None,
     corretora: str | None, convertido: str | None, ignoradas: set[str],
-    lancados: list[tuple[int, int | None, date]],
+    lancados: Sequence[EventoCorporativo],
 ) -> Proposta:  # fmt: skip
     """O crédito do recibo propõe o exercício do direito (o direito sai e o recibo entra pelo
     valor pago mais o custo dos direitos); o crédito das ações propõe a conversão do recibo.
@@ -802,10 +846,12 @@ def _proposta_do_recibo(
             quantidade=m.quantidade, ticker_destino=codigo, quantidade_destino=m.quantidade,
             natureza=NaturezaEvento.RECIBO_SUBSCRICAO, observacao=observacao, origem="b3",
         )  # fmt: skip
-        tickers, nota = (convertido,), NOTA_CONVERSAO
+        nota = NOTA_CONVERSAO
+        feito = _lancado_do_recibo(s, m.data, lancados, conversao_de=convertido)
     else:
         recibo = RE_RECIBO.match(codigo)
-        assert recibo is not None  # garantido por _mapa_proposta
+        if recibo is None:  # _mapa_proposta só manda código de recibo
+            raise ImportacaoError(f"{codigo}: código de recibo de subscrição inválido")
         direito = recibo["raiz"] + DIREITO_DO_RECIBO[recibo["classe"]]
         acao = recibo["raiz"] + ACAO_DO_RECIBO[recibo["classe"]]
         dados = DadosEvento(
@@ -813,11 +859,11 @@ def _proposta_do_recibo(
             quantidade=m.quantidade, ticker_destino=codigo, quantidade_destino=m.quantidade,
             observacao=observacao, origem="b3",
         )  # fmt: skip
-        tickers = (direito, codigo, acao)
         nota = f"{NOTAS_PROPOSTA[TipoEvento.EXERCICIO_DIREITO]}; {NOTA_CREDITO}"
+        feito = _lancado_do_recibo(s, m.data, lancados, exercicio=(direito, codigo, acao))
     if m.chave in ignoradas:
         situacao = "ignorada"
-    elif any(_ja_lancado(s, refs, t, m.data, lancados, troca_conta=False) for t in tickers):
+    elif feito:
         situacao = "lançado"
     else:
         situacao = "pendente"

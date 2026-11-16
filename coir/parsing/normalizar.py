@@ -179,8 +179,28 @@ def _ticker_por_nome(n: NegocioBovespa, refs: Referencias, dia: date) -> str:
     if direito is not None:
         achado = refs.direito_na_data(compactar(direito["base"]), direito["letra"], dia)
     if achado is None:
-        raise ReferenciaError(_sem_cadastro(n.especificacao, refs))
+        raise ReferenciaError(_dois_codigos(n.especificacao, refs, dia)
+                              or _sem_cadastro(n.especificacao, refs))  # fmt: skip
     return achado
+
+
+def _dois_codigos(especificacao: str, refs: Referencias, dia: date) -> str | None:
+    """O nome de pregão valia para mais de um código na data (ex.: dois BDR da mesma companhia): a
+    nota não diz qual, e o COIR não escolhe. Tira os sufixos do fim, como ``_procurar``."""
+    chave = compactar(especificacao)
+    while True:
+        codigos = refs.tickers_do_nome_na_data(chave, dia)
+        if len(codigos) > 1:
+            return (
+                f"ativo {especificacao!r}: em {dia:%d/%m/%Y} este nome de pregão valia para mais "
+                f"de um código ({', '.join(codigos)}), e a nota não diz qual. O COIR não escolhe "
+                "no palpite: confira o código no extrato da corretora ou na planilha de "
+                "negociação da B3 e mande a nota pela tela Suporte"
+            )
+        sufixo = next((s for s in refs.sufixos if chave.endswith(s) and len(chave) > len(s)), None)
+        if sufixo is None:
+            return None
+        chave = chave[: -len(sufixo)]
 
 
 def _sem_cadastro(especificacao: str, refs: Referencias) -> str:

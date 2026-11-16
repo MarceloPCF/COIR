@@ -136,7 +136,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 13.043/2014</td>
-  <td>30</td>
+  <td>31</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-13043-2014.md">lei-13043-2014.md</a></td>
 </tr>
 <tr>
@@ -161,12 +161,17 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>MP 497/2010</td>
-  <td>5</td>
+  <td>3</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/mp-497-2010.md">mp-497-2010.md</a></td>
 </tr>
 <tr>
+  <td>IN RFB 1.022/2010</td>
+  <td>5</td>
+  <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/in-rfb-1022-2010.md">in-rfb-1022-2010.md</a></td>
+</tr>
+<tr>
   <td>IN RFB 1.585/2015</td>
-  <td>107</td>
+  <td>108</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/in-rfb-1585-2015.md">in-rfb-1585-2015.md</a></td>
 </tr>
 <tr>
@@ -266,7 +271,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Programa IRPF</td>
-  <td>10</td>
+  <td>15</td>
   <td>—</td>
 </tr>
 <tr>
@@ -288,6 +293,11 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
   <td>RIR/2018</td>
   <td>7</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/decreto-9580-2018-rir.md">decreto-9580-2018-rir.md</a></td>
+</tr>
+<tr>
+  <td>Instrução Normativa SRF 25/2001</td>
+  <td>6</td>
+  <td>—</td>
 </tr>
 <tr>
   <td>Instrução Normativa SRF 41/1998</td>
@@ -539,7 +549,7 @@ B3 nem é endossado por ela.</li>
 
 <ul>
 <li><code>coir/engine/movimentos.py</code> — <em>exercicio</em>direito: …sem resultado, e o recibo (ou a ação) subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção…</li>
-<li><code>docs/regras-fiscais.md</code> — R22: …direitos comprados; direito e recibo fora das tabelas têm o tipo pelo final do código (1, 2, 9 e 10) | Lei 7.713/1988 art. 16 caput, §2º e §4º; IN RFB 1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º…</li>
+<li><code>docs/regras-fiscais.md</code> — R22: …janela usa a Subscrição simples, que marca o lote isento (critério conservador: nunca reduz imposto) | Lei 7.713/1988 art. 16 caput, §2º e §4º; IN RFB 1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º…</li>
 <li><code>tests/fiscal_cases/test_direito_exercido.py</code> — módulo: …do crédito. - Custo das ações subscritas = preço de subscrição pago + custo médio dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção…</li>
 <li><code>tests/fiscal_cases/test_petz_auau.py</code> — módulo: …pela companhia: 0,71 / 4,39 = 16,17312073%. - O resgate da PN é alienação: dinheiro menos o custo da PN (Lei 7.713/1988 art. 3º §3º; SC Cosit 37/2020, CETIP/BM&amp;FBOVESPA, com a mesma estrutura de ON + PN resgatável).…</li>
 <li><code>tests/fiscal_cases/test_raiz55.py</code> — módulo: …e primeiro de RAIZ55 em 03/11/2026. Nada muda na quantidade nem nos direitos. Regra: não há alienação (Lei 7.713/1988 art. 3º §3º), e o custo e a quantidade continuam os mesmos. Na nota, a quantidade é a de ações e o…</li>
@@ -637,7 +647,7 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-99592000">Lei 9.959/2000</h2>
 
 <ul>
-<li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>mesma_corretora: Lei 9.959/2000 art. 8º §1º I a (redação original): day trade em qualquer corretora</li>
+<li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>mesma_corretora: Lei 9.959/2000 art. 8º §1º I a (redação original: a quantidade negociada tem de ter sido liquidada); IN SRF 25/2001 art. 31 §6º e IN RFB 1.022/2010 art. 54 §6º (redação original): operação iniciada numa instituição e encerrada em outra, com liquidação física e movimentação da custódia, não é day trade</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: trade (Lei 9.959/2000 art. 8º §§6º e 7º).</li>
 <li><code>docs/regras-fiscais.md</code> — Pendências do motor: intermediadora" (Lei 9.959/2000 art. 8º §1º) compara a corretora da nota: XP, Clear e Rico são</li>
 <li><code>docs/regras-fiscais.md</code> — R6: …meses seguintes do ano; em dezembro, o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&amp;R IRPF 2026…</li>
@@ -762,6 +772,7 @@ B3 nem é endossado por ela.</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: isenta, com aviso de que a compra antes de 10/07/2014 não é isenta (Lei 13.043 art. 17 caput);</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: nos 30 pregões anteriores a 31/12/2023 (Lei 13.043 art. 17 §6º; IN art. 68; texto A), e os lotes</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: <strong>ETF de renda fixa (ex.: B5P211):</strong> tributação exclusiva na fonte (Lei 13.043/2014 art. 2º §4º). Na</li>
+<li><code>docs/regras-fiscais.md</code> — Critérios do COIR: Perda na venda de ação de PME: não compensa e não aparece como isento negativo (Lei 13.043/2014 art. 17 §2º). O COIR já fazia assim.</li>
 <li><code>docs/regras-fiscais.md</code> — Outros custos dedutíveis: <strong>Corretagem e emolumentos do tomador:</strong> até 2025, custo da operação (Lei 13.043/2014 art. 9º par. único; IN 1.585</li>
 <li><code>docs/regras-fiscais.md</code> — Proventos: Reembolso de BTC ao doador: isento até 2025 (Lei 13.043/2014 art. 7º, reproduzido na IN 1.585</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>etf</em>de<em>renda</em>fixa<em>fica</em>fora<em>da</em>apuracao: Lei 13.043/2014 arts. 2º a 4º: ETF de renda fixa tem tributação exclusiva na fonte; o ganho vai para a lista da DIRPF, não para o DARF nem para a isenção.</li>
@@ -835,11 +846,19 @@ B3 nem é endossado por ela.</li>
 <h2 id="mp-4972010">MP 497/2010</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — módulo: …(pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora desde a MP 497/2010; antes, qualquer corretora); §13: exercício de opção não é day trade. - Exercício (art. 60 II a-d e…</li>
+<li><code>coir/engine/movimentos.py</code> — módulo: …(pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da MP 497/2010, a operação entre corretoras com liquidação física também não era day trade: IN SRF 25/2001 art. 31…</li>
 <li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>mesma_corretora: MP 497/2010 art. 21 (conv. Lei 12.350/2010 art. 45): mesma corretora</li>
-<li><code>docs/regras-fiscais.md</code> — Critérios do COIR: 28/07/2010 conta em qualquer corretora (MP 497/2010 art. 21). Exercício de opção não é day trade</li>
-<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>day</em>trade<em>entre</em>corretoras<em>antes</em>de<em>2010</em>fica<em>sem</em>conta<em>de</em>origem: MP 497/2010: antes de 28/07/2010 o day trade junta corretoras; o movimento fica sem conta e sem corretora (a origem lista as duas operações). O pó de uma série comprada numa conta só fica nessa conta.</li>
-<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t7</em>day<em>trade</em>em<em>corretoras</em>diferentes<em>so</em>conta<em>antes</em>de_2010: MP 497/2010: desde 28/07/2010 o day trade é na mesma corretora; antes, em qualquer.</li>
+<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t7</em>compra<em>e</em>venda<em>em</em>corretoras<em>diferentes</em>nao<em>e</em>day_trade: Desde 28/07/2010 a lei exige a mesma corretora (MP 497/2010 art. 21). Antes, a operação iniciada numa instituição e encerrada em outra, com liquidação física,…</li>
+</ul>
+
+<h2 id="in-rfb-10222010">IN RFB 1.022/2010</h2>
+
+<ul>
+<li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>mesma_corretora: Lei 9.959/2000 art. 8º §1º I a (redação original: a quantidade negociada tem de ter sido liquidada); IN SRF 25/2001 art. 31 §6º e IN RFB 1.022/2010 art. 54 §6º (redação original): operação iniciada numa instituição e encerrada em outra, com liquidação física e movimentação da custódia, não é day trade</li>
+<li><code>docs/regras-fiscais.md</code> — Critérios do COIR: em outra, com liquidação física, não era day trade (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010</li>
+<li><code>docs/regras-fiscais.md</code> — Critérios do COIR: Day trade só na mesma corretora também antes de 28/07/2010 (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010 art. 54 §6º, redação original).</li>
+<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>compra</em>e<em>venda</em>em<em>corretoras</em>diferentes<em>antes</em>de<em>2010</em>nao<em>e</em>day_trade: IN SRF 25/2001 art. 31 §6º (e IN RFB 1.022/2010 art. 54 §6º, redação original): a operação iniciada numa instituição e encerrada em outra, com…</li>
+<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t7</em>compra<em>e</em>venda<em>em</em>corretoras<em>diferentes</em>nao<em>e</em>day_trade: …e encerrada em outra, com liquidação física, também não era day trade (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010 art. 54 §6º, redação original). Compra de 100 a 10,00 numa corretora e venda de 100 a 11,00 em…</li>
 </ul>
 
 <h2 id="in-rfb-15852015">IN RFB 1.585/2015</h2>
@@ -858,7 +877,7 @@ B3 nem é endossado por ela.</li>
 <li><code>coir/engine/movimentos.py</code> — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…</li>
 <li><code>coir/engine/movimentos.py</code> — _incorporacao: …fusão, conversão ou ajuste de série: a quantidade de A sai sem resultado e B entra com o mesmo custo (IN RFB 1.585/2015 art. 58 §6º; ajuste de série da B3: sem efeito fiscal, o custo é o dos prêmios, art. 60 §2º). A…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>leilao</em>fracao: Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro leilao<em>fracao</em>isentavel (critério do COIR:…</li>
-<li><code>coir/engine/movimentos.py</code> — módulo: …pelo preço do próprio negócio); compras; exercícios; vendas; vencimento (pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora desde a MP 497/2010; antes, qualquer corretora);…</li>
+<li><code>coir/engine/movimentos.py</code> — módulo: …pelo preço do próprio negócio); compras; exercícios; vendas; vencimento (pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da MP 497/2010, a operação entre…</li>
 <li><code>coir/engine/posicao.py</code> — módulo: Posição de um ativo pelo custo médio ponderado (IN RFB 1.585/2015 art. 58: custo médio de aquisição; custos da compra integram o custo, os da venda reduzem a…</li>
 <li><code>coir/engine/proventos.py</code> — módulo: …em ação sem esse par: fora, listado com aviso. - Reembolso de BTC (doador): isento até 2025 (IN RFB 1.585/2015 art. 74); desde 2026 a Lei 15.265/2025 é omissa para dividendos: isento por equivalência, com…</li>
 <li><code>coir/engine/rateio.py</code> — módulo: Rateio dos custos da nota pelo valor das operações (IN RFB 1.585/2015 art. 56 §§3º e 4º: custos de corretagem e taxas integram o custo de aquisição e reduzem o valor de…</li>
@@ -883,6 +902,7 @@ B3 nem é endossado por ela.</li>
 <li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>na<em>soma</em>limite: Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)</li>
 <li><code>data/parametros_fiscais.csv</code> — direito<em>recebido</em>custo_zero: IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); critério do COIR</li>
 <li><code>data/parametros_fiscais.csv</code> — direito<em>vencido</em>data: IN RFB 1.585/2015 art. 60 §3º (analogia: perda na data do vencimento); Lei 6.404 art. 171 §4º (prazo decadencial): o direito comprado não exercido vira perda no fim do prazo de subscrição do pacote da B3, ou na data da baixa na B3 sem ele; alternativa baixa_b3 (critério do COIR)</li>
+<li><code>data/parametros_fiscais.csv</code> — irrf<em>day</em>trade<em>abate</em>fii: IN RFB 1.585/2015 art. 65 §8º I (a lei permite deduzir do imposto do mês); programa IRPF: a ficha de fundos imobiliários não tem linha de IR fonte de day trade (leiaute DIRPF, registro 42); critério do COIR, conservador: o 1% só abate o imposto de operações comuns e day trade, e o que sobrar em dezembro é restituição</li>
 <li><code>data/parametros_fiscais.csv</code> — janela<em>liquidacao</em>oferta_dias: Sem norma: Critério do COIR para venda antes da liquidação da oferta; a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)</li>
 <li><code>data/parametros_fiscais.csv</code> — leilao<em>fracao</em>isentavel: sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (critério do COIR)</li>
 <li><code>data/parametros_fiscais.csv</code> — pme<em>lote</em>ordem<em>venda: IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; proporcional pela SC Cosit 148/2025 §§32-33 (analogia; critério do COIR, leitura conservadora); alternativas isento</em>primeiro e tributado_primeiro</li>
@@ -903,7 +923,7 @@ B3 nem é endossado por ela.</li>
 <li><code>docs/regras-fiscais.md</code> — R2: R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A</li>
 <li><code>docs/regras-fiscais.md</code> — R20: …de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&amp;R IRPF…</li>
 <li><code>docs/regras-fiscais.md</code> — R21: …com aviso se sobrar posição; sem quantidade (a linha da B3 vem sem ela), baixa todo o saldo | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei…</li>
-<li><code>docs/regras-fiscais.md</code> — R22: …das tabelas têm o tipo pelo final do código (1, 2, 9 e 10) | Lei 7.713/1988 art. 16 caput, §2º e §4º; IN RFB 1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º (analogia com a opção de compra exercida); Lei…</li>
+<li><code>docs/regras-fiscais.md</code> — R22: …o lote isento (critério conservador: nunca reduz imposto) | Lei 7.713/1988 art. 16 caput, §2º e §4º; IN RFB 1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º (analogia com a opção de compra exercida); Lei…</li>
 <li><code>docs/regras-fiscais.md</code> — R3: R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A</li>
 <li><code>docs/regras-fiscais.md</code> — R4: …de termo, leilão de fração), excluídos units (R4a), ETF, BDR, FII, direitos e o lote isento de PME (IN 1.585 art. 67 §3º); a isenção alcança só o ganho das vendas comuns à vista (art. 59 §2º I e IV). Critério do…</li>
 <li><code>docs/regras-fiscais.md</code> — R6: …0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&amp;R IRPF 2026 perguntas 714 e 715; a página "Retenções" da…</li>
@@ -922,7 +942,7 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t6</em>opcao<em>que</em>vira<em>po</em>no_vencimento: R10: 1.000 opções a 0,50 com custo 5, não exercidas: titular perde 505; lançador ganha 495, no mês do vencimento (IN RFB 1.585/2015).</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t7</em>day<em>trade</em>pela<em>ordem</em>dos<em>negocios</em>e<em>excedente</em>comum: R2: IN RFB 1.585/2015 art. 65 §3º ("pela ordem, o 1º negócio de compra com o 1º de venda") e §2º (o estoque anterior não…</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t7</em>exercicio<em>e</em>venda<em>no</em>mesmo<em>dia</em>nao<em>e</em>day_trade: IN RFB 1.585/2015 art. 65 §13: exercício de opção não caracteriza day trade.</li>
-<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t8</em>day<em>trade</em>de<em>fii</em>fica<em>na</em>categoria_fii: R3: FII (inclusive day trade) a 20%, compensação só entre FII (IN RFB 1.585/2015). Ganho 100: IR 20,00 - IRRF 1,00 = 19,00.</li>
+<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t8</em>day<em>trade</em>de<em>fii</em>fica<em>na</em>categoria_fii: R3: FII (inclusive day trade) a 20%, compensação só entre FII (IN RFB 1.585/2015). Ganho 100: IR 20,00. O IRRF de day trade de 1,00 não abate o imposto de FII, porque a ficha de…</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>termo</em>liquidado<em>depois</em>da<em>venda</em>das<em>acoes</em>realiza<em>o</em>resultado: R18 + venda a descoberto (critério do COIR; IN RFB 1.585/2015 art. 58: custo médio): sem posição, compra a termo de 1.000 a 31,00 (custos 40) em 03/01 e venda…</li>
 <li><code>tests/fiscal_cases/test_day_trade_marcacao.py</code> — módulo: Day trade pela marcação D da corretora. IN RFB 1.585/2015 art. 65 §3º: o day trade casa "pela ordem" a 1ª compra com a 1ª venda, isto é, na ordem…</li>
 <li><code>tests/fiscal_cases/test_day_trade_parcial.py</code> — módulo: …D a linha inteira, e só parte dela fecha no dia (critério do COIR; números conferidos à mão). Fontes (IN RFB 1.585/2015): - art. 65 §1º: day trade é a operação iniciada e encerrada no mesmo dia, com o mesmo ativo, na…</li>
@@ -938,7 +958,7 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_irpf_declaracao.py</code> — módulo: …Fontes: P&amp;R IRPF 2026 perguntas 707, 720 (um item por ação, total das corretoras, custo médio) e 715; IN RFB 1.585/2015 arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração)…</li>
 <li><code>tests/fiscal_cases/test_irpf_linhas.py</code> — módulo: …"Mercado a termo - ações/ouro"); P&amp;R IRPF 2026 pergunta 707 (cotas de fundo de índice não são ações); IN RFB 1.585/2015 art. 62 I e §1º (ganho do comprador a termo pela venda à vista na data da liquidação; vendido…</li>
 <li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — módulo: …de FII só na declaração). Casos conferidos à mão. Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º; fichas "Renda variável - operações comuns/day trade" e "Operações -…</li>
-<li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — test<em>day</em>trade<em>usado</em>no<em>imposto</em>de<em>fii</em>gera_aviso: IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês (saldo único da DARF), mas a ficha FII…</li>
+<li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — test<em>day</em>trade<em>usado</em>no<em>imposto</em>de<em>fii</em>gera_aviso: Com <code>irrf_day_trade_abate_fii</code> ligado (IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês), o mesmo caso: dezembro/2026 com…</li>
 <li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — test<em>irrf</em>de<em>day</em>trade<em>nao</em>abate<em>fii</em>antes<em>do</em>0005: IN RFB 1.585/2015 art. 65 §8º I e ficha FII sem linha de day trade: dezembro/2026 com imposto só de FII (V 100…</li>
 <li><code>tests/fiscal_cases/test_oferta_publica.py</code> — módulo: Compra em oferta pública (IPO e follow-on), que não aparece em nota de corretagem. IN RFB 1.585/2015 art. 58 caput: o custo é o valor pago, com preço médio ponderado; art. 56 §5º: ganho apurado na…</li>
 <li><code>tests/fiscal_cases/test_oferta_publica.py</code> — test<em>oferta</em>de<em>pme</em>tem<em>o</em>ganho<em>isento</em>e<em>fora</em>do_limite: IN RFB 1.585/2015 art. 67 I e Lei 13.043/2014 art. 16: ações de PME adquiridas em oferta. 1.000 a 27,00 (27.000,00)…</li>
@@ -1124,15 +1144,20 @@ B3 nem é endossado por ela.</li>
 
 <ul>
 <li><code>coir/engine/apuracao.py</code> — módulo: …a declaração anual (IN RFB 1.585/2015; critério do COIR). A DARF usa um saldo único; as fichas do programa IRPF recebem o IRRF que cada uma consumiu (<code>fichas.py</code>). - DARF 6015: abaixo de R$ 10 acumula, inclusive para…</li>
+<li><code>coir/engine/fichas.py</code> — deduzir: …de FII com <code>day_trade_abate_fii</code> (parâmetro <code>irrf_day_trade_abate_fii</code>): a ficha de FII do programa IRPF não tem a linha, e sem ele o que sobra do 1% segue para os meses seguintes e, em dezembro, para…</li>
 <li><code>coir/engine/fichas.py</code> — módulo: IRRF por ficha do programa IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei…</li>
+<li><code>data/parametros_fiscais.csv</code> — irrf<em>day</em>trade<em>abate</em>fii: IN RFB 1.585/2015 art. 65 §8º I (a lei permite deduzir do imposto do mês); programa IRPF: a ficha de fundos imobiliários não tem linha de IR fonte de day trade (leiaute DIRPF, registro 42); critério do COIR, conservador: o 1% só abate o imposto de operações comuns e day trade, e o que sobrar em dezembro é restituição</li>
 <li><code>data/parametros_fiscais.csv</code> — opcoes<em>linha</em>acoes<em>tipos</em>objeto: programa IRPF, ficha Renda variável: "Mercado de opções - ações" para opção sobre ação; ETF, índice e outros em "Mercado de opções - outros" (P&amp;R IRPF 2026 pergunta 707 distingue cotas de fundo de índice de ações); unit como ação, coerente com o Bens e Direitos do programa (código 03.01, ações inclusive units)</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: um PDF por ano, na ordem da ficha de renda variável do programa IRPF, em</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: programa IRPF. Parâmetro <code>day_trade_na_soma_limite = true</code>; o motor avisa quando o day trade</li>
+<li><code>docs/regras-fiscais.md</code> — Critérios do COIR: …abate o imposto de FII na DARF (parâmetro <code>irrf_day_trade_abate_fii = false</code>): a ficha de FII do programa IRPF não tem a linha; a lei permite (IN 1.585 art. 65 §8º I), e o parâmetro ligado devolve o comportamento…</li>
 <li><code>docs/regras-fiscais.md</code> — Perguntas 6 a 20 da revisão: leitura conservadora: 6. Fiagro e FII: o motor continua a apurá-los juntos, como a ficha única do programa IRPF. A</li>
 <li><code>docs/regras-fiscais.md</code> — R17: R17 | Fichas/códigos da DIRPF mudam por ano | Mapeamento por ano em <code>data/irpf/&lt;ano&gt;.yaml</code> | programa IRPF do ano | revisar anualmente</li>
 <li><code>docs/regras-fiscais.md</code> — Relatórios: conferir no programa IRPF do ano: a ficha FII sem linha de IR fonte de day trade; ordem de</li>
+<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t8</em>day<em>trade</em>de<em>fii</em>fica<em>na</em>categoria_fii: …100: IR 20,00. O IRRF de day trade de 1,00 não abate o imposto de FII, porque a ficha de FII do programa IRPF não tem essa linha (parâmetro <code>irrf_day_trade_abate_fii</code>): a DARF é de 20,00 e o 1,00 fica no saldo de…</li>
 <li><code>tests/fiscal_cases/test_irpf_linhas.py</code> — módulo: Linha da ficha "Renda variável - operações comuns/day trade" do programa IRPF. Casos conferidos à mão (critérios do COIR), conferidos à mão. Fontes: programa IRPF, ficha de renda…</li>
 <li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — módulo: IRRF por ficha do programa IRPF com a DARF no saldo único (critério do COIR: separar o IRRF de FII só na declaração). Casos conferidos à…</li>
+<li><code>tests/fiscal_cases/test_irrf_fichas.py</code> — test<em>irrf</em>de<em>day</em>trade<em>nao</em>abate<em>o</em>imposto<em>de</em>fii: A ficha de FII do programa IRPF não tem linha de IR fonte de day trade (parâmetro <code>irrf_day_trade_abate_fii</code> desligado; critério do…</li>
 </ul>
 
 <h2 id="ctn">CTN</h2>
@@ -1172,6 +1197,17 @@ B3 nem é endossado por ela.</li>
 <li><code>docs/regras-fiscais.md</code> — R7: …do COIR) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&amp;R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>eventos</em>ajustam<em>quantidade</em>e<em>custo</em>sem_resultado: R8: bonificação soma quantidade com custo atribuído; desdobramento e grupamento só a quantidade; redução de capital reduz o custo (RIR/2018 art. 843 §1º e §3º II; IN RFB 1.585/2015 art. 58 §§1º, 7º e 8º).</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t4</em>darf<em>abaixo</em>de<em>10</em>acumula<em>e</em>vira<em>o</em>ano: R12: DARF abaixo de R$ 10 acumula, inclusive para o ano seguinte (Lei 9.430/1996 art. 68 §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915). Dez/23 7,00 + Jan/24 4,00 = 11,00, vencimento 29/02/2024.</li>
+</ul>
+
+<h2 id="instrucao-normativa-srf-252001">Instrução Normativa SRF 25/2001</h2>
+
+<ul>
+<li><code>coir/engine/movimentos.py</code> — módulo: …antes da MP 497/2010, a operação entre corretoras com liquidação física também não era day trade: IN SRF 25/2001 art. 31 §6º); §13: exercício de opção não é day trade. - Exercício (art. 60 II a-d e §§1º e 3º):…</li>
+<li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>mesma_corretora: Lei 9.959/2000 art. 8º §1º I a (redação original: a quantidade negociada tem de ter sido liquidada); IN SRF 25/2001 art. 31 §6º e IN RFB 1.022/2010 art. 54 §6º (redação original): operação iniciada numa instituição e encerrada em outra, com liquidação física e movimentação da custódia, não é day trade</li>
+<li><code>docs/regras-fiscais.md</code> — Critérios do COIR: em outra, com liquidação física, não era day trade (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010</li>
+<li><code>docs/regras-fiscais.md</code> — Critérios do COIR: Day trade só na mesma corretora também antes de 28/07/2010 (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010 art. 54 §6º, redação original).</li>
+<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>compra</em>e<em>venda</em>em<em>corretoras</em>diferentes<em>antes</em>de<em>2010</em>nao<em>e</em>day_trade: IN SRF 25/2001 art. 31 §6º (e IN RFB 1.022/2010 art. 54 §6º, redação original): a operação iniciada numa instituição…</li>
+<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t7</em>compra<em>e</em>venda<em>em</em>corretoras<em>diferentes</em>nao<em>e</em>day_trade: …iniciada numa instituição e encerrada em outra, com liquidação física, também não era day trade (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010 art. 54 §6º, redação original). Compra de 100 a 10,00 numa corretora e…</li>
 </ul>
 
 <h2 id="instrucao-normativa-srf-411998">Instrução Normativa SRF 41/1998</h2>

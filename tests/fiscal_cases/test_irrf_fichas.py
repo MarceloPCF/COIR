@@ -13,7 +13,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from coir.domain.fiscal import Categoria, Ficha, TipoAtivo
-from tests.fiscal_cases.apoio import D, Livro, categoria, mes
+from tests.fiscal_cases.apoio import D, Livro, categoria, mes, parametros
 
 FII = TipoAtivo.FII
 
@@ -195,11 +195,29 @@ def test_darf_de_janeiro_paga_o_acumulado_de_dezembro() -> None:
     assert (dez.ficha(Ficha.COMUNS).pago, jan.ficha(Ficha.COMUNS).pago) == (D("6.00"), D("8.25"))
 
 
+def test_irrf_de_day_trade_nao_abate_o_imposto_de_fii() -> None:
+    """A ficha de FII do programa IRPF não tem linha de IR fonte de day trade (parâmetro
+    ``irrf_day_trade_abate_fii`` desligado; parecer de 16/11/2026): dezembro/2026 com imposto só de
+    FII (V 100 XPML11 a 105, PM 100: ganho 500, 20% = 100,00) e IRRF só de day trade (5,00) -> DARF
+    de 100,00, igual ao "a pagar" da ficha FII; os 5,00 ficam no saldo de day trade (restituição).
+
+    Entrada simplificada (só anotar): IRRF em nota só de compra não acontece na nota real; aqui
+    ele só exercita o saldo de IRRF."""
+    livro = Livro()
+    livro.nota(date(2026, 11, 3), livro.op("C", "XPML11", 100, "100", tipo=FII))
+    livro.nota(date(2026, 12, 1), livro.op("C", "AAAA3", 10, "10"), irrf_dt="5")
+    livro.nota(date(2026, 12, 10), livro.op("V", "XPML11", 100, "105", tipo=FII))
+    ap = livro.apurar(date(2026, 12, 31))
+    fii = mes(ap, 2026, 12).ficha(Ficha.FII)
+    assert (mes(ap, 2026, 12).darf, fii.irrf_day_trade_mes, fii.a_pagar) == (D(100), 0, D(100))
+    assert not any("day trade deduzido do imposto de FII" in a for a in ap.avisos)
+
+
 def test_day_trade_usado_no_imposto_de_fii_gera_aviso() -> None:
-    """IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês (saldo único da
-    DARF), mas a ficha FII do programa não tem a linha: dezembro/2026 com imposto só de FII
-    (V 100 XPML11 a 105, PM 100: ganho 500, 20% = 100,00) e IRRF só de day trade (5,00) -> DARF
-    95,00 e aviso.
+    """Com ``irrf_day_trade_abate_fii`` ligado (IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day
+    trade deduz o imposto do mês), o mesmo caso: dezembro/2026 com imposto só de FII (V 100 XPML11
+    a 105, PM 100: ganho 500, 20% = 100,00) e IRRF só de day trade (5,00) -> DARF 95,00 e aviso,
+    porque a ficha FII do programa não tem a linha.
 
     Entrada simplificada (critério do COIR de 10/11/2026: só anotar): IRRF em nota só de compra
     não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
@@ -208,7 +226,7 @@ def test_day_trade_usado_no_imposto_de_fii_gera_aviso() -> None:
     livro.nota(date(2026, 11, 3), livro.op("C", "XPML11", 100, "100", tipo=FII))
     livro.nota(date(2026, 12, 1), livro.op("C", "AAAA3", 10, "10"), irrf_dt="5")
     livro.nota(date(2026, 12, 10), livro.op("V", "XPML11", 100, "105", tipo=FII))
-    ap = livro.apurar(date(2026, 12, 31))
+    ap = livro.apurar(date(2026, 12, 31), parametros(irrf_day_trade_abate_fii="true"))
     fii = mes(ap, 2026, 12).ficha(Ficha.FII)
     assert (mes(ap, 2026, 12).darf, fii.irrf_day_trade_mes, fii.a_pagar) == (
         D(95), D(5), D(95))  # fmt: skip

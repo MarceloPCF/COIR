@@ -332,7 +332,8 @@ def _apurar_titular(
         saldo.reter(mes, retido)
         # o IRRF de day trade é consumido primeiro pela ficha de comuns: o saldo dele não vai para
         # a declaração anual (só restituição), o de 0,005% vai (critério do COIR, 15/10/2026)
-        deduzido = saldo.deduzir(mes, imposto - fii, fii)
+        deduzido = saldo.deduzir(mes, imposto - fii, fii,
+                                 params.booleano("irrf_day_trade_abate_fii", dia))  # fmt: skip
         devido = imposto - deduzido
         total = devido + acumulado_darf
         pendentes.append((ano, mes))

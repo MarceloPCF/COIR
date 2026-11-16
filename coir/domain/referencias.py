@@ -11,6 +11,12 @@ from pydantic import BaseModel, ConfigDict
 
 RE_SERIE_OPCAO = re.compile(r"^[A-Z0-9]{4}[A-X]\d")
 DIAS_NOME_PROXIMO = 365
+# o que a B3 escreve depois do nome no direito de subscrição (nome compacto): DIR, DIR ORD,
+# DIR PRE, DIR P/A, DIR UNT, DIR CI, DIR DEB, DIR BNS, DIR 11... Só isso: "X DIRECIONAL ON"
+# é outra empresa, não o direito de X
+RE_SUFIXO_DIREITO = re.compile(
+    r"dir(?:ord|pre|pr|prb|pna|pnb|pa|pb|p/[a-z]|unt|untdb|ci|deb|bns|[a-z]?\d{2,3})?"
+)
 
 
 def opcao_de_compra(serie: str) -> bool:
@@ -91,6 +97,12 @@ class Referencias(BaseModel):
         perto = min(periodos, key=distancia)
         return perto[2] if distancia(perto) <= DIAS_NOME_PROXIMO else None
 
+    def tickers_do_nome_na_data(self, chave: str, dia: date) -> tuple[str, ...]:
+        """Os códigos que usavam o nome de pregão em ``dia`` (mais de um: o nome não decide)."""
+        hoje = dia.isoformat()
+        periodos = self.nomes_historicos.get(chave, ())
+        return tuple(sorted({t for desde, ate, t in periodos if desde <= hoje <= ate}))
+
     def direito_na_data(self, base: str, letra: str, dia: date) -> str | None:
         """Direito de subscrição que a nota imprime com o preço no nome ("IRBBRASIL RE DO 6,93"): o
         ticker do direito de ``base`` (nome compacto da empresa ou do fundo) negociado em ``dia``.
@@ -101,7 +113,7 @@ class Referencias(BaseModel):
         achados = {
             (nome, ticker)
             for nome, periodos in self.nomes_historicos.items()
-            if nome.startswith(base + "dir")
+            if nome.startswith(base) and RE_SUFIXO_DIREITO.fullmatch(nome[len(base) :])
             for desde, ate, ticker in periodos
             if desde <= hoje <= ate
         }
