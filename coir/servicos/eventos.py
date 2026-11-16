@@ -640,7 +640,7 @@ PROPOSTAS: dict[str, tuple[TipoEvento, str | None]] = {
     "incorporação": (TipoEvento.INCORPORACAO, None),
     "cisão": (TipoEvento.CISAO, None),
     "leilão de fração": (TipoEvento.LEILAO_FRACAO, None),
-    # só em cotas de FI-Infra e FIP-IE (ver _mapa_proposta)
+    # só em cotas de FI-Infra, FIP-IE e FIP comum (ver _mapa_proposta)
     "amortização": (TipoEvento.REDUCAO_CAPITAL, "V"),
 }
 SEM_CUSTO_NO_PACOTE = (
@@ -672,6 +672,11 @@ AMORTIZACAO_FUNDO = ("amortização de cotas de FI-Infra ou FIP-IE: reduz o cust
                      "11.478/2007 art. 2º §2º e IN RFB 1.585/2015 art. 33, FIP-IE; Lei 12.431/2011 "
                      "art. 3º e IN art. 34, FI-Infra); o que passar do "
                      "custo é rendimento (confira o informe do administrador)")  # fmt: skip
+AMORTIZACAO_FIP = ("amortização de cotas de FIP: troque o valor pela parcela de custo que o "
+                   "informe do administrador mostra. Desde 2024 só essa parcela devolve custo; o "
+                   "restante é rendimento com IRRF de 15% (Lei 14.754/2023 art. 24). Até 2023 a "
+                   "amortização reduz o custo e só o excedente é rendimento (IN RFB 1.585/2015 "
+                   "art. 32 §2º)")  # fmt: skip
 RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z0-9]{4})(?P<classe>9|10)$")  # recibo de subscrição ON/PN
 JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data ex)
 
@@ -729,7 +734,8 @@ def propostas(
             elif tipo is TipoEvento.DIREITO_RECEBIDO:
                 nota_data = NOTA_CREDITO
             elif m.movimentacao.strip().lower() == "amortização":
-                nota_data = AMORTIZACAO_FUNDO
+                fip = fiscais is not None and fiscais.tipos.tipo_ou_sem(codigo) is TipoAtivo.FIP
+                nota_data = AMORTIZACAO_FIP if fip else AMORTIZACAO_FUNDO
             dados = DadosEvento(
                 tipo=tipo, data=data, conta=conta, ticker="" if recebido else ticker, cv=cv,
                 quantidade=None if recebido or so_valor else m.quantidade,
@@ -998,8 +1004,9 @@ def _mapa_proposta(
     m: MovimentacaoB3, codigo: str, fiscais: ReferenciasFiscais | None
 ) -> tuple[TipoEvento, str | None] | None:
     """Tipo e C/V do evento que a linha da movimentação sugere (None: nenhum). A baixa do direito
-    não exercido é uma saída; a amortização só reduz o custo em cotas de FI-Infra e FIP-IE (parecer
-    do especialista de 09/11/2026; nos outros fundos fica como estava)."""
+    não exercido é uma saída; a amortização só reduz o custo em cotas de FI-Infra, FIP-IE e FIP
+    comum (pareceres do especialista de 09/11 e 13/11/2026; nos outros fundos fica como
+    estava)."""
     movimentacao = m.movimentacao.strip().lower()
     if any(x in movimentacao for x in NAO_EXERCIDO):
         return None if m.entrada else (TipoEvento.DIREITO_NAO_EXERCIDO, None)
@@ -1012,7 +1019,7 @@ def _mapa_proposta(
         return TipoEvento.EXERCICIO_DIREITO, None  # o direito sai e o recibo entra com o custo
     if movimentacao == "amortização" and (
         not m.entrada or fiscais is None
-        or fiscais.tipos.tipo_ou_sem(codigo) is not TipoAtivo.FUNDO_INFRA
+        or fiscais.tipos.tipo_ou_sem(codigo) not in (TipoAtivo.FUNDO_INFRA, TipoAtivo.FIP)
     ):  # fmt: skip
         return None
     return mapa

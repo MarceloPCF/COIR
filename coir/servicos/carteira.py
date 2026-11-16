@@ -21,6 +21,7 @@ TIPOS = {
     TipoAtivo.OPCAO: "Opção", TipoAtivo.FUTURO: "Futuro",
     TipoAtivo.DIREITO: "Direito/recibo/bônus de subscrição",
     TipoAtivo.FUNDO_INFRA: "FI-Infra/FIP-IE",
+    TipoAtivo.FIP: "FIP", TipoAtivo.FIDC: "FIDC",
     TipoAtivo.SEM_TIPO: "Sem tipo",
 }  # fmt: skip
 RE_ORIGEM = re.compile(r"^(op|termo|nota):(\d+)")

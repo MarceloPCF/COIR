@@ -45,3 +45,7 @@ irpf_minimo_renda_anual,600000.00,2026-01-01,,"Lei 9.250/1995 art. 16-A (incl. L
 rendimento_etf_exclusivo,false,2000-01-01,2023-12-31,"IN RFB 1.585/2015 arts. 24 a 27 não tratam da distribuição de rendimentos de ETF de ações: sem norma lida, o COIR só avisa"
 rendimento_etf_exclusivo,true,2024-01-01,,"Lei 14.754/2023 arts. 18 II, 24 caput e 32 I: IRRF de 15% na data da distribuição, definitivo para a pessoa física; ficha exclusiva 06 pelo líquido"
 custo_dividendo_em_bens,menor_valor,1996-01-01,,"Lei 9.249/1995 art. 10 (o dividendo é isento pelo valor atribuído no aviso). Custo do bem recebido: o valor atribuído ou, quando menor, o valor corrente na data da entrega (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); critério do COIR, conservador. Alternativa: valor_atribuido"
+fip_venda_bolsa,ganho_liquido,2015-09-02,,"IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I (não revogado: Lei 14.754/2023 art. 46)"
+fip_amortizacao_custo,excedente,2015-09-02,2023-12-31,"IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º"
+fip_amortizacao_custo,proporcional_vp,2024-01-01,,"Lei 14.754/2023 art. 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I; sem a parcela do informe, reduz até zero com aviso (critério do COIR, conservador)"
+fidc_venda_bolsa,isolar,2015-09-02,,"sem norma expressa: IN RFB 1.585/2015 art. 16 I a só para fundo fechado com carteira de ações (art. 18 §2º); critério do COIR. Alternativa: ganho_liquido (15%, a prática de mercado)"

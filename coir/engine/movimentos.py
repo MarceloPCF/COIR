@@ -53,6 +53,8 @@ MERCADOS_EXERCICIO = frozenset({"EXERC CALL", "EXERC PUT"})
 # a venda não entra na base que reparte o IRRF de 0,005% entre as fichas: o imposto desses é
 # exclusivo na fonte (ETF de renda fixa) ou de alíquota zero (FI-Infra e FIP-IE)
 SEM_IRRF_DA_VENDA = frozenset({TipoAtivo.ETF_RF, TipoAtivo.FUNDO_INFRA})
+# cota de fundo com regra própria na venda em bolsa: o parâmetro diz se o COIR apura
+REGRA_DO_FUNDO = {TipoAtivo.FIP: "fip_venda_bolsa", TipoAtivo.FIDC: "fidc_venda_bolsa"}
 ABREM_POSICAO = frozenset(
     {TipoEvento.SUBSCRICAO, TipoEvento.OFERTA_PUBLICA, TipoEvento.CUSTODIA_INICIAL,
      TipoEvento.DIREITO_RECEBIDO}
@@ -94,6 +96,49 @@ class _Dia:
     eventos: list[Evento] = field(default_factory=lambda: list[Evento]())
     termos: list[_Op] = field(default_factory=lambda: list[_Op]())
     operacoes: list[_Op] = field(default_factory=lambda: list[_Op]())
+
+
+def _conferir_fundo(livro: "Livro", tipo: TipoAtivo | None, ticker: str, dia: date) -> None:
+    """FIP comum e FIDC só entram na apuração com o parâmetro em ``ganho_liquido`` (15% na
+    categoria comum, sem isenção e fora do limite de R$ 20 mil). FIP: IN RFB 1.585/2015 art. 32
+    §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I. FIDC: sem norma expressa para a venda em bolsa
+    por pessoa física (o art. 16 I a da IN só alcança fundo fechado com carteira de ações, art. 18
+    §2º): o padrão é isolar o ativo, com este motivo (parecer do especialista de 13/11/2026). Sem
+    vigência do parâmetro na data, também isola: nada de palpite."""
+    if tipo is None or tipo not in REGRA_DO_FUNDO:
+        return
+    nome = REGRA_DO_FUNDO[tipo]
+    regras = {p.valor for p in livro.parametros.parametros if p.nome == nome and p.vigente(dia)}
+    if regras == {"ganho_liquido"}:
+        return
+    if tipo is TipoAtivo.FIDC:
+        raise MotorError(
+            f"{ticker} é cota de FIDC: não há norma expressa para a venda de FIDC em bolsa por "
+            "pessoa física, e o COIR não calcula o resultado. Confira com o administrador do "
+            "fundo. A prática de mercado recolhe 15% (DARF 6015); com o parâmetro "
+            "fidc_venda_bolsa = ganho_liquido o COIR apura assim"
+        )
+    raise MotorError(
+        f"{ticker} é cota de FIP: o COIR não tem regra para a venda em {dia:%d/%m/%Y} (parâmetro "
+        f"{nome}); confira com o administrador do fundo"
+    )
+
+
+def _avisar_come_cotas(livro: "Livro", ticker: str, dia: date, params: ParametrosFiscais) -> None:
+    """Desde 2024 o FIP que não é entidade de investimento tem tributação periódica (Lei
+    14.754/2023 art. 26), e o imposto pago nela aumenta o custo da cota (art. 17 §2º II). O COIR
+    não tem esse dado: sem ele o ganho na venda sai maior (imposto a mais, nunca a menos). Só
+    avisa, uma vez por fundo (parecer do especialista de 13/11/2026)."""
+    regime = {p.valor for p in params.parametros
+              if p.nome == "fip_amortizacao_custo" and p.vigente(dia)}  # fmt: skip
+    aviso = (
+        f"Venda de {ticker} (FIP): se o fundo não é entidade de investimento, teve tributação "
+        "periódica (come-cotas) desde 2024, e o rendimento já tributado aumenta o custo das cotas "
+        "(Lei 14.754/2023 arts. 26 e 17 §2º II). O COIR não tem esse dado e usou só o custo de "
+        "compra: o ganho pode ter saído maior. Confira o informe do administrador"
+    )
+    if regime == {"proporcional_vp"} and aviso not in livro.avisos:
+        livro.avisos.append(aviso)
 
 
 def _grupo(tipo: TipoAtivo) -> Grupo:
@@ -138,6 +183,7 @@ class Livro:
         # (quantidade e custo pelo preço a termo), por posição
         self.termo_hoje: dict[Chave, Posicao] = {}
         self.parametros = ParametrosFiscais(parametros=())  # os do livro, ao percorrer
+        self.hoje: date | None = None  # o dia em processamento
         self.fins_pme: set[date] = set()  # dias seguintes ao fim de uma isenção de PME
         self.movimentos: list[Movimento] = []
         self.avisos: list[str] = []
@@ -157,7 +203,10 @@ class Livro:
     def processando(self, titular: int, *ativos: int | None) -> None:
         self.em_curso = (titular, frozenset(a for a in ativos if a is not None))
         for ativo in self.em_curso[1]:
-            if self.tipos.get(ativo) is TipoAtivo.SEM_TIPO:
+            tipo = self.tipos.get(ativo)
+            if tipo in REGRA_DO_FUNDO and self.hoje is not None:
+                _conferir_fundo(self, tipo, self.tickers.get(ativo, str(ativo)), self.hoje)
+            if tipo is TipoAtivo.SEM_TIPO:
                 raise MotorError(
                     f"{self.tickers.get(ativo, ativo)} não tem tipo de ativo nas tabelas do COIR, "
                     "e sem o tipo não se sabe como ele é tributado. Atualize as tabelas em "
@@ -464,6 +513,8 @@ def _percorrer(
                 if (op.objeto_tipo is None and livro.visao is Visao.TITULAR
                         and aviso not in livro.avisos):  # fmt: skip
                     livro.avisos.append(aviso)
+            if op.tipo is TipoAtivo.FIP and op.cv == "V" and livro.visao is Visao.TITULAR:
+                _avisar_come_cotas(livro, op.ticker, nota.data, parametros)
             item = _Op(nota, op, custo)
             if op.mercado == "TERMO":
                 if op.cv == "V" or op.liquidacao_termo is None:
@@ -507,6 +558,7 @@ def _percorrer(
     ofertas = [e for e in eventos if e.tipo is TipoEvento.OFERTA_PUBLICA
                and not livro.fora(e.titular, e.ativo, e.data)]  # fmt: skip
     for dia in sorted(dias):
+        livro.hoje = dia
         try:
             _antecipar_ofertas(livro, dia, dias, ofertas, parametros)
             _processar_dia(livro, dia, dias[dia], parametros)
@@ -1201,6 +1253,43 @@ def _dividendo_em_bens(livro: Livro, e: Evento, params: ParametrosFiscais) -> No
                     quantidade=e.quantidade_destino, valor=custo, evento=e.tipo)  # fmt: skip
 
 
+def _amortizacao_fip(livro: Livro, e: Evento, pos: Posicao, custo: Decimal) -> Decimal:
+    """Amortização de cotas de FIP comum: quanto do valor lançado reduz o custo (negativo).
+
+    Até 31/12/2023 (parâmetro fip_amortizacao_custo = excedente): o imposto na fonte só incide
+    sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a
+    amortização reduz o custo até zero, e o excedente é rendimento tributado na fonte.
+    Desde 01/01/2024 (proporcional_vp): só a parcela custo x amortização / valor patrimonial é
+    devolução de custo; o restante é rendimento com IRRF de 15%, definitivo (Lei 14.754/2023 art.
+    24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I). O COIR não tem o valor patrimonial:
+    o usuário lança a parcela de custo do informe; com o valor inteiro, o custo cai até zero
+    (custo menor, imposto maior na venda: nunca a menos), sempre com aviso (critério do COIR,
+    conservador; parecer do especialista de 13/11/2026)."""
+    regime = {p.valor for p in livro.parametros.parametros
+              if p.nome == "fip_amortizacao_custo" and p.vigente(e.data)}  # fmt: skip
+    avisar = livro.visao is Visao.TITULAR
+    if pos.custo + custo < 0 < pos.quantidade:
+        excedente = -(pos.custo + custo)
+        custo = -pos.custo
+        if avisar:
+            livro.avisos.append(
+                f"{e.data:%d/%m/%Y}: amortização de {e.ticker} acima do custo: o custo foi a zero "
+                f"e o excedente de {reais(excedente)} é rendimento do fundo, tributado na fonte "
+                "pelo administrador (IN RFB 1.585/2015 art. 32 §2º; Lei 14.754/2023 art. 24): "
+                "declare pelo informe, na ficha de tributação exclusiva, pelo valor líquido"
+            )
+    if regime == {"proporcional_vp"} and avisar:
+        livro.avisos.append(
+            f"{e.data:%d/%m/%Y}: amortização de {e.ticker}: desde 2024 só parte do valor "
+            "amortizado devolve custo (o custo vezes a amortização dividida pelo valor "
+            "patrimonial da cota; Lei 14.754/2023 art. 24 §2º); o restante é rendimento com IRRF "
+            "de 15%, definitivo. O COIR reduziu o custo pelo valor lançado no evento: lance só a "
+            "parcela de custo que o informe do administrador mostra. Com o valor inteiro, o "
+            "custo fica menor e o imposto na venda, maior"
+        )
+    return custo
+
+
 def _leilao_fracao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
     """Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo
     PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro
@@ -1403,7 +1492,9 @@ def _evento(livro: Livro, e: Evento) -> None:
             f"{e.tipo.value.lower()} de {e.ticker} ({e.data}): há venda antes desta data e a "
             f"posição está vendida em {pos.quantidade} (confira a data do evento e as vendas)"
         )
-    if e.tipo is TipoEvento.REDUCAO_CAPITAL and pos.custo + custo < 0 < pos.quantidade:
+    if e.tipo is TipoEvento.REDUCAO_CAPITAL and e.tipo_ativo is TipoAtivo.FIP:
+        custo = _amortizacao_fip(livro, e, pos, custo)
+    elif e.tipo is TipoEvento.REDUCAO_CAPITAL and pos.custo + custo < 0 < pos.quantidade:
         if e.tipo_ativo is not TipoAtivo.FUNDO_INFRA:
             raise MotorError(f"redução de capital de {e.ticker} ({e.data}) maior que o custo")
         # amortização de FI-Infra ou FIP-IE acima do custo: o custo vai a zero e o excedente é

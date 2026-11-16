@@ -76,7 +76,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 8.981/1995</td>
-  <td>11</td>
+  <td>13</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-8981-1995.md">lei-8981-1995.md</a></td>
 </tr>
 <tr>
@@ -106,7 +106,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 11.033/2004</td>
-  <td>41</td>
+  <td>43</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-11033-2004.md">lei-11033-2004.md</a></td>
 </tr>
 <tr>
@@ -118,6 +118,11 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
   <td>Lei 11.196/2005</td>
   <td>1</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-11196-2005.md">lei-11196-2005.md</a></td>
+</tr>
+<tr>
+  <td>Lei 11.312/2006</td>
+  <td>6</td>
+  <td>—</td>
 </tr>
 <tr>
   <td>Lei 11.478/2007</td>
@@ -146,7 +151,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 14.754/2023</td>
-  <td>9</td>
+  <td>15</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-14754-2023.md">lei-14754-2023.md</a></td>
 </tr>
 <tr>
@@ -171,7 +176,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>IN RFB 1.585/2015</td>
-  <td>118</td>
+  <td>128</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/in-rfb-1585-2015.md">in-rfb-1585-2015.md</a></td>
 </tr>
 <tr>
@@ -216,7 +221,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>SC Cosit 145/2021</td>
-  <td>5</td>
+  <td>6</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/sc-cosit-145-2021.md">sc-cosit-145-2021.md</a></td>
 </tr>
 <tr>
@@ -581,8 +586,10 @@ B3 nem é endossado por ela.</li>
 <li><code>data/irpf/2027.yaml</code> — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c</li>
 <li><code>data/parametros_fiscais.csv</code> — prejuizo<em>mes</em>isento_compensavel: Lei 8.981/1995 art. 72 §4º; Manual MIR 2026</li>
 <li><code>docs/regras-fiscais.md</code> — Proventos: atualização do provento pela Selic; tributação exclusiva como renda fixa (Lei 8.981/1995 art. 65</li>
+<li><code>docs/regras-fiscais.md</code> — R23: …18 §2º; Lei 11.312/2006 art. 2º; Lei 14.754/2023 arts. 17, 24, 26, 32 I e 46; Lei 11.033/2004 art. 3º I; Lei 8.981/1995 art. 72 §4º; SC Cosit 145 e 166/2021; critério do COIR | A no limite e na venda de FIP; M na…</li>
 <li><code>docs/regras-fiscais.md</code> — R5: R5 | Prejuízo de mês isento continua compensável | Parâmetro <code>prejuizo_mes_isento_compensavel = true</code> | Lei 8.981/1995 art. 72 §4º; Manual MIR 2026; critério do COIR | A</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t1</em>prejuizo<em>em</em>mes<em>isento</em>compensa: R5: prejuízo de ações em mês isento continua compensável (Lei 8.981/1995 art. 72 §4º; Manual MIR 2026; critério do COIR). Mar/24: ações -1.200 (vendas 15.000), opções…</li>
+<li><code>tests/fiscal_cases/test_fip_fidc.py</code> — módulo: …a e §3º; Lei 11.312/2006 art. 2º §1º I, não revogado pela Lei 14.754/2023 art. 46), na categoria comum (Lei 8.981/1995 art. 72 §4º). - Amortização de FIP até 31/12/2023: reduz o custo; só o excedente é rendimento (IN…</li>
 <li><code>tests/fiscal_cases/test_proventos.py</code> — test<em>atualizacao</em>do<em>provento</em>pela<em>selic</em>e<em>tributacao</em>exclusiva: …por ação, pago no mesmo dia (B3). Para 100 ações: bruto 5,684 -> 5,68; retidos 22,5% como renda fixa (Lei 8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º) -> líquido 4,40, IRRF 1,28. Não é dividendo: fora da Lei…</li>
 <li><code>tests/fiscal_cases/test_soma_limite_isencao.py</code> — test<em>perda</em>comum<em>com</em>day<em>trade</em>acima<em>do</em>limite<em>nao</em>reduz<em>imposto: …soma 21.000,00, sem aviso (não há ganho comum). A perda é compensável mesmo em mês dentro do limite (Lei 8.981/1995 art. 72 §4º; parâmetro prejuizo</em>mes<em>isento</em>compensavel). Abril: venda de CCCC3 a 25,00 (25.000,00;…</li>
 </ul>
@@ -693,6 +700,7 @@ B3 nem é endossado por ela.</li>
 <li><code>docs/regras-fiscais.md</code> — Proventos: Rendimento de FII/Fiagro: isento (Lei 11.033 art. 3º III).</li>
 <li><code>docs/regras-fiscais.md</code> — Proventos: §4º c; Lei 11.033 art. 1º), como as fontes retêm (22,5% nos dados reais); código 06 ou 12 conforme</li>
 <li><code>docs/regras-fiscais.md</code> — R16: …(<code>fii_isencao_minimo_cotistas</code>) e avisa o Fiagro antes de 11/06/2021 (<code>fiagro_rendimento_isento</code>) | Lei 11.033/2004 art. 3º (alt. Lei 14.130/2021 e Lei 14.754/2023) | M</li>
+<li><code>docs/regras-fiscais.md</code> — R23: …a 3º, art. 16 I a e art. 18 §2º; Lei 11.312/2006 art. 2º; Lei 14.754/2023 arts. 17, 24, 26, 32 I e 46; Lei 11.033/2004 art. 3º I; Lei 8.981/1995 art. 72 §4º; SC Cosit 145 e 166/2021; critério do COIR | A no limite e…</li>
 <li><code>docs/regras-fiscais.md</code> — R4: …= true`; a leitura contrária (SC Cosit 145/2021 §13, por analogia) fica registrada | Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º, art. 67 §3º; CTN art. 111 II | A (leitura literal);…</li>
 <li><code>docs/regras-fiscais.md</code> — Relatórios: abatimento (day trade antes da Lei 11.033) na ficha de comuns.</li>
 <li><code>docs/regras-fiscais.md</code> — Relatórios: duas partes, day trade e Lei 11.033, com mês, meses anteriores e a compensar; o de day trade é</li>
@@ -703,6 +711,7 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_direitos_subscricao.py</code> — módulo: …do direito fica fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O direito recebido sem nota de compra entra com…</li>
 <li><code>tests/fiscal_cases/test_eventos_societarios.py</code> — módulo: …parâmetro leilao<em>fracao</em>isentavel (critério do COIR: entra no limite de R$ 20 mil do mês do crédito, Lei 11.033/2004 art. 3º I).</li>
 <li><code>tests/fiscal_cases/test_fii_fiagro_avisos.py</code> — módulo: …compensação cruzada sem norma (IN RFB 1.585/2015 art. 37 §2º), rendimento de Fiagro antes da isenção (Lei 11.033/2004 art. 3º III, red. Lei 14.130/2021, DOU 11/06/2021) e requisitos da isenção (art. 3º §1º: 50…</li>
+<li><code>tests/fiscal_cases/test_fip_fidc.py</code> — módulo: …B6 do critério do COIR). - Cota de fundo não é ação: fora da soma do limite de R$ 20 mil e sem isenção (Lei 11.033/2004 art. 3º I; SC Cosit 145/2021 e 166/2021). - FIP comum: ganho líquido a 15% na venda em bolsa (IN…</li>
 <li><code>tests/fiscal_cases/test_irpf_declaracao.py</code> — módulo: …arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração) e 74; Lei 11.033/2004 art. 3º I (código 20); Lei 9.249/1995 arts. 9º e 10; Manual do MIR (Bens e Direitos, rendimentos…</li>
 <li><code>tests/fiscal_cases/test_irpf_declaracao.py</code> — test<em>ficha</em>mes<em>a</em>mes<em>e</em>imposto<em>pago</em>de_dezembro: …1.000,00. Dezembro: V 4.000 PETR4 a 30 (resultado 0) com IRRF 6,00 que sobra: ficha "Imposto pago", Lei 11.033 = 6,00.</li>
 <li><code>tests/fiscal_cases/test_irpf_linhas.py</code> — test<em>venda</em>do<em>termo</em>entra<em>na</em>soma<em>do</em>limite<em>de</em>isencao: …nunca é isento (IN 1.585 art. 59 §2º IV), mas o valor da venda entra na soma das alienações do mês (Lei 11.033/2004 art. 3º I; IN 1.585 art. 59 I; só a PME tem regra de não computar, art. 67 §3º). Dezembro: venda…</li>
@@ -729,6 +738,17 @@ B3 nem é endossado por ela.</li>
 
 <ul>
 <li><code>data/parametros_fiscais.csv</code> — fii<em>isencao</em>minimo_cotistas: Lei 11.033/2004 art. 3º parágrafo único I (red. Lei 11.196/2005 art. 125)</li>
+</ul>
+
+<h2 id="lei-113122006">Lei 11.312/2006</h2>
+
+<ul>
+<li><code>coir/engine/movimentos.py</code> — <em>amortizacao</em>fip: …= excedente): o imposto na fonte só incide sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a amortização reduz o custo até zero, e o excedente é rendimento tributado na…</li>
+<li><code>coir/engine/movimentos.py</code> — <em>conferir</em>fundo: …comum, sem isenção e fora do limite de R$ 20 mil). FIP: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I. FIDC: sem norma expressa para a venda em bolsa por pessoa física (o art. 16 I a da…</li>
+<li><code>data/parametros_fiscais.csv</code> — fip<em>amortizacao</em>custo: IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º</li>
+<li><code>data/parametros_fiscais.csv</code> — fip<em>venda</em>bolsa: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I (não revogado: Lei 14.754/2023 art. 46)</li>
+<li><code>docs/regras-fiscais.md</code> — R23: …<code>tests/fiscal_cases/test_fip_fidc.py</code> | IN RFB 1.585/2015 art. 32 §§1º a 3º, art. 16 I a e art. 18 §2º; Lei 11.312/2006 art. 2º; Lei 14.754/2023 arts. 17, 24, 26, 32 I e 46; Lei 11.033/2004 art. 3º I; Lei 8.981/1995…</li>
+<li><code>tests/fiscal_cases/test_fip_fidc.py</code> — módulo: …166/2021). - FIP comum: ganho líquido a 15% na venda em bolsa (IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I, não revogado pela Lei 14.754/2023 art. 46), na categoria comum (Lei 8.981/1995…</li>
 </ul>
 
 <h2 id="lei-114782007">Lei 11.478/2007</h2>
@@ -818,13 +838,19 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-147542023">Lei 14.754/2023</h2>
 
 <ul>
+<li><code>coir/engine/movimentos.py</code> — <em>amortizacao</em>fip: …/ valor patrimonial é devolução de custo; o restante é rendimento com IRRF de 15%, definitivo (Lei 14.754/2023 art. 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I). O COIR não tem o valor…</li>
+<li><code>coir/engine/movimentos.py</code> — <em>avisar</em>come_cotas: Desde 2024 o FIP que não é entidade de investimento tem tributação periódica (Lei 14.754/2023 art. 26), e o imposto pago nela aumenta o custo da cota (art. 17 §2º II). O COIR não tem esse…</li>
 <li><code>coir/engine/proventos.py</code> — <em>rendimento</em>etf: …Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei 14.754/2023 arts. 18 II, 24 e 32 I; parâmetro rendimento<em>etf</em>exclusivo); antes, sem norma lida, fica só o…</li>
 <li><code>coir/engine/proventos.py</code> — módulo: …País); é rendimento do exterior, sujeito ao carnê-leão pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR não calcula (faltam o imposto retido no…</li>
 <li><code>data/parametros_fiscais.csv</code> — fii<em>isencao</em>minimo_cotistas: Lei 11.033/2004 art. 3º §1º I e III (red. Lei 14.754/2023 art. 41; enquadramento até 30/06/2024): 100 cotistas e o grupo de pessoas ligadas sem 30% ou mais das cotas</li>
+<li><code>data/parametros_fiscais.csv</code> — fip<em>amortizacao</em>custo: Lei 14.754/2023 art. 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I; sem a parcela do informe, reduz até zero com aviso (critério do COIR, conservador)</li>
+<li><code>data/parametros_fiscais.csv</code> — fip<em>venda</em>bolsa: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I (não revogado: Lei 14.754/2023 art. 46)</li>
 <li><code>data/parametros_fiscais.csv</code> — rendimento<em>etf</em>exclusivo: Lei 14.754/2023 arts. 18 II, 24 caput e 32 I: IRRF de 15% na data da distribuição, definitivo para a pessoa física; ficha exclusiva 06 pelo líquido</li>
 <li><code>docs/regras-fiscais.md</code> — Proventos: …do exterior, sujeito ao carnê-leão e ao ajuste anual pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR só lista, com aviso: faltam o imposto…</li>
 <li><code>docs/regras-fiscais.md</code> — Proventos: …por ETF de ações desde 01/01/2024: IRRF de 15% na distribuição, definitivo para a pessoa física (Lei 14.754/2023 arts. 18 II, 24 e 32 I); ficha exclusiva 06 pelo líquido (linha <code>rendimento_etf</code>, parâmetro…</li>
 <li><code>docs/regras-fiscais.md</code> — R16: …antes de 11/06/2021 (<code>fiagro_rendimento_isento</code>) | Lei 11.033/2004 art. 3º (alt. Lei 14.130/2021 e Lei 14.754/2023) | M</li>
+<li><code>docs/regras-fiscais.md</code> — R23: …é rendimento tributado na fonte, só avisado. Venda de FIP desde 2024: aviso de que o come-cotas (Lei 14.754 art. 26) aumentaria o custo e o COIR não tem o dado. FIDC: isolado por desenho, com motivo próprio…</li>
+<li><code>tests/fiscal_cases/test_fip_fidc.py</code> — módulo: …em bolsa (IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I, não revogado pela Lei 14.754/2023 art. 46), na categoria comum (Lei 8.981/1995 art. 72 §4º). - Amortização de FIP até 31/12/2023:…</li>
 <li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — módulo: …COIR). - Rendimento distribuído por ETF de ações desde 01/01/2024: IRRF de 15% na data da distribuição (Lei 14.754/2023 arts. 18 II e 24 caput), definitivo para a pessoa física (art. 32 I): ficha de tributação…</li>
 <li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>rendimento</em>de<em>etf</em>de<em>acoes</em>desde<em>2024</em>e<em>exclusivo</em>pelo_liquido: Caso B10-b: 1.000 cotas a 0,10 = bruto 100,00; IRRF de 15% = 15,00; líquido 85,00 creditado pela B3. Exclusiva 06: 85,00 (Lei 14.754/2023 arts. 18 II, 24 e 32 I).</li>
 </ul>
@@ -895,8 +921,10 @@ B3 nem é endossado por ela.</li>
 <li><code>coir/engine/fiagro.py</code> — módulo: …da B3 (tipo FIAGRO), então o que segue são avisos, sem mudar o cálculo. - Compensação cruzada: a IN RFB 1.585/2015 art. 37 §2º só autoriza compensar perda de FII com ganho de FII; nenhuma norma autoriza compensar…</li>
 <li><code>coir/engine/fichas.py</code> — módulo: …com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §8º; critério do COIR: separar só na declaração). O programa IRPF tem uma ficha…</li>
 <li><code>coir/engine/futuros.py</code> — módulo: …"serão reconhecidos por ocasião da liquidação do contrato, cessão ou encerramento da posição". IN RFB 1.585/2015 art. 61 e P&amp;R IRPF 2026 pergunta 728: resultado de cada contrato = soma algébrica dos ajustes…</li>
+<li><code>coir/engine/movimentos.py</code> — <em>amortizacao</em>fip: …fip<em>amortizacao</em>custo = excedente): o imposto na fonte só incide sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a amortização reduz o custo até zero, e o excedente é…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>antecipar</em>ofertas: …então a aquisição entra antes dela, e o ganho fica no mês do pregão da venda (critério do COIR; IN RFB 1.585/2015 art. 58). Antecipa só o que cobre a venda, da oferta mais próxima para a mais distante. A posição…</li>
 <li><code>coir/engine/movimentos.py</code> — _cisao: Cisão: o percentual do custo de A divulgado pela companhia vai para B, sem resultado (IN RFB 1.585/2015 art. 58 §6º: na proporção fixada pela assembleia). A quantidade de A não muda. Os eventos das…</li>
+<li><code>coir/engine/movimentos.py</code> — <em>conferir</em>fundo: …em <code>ganho_liquido</code> (15% na categoria comum, sem isenção e fora do limite de R$ 20 mil). FIP: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I. FIDC: sem norma expressa para a venda em…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>day</em>trade: …marcou D formam o day trade quando a marcação é consistente; senão, a ordem dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º).</li>
 <li><code>coir/engine/movimentos.py</code> — <em>direito</em>nao_exercido: …emolumentos, pelo PM) vira perda em operações comuns na data do evento, o fim do prazo de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; art. 64 caput; SC Cosit 166/2021; critério do…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>direitos</em>recebidos: …pagar nada. A parte da venda que passa da posição (e das compras do dia) entra antes, com custo zero (IN RFB 1.585/2015 art. 58 §7º, por analogia: a norma não trata do direito recebido; critério do COIR), em vez de…</li>
@@ -932,6 +960,9 @@ B3 nem é endossado por ela.</li>
 <li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>na<em>soma</em>limite: Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)</li>
 <li><code>data/parametros_fiscais.csv</code> — direito<em>recebido</em>custo_zero: IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); critério do COIR</li>
 <li><code>data/parametros_fiscais.csv</code> — direito<em>vencido</em>data: IN RFB 1.585/2015 art. 60 §3º (analogia: perda na data do vencimento); Lei 6.404 art. 171 §4º (prazo decadencial): o direito comprado não exercido vira perda no fim do prazo de subscrição do pacote da B3, ou na data da baixa na B3 sem ele; alternativa baixa_b3 (critério do COIR)</li>
+<li><code>data/parametros_fiscais.csv</code> — fidc<em>venda</em>bolsa: sem norma expressa: IN RFB 1.585/2015 art. 16 I a só para fundo fechado com carteira de ações (art. 18 §2º); critério do COIR. Alternativa: ganho_liquido (15%, a prática de mercado)</li>
+<li><code>data/parametros_fiscais.csv</code> — fip<em>amortizacao</em>custo: IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º</li>
+<li><code>data/parametros_fiscais.csv</code> — fip<em>venda</em>bolsa: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I (não revogado: Lei 14.754/2023 art. 46)</li>
 <li><code>data/parametros_fiscais.csv</code> — irrf<em>day</em>trade<em>abate</em>fii: IN RFB 1.585/2015 art. 65 §8º I (a lei permite deduzir do imposto do mês); programa IRPF: a ficha de fundos imobiliários não tem linha de IR fonte de day trade (leiaute DIRPF, registro 42); critério do COIR, conservador: o 1% só abate o imposto de operações comuns e day trade, e o que sobrar em dezembro é restituição</li>
 <li><code>data/parametros_fiscais.csv</code> — janela<em>liquidacao</em>oferta_dias: Sem norma: Critério do COIR para venda antes da liquidação da oferta; a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)</li>
 <li><code>data/parametros_fiscais.csv</code> — leilao<em>fracao</em>isentavel: sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (critério do COIR)</li>
@@ -955,6 +986,7 @@ B3 nem é endossado por ela.</li>
 <li><code>docs/regras-fiscais.md</code> — R20: …de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&amp;R IRPF…</li>
 <li><code>docs/regras-fiscais.md</code> — R21: …com aviso se sobrar posição; sem quantidade (a linha da B3 vem sem ela), baixa todo o saldo | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei…</li>
 <li><code>docs/regras-fiscais.md</code> — R22: …o lote isento (critério conservador: nunca reduz imposto) | Lei 7.713/1988 art. 16 caput, §2º e §4º; IN RFB 1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º (analogia com a opção de compra exercida); Lei…</li>
+<li><code>docs/regras-fiscais.md</code> — R23: …código 07; FIDC sem código no mapa (declarar à mão). Casos em <code>tests/fiscal_cases/test_fip_fidc.py</code> | IN RFB 1.585/2015 art. 32 §§1º a 3º, art. 16 I a e art. 18 §2º; Lei 11.312/2006 art. 2º; Lei 14.754/2023 arts. 17,…</li>
 <li><code>docs/regras-fiscais.md</code> — R3: R3 | FII/Fiagro: 20%; sem isenção 20 mil; prejuízo só com ganho FII | Categoria FII (não existe no v2.02) | IN RFB 1.585/2015 | A</li>
 <li><code>docs/regras-fiscais.md</code> — R4: …de termo, leilão de fração), excluídos units (R4a), ETF, BDR, FII, direitos e o lote isento de PME (IN 1.585 art. 67 §3º); a isenção alcança só o ganho das vendas comuns à vista (art. 59 §2º I e IV). Critério do…</li>
 <li><code>docs/regras-fiscais.md</code> — R6: …0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&amp;R IRPF 2026 perguntas 714 e 715; a página "Retenções" da…</li>
@@ -984,6 +1016,10 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_eventos_societarios.py</code> — módulo: …ajuste de série de opção e leilão de fração (números conferidos à mão no critério do COIR). Fontes: - IN RFB 1.585/2015 art. 58 §6º: na substituição de ações por incorporação, fusão ou cisão, o custo das ações…</li>
 <li><code>tests/fiscal_cases/test_eventos_societarios.py</code> — test<em>grupamento</em>com<em>fracao</em>guarda<em>a</em>fracao<em>ate</em>o_leilao: Critério do COIR: a fração do evento fica na posição até o leilão, que a vende pelo custo médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º). 105 AAAA3 a 10,00 (1.050,00); grupamento 10:1 -> 10,5…</li>
 <li><code>tests/fiscal_cases/test_fii_fiagro_avisos.py</code> — módulo: …FII e Fiagro na declaração (critérios do COIR, leitura conservadora): compensação cruzada sem norma (IN RFB 1.585/2015 art. 37 §2º), rendimento de Fiagro antes da isenção (Lei 11.033/2004 art. 3º III, red. Lei…</li>
+<li><code>tests/fiscal_cases/test_fip_fidc.py</code> — módulo: …art. 3º I; SC Cosit 145/2021 e 166/2021). - FIP comum: ganho líquido a 15% na venda em bolsa (IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I, não revogado pela Lei 14.754/2023 art. 46),…</li>
+<li><code>tests/fiscal_cases/test_fip_fidc.py</code> — test<em>amortizacao</em>de<em>fip</em>acima<em>do</em>custo<em>zera</em>o<em>custo</em>e<em>avisa</em>o_excedente: Custo 9.500,50; amortização de 10.000,00: o custo vai a zero e os 499,50 excedentes são rendimento tributado na fonte pelo administrador (IN RFB 1.585/2015 art. 32 §2º).</li>
+<li><code>tests/fiscal_cases/test_fip_fidc.py</code> — test<em>fip</em>antes<em>da</em>vigencia<em>do</em>parametro<em>fica</em>isolado<em>sem</em>palpite: Sem regra vigente na data (antes da IN RFB 1.585/2015), o COIR não apura.</li>
+<li><code>tests/fiscal_cases/test_fip_fidc.py</code> — test<em>t6</em>2<em>amortizacao</em>ate<em>2023</em>reduz<em>o</em>custo<em>sem</em>rendimento: Custo 9.500,50; amortização de 12,00 x 100 = 1.200,00 em 2023: custo 8.300,50. Só o que exceder o custo seria rendimento (IN RFB 1.585/2015 art. 32 §2º).</li>
 <li><code>tests/fiscal_cases/test_fundo_infra.py</code> — módulo: …fora da apuração mensal, do limite de R$ 20 mil e do DARF, e o prejuízo não compensa outros ganhos (IN RFB 1.585/2015 art. 64 só admite as perdas dos arts. 27, 58 e 60 a 62). Critério do COIR.</li>
 <li><code>tests/fiscal_cases/test_futuros_commodities.py</code> — módulo: …só entra no volume do rateio e na conferência do câmbio implícito. Casos fechados à mão. Fontes: IN RFB 1.585/2015 art. 61 (resultado = soma dos ajustes no encerramento), art. 65 (15% e 20% day trade, inclusive…</li>
 <li><code>tests/fiscal_cases/test_irpf_declaracao.py</code> — módulo: …Fontes: P&amp;R IRPF 2026 perguntas 707, 720 (um item por ação, total das corretoras, custo médio) e 715; IN RFB 1.585/2015 arts. 58 §1º (bonificação: custo atribuído), 63 §8º III (saldo de IRRF de dezembro na declaração)…</li>
@@ -1072,6 +1108,7 @@ B3 nem é endossado por ela.</li>
 <li><code>docs/regras-fiscais.md</code> — R22: …6º e 7º, e art. 60 II a e §1º (analogia com a opção de compra exercida); Lei 6.404/1976 art. 171; SC Cosit 145/2021 e 166/2021; critério do COIR | A (custo do direito nas ações, conversão do recibo, data do crédito);…</li>
 <li><code>docs/regras-fiscais.md</code> — R4: …leituras) (critério do COIR); parâmetro <code>day_trade_na_soma_limite = true</code>; a leitura contrária (SC Cosit 145/2021 §13, por analogia) fica registrada | Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º,…</li>
 <li><code>tests/fiscal_cases/test_direitos_subscricao.py</code> — módulo: …20% em day trade, sem isenção, e a venda do direito fica fora da soma do limite de R$ 20 mil (SC Cosit 145/2021 e 166/2021, ementas oficiais; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 arts. 58, 59 e 65). O…</li>
+<li><code>tests/fiscal_cases/test_fip_fidc.py</code> — módulo: …de fundo não é ação: fora da soma do limite de R$ 20 mil e sem isenção (Lei 11.033/2004 art. 3º I; SC Cosit 145/2021 e 166/2021). - FIP comum: ganho líquido a 15% na venda em bolsa (IN RFB 1.585/2015 art. 32 §1º I a e…</li>
 </ul>
 
 <h2 id="sc-cosit-1482025">SC Cosit 148/2025</h2>

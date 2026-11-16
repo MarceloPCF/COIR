@@ -89,6 +89,12 @@ bens:
       descricao: "FIP-IE e FIP-PD&I"
       cnpj: fundo
       nota: "número pelo Guia IR 2026 do Itaú (o manual MIR dá só os nomes, na ordem 06 ETF, 07 FIP-IE, 08 ETF RF, 10 Infra); parecer de 09/11/2026, confiança média: confira no programa"
+    - tipo: FIP
+      grupo: "07"
+      codigo: "07"
+      descricao: "Fundos de Investimento em Participações (FIP)"
+      cnpj: fundo
+      nota: "o mesmo código do FIP-IE (o manual MIR lista o 07 como o dos FIP); confiança média: confira no programa"
     - tipo: FI_INFRA
       grupo: "07"
       codigo: "10"
