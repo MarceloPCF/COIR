@@ -23,6 +23,8 @@ from coir.parsing.numeros import compactar
 from coir.parsing.observacoes import marca_suspeita
 
 RE_TICKER = re.compile(r"^[A-Z0-9]{4}\d{1,2}F?$")
+# direito de subscrição com o preço de subscrição no nome: "IRBBRASIL RE DO 6,93", "FII X DM 9,88"
+RE_DIREITO = re.compile(r"^(?P<base>.+?)\s+D(?P<letra>[A-Z])\s+\d+,\d{2}$")
 RE_OPCAO = re.compile(
     r"^(?P<serie>[A-Z0-9]{4}[A-X]\d{1,4}(?:W\d)?)(?P<e>E)?(?P<classe>ON|PN[A-C]?|UNT)?$"
 )  # W1..W5: opção semanal
@@ -173,6 +175,9 @@ def _ticker_por_nome(n: NegocioBovespa, refs: Referencias, dia: date) -> str:
         if marca_suspeita(tokens[-1]):
             raise ReferenciaError(_marca_de_day_trade(n.especificacao, tokens[-1]))
         achado = _procurar(" ".join(tokens[:-1]), refs, dia)  # marca nova, fora da legenda
+    direito = RE_DIREITO.match(n.especificacao.strip()) if achado is None else None
+    if direito is not None:
+        achado = refs.direito_na_data(compactar(direito["base"]), direito["letra"], dia)
     if achado is None:
         raise ReferenciaError(_sem_cadastro(n.especificacao, refs))
     return achado

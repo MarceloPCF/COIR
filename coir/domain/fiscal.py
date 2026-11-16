@@ -190,6 +190,10 @@ class TipoEvento(StrEnum):
     OFERTA_PUBLICA = "OFERTA_PUBLICA"  # compra em IPO ou follow-on: não aparece em nota
     # direito ou bônus de subscrição que venceu sem exercício nem venda: o custo pago vira perda
     DIREITO_NAO_EXERCIDO = "DIREITO_NAO_EXERCIDO"
+    # direito de subscrição creditado pela companhia ou pelo fundo: entra com custo zero
+    DIREITO_RECEBIDO = "DIREITO_RECEBIDO"
+    # direito exercido: sai sem resultado, e o custo dele vai para o recibo (ou a ação) subscrito
+    EXERCICIO_DIREITO = "EXERCICIO_DIREITO"
 
 
 class NaturezaEvento(StrEnum):
@@ -202,9 +206,12 @@ class NaturezaEvento(StrEnum):
     CONVERSAO = "CONVERSAO"  # de classe na mesma companhia (ex.: PN -> ON)
     AJUSTE_SERIE = "AJUSTE_SERIE"  # série de opção com código ou quantidade ajustados pela B3
     OUTRA_CLASSE = "OUTRA_CLASSE"  # bonificação ou subscrição noutra classe (quem tem PN recebe ON)
+    RECIBO_SUBSCRICAO = "RECIBO_SUBSCRICAO"  # o recibo de subscrição vira a ação ou a cota
 
 
-TIPOS_COM_DESTINO = frozenset({TipoEvento.INCORPORACAO, TipoEvento.CISAO})
+TIPOS_COM_DESTINO = frozenset(
+    {TipoEvento.INCORPORACAO, TipoEvento.CISAO, TipoEvento.EXERCICIO_DIREITO}
+)
 
 
 class Evento(Modelo):

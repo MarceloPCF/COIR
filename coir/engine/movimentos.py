@@ -53,8 +53,9 @@ MERCADOS_EXERCICIO = frozenset({"EXERC CALL", "EXERC PUT"})
 # exclusivo na fonte (ETF de renda fixa) ou de alíquota zero (FI-Infra e FIP-IE)
 SEM_IRRF_DA_VENDA = frozenset({TipoAtivo.ETF_RF, TipoAtivo.FUNDO_INFRA})
 ABREM_POSICAO = frozenset(
-    {TipoEvento.SUBSCRICAO, TipoEvento.OFERTA_PUBLICA, TipoEvento.CUSTODIA_INICIAL}
-)
+    {TipoEvento.SUBSCRICAO, TipoEvento.OFERTA_PUBLICA, TipoEvento.CUSTODIA_INICIAL,
+     TipoEvento.DIREITO_RECEBIDO}
+)  # fmt: skip
 
 # titular, grupo da visão (None por titular; corretora; conta), ativo, vencimento (opção: o
 # código da série se repete de um ano para outro, ex.: TAEEL382 em dez/2023 e dez/2025)
@@ -595,6 +596,16 @@ def _direitos_recebidos(livro: Livro, dia: date, ops: Sequence[_Op]) -> None:
             continue
         o = venda[chave]
         livro.processando(o.nota.titular, o.op.ativo)
+        if pos.custo > 0 and livro.visao is Visao.TITULAR:
+            # com direitos comprados na posição, a data do crédito muda o custo médio: lançado só
+            # na venda, o ganho desta venda sai menor (ou adiado) do que o devido
+            livro.avisos.append(
+                f"{dia:%d/%m/%Y}: {o.op.ticker}: direito vendido sem o crédito lançado: os "
+                f"{falta} recebidos entraram com custo zero só nesta venda. Como havia direitos "
+                "comprados, o custo médio pode ter ficado maior e o ganho menor: lance o "
+                '"Direito recebido" na data do crédito (tela Eventos; a movimentação da B3 '
+                "traz a data)"
+            )
         pos.comprar(falta, ZERO)
         livro.registrar(chave, dia, f"direito:{o.op.id}",
                         "direito recebido sem custo: entra antes da venda, com custo zero (IN RFB "
@@ -620,6 +631,8 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
             _leilao_fracao(livro, evento, params)
         elif evento.tipo is TipoEvento.DIREITO_NAO_EXERCIDO:
             _direito_nao_exercido(livro, evento)
+        elif evento.tipo is TipoEvento.EXERCICIO_DIREITO:
+            _exercicio_direito(livro, evento)
         else:
             _evento(livro, evento)
     origens = [chave for chave, _ in cisoes]
@@ -1081,6 +1094,10 @@ def _incorporacao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
     quantidade = e.quantidade or ZERO
     custo = pos.baixar_sem_resultado(quantidade)
     regra = f"incorporação ({e.natureza.value.lower()}, IN 1.585 art. 58 §6º): "
+    if e.natureza is NaturezaEvento.RECIBO_SUBSCRICAO:
+        # o recibo vira a ação ou a cota: não há alienação pelo titular (Lei 7.713/1988 art. 3º
+        # §3º); o custo integral segue com ela (IN 1.585 art. 58 §§4º e 6º, por analogia)
+        regra = "recibo de subscrição convertido (IN 1.585 art. 58 §§4º e 6º, por analogia): "
     livro.registrar(chave, e.data, f"evento:{e.id}",
                     regra + f"sai para {e.ticker_destino} com o custo, sem resultado", de=de,
                     categoria=Categoria.COMUM, cv="V" if sinal > 0 else "C",
@@ -1184,6 +1201,59 @@ def _direito_nao_exercido(livro: Livro, e: Evento) -> None:
         )
 
 
+DIREITO_RECEBIDO = (
+    "direito de subscrição recebido sem custo, na data do crédito (IN RFB 1.585/2015 art. 58 §7º, "
+    "por analogia; Lei 7.713/1988 art. 16 §4º): entra no custo médio dos direitos com custo zero"
+)
+
+
+def _exercicio_direito(livro: Livro, e: Evento) -> None:
+    """Direito de subscrição exercido: os direitos saem pelo custo médio, sem resultado, e o
+    recibo (ou a ação) subscrito entra pelo valor pago mais o custo dos direitos usados (Lei
+    7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por
+    analogia com a opção de compra exercida). O exercício não é alienação: sem resultado, fora do
+    limite de R$ 20 mil e sem IRRF. Os direitos que faltarem na posição foram recebidos sem custo
+    e não estavam no livro: entram com custo zero, com aviso."""
+    if not e.quantidade or e.quantidade <= 0:
+        raise MotorError(f"{_nome(e)} sem a quantidade de direitos exercidos")
+    if not e.quantidade_destino or e.quantidade_destino <= 0:
+        raise MotorError(f"{_nome(e)} sem a quantidade subscrita")
+    if e.valor <= 0:
+        raise MotorError(f"{_nome(e)} sem o valor pago na subscrição")
+    chave = _chave_evento(livro, e)
+    pos = livro.posicoes[chave]
+    if pos.quantidade < 0:
+        raise MotorError(f"{_nome(e)} em posição vendida")
+    de = (e.conta, e.corretora)
+    falta = e.quantidade - pos.quantidade
+    if falta > 0:
+        pos.comprar(falta, ZERO)
+        livro.registrar(chave, e.data, f"evento:{e.id}",
+                        "direito recebido sem custo: entra antes do exercício, com custo zero (IN "
+                        "RFB 1.585/2015 art. 58 §7º, por analogia)", de=de,
+                        categoria=Categoria.COMUM, cv="C", quantidade=falta,
+                        valor=ZERO)  # fmt: skip
+        if livro.visao is Visao.TITULAR:
+            livro.avisos.append(
+                f"{e.data:%d/%m/%Y}: {e.ticker}: {falta} direito(s) exercido(s) não estavam na "
+                "posição e entraram como recebidos sem custo; se foram comprados, falta a nota "
+                "(confira a movimentação da B3)"
+            )
+    destino = _destino(livro, e, chave, 1)
+    custo = pos.baixar_sem_resultado(e.quantidade)
+    regra = "direito de subscrição exercido (IN 1.585 art. 58 caput e art. 60 II a, por analogia): "
+    livro.registrar(chave, e.data, f"evento:{e.id}",
+                    regra + f"sai para {e.ticker_destino} com o custo, sem resultado", de=de,
+                    categoria=Categoria.COMUM, cv="V", quantidade=e.quantidade, valor=custo,
+                    evento=e.tipo)  # fmt: skip
+    livro.posicoes[destino].ajustar(e.quantidade_destino, custo + e.valor)
+    livro.registrar(destino, e.data, f"evento:{e.id}",
+                    regra + f"entra pelo valor pago ({reais(e.valor)}) mais o custo dos direitos "
+                    f"({reais(custo)})", de=de, categoria=Categoria.COMUM, cv="C",
+                    quantidade=e.quantidade_destino, valor=custo + e.valor,
+                    evento=e.tipo)  # fmt: skip
+
+
 CUSTODIA = (
     "custódia inicial em 31/12: entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58; "
     "o da declaração), sem resultado"
@@ -1256,6 +1326,9 @@ def _evento(livro: Livro, e: Evento) -> None:
         raise MotorError(f"custódia inicial de {e.ticker} ({e.data}): só compra de ações, ETF, "
                          "BDR, units e FII; para opções, futuros e posição vendida, importe as "
                          "notas desde a abertura")  # fmt: skip
+    if e.tipo is TipoEvento.DIREITO_RECEBIDO and (e.cv != "C" or e.valor):
+        raise MotorError(f"{_nome(e)}: o direito recebido entra (C) com custo zero; o comprado "
+                         "vem na nota de corretagem")  # fmt: skip
     abre = (e.tipo in ABREM_POSICAO or e.natureza is NaturezaEvento.OUTRA_CLASSE) and e.cv == "C"
     if pos.quantidade == 0 and not abre:
         # só a subscrição, a oferta pública, a custódia inicial e a bonificação noutra classe abrem
@@ -1307,6 +1380,8 @@ def _evento(livro: Livro, e: Evento) -> None:
     regra = (
         CUSTODIA
         if e.tipo is TipoEvento.CUSTODIA_INICIAL
+        else DIREITO_RECEBIDO
+        if e.tipo is TipoEvento.DIREITO_RECEBIDO
         else f"evento {e.tipo.value.lower()}: ajusta quantidade e custo, sem resultado"
     )
     livro.registrar(chave, e.data, f"evento:{e.id}", regra, de=de, categoria=Categoria.COMUM,
