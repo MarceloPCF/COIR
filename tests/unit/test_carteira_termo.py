@@ -68,3 +68,22 @@ def test_na_visao_por_conta_o_termo_leva_corretora_e_conta() -> None:
     linhas = posicoes(pos, {1: "123"}, 1, termos_em_aberto(livro.notas, dia), Visao.CONTA)
     termo = next(x for x in linhas if x.liquidacao is not None)
     assert (termo.corretora, termo.conta, termo.numero_conta) == ("XP", 1, "123")
+
+
+def test_venda_a_termo_em_aberto_aparece_abaixo_do_ativo_que_continua_na_carteira() -> None:
+    """Venda a termo (parecer de 13/11/2026): até a liquidação as ações ficam na carteira e no PM;
+    a linha própria mostra o valor da venda (preço a termo menos custos) e a data da entrega."""
+    livro = Livro()
+    livro.nota(date(2024, 1, 2), livro.op("C", "AAAA3", 1000, "25"))
+    livro.nota(date(2024, 1, 3), livro.op("V", "AAAA3", 400, "31", mercado="TERMO",
+                                          liquidacao=date(2024, 3, 4)), custos="4")  # fmt: skip
+    dia = date(2024, 2, 5)
+    pos = carteira(livro.notas, livro.eventos, parametros(), dia)
+    linhas = posicoes(pos, {1: "123"}, 1, termos_em_aberto(livro.notas, dia), Visao.TITULAR)
+    assert [(x.ticker, x.tipo, x.quantidade, x.custo) for x in linhas] == [
+        ("AAAA3", "Ação", D(1000), D(25000)),
+        ("AAAA3", "Venda a termo · entrega em 04/03/2024", D(400), D(12396)),
+    ]  # fmt: skip
+    assert linhas[1].venda_a_termo and not linhas[0].venda_a_termo
+    depois = carteira(livro.notas, livro.eventos, parametros(), date(2024, 3, 4))
+    assert [(p.quantidade, p.custo) for p in depois] == [(D(600), D(15000))]

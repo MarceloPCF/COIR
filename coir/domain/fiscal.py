@@ -74,7 +74,9 @@ class Grupo(StrEnum):
     DOLAR = "dolar"
     JUROS = "juros"
     COMMODITY = "commodity"
-    TERMO = "termo"  # venda à vista na data da liquidação do termo (IN RFB 1.585 art. 62 I)
+    # venda à vista na data da liquidação do termo (IN RFB 1.585 art. 62 I) e venda a termo,
+    # na liquidação (art. 62 II e III)
+    TERMO = "termo"
 
 
 # ------------------------------------------------------------------------------------- entradas
@@ -323,8 +325,9 @@ class PosicaoAtivo(Modelo):
 
 
 class TermoAberto(Modelo):
-    """Compra a termo ainda não liquidada numa data: fica fora da carteira e do PM até a
-    liquidação, mas a tela a mostra numa linha própria, como a B3 (critério do COIR, F2)."""
+    """Compra ou venda a termo ainda não liquidada numa data. A compra fica fora da carteira e do
+    PM até a liquidação; na venda, as ações continuam na carteira até a entrega. A tela mostra
+    cada uma numa linha própria, como a B3 (critério do COIR, F2)."""
 
     titular: int
     corretora: str
@@ -336,7 +339,10 @@ class TermoAberto(Modelo):
     pregao: date
     liquidacao: date
     quantidade: Decimal
-    custo: Decimal  # preço a termo x quantidade + custos da nota rateados (o que entra no PM)
+    # compra: preço a termo x quantidade + custos da nota rateados (o que entra no PM);
+    # venda: preço a termo x quantidade - custos (o valor da alienação na liquidação)
+    custo: Decimal
+    cv: CV = "C"
 
 
 class AtivoIsolado(Modelo):

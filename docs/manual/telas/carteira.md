@@ -8,4 +8,6 @@ A posição numa data, com quantidade, preço médio e custo. A visão **Titular
 
 Uma **compra a termo ainda não liquidada** aparece numa linha própria, logo abaixo do ativo, com a data da liquidação. Ela não entra na posição, no preço médio nem no total até liquidar, como na B3; ao clicar, o painel mostra a nota da compra.
 
+Uma **venda a termo ainda não liquidada** também aparece numa linha própria, com a data da entrega. Até lá as ações continuam na carteira e no preço médio. Na data da liquidação elas saem pelo preço médio desse dia, e o ganho entra na apuração do mês, sem isenção. Se o contrato foi liquidado antes do vencimento, o COIR ainda usa a data do vencimento.
+
 [Voltar ao índice do manual](../README.md)

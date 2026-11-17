@@ -16,6 +16,11 @@ Fontes:
   à vista na mesma data consomem primeiro o lote do termo, pelo preço a termo (art. 62 I, linha do
   termo, sem isenção); o excedente sai da posição anterior pelo PM. O que sobra do lote fica no
   custo médio (art. 62 §1º e art. 58). Critérios do COIR de 20 e 21/10/2026.
+- Venda a termo: a alienação se dá na liquidação (art. 59 §2º IV), no vencimento do contrato. O
+  ganho é o preço a termo, menos os custos da nota, menos o custo médio da posição na abertura
+  desse dia (art. 62 II e III; art. 58): coberto e descoberto dão a mesma conta. Linha do termo,
+  nunca isento; o valor bruto entra na soma do limite do mês da liquidação. Sem ações para
+  entregar, o motor para. Parecer do especialista de 13/11/2026.
 """
 
 from calendar import monthrange
@@ -139,6 +144,30 @@ def _avisar_come_cotas(livro: "Livro", ticker: str, dia: date, params: Parametro
     )
     if regime == {"proporcional_vp"} and aviso not in livro.avisos:
         livro.avisos.append(aviso)
+
+
+def _avisar_conjugadas(
+    livro: "Livro",
+    vendas: Sequence[tuple[NotaMotor, OperacaoMotor]],
+    compras: set[tuple[int, str, int, date]],
+) -> None:
+    """Compra à vista e venda a termo do mesmo ativo, no mesmo pregão e na mesma corretora: pode
+    ser a operação conjugada com rendimento predeterminado, que é renda fixa (IN RFB 1.585/2015
+    art. 47 I b e §1º I). O COIR apura como venda a termo coberta (art. 62 III) e avisa (parecer
+    do especialista de 13/11/2026)."""
+    for nota, op in vendas:
+        if (nota.titular, nota.corretora, op.ativo, nota.data) not in compras:
+            continue
+        aviso = (
+            f"{nota.data:%d/%m/%Y}: compra à vista e venda a termo de {op.ticker} no mesmo "
+            f"pregão, na {nota.corretora}: pode ser uma operação conjugada, que a Receita trata "
+            "como renda fixa (IN RFB 1.585/2015 art. 47 I b). O COIR apurou como venda a termo, "
+            "com o ganho na liquidação. Se o informe da corretora mostrar essa operação como "
+            "renda fixa, com imposto retido na fonte, o ganho não entra na apuração de renda "
+            "variável: confira com a corretora"
+        )
+        if aviso not in livro.avisos:
+            livro.avisos.append(aviso)
 
 
 def _grupo(tipo: TipoAtivo) -> Grupo:
@@ -326,16 +355,17 @@ def carteira(
 
 
 def termos_em_aberto(notas: Iterable[NotaMotor], ate: date) -> list[TermoAberto]:
-    """Compras a termo feitas até `ate` e ainda não liquidadas no fim desse dia. Não mudam a
-    carteira nem o PM (entram na liquidação, ver `carteira`): são só para mostrar. O custo é o
-    mesmo que entrará no PM: valor a termo + custos da nota rateados como em `_percorrer`."""
+    """Compras e vendas a termo feitas até `ate` e ainda não liquidadas no fim desse dia. Não
+    mudam a carteira nem o PM (entram na liquidação, ver `carteira`): são só para mostrar. Na
+    compra, o custo é o que entrará no PM: valor a termo + custos da nota rateados como em
+    `_percorrer`; na venda, o valor da alienação: valor a termo - custos."""
     saida: list[TermoAberto] = []
     for nota in notas:
         if nota.data > ate or not nota.operacoes:
             continue
         custos = ratear(nota.custos, [o.total for o in nota.operacoes])
         for op, custo in zip(nota.operacoes, custos, strict=True):
-            if (op.mercado != "TERMO" or op.cv != "C" or op.liquidacao_termo is None
+            if (op.mercado != "TERMO" or op.liquidacao_termo is None
                     or op.liquidacao_termo <= ate):  # fmt: skip
                 continue
             saida.append(
@@ -343,7 +373,7 @@ def termos_em_aberto(notas: Iterable[NotaMotor], ate: date) -> list[TermoAberto]
                     titular=nota.titular, corretora=nota.corretora, conta=nota.conta,
                     nota=nota.id, ativo=op.ativo, ticker=op.ticker, tipo=op.tipo,
                     pregao=nota.data, liquidacao=op.liquidacao_termo, quantidade=op.quantidade,
-                    custo=op.total + custo,
+                    custo=op.total + custo if op.cv == "C" else op.total - custo, cv=op.cv,
                 )
             )  # fmt: skip
     return saida
@@ -495,6 +525,8 @@ def _percorrer(
     dias: dict[date, _Dia] = defaultdict(_Dia)
     vencimentos: set[date] = set()
     ops: list[tuple[date, _Op]] = []  # dia em que a operação entra no livro
+    vendas_a_termo: list[tuple[NotaMotor, OperacaoMotor]] = []
+    compras_a_vista: set[tuple[int, str, int, date]] = set()  # titular, corretora, ativo, pregão
     for nota in notas:
         if nota.data > ate or not nota.operacoes:
             continue  # nota BM&F: só ajustes (futuros.py)
@@ -517,13 +549,17 @@ def _percorrer(
                 _avisar_come_cotas(livro, op.ticker, nota.data, parametros)
             item = _Op(nota, op, custo)
             if op.mercado == "TERMO":
-                if op.cv == "V" or op.liquidacao_termo is None:
-                    raise MotorError(f"nota {nota.numero} de {nota.data}, {op.ticker}: venda a "
-                                     "termo ou termo sem data de liquidação (prazo)")  # fmt: skip
+                if op.liquidacao_termo is None:
+                    raise MotorError(f"nota {nota.numero} de {nota.data}, {op.ticker}: termo sem "
+                                     "data de liquidação (prazo)")  # fmt: skip
+                if op.cv == "V":
+                    vendas_a_termo.append((nota, op))
                 if op.liquidacao_termo <= ate:
                     ops.append((op.liquidacao_termo, item))
                 continue
             ops.append((nota.data, item))
+            if op.cv == "C" and op.mercado in MERCADOS_ACAO_A_VISTA:
+                compras_a_vista.add((nota.titular, nota.corretora, op.ativo, nota.data))
             if op.tipo is TipoAtivo.OPCAO:
                 if op.vencimento is None or op.vencimento < nota.data:
                     raise MotorError(
@@ -531,6 +567,8 @@ def _percorrer(
                         "anterior ao negócio (confira data/vencimentos_opcoes*.csv)"
                     )
                 vencimentos.add(op.vencimento)
+    if livro.visao is Visao.TITULAR:
+        _avisar_conjugadas(livro, vendas_a_termo, compras_a_vista)
     ate_hoje: list[Evento] = []
     for evento in eventos:
         if evento.data <= ate:
@@ -701,10 +739,14 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
                              "mesmo dia (não implementado)")  # fmt: skip
         _cisao(livro, chave, grupo)
     livro.termo_hoje = {}
-    for t in sorted(d.termos, key=lambda t: (t.nota.id, t.op.ordem)):
+    # as compras a termo liquidam antes das vendas a termo: as ações recebidas podem ser entregues
+    for t in sorted(d.termos, key=lambda t: (t.op.cv == "V", t.nota.id, t.op.ordem)):
         livro.processando(t.nota.titular, t.op.ativo)
         chave = livro.chave(t.nota.titular, _de(t), t.op.ativo)
         pos = livro.posicoes[chave]
+        if t.op.cv == "V":
+            _venda_a_termo(livro, dia, chave, t)
+            continue
         # ações vendidas antes da liquidação: a posição ficou vendida e o termo a cobre (resultado
         # na liquidação, limite de isenção do mês da venda, como na recompra da venda a descoberto)
         mes_limite = pos.descoberto_desde if pos.quantidade < 0 else None
@@ -1212,6 +1254,41 @@ def _cisao(livro: Livro, chave: Chave, grupo: list[Evento]) -> None:
                         f"cisão: recebida de {e.ticker} com {p * 100}% do custo", de=de,
                         categoria=Categoria.COMUM, cv="C",
                         quantidade=e.quantidade_destino or ZERO, valor=custo)  # fmt: skip
+
+
+def _venda_a_termo(livro: Livro, dia: date, chave: Chave, t: _Op) -> None:
+    """Liquidação da venda a termo, no vencimento do contrato: é quando a alienação se dá (IN RFB
+    1.585/2015 art. 59 §2º IV). Ganho = preço a termo x quantidade, menos os custos da nota da
+    venda, menos o custo médio da posição na abertura deste dia (art. 62 II, vendedor descoberto,
+    e III, vendedor coberto; art. 58): as compras feitas entre o contrato e a liquidação entram no
+    custo médio. Linha "Mercado a termo" da ficha, 15%, nunca isento (art. 59 §2º IV); o valor
+    bruto entra na soma do limite de R$ 20 mil do mês da liquidação, como no exercício e no day
+    trade (leitura literal do art. 59 I). Sem ações para entregar, ou com lote isento de PME, o
+    motor para: nada de palpite (parecer do especialista de 13/11/2026)."""
+    op, pos = t.op, livro.posicoes[chave]
+    onde = f"venda a termo de {op.ticker} (nota {t.nota.numero} de {t.nota.data:%d/%m/%Y})"
+    if pos.quantidade < op.quantidade:
+        raise MotorError(
+            f"{onde}: faltam ações para entregar na liquidação do termo em {dia:%d/%m/%Y} "
+            f"(contrato de {op.quantidade}, posição de {pos.quantidade}). Confira se falta uma "
+            "nota de compra ou um evento, ou se o contrato foi liquidado antes do vencimento"
+        )
+    if pos.isento_em(dia):  # sem norma para a isenção de PME na entrega do termo e sem caso real
+        raise MotorError(f"{onde}: lote isento de PME dentro do prazo da isenção")
+    baixa = pos.vender(op.quantidade, t.valor)
+    lote = livro.termo_hoje.get(chave)
+    if lote is not None and lote.quantidade > pos.quantidade:
+        # ações de uma compra a termo liquidada hoje foram entregues: saem do lote do dia
+        lote.baixar_sem_resultado(lote.quantidade - pos.quantidade)
+    acao = op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT)
+    livro.registrar(
+        chave, dia, f"termo:{op.id}",
+        "venda a termo liquidada: preço a termo - custos da venda - custo médio do dia da "
+        "liquidação (IN 1.585 art. 62 II e III); nunca isento (art. 59 §2º IV)",
+        de=_de(t), categoria=Categoria.COMUM, cv="V", quantidade=op.quantidade, valor=t.valor,
+        custos=t.custos, baixa=baixa, venda_acao=op.total if acao else ZERO, isentavel=False,
+        grupo=Grupo.TERMO,
+    )  # fmt: skip
 
 
 def _dividendo_em_bens(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
