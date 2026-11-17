@@ -96,10 +96,11 @@ class OperacaoMotor(Modelo):
     vencimento: date | None = None  # opção: data de vencimento da série
     opcao: int | None = None  # exercício: ativo da opção exercida
     objeto_tipo: TipoAtivo | None = None  # opção: tipo do ativo-objeto (None: não identificado)
-    liquidacao_termo: date | None = None  # compra a termo: entra na carteira nesta data
+    liquidacao_termo: date | None = None  # termo: liquida nesta data (vencimento ou antecipada)
     pme_ate: date | None = None  # compra elegível à isenção de PME: vendas isentas até esta data
     pme_media_fim: Decimal | None = None  # média dos 30 pregões do fim da isenção (art. 17 §6º)
     marcada_dt: bool = False  # a nota marca o negócio como day trade (observação "D")
+    aviso: str = ""  # termo: aviso da data de liquidação (entra quando o termo liquida)
 
 
 class TipoAjuste(StrEnum):

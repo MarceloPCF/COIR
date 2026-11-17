@@ -16,7 +16,10 @@ Fontes:
   à vista na mesma data consomem primeiro o lote do termo, pelo preço a termo (art. 62 I, linha do
   termo, sem isenção); o excedente sai da posição anterior pelo PM. O que sobra do lote fica no
   custo médio (art. 62 §1º e art. 58). Critérios do COIR de 20 e 21/10/2026.
-- Venda a termo: a alienação se dá na liquidação (art. 59 §2º IV), no vencimento do contrato. O
+- Data da liquidação do termo (compra e venda): a de `OperacaoMotor.liquidacao_termo`, que o
+  serviço tira da movimentação da B3 quando ela mostra a liquidação antecipada (total ou parcial,
+  uma operação por parte) e, sem isso, do vencimento do contrato, com aviso.
+- Venda a termo: a alienação se dá na liquidação (art. 59 §2º IV), no vencimento ou antecipada. O
   ganho é o preço a termo, menos os custos da nota, menos o custo médio da posição na abertura
   desse dia (art. 62 II e III; art. 58): coberto e descoberto dão a mesma conta. Linha do termo,
   nunca isento; o valor bruto entra na soma do limite do mês da liquidação. Sem ações para
@@ -565,6 +568,9 @@ def _percorrer(
                     vendas_a_termo.append((nota, op))
                 if op.liquidacao_termo <= ate:
                     ops.append((op.liquidacao_termo, item))
+                    if (op.aviso and livro.visao is Visao.TITULAR
+                            and op.aviso not in livro.avisos):  # fmt: skip
+                        livro.avisos.append(op.aviso)
                 continue
             ops.append((nota.data, item))
             if op.cv == "C" and op.mercado in MERCADOS_ACAO_A_VISTA:

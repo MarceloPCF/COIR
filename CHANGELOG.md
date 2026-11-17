@@ -8,6 +8,11 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+- **Termo liquidado antes do vencimento**: o COIR passa a ler, na movimentação da B3 importada, a linha "Liquidação Termo" e usa a data dela quando a compra ou a venda a termo foi liquidada antes do vencimento, no todo ou em parte. Antes, valia sempre o vencimento, e o ganho, o preço médio e a soma do limite de R$ 20 mil podiam cair no mês errado. Sem a movimentação do período, o COIR continua usando o vencimento e avisa na Apuração: sempre na venda a termo e, na compra, quando houve venda do mesmo ativo antes do vencimento ou o vencimento cai em outro ano.
+
 ## [3.1.2] - 2026-11-17
 
 ### Adicionado
