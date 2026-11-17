@@ -4,6 +4,7 @@ arquivo a arquivo. Os PDFs escolhidos são guardados na pasta das notas (para a 
 
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 
 from nicegui import events, run, ui
@@ -65,7 +66,7 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         try:
             for a, ticker in escolhas.items():
                 await run.io_bound(escolher_codigo, estado.banco, a.corretora, a.conta, a.nome,
-                                   ticker, estado.agora())  # fmt: skip
+                                   a.data, ticker, estado.agora())  # fmt: skip
         except CoirError as erro:
             ui.notify(f"Escolha não gravada: {erro}", type="negative", multi_line=True)
             return
@@ -277,19 +278,20 @@ def _perguntar_codigos(
     gravar: Callable[[dict[NomeAmbiguo, str], set[str]], Awaitable[None]],
 ) -> None:
     """Nome de pregão que valia para mais de um código na data: pergunta qual é, uma vez por
-    conta e nome, e importa de novo as notas recusadas por isso."""
-    perguntas: dict[tuple[str, str, str], NomeAmbiguo] = {}
+    conta, nome e pregão (os dois códigos podem ter sido negociados em dias diferentes), e
+    importa de novo as notas recusadas por isso."""
+    perguntas: dict[tuple[str, str, str, date], NomeAmbiguo] = {}
     for a in ambiguos:
-        perguntas.setdefault((a.corretora, a.conta, a.nome), a)
+        perguntas.setdefault((a.corretora, a.conta, a.nome, a.data), a)
     escolhas: dict[NomeAmbiguo, ui.radio] = {}
     with ui.column().classes("coir-folha w-full gap-2").mark("codigos-em-duvida"):
         ui.label("Qual é o código do ativo?").classes("coir-titulo text-base")
         ui.label(
             "A nota traz só o nome de pregão, e na data ele valia para mais de um código. O COIR "
             "não escolhe no palpite. Confira no extrato da corretora ou na Área do Investidor "
-            "da B3 e marque o código negociado; a escolha fica guardada para as notas dessa "
-            "conta. Se preferir, importe antes a planilha de negociação da B3 do período: com "
-            "ela o COIR acha o código sozinho."
+            "da B3 e marque o código negociado em cada pregão; a escolha fica guardada para "
+            "as notas dessa conta naquele dia. Se preferir, importe antes a planilha de "
+            "negociação da B3 do período: com ela o COIR acha o código sozinho."
         ).classes("coir-subtitulo text-sm")
         for a in perguntas.values():
             with ui.row().classes("items-center gap-4"):
@@ -297,7 +299,9 @@ def _perguntar_codigos(
                     f"{a.especificacao}, nota de {a.data:%d/%m/%Y} ({a.corretora}, conta {a.conta})"
                 ).classes("font-medium")
                 escolhas[a] = (
-                    ui.radio(list(a.codigos)).props("inline dense").mark(f"codigo-{a.nome}")
+                    ui.radio(list(a.codigos))
+                    .props("inline dense")
+                    .mark(f"codigo-{a.nome}-{a.data:%Y%m%d}")
                 )
 
         async def confirmar() -> None:
@@ -305,9 +309,10 @@ def _perguntar_codigos(
             if not marcadas:
                 ui.notify("Marque o código de pelo menos um ativo.", type="warning")
                 return
-            chaves = {(a.corretora, a.conta, a.nome) for a in marcadas}
-            await gravar(marcadas, {a.arquivo for a in ambiguos
-                                    if (a.corretora, a.conta, a.nome) in chaves})  # fmt: skip
+            chaves = {(a.corretora, a.conta, a.nome, a.data) for a in marcadas}
+            arquivos = {a.arquivo for a in ambiguos
+                        if (a.corretora, a.conta, a.nome, a.data) in chaves}  # fmt: skip
+            await gravar(marcadas, arquivos)
 
         ui.button("Gravar a escolha e importar de novo", icon="check", on_click=confirmar).mark(
             "gravar-codigos"

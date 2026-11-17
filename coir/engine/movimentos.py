@@ -119,7 +119,8 @@ def _conferir_fundo(livro: "Livro", tipo: TipoAtivo | None, ticker: str, dia: da
     if tipo is TipoAtivo.FIDC:
         raise MotorError(
             f"{ticker} é cota de FIDC: não há norma expressa para a venda de FIDC em bolsa por "
-            "pessoa física, e o COIR não calcula o resultado. Confira com o administrador do "
+            "pessoa física, e o COIR deixa o fundo fora do cálculo desde o primeiro negócio, "
+            "inclusive as compras. Confira com o administrador do "
             "fundo. A prática de mercado recolhe 15% (DARF 6015); com o parâmetro "
             "fidc_venda_bolsa = ganho_liquido o COIR apura assim"
         )
@@ -477,6 +478,14 @@ def _venda_isolada(livro: Livro, dia: date, o: _Op) -> None:
     ))  # fmt: skip
 
 
+def _ativos_do_evento(e: Evento) -> tuple[int | None, ...]:
+    """Os ativos que o evento liga no isolamento. O dividendo em bens só mexe no bem recebido: a
+    posição na companhia que pagou não muda, e uma não deve puxar a outra."""
+    if e.tipo is TipoEvento.DIVIDENDO_EM_BENS:
+        return (e.ativo_destino,)
+    return (e.ativo, e.ativo_destino)
+
+
 def _isolar(
     livro: Livro, ops: OpsDoDia, eventos: list[Evento]
 ) -> tuple[OpsDoDia, OpsDoDia, list[Evento], Meses]:
@@ -486,7 +495,7 @@ def _isolar(
     if not livro.cortes:
         return ops, [], eventos, meses
     itens = [(dia, o.nota.titular, (o.op.ativo, o.op.opcao)) for dia, o in ops] + [
-        (e.data, e.titular, (e.ativo, e.ativo_destino)) for e in eventos
+        (e.data, e.titular, _ativos_do_evento(e)) for e in eventos
     ]
     mudou = True
     while mudou:  # o corte de um ativo pode puxar o de outro
@@ -513,7 +522,7 @@ def _isolar(
     tiradas: OpsDoDia = []
     for dia, o in ops:
         (tiradas if tirar(dia, o.nota.titular, (o.op.ativo, o.op.opcao)) else fica).append((dia, o))
-    eventos = [e for e in eventos if not tirar(e.data, e.titular, (e.ativo, e.ativo_destino))]
+    eventos = [e for e in eventos if not tirar(e.data, e.titular, _ativos_do_evento(e))]
     return fica, tiradas, eventos, meses
 
 

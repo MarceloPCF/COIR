@@ -96,15 +96,17 @@ class SerieOpcao(Base):
 
 class CodigoEscolhido(Base):
     """Código que o usuário escolheu para um nome de pregão que valia para mais de um na data
-    (a nota não diz qual). Vale para as notas da conta; ``nome``: o nome de pregão compacto."""
+    (a nota não diz qual). Vale para as notas da conta naquele pregão; ``nome``: o nome de pregão
+    compacto."""
 
     __tablename__ = "codigo_escolhido"
-    __table_args__ = (UniqueConstraint("corretora", "conta", "nome"),)
+    __table_args__ = (UniqueConstraint("corretora", "conta", "nome", "data"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     corretora: Mapped[str] = mapped_column(String(40))  # como na nota normalizada
     conta: Mapped[str] = mapped_column(String(40))
     nome: Mapped[str] = mapped_column(Text)
+    data: Mapped[date]  # pregão da nota
     ticker: Mapped[str] = mapped_column(String(20))
     registrado_em: Mapped[datetime]
 

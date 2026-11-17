@@ -270,14 +270,15 @@ def _desempate(
     gravadas: Sequence[OperacaoExtraida] = (),
 ) -> Desempate:
     """Quem decide o código de um nome de pregão que valia para mais de um na data, nesta ordem:
-    a planilha de negociação da B3 do titular, a escolha guardada para a conta e, na nota já
-    gravada, o código com que ela entrou (a planilha pode não estar mais lá)."""
+    a planilha de negociação da B3 do titular; na nota já gravada, o código com que ela entrou (a
+    planilha pode não estar mais lá, e uma escolha nova não troca o código em silêncio); a escolha
+    guardada para a conta e a data do pregão."""
 
     def escolher(n: NegocioBovespa, i: int, nome: str, codigos: tuple[str, ...]) -> str | None:
         return (
             _pela_negociacao_b3(sessao, nota, titular, n, codigos)
-            or _codigo_escolhido(sessao, nota, nome, codigos)
             or _ja_gravado(gravadas, i, codigos)
+            or _codigo_escolhido(sessao, nota, nome, codigos)
         )
 
     return escolher
@@ -325,7 +326,8 @@ def _codigo_escolhido(
     escolhido = sessao.scalar(
         select(CodigoEscolhido.ticker).where(CodigoEscolhido.corretora == nota.corretora,
                                              CodigoEscolhido.conta == nota.conta,
-                                             CodigoEscolhido.nome == nome)
+                                             CodigoEscolhido.nome == nome,
+                                             CodigoEscolhido.data == nota.data_pregao)
     )  # fmt: skip
     return escolhido if escolhido in codigos else None
 
@@ -340,19 +342,21 @@ def _ja_gravado(
 
 
 def escolher_codigo(
-    banco: Path, corretora: str, conta: str, nome: str, ticker: str, agora: datetime
+    banco: Path, corretora: str, conta: str, nome: str, dia: date, ticker: str, agora: datetime
 ) -> None:
     """Guarda o código que o usuário escolheu para o nome de pregão em dúvida nas notas da conta
-    (uma escolha por conta e nome; escolher de novo troca). Vale na próxima importação."""
+    naquele pregão (os dois códigos podem ter sido negociados em dias diferentes; escolher de
+    novo troca). Vale para nota ainda não gravada: a já gravada fica com o seu código."""
     migrar(banco, agora)
     with conectar(banco) as fabrica, fabrica.begin() as sessao:
         registro = sessao.scalar(
             select(CodigoEscolhido).where(CodigoEscolhido.corretora == corretora,
                                           CodigoEscolhido.conta == conta,
-                                          CodigoEscolhido.nome == nome)
+                                          CodigoEscolhido.nome == nome,
+                                          CodigoEscolhido.data == dia)
         )  # fmt: skip
         if registro is None:
-            sessao.add(CodigoEscolhido(corretora=corretora, conta=conta, nome=nome,
+            sessao.add(CodigoEscolhido(corretora=corretora, conta=conta, nome=nome, data=dia,
                                        ticker=ticker, registrado_em=agora))  # fmt: skip
         else:
             registro.ticker, registro.registrado_em = ticker, agora

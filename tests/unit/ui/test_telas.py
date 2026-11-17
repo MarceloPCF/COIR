@@ -200,8 +200,9 @@ async def test_importar_pergunta_o_codigo_do_nome_em_duvida_e_importa_de_novo(
         user.find(marker="importar-pasta").click()
         await user.should_see("Qual é o código do ativo?", retries=ESPERA)
         await user.should_see("EMPRESA Y DR1")
+        [origem_data] = {n.data_pregao for n in em_duvida(origem).notas}
         assert listar(estado.banco, None, None) == []
-        [escolha] = user.find(marker="codigo-empresaydr1").elements
+        [escolha] = user.find(marker=f"codigo-empresaydr1-{origem_data:%Y%m%d}").elements
         assert isinstance(escolha, ui.radio)
         escolha.set_value("EMPY20")
         user.find(marker="gravar-codigos").click()

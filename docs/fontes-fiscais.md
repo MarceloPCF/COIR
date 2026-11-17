@@ -26,7 +26,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 11.478/2007 | 7 | [lei-11478-2007.md](normas/lei-11478-2007.md) |
 | Lei 12.350/2010 | 1 | [lei-12350-2010.md](normas/lei-12350-2010.md) |
 | Lei 12.431/2011 | 10 | [lei-12431-2011.md](normas/lei-12431-2011.md) |
-| Lei 13.043/2014 | 36 | [lei-13043-2014.md](normas/lei-13043-2014.md) |
+| Lei 13.043/2014 | 37 | [lei-13043-2014.md](normas/lei-13043-2014.md) |
 | Lei 14.130/2021 | 5 | [lei-14130-2021.md](normas/lei-14130-2021.md) |
 | Lei 14.754/2023 | 15 | [lei-14754-2023.md](normas/lei-14754-2023.md) |
 | Lei 15.265/2025 | 15 | [lei-15265-2025.md](normas/lei-15265-2025.md) |
@@ -470,6 +470,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_proventos.py` — test_reembolso_de_jcp_identificado_pelo_valor_por_acao: …o reembolso é a quantidade emprestada vezes o valor por ação do provento do dia, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II). JCP de 0,520530743 por ação pago em 14/03/2025 (pacote da B3), 1.000 ações…
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — módulo: …só aviso. - Rendimento distribuído por ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II): exclusiva 06, pelo líquido. - Dividendo de…
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — test_rendimento_de_etf_de_renda_fixa_e_exclusivo_em_qualquer_ano: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. 500 cotas a 0,20 = bruto 100,00; líquido 85,00. Sem o preço na linha, o bruto fica igual ao líquido.
+- `tests/fiscal_cases/test_venda_a_termo.py` — test_venda_a_termo_de_lote_isento_de_pme_para_o_motor: Sem norma para a isenção de PME (Lei 13.043/2014 art. 16) na entrega do termo e sem caso real: o motor para, sem palpite (regra 5).
 
 ## Lei 14.130/2021
 

@@ -18,7 +18,10 @@ Casos T7-1 a T7-5 do parecer, conferidos à mão; sem IRRF, para simplificar. DA
 
 from datetime import date
 
-from coir.domain.fiscal import Categoria, Grupo
+import pytest
+
+from coir.domain.fiscal import Categoria, Grupo, Visao
+from coir.erros import MotorError
 from tests.fiscal_cases.apoio import D, Livro, categoria
 
 TERMO = "TERMO"
@@ -121,3 +124,43 @@ def test_compra_e_venda_a_termo_liquidadas_no_mesmo_dia() -> None:
                                           liquidacao=date(2026, 4, 1)))  # fmt: skip
     abril = categoria(livro.apurar(date(2026, 4, 30)), 2026, 4, Categoria.COMUM)
     assert (abril.resultado, abril.isento, abril.imposto) == (D(500), D(0), D("75.00"))
+
+
+def test_venda_a_termo_de_lote_isento_de_pme_para_o_motor() -> None:
+    """Sem norma para a isenção de PME (Lei 13.043/2014 art. 16) na entrega do termo e sem caso
+    real: o motor para, sem palpite (regra 5)."""
+    livro = Livro()
+    livro.nota(date(2019, 1, 7), livro.op("C", "PMEE3", 100, "10", pme_ate=date(2023, 12, 31)))
+    livro.nota(date(2019, 3, 1), livro.op("V", "PMEE3", 100, "12", mercado=TERMO,
+                                          liquidacao=date(2019, 4, 1)))  # fmt: skip
+    with pytest.raises(MotorError, match="lote isento de PME"):
+        livro.movimentos(date(2019, 4, 30))
+
+
+def test_compra_e_venda_a_termo_e_venda_a_vista_no_dia_da_liquidacao() -> None:
+    """1.000 VALE3 a 60,00. Compra a termo de 100 a 50,00 e venda a termo de 100 a 55,00, ambas
+    liquidando em 01/04/2026, e venda à vista de 100 a 70,00 nesse dia. A compra a termo entra
+    primeiro (1.100 por 65.000,00). A venda a termo sai pelo custo médio (art. 62 III): 5.500,00
+    - 5.909,09 = -409,09. A venda à vista do dia consome o lote do termo pelo preço a termo (art.
+    62 I): 7.000,00 - 5.000,00 = 2.000,00. Nada é isento (art. 59 §2º IV): resultado 1.590,91,
+    imposto 238,63. Ficam 900 ações por 54.090,91."""
+    livro = Livro()
+    livro.nota(date(2026, 1, 5), livro.op("C", "VALE3", 1000, "60"))
+    livro.nota(date(2026, 3, 2), livro.op("C", "VALE3", 100, "50", mercado=TERMO,
+                                          liquidacao=date(2026, 4, 1)))  # fmt: skip
+    livro.nota(date(2026, 3, 3), livro.op("V", "VALE3", 100, "55", mercado=TERMO,
+                                          liquidacao=date(2026, 4, 1)))  # fmt: skip
+    livro.nota(date(2026, 4, 1), livro.op("V", "VALE3", 100, "70"))
+    abril = categoria(livro.apurar(date(2026, 4, 30)), 2026, 4, Categoria.COMUM)
+    assert abril.resultado.quantize(D("0.01")) == D("1590.91")
+    assert (abril.isento, abril.imposto) == (D(0), D("238.63"))
+    [p] = livro.carteira(date(2026, 4, 1))
+    assert (p.quantidade, p.custo.quantize(D("0.01"))) == (D(900), D("54090.91"))
+
+
+def test_venda_a_termo_na_visao_por_conta() -> None:
+    """A visão operacional (por conta) também liquida a venda a termo, na conta da nota."""
+    livro = _coberta(date(2026, 4, 1))
+    [termo] = [m for m in livro.movimentos(date(2026, 4, 30), Visao.CONTA)
+               if m.origem.startswith("termo:")]  # fmt: skip
+    assert (termo.data, termo.conta, termo.resultado) == (date(2026, 4, 1), 1, D(5975))
