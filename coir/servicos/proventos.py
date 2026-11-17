@@ -22,7 +22,6 @@ from coir.db.modelos import (
     EventoCorporativo,
     MovimentacaoB3,
     OrigemReembolso,
-    TickerHistorico,
 )
 from coir.db.sessao import conectar
 from coir.domain.b3 import LinhaMovimentacao
@@ -31,6 +30,7 @@ from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.proventos import LinhaB3, Provento, TipoProvento
 from coir.engine.proventos import JCP, REEMBOLSO, proventos
 from coir.erros import ImportacaoError
+from coir.servicos.apuracao import Tickers
 
 log = logging.getLogger(__name__)
 JCP_B3 = "JRS CAP PROPRIO"
@@ -189,14 +189,12 @@ def dividendos_em_bens(banco: Path, titular: int | None = None) -> list[Provento
     if titular is not None:
         consulta = consulta.where(Conta.titular_id == titular)
     with conectar(banco) as fabrica, fabrica() as s:
-        historico = list(s.scalars(select(TickerHistorico)))
+        tickers = Tickers(s)  # sem ticker vigente: ReferenciaError (falha alto, nunca "?")
 
         def ticker(ativo: int | None, dia: date) -> str:
-            do_ativo = [t for t in historico if t.ativo_id == ativo]
-            return next((t.ticker for t in do_ativo
-                         if (t.inicio is None or t.inicio <= dia)
-                         and (t.fim is None or dia <= t.fim)),
-                        do_ativo[0].ticker if do_ativo else "?")  # fmt: skip
+            if ativo is None:
+                raise ImportacaoError(f"dividendo em bens de {dia:%d/%m/%Y} sem o bem recebido")
+            return tickers.ticker(ativo, dia)
 
         return [
             Provento(

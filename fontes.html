@@ -141,7 +141,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>Lei 13.043/2014</td>
-  <td>36</td>
+  <td>37</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/lei-13043-2014.md">lei-13043-2014.md</a></td>
 </tr>
 <tr>
@@ -176,7 +176,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>IN RFB 1.585/2015</td>
-  <td>128</td>
+  <td>132</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/in-rfb-1585-2015.md">in-rfb-1585-2015.md</a></td>
 </tr>
 <tr>
@@ -296,7 +296,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>RIR/2018</td>
-  <td>7</td>
+  <td>8</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/decreto-9580-2018-rir.md">decreto-9580-2018-rir.md</a></td>
 </tr>
 <tr>
@@ -823,6 +823,7 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_proventos.py</code> — test<em>reembolso</em>de<em>jcp</em>identificado<em>pelo</em>valor<em>por</em>acao: …o reembolso é a quantidade emprestada vezes o valor por ação do provento do dia, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II). JCP de 0,520530743 por ação pago em 14/03/2025 (pacote da B3), 1.000 ações…</li>
 <li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — módulo: …só aviso. - Rendimento distribuído por ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II): exclusiva 06, pelo líquido. - Dividendo de…</li>
 <li><code>tests/fiscal_cases/test_proventos_etf_bdr_bens.py</code> — test<em>rendimento</em>de<em>etf</em>de<em>renda</em>fixa<em>e</em>exclusivo<em>em</em>qualquer_ano: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. 500 cotas a 0,20 = bruto 100,00; líquido 85,00. Sem o preço na linha, o bruto fica igual ao líquido.</li>
+<li><code>tests/fiscal_cases/test_venda_a_termo.py</code> — test<em>venda</em>a<em>termo</em>de<em>lote</em>isento<em>de</em>pme<em>para</em>o_motor: Sem norma para a isenção de PME (Lei 13.043/2014 art. 16) na entrega do termo e sem caso real: o motor para, sem palpite (regra 5).</li>
 </ul>
 
 <h2 id="lei-141302021">Lei 14.130/2021</h2>
@@ -923,6 +924,7 @@ B3 nem é endossado por ela.</li>
 <li><code>coir/engine/futuros.py</code> — módulo: …"serão reconhecidos por ocasião da liquidação do contrato, cessão ou encerramento da posição". IN RFB 1.585/2015 art. 61 e P&amp;R IRPF 2026 pergunta 728: resultado de cada contrato = soma algébrica dos ajustes…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>amortizacao</em>fip: …fip<em>amortizacao</em>custo = excedente): o imposto na fonte só incide sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a amortização reduz o custo até zero, e o excedente é…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>antecipar</em>ofertas: …então a aquisição entra antes dela, e o ganho fica no mês do pregão da venda (critério do COIR; IN RFB 1.585/2015 art. 58). Antecipa só o que cobre a venda, da oferta mais próxima para a mais distante. A posição…</li>
+<li><code>coir/engine/movimentos.py</code> — <em>avisar</em>conjugadas: …e na mesma corretora: pode ser a operação conjugada com rendimento predeterminado, que é renda fixa (IN RFB 1.585/2015 art. 47 I b e §1º I). O COIR apura como venda a termo coberta (art. 62 III) e avisa (critério do…</li>
 <li><code>coir/engine/movimentos.py</code> — _cisao: Cisão: o percentual do custo de A divulgado pela companhia vai para B, sem resultado (IN RFB 1.585/2015 art. 58 §6º: na proporção fixada pela assembleia). A quantidade de A não muda. Os eventos das…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>conferir</em>fundo: …em <code>ganho_liquido</code> (15% na categoria comum, sem isenção e fora do limite de R$ 20 mil). FIP: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I. FIDC: sem norma expressa para a venda em…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>day</em>trade: …marcou D formam o day trade quando a marcação é consistente; senão, a ordem dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º).</li>
@@ -933,6 +935,7 @@ B3 nem é endossado por ela.</li>
 <li><code>coir/engine/movimentos.py</code> — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…</li>
 <li><code>coir/engine/movimentos.py</code> — _incorporacao: …fusão, conversão ou ajuste de série: a quantidade de A sai sem resultado e B entra com o mesmo custo (IN RFB 1.585/2015 art. 58 §6º; ajuste de série da B3: sem efeito fiscal, o custo é o dos prêmios, art. 60 §2º). A…</li>
 <li><code>coir/engine/movimentos.py</code> — <em>leilao</em>fracao: Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro leilao<em>fracao</em>isentavel (critério do COIR:…</li>
+<li><code>coir/engine/movimentos.py</code> — <em>venda</em>a_termo: Liquidação da venda a termo, no vencimento do contrato: é quando a alienação se dá (IN RFB 1.585/2015 art. 59 §2º IV). Ganho = preço a termo x quantidade, menos os custos da nota da venda, menos o…</li>
 <li><code>coir/engine/movimentos.py</code> — módulo: …pelo preço do próprio negócio); compras; exercícios; vendas; vencimento (pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da MP 497/2010, a operação entre…</li>
 <li><code>coir/engine/posicao.py</code> — módulo: Posição de um ativo pelo custo médio ponderado (IN RFB 1.585/2015 art. 58: custo médio de aquisição; custos da compra integram o custo, os da venda reduzem a…</li>
 <li><code>coir/engine/proventos.py</code> — <em>rendimento</em>etf: …na fonte, ficha 06 pelo líquido que a B3 creditou. ETF de renda fixa: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei 14.754/2023 arts. 18 II, 24 e 32 I;…</li>
@@ -980,7 +983,7 @@ B3 nem é endossado por ela.</li>
 <li><code>docs/regras-fiscais.md</code> — R1: R1 | Operações comuns (ações, units, ETF, BDR, opções, futuros, termo): 15% sobre ganho líquido mensal | Categoria COMUM, base única com subtotais por mercado | IN RFB 1.585/2015 | A</li>
 <li><code>docs/regras-fiscais.md</code> — R10: R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A</li>
 <li><code>docs/regras-fiscais.md</code> — R11: …por contrato e realizados no encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&amp;R IRPF 2026 pergunta 728 | A</li>
-<li><code>docs/regras-fiscais.md</code> — R18: R18 | Termo: custo/alienação pelo preço a termo; ganho apurado na liquidação/encerramento (operação comum) | Contrato a termo vinculado à liquidação | IN RFB 1.585/2015 | M (validar com as operações a termo da planilha)</li>
+<li><code>docs/regras-fiscais.md</code> — R18: …não é lida da B3: vale a data do vencimento. Casos em <code>tests/fiscal_cases/test_venda_a_termo.py</code> | IN RFB 1.585/2015 arts. 47 I b, 58, 59 I e §2º IV, 62 II e III e 63 III a; RIR/2018 art. 848; critério do COIR | A…</li>
 <li><code>docs/regras-fiscais.md</code> — R19: …nunca FII; parâmetro <code>direito_recebido_custo_zero</code> | SC Cosit 145/2021 e 166/2021 (ementas oficiais); IN RFB 1.585/2015 arts. 58 §7º (custo zero por analogia), 59 e 65; recibo: posição B do critério do COIR | A…</li>
 <li><code>docs/regras-fiscais.md</code> — R2: R2 | Day trade: 20%; prejuízo só compensa com ganho DT | Categoria DAY_TRADE; excedente de quantidade vira COMUM | IN RFB 1.585/2015 | A</li>
 <li><code>docs/regras-fiscais.md</code> — R20: …de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem retenção), 34, 63 e 64; Manual MIR; P&amp;R IRPF…</li>
@@ -1007,6 +1010,7 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t7</em>exercicio<em>e</em>venda<em>no</em>mesmo<em>dia</em>nao<em>e</em>day_trade: IN RFB 1.585/2015 art. 65 §13: exercício de opção não caracteriza day trade.</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t8</em>day<em>trade</em>de<em>fii</em>fica<em>na</em>categoria_fii: R3: FII (inclusive day trade) a 20%, compensação só entre FII (IN RFB 1.585/2015). Ganho 100: IR 20,00. O IRRF de day trade de 1,00 não abate o imposto de FII, porque a ficha de…</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>termo</em>liquidado<em>depois</em>da<em>venda</em>das<em>acoes</em>realiza<em>o</em>resultado: R18 + venda a descoberto (critério do COIR; IN RFB 1.585/2015 art. 58: custo médio): sem posição, compra a termo de 1.000 a 31,00 (custos 40) em 03/01 e venda…</li>
+<li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>venda</em>a<em>termo</em>sem<em>acoes</em>na<em>liquidacao</em>falha<em>alto</em>com<em>a</em>nota: …na liquidação, o motor para (regra 5), dizendo a nota e a data; antes da liquidação nada acontece (IN RFB 1.585/2015 art. 59 §2º IV: a alienação se dá na liquidação).</li>
 <li><code>tests/fiscal_cases/test_day_trade_marcacao.py</code> — módulo: Day trade pela marcação D da corretora. IN RFB 1.585/2015 art. 65 §3º: o day trade casa "pela ordem" a 1ª compra com a 1ª venda, isto é, na ordem…</li>
 <li><code>tests/fiscal_cases/test_day_trade_parcial.py</code> — módulo: …D a linha inteira, e só parte dela fecha no dia (critério do COIR; números conferidos à mão). Fontes (IN RFB 1.585/2015): - art. 65 §1º: day trade é a operação iniciada e encerrada no mesmo dia, com o mesmo ativo, na…</li>
 <li><code>tests/fiscal_cases/test_day_trade_parcial.py</code> — test<em>venda</em>em<em>day</em>trade<em>entra</em>na<em>soma</em>do<em>limite</em>de_isencao: Lei 11.033/2004 art. 3º I e IN RFB 1.585/2015 art. 59 I ("total das alienações"); o §2º I só tira o day trade da isenção (parâmetro…</li>
@@ -1044,6 +1048,7 @@ B3 nem é endossado por ela.</li>
 <li><code>tests/fiscal_cases/test_soma_limite_isencao.py</code> — módulo: …custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I ("total das alienações desse ativo") e §2º I e IV (a isenção não se aplica a day trade,…</li>
 <li><code>tests/fiscal_cases/test_soma_limite_isencao.py</code> — test<em>day</em>trade<em>de</em>unit<em>ou</em>etf<em>fica</em>fora<em>da</em>soma: …(venda 8.000,00; ganho 200,00; IRRF 2,00). Units (R4a, parâmetro units<em>na</em>isencao = false) e ETF (IN RFB 1.585/2015 art. 59 §2º II) não são ações para o limite: soma 15.000,00, ganho comum isento 5.000,00, imposto…</li>
 <li><code>tests/fiscal_cases/test_soma_limite_isencao.py</code> — test<em>mes</em>so<em>de</em>day<em>trade</em>acima<em>do</em>limite<em>nao</em>avisa: …19,50 / 20,00, venda 25.000,00, ganho 625,00; imposto 20% = 125,00; IRRF de 1% sobre o ganho = 6,25 (IN RFB 1.585/2015 art. 65 §§8º e 11); DARF 118,75. A soma passa do limite, mas não há ganho comum que pudesse ser…</li>
+<li><code>tests/fiscal_cases/test_venda_a_termo.py</code> — módulo: …B7 do critério do COIR). - A alienação se dá na liquidação do contrato, no vencimento ou antecipada (IN RFB 1.585/2015 art. 59 §2º IV), e não no pregão da venda. - Ganho do vendedor descoberto: preço a termo - preço…</li>
 <li><code>tests/fiscal_cases/test_venda_cruza_zero.py</code> — módulo: …mesmo pregão que cruzam o zero: vale a ordem dos negócios. Não há norma de "preço médio de venda": a IN RFB 1.585/2015 art. 58 trata do custo médio de aquisição, e o único critério de ordem escrito é o do art. 65 §3º…</li>
 </ul>
 
@@ -1268,6 +1273,7 @@ B3 nem é endossado por ela.</li>
 <li><code>coir/engine/calendario.py</code> — módulo: …de termo (datas sempre por parâmetro). - DARF: último dia útil (bancário) do mês seguinte ao da apuração (RIR/2018 art. 915; Lei 9.430/1996 art. 68 §1º para o acúmulo abaixo do mínimo). - Opções sobre ações: regra…</li>
 <li><code>data/parametros_fiscais.csv</code> — aliquota_comum: Lei 11.033/2004 art. 2º II; RIR/2018 art. 839</li>
 <li><code>docs/regras-fiscais.md</code> — R12: …| <code>data/feriados.csv</code> (o último dia útil do ano não é útil: Res. CMN 4.880/2020 art. 3º) + acúmulo | RIR/2018 art. 915; Lei 9.430/1996 art. 68 caput e §1º | A</li>
+<li><code>docs/regras-fiscais.md</code> — R18: …| IN RFB 1.585/2015 arts. 47 I b, 58, 59 I e §2º IV, 62 II e III e 63 III a; RIR/2018 art. 848; critério do COIR | A no momento e na isenção; M no PM da data da liquidação e na soma do…</li>
 <li><code>docs/regras-fiscais.md</code> — R7: …do COIR) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&amp;R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>eventos</em>ajustam<em>quantidade</em>e<em>custo</em>sem_resultado: R8: bonificação soma quantidade com custo atribuído; desdobramento e grupamento só a quantidade; redução de capital reduz o custo (RIR/2018 art. 843 §1º e §3º II; IN RFB 1.585/2015 art. 58 §§1º, 7º e 8º).</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t4</em>darf<em>abaixo</em>de<em>10</em>acumula<em>e</em>vira<em>o</em>ano: R12: DARF abaixo de R$ 10 acumula, inclusive para o ano seguinte (Lei 9.430/1996 art. 68 §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915). Dez/23 7,00 + Jan/24 4,00 = 11,00, vencimento 29/02/2024.</li>

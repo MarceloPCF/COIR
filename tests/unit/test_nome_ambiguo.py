@@ -16,7 +16,12 @@ from coir.db.sessao import conectar, migrar
 from coir.parsing.extrair import ResultadoExtracao, extrair_pdf
 from coir.servicos.b3 import importar_planilhas
 from coir.servicos.cadastros import adicionar_titular
-from coir.servicos.importacao import RelatorioImportacao, escolher_codigo, importar_lista
+from coir.servicos.importacao import (
+    NomeAmbiguo,
+    RelatorioImportacao,
+    escolher_codigo,
+    importar_lista,
+)
 from tests.apoio import cpf_de_teste
 from tests.unit.test_importador_b3 import CAB_NEG, XP, planilha
 from tools import notas_ficticias
@@ -66,6 +71,11 @@ def _negociacao(tmp_path: Path, banco: Path, titular: int, *linhas: tuple[str, i
 def _papeis(banco: Path) -> list[str]:
     with conectar(banco) as fabrica, fabrica() as s:
         return list(s.scalars(select(Operacao.papel).order_by(Operacao.ordem)))
+
+
+def _escolher(banco: Path, duvida: NomeAmbiguo, ticker: str, conta: str | None = None) -> None:
+    escolher_codigo(banco, duvida.corretora, conta or duvida.conta, duvida.nome, duvida.data,
+                    ticker, AGORA)  # fmt: skip
 
 
 def test_sem_planilha_nem_escolha_a_nota_e_recusada_e_a_duvida_vai_para_a_tela(
@@ -126,11 +136,11 @@ def test_planilha_de_outro_titular_nao_decide(tmp_path: Path, pdf: Path) -> None
 def test_a_escolha_do_usuario_fica_guardada_para_a_conta(tmp_path: Path, pdf: Path) -> None:
     banco, _ = _banco(tmp_path, pdf)
     [duvida] = _importar(banco, pdf).ambiguos
-    escolher_codigo(banco, duvida.corretora, duvida.conta, duvida.nome, "EMPY31", AGORA)
+    _escolher(banco, duvida, "EMPY31")
     rel = _importar(banco, pdf)  # o arquivo ficou incompleto: é lido de novo
     assert rel.notas_gravadas == 1 and not rel.ambiguos
     assert _papeis(banco)[2] == "EMPY31"
-    escolher_codigo(banco, duvida.corretora, duvida.conta, duvida.nome, "EMPY20", AGORA)
+    _escolher(banco, duvida, "EMPY20")
     with conectar(banco) as fabrica, fabrica() as s:
         assert list(s.scalars(select(CodigoEscolhido.ticker))) == ["EMPY20"]  # troca, não soma
 
@@ -138,9 +148,34 @@ def test_a_escolha_do_usuario_fica_guardada_para_a_conta(tmp_path: Path, pdf: Pa
 def test_escolha_de_outra_conta_ou_fora_dos_candidatos_nao_vale(tmp_path: Path, pdf: Path) -> None:
     banco, _ = _banco(tmp_path, pdf)
     [duvida] = _importar(banco, pdf).ambiguos
-    escolher_codigo(banco, duvida.corretora, "outra-conta", duvida.nome, "EMPY31", AGORA)
-    escolher_codigo(banco, duvida.corretora, duvida.conta, duvida.nome, "OUTR3", AGORA)
+    _escolher(banco, duvida, "EMPY31", "outra-conta")
+    _escolher(banco, duvida, "OUTR3")
     assert len(_importar(banco, pdf).ambiguos) == 1
+
+
+def test_escolha_de_outro_pregao_nao_vale(tmp_path: Path, pdf: Path) -> None:
+    """Os dois códigos podem ter sido negociados em dias diferentes: a escolha vale só para o
+    pregão em que foi feita."""
+    banco, _ = _banco(tmp_path, pdf)
+    [duvida] = _importar(banco, pdf).ambiguos
+    escolher_codigo(banco, duvida.corretora, duvida.conta, duvida.nome, date(2025, 1, 9),
+                    "EMPY31", AGORA)  # fmt: skip
+    assert len(_importar(banco, pdf).ambiguos) == 1
+
+
+def test_escolha_nova_nao_troca_o_codigo_da_nota_ja_gravada(tmp_path: Path, pdf: Path) -> None:
+    """Revisão de 16/11/2026: a nota entrou com EMPY31; trocar a escolha para EMPY20 não regrava
+    as operações em silêncio (o preço médio mudaria sem ninguém pedir)."""
+    banco, _ = _banco(tmp_path, pdf)
+    [duvida] = _importar(banco, pdf).ambiguos
+    escolher_codigo(banco, duvida.corretora, duvida.conta, duvida.nome, duvida.data, "EMPY31",
+                    AGORA)  # fmt: skip
+    _importar(banco, pdf)
+    escolher_codigo(banco, duvida.corretora, duvida.conta, duvida.nome, duvida.data, "EMPY20",
+                    AGORA)  # fmt: skip
+    rel = _importar(banco, pdf)
+    assert rel.notas_renormalizadas == 0
+    assert _papeis(banco)[2] == "EMPY31"
 
 
 def test_a_planilha_da_b3_vale_sobre_a_escolha_e_corrige_a_nota_gravada(
@@ -150,7 +185,7 @@ def test_a_planilha_da_b3_vale_sobre_a_escolha_e_corrige_a_nota_gravada(
     gravada são regravadas na importação seguinte (o livro, a nota, não muda)."""
     banco, titular = _banco(tmp_path, pdf)
     [duvida] = _importar(banco, pdf).ambiguos
-    escolher_codigo(banco, duvida.corretora, duvida.conta, duvida.nome, "EMPY31", AGORA)
+    _escolher(banco, duvida, "EMPY31")
     _importar(banco, pdf)
     _negociacao(tmp_path, banco, titular, ("EMPY20", 200, 52.1))
     rel = _importar(banco, pdf)

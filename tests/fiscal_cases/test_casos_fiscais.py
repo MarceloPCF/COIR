@@ -733,10 +733,13 @@ def test_evento_sem_posicao_falha_alto_e_subscricao_abre_posicao() -> None:
         livro.movimentos(date(2024, 3, 31))
 
 
-def test_venda_a_termo_falha_alto_com_data_e_ticker() -> None:
-    """R18: só a compra a termo está implementada (regra 5: falhar alto, com a nota localizável)."""
+def test_venda_a_termo_sem_acoes_na_liquidacao_falha_alto_com_a_nota() -> None:
+    """Caso T7-6 do parecer de 13/11/2026: sem ações para entregar na liquidação, o motor para
+    (regra 5), dizendo a nota e a data; antes da liquidação nada acontece (IN RFB 1.585/2015 art.
+    59 §2º IV: a alienação se dá na liquidação)."""
     livro = Livro()
     livro.nota(date(2024, 1, 3), livro.op("V", "AAAA3", 100, "31", mercado="TERMO",
                                           liquidacao=date(2024, 3, 4)))  # fmt: skip
-    with pytest.raises(MotorError, match="2024-01-03, AAAA3: venda a termo"):
+    assert livro.movimentos(date(2024, 3, 1)) == []
+    with pytest.raises(MotorError, match=r"03/01/2024.*faltam ações para entregar"):
         livro.movimentos(date(2024, 3, 31))

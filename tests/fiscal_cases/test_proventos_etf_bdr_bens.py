@@ -162,3 +162,18 @@ def test_dividendo_em_bens_sem_o_valor_de_mercado_nao_e_calculado() -> None:
                  quantidade_destino="20")  # fmt: skip
     with pytest.raises(MotorError, match="valor de mercado"):
         livro.movimentos(date(2019, 12, 31))
+
+
+def test_bem_recebido_isolado_nao_puxa_a_companhia_que_pagou() -> None:
+    """Revisão de 16/11/2026: o dividendo em bens só mexe no bem recebido. Se o bem é cota de
+    FIDC (fora do cálculo), a companhia que pagou continua apurada: venda de 1.000 ABCD3 a 12,00
+    (custo 10.000,00) em julho/2019, ganho 2.000,00, isento (vendas de 12.000,00)."""
+    livro = Livro()
+    livro.nota(date(2019, 1, 7), livro.op("C", "ABCD3", 1000, "10"))
+    livro.evento(date(2019, 6, 10), "ABCD3", BENS, valor="2000", para="XFDC11",
+                 quantidade_destino="20", valor_corrente="1900")  # fmt: skip
+    livro.eventos[-1] = livro.eventos[-1].model_copy(update={"tipo_ativo_destino": TipoAtivo.FIDC})
+    livro.nota(date(2019, 7, 1), livro.op("V", "ABCD3", 1000, "12"))
+    ap = livro.apurar(date(2019, 7, 31))
+    assert {i.ticker for i in ap.isolados} == {"XFDC11"}
+    assert categoria(ap, 2019, 7, Categoria.COMUM).isento == D(2000)

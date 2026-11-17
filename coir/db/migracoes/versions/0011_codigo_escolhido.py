@@ -22,10 +22,11 @@ def upgrade() -> None:
         sa.Column("corretora", sa.String(length=40), nullable=False),
         sa.Column("conta", sa.String(length=40), nullable=False),
         sa.Column("nome", sa.Text(), nullable=False),
+        sa.Column("data", sa.Date(), nullable=False),
         sa.Column("ticker", sa.String(length=20), nullable=False),
         sa.Column("registrado_em", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_codigo_escolhido")),
-        sa.UniqueConstraint("corretora", "conta", "nome",
+        sa.UniqueConstraint("corretora", "conta", "nome", "data",
                             name=op.f("uq_codigo_escolhido_corretora")),
     )  # fmt: skip
 
