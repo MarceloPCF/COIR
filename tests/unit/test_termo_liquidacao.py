@@ -11,8 +11,10 @@ from pathlib import Path
 import pytest
 
 from coir import referencias
+from coir.db.sessao import conectar
 from coir.domain.fiscal import Visao
-from coir.servicos.apuracao import apurar_banco, carteira_banco, termos_banco
+from coir.engine.rateio import ratear
+from coir.servicos.apuracao import apurar_banco, carteira_banco, entradas, termos_banco
 from coir.servicos.b3 import importar_planilhas
 from coir.servicos.termo import (
     Contrato,
@@ -88,7 +90,8 @@ def test_linha_fora_do_contrato_ou_de_outro_ativo_nao_conta() -> None:
               _linha(date(2026, 3, 16), "300", ativo=8)]  # fmt: skip
     liq = liquidacoes([_contrato()], linhas, PERIODO)[1]
     assert liq.partes == ((date(2026, 5, 4), D(300)),)
-    assert "não mostra a liquidação de 300 ações da compra a termo de 02/03/2026" in liq.aviso
+    assert ("importada a liquidação de 300 ações da compra a termo de 02/03/2026"
+            in liq.aviso)  # fmt: skip
 
 
 def test_dois_contratos_do_mesmo_ativo_cada_um_com_a_sua_linha() -> None:
@@ -170,9 +173,6 @@ def test_banco_sem_movimentacao_liquida_no_vencimento(termo: Path) -> None:
 def test_banco_venda_a_termo_sem_movimentacao_avisa(termo: Path) -> None:
     """A mesma operação como venda a termo descoberta (sem ações para entregar o motor para):
     aqui só o aviso, pelas entradas do serviço."""
-    from coir.db.sessao import conectar
-    from coir.servicos.apuracao import entradas
-
     con = sqlite3.connect(termo)
     with con:
         con.execute("update operacao set cv='V' where id=1")
@@ -202,6 +202,46 @@ def test_banco_com_liquidacao_antecipada_parcial(termo: Path) -> None:
     sem_termo = next(p for p in pos if p.ticker == "GGBR4")
     pos_cheia, _ = carteira_banco(termo, REFS, FISCAIS, date(2008, 5, 5), Visao.TITULAR)
     parcial = next(p for p in pos_cheia if p.ticker == "GGBR4")
-    assert parcial.custo * 3 == pytest.approx(sem_termo.custo, abs=D("0.02"))
+    custos = ratear(sem_termo.custo - D(18660), [D(6220), D(12440)])  # nota só com o termo
+    assert parcial.custo == D(6220) + custos[0]
     [aviso] = _avisos_termo(termo)
-    assert "não mostra a liquidação de 200 ações" in aviso
+    assert "importada a liquidação de 200 ações" in aviso
+
+
+def test_linha_de_outro_titular_corretora_ou_sem_cadastro_nao_casa_e_o_aviso_diz() -> None:
+    linhas = [
+        LinhaLiquidacao(titular=2, corretora="AGORA", ativo=7, entrada=True,
+                        data=date(2026, 3, 16), quantidade=D(300)),
+        LinhaLiquidacao(titular=1, corretora="XP", ativo=7, entrada=True,
+                        data=date(2026, 3, 16), quantidade=D(300)),
+        LinhaLiquidacao(titular=1, corretora=None, ativo=7, entrada=True,
+                        data=date(2026, 3, 16), quantidade=D(300)),
+        LinhaLiquidacao(titular=1, corretora="AGORA", ativo=None, entrada=True,
+                        data=date(2026, 3, 16), quantidade=D(300)),
+    ]  # fmt: skip
+    liq = liquidacoes([_contrato()], linhas, PERIODO)[1]
+    assert liq.partes == ((date(2026, 5, 4), D(300)),)
+    assert "Há 2 linha(s)" in liq.aviso and "não ligou a uma corretora" in liq.aviso
+
+
+def test_dois_contratos_iguais_e_uma_linha_so_o_de_vencimento_anterior_consome() -> None:
+    """Heurística (sem como distinguir): a linha vai para o contrato que vence antes."""
+    contratos = [_contrato(1, vencimento=date(2026, 5, 5)), _contrato(2)]
+    liq = liquidacoes(contratos, [_linha(date(2026, 3, 16), "300")], PERIODO)
+    assert liq[2].partes == ((date(2026, 3, 16), D(300)),)
+    assert liq[1].partes == ((date(2026, 5, 5), D(300)),) and liq[1].aviso
+
+
+def test_partes_somam_a_operacao_e_contrato_sem_parte_fica_inteiro() -> None:
+    from coir.domain.fiscal import OperacaoMotor, TipoAtivo
+    from coir.servicos.apuracao import _partes_do_termo  # pyright: ignore[reportPrivateUsage]
+    from coir.servicos.termo import Liquidacao
+
+    op = OperacaoMotor(id=1, ordem=1, ativo=7, ticker="GGBR4", tipo=TipoAtivo.ACAO,
+                       mercado="TERMO", cv="C", quantidade=D(3), preco=D("10.01"),
+                       total=D("30.04"))  # total da nota com arredondamento  # fmt: skip
+    partes = _partes_do_termo(op, Liquidacao(((date(2026, 3, 16), D(1)),
+                                              (date(2026, 5, 4), D(2))), "aviso"))  # fmt: skip
+    assert [(p.quantidade, p.total, p.aviso) for p in partes] == [
+        (D(1), D("10.01"), ""), (D(2), D("20.03"), "aviso")]  # fmt: skip
+    assert _partes_do_termo(op, Liquidacao(())) == [op]

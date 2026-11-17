@@ -494,7 +494,11 @@ corretoras diferentes, com código e contas próprios (decisão do usuário). Fi
   virada do mês (venda no fim do mês, liquidação no seguinte): segue na data da liquidação, sem
   norma. Sem confirmação documental: rótulo da venda a termo na movimentação (débito em
   "Liquidação Termo", presumido), tarifa da liquidação antecipada e ajuste do contrato por
-  proventos.
+  proventos (linha da B3 com quantidade maior que o contrato fica sem uso, sem aviso). Na
+  liquidação parcial, os custos da nota vão para as partes pelo rateio comum do motor (pelo valor,
+  centavos pelo maior resto), e não pelo resto na última parte: a soma fecha com a nota. Dois
+  contratos iguais do mesmo ativo e corretora sem linha de quantidade exata: o de vencimento
+  anterior consome primeiro (heurística).
 - `data/feriados.csv` cobre até 2027: estender antes de apurar dezembro de 2027.
 
 ## Decisões da revisão contra a base normativa (10/11/2026)

@@ -97,3 +97,17 @@ def test_ta_3_variante_tres_partes_custos_pela_proporcao() -> None:
     assert (p.quantidade, p.custo) == (D(666), D("16676.64"))
     [p] = livro.carteira(date(2026, 7, 3))
     assert (p.quantidade, p.custo) == (D(1000), D(25040))
+
+
+def test_ta_3_variante_custo_nao_divisivel_fecha_com_a_nota() -> None:
+    """Custos de 40,01 em duas partes de 500: o motor rateia os centavos pelo maior resto (20,01 e
+    20,00, empate para a primeira), e a soma fecha com a nota: 1.000 ações por 25.040,01."""
+    livro = Livro()
+    livro.nota(date(2026, 5, 4),
+               livro.op("C", "BBAS3", 500, "25", mercado=TERMO, liquidacao=date(2026, 6, 16)),
+               livro.op("C", "BBAS3", 500, "25", mercado=TERMO, liquidacao=date(2026, 7, 3)),
+               custos="40.01")  # fmt: skip
+    [p] = livro.carteira(date(2026, 6, 16))
+    assert (p.quantidade, p.custo) == (D(500), D("12520.01"))
+    [p] = livro.carteira(date(2026, 7, 3))
+    assert (p.quantidade, p.custo) == (D(1000), D("25040.01"))

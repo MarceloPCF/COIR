@@ -90,15 +90,12 @@ def ler_linhas(
     linhas: Iterable[tuple[int, str, str, str, str, bool, date, Decimal]],
     corretora_b3: Callable[[str], str | None],
     ativo: Callable[[str, date], int | None],
-) -> tuple[list[LinhaLiquidacao], dict[int, tuple[date, date]]]:
+) -> list[LinhaLiquidacao]:
     """(titular, movimentação, produto, código, instituição, entrada, data, quantidade) da
-    movimentação da B3 -> linhas de liquidação de termo e o período coberto pela movimentação
-    importada de cada titular (primeira e última data de qualquer linha)."""
+    movimentação da B3 -> linhas de liquidação de termo, ligadas à corretora e ao ativo (None
+    quando a instituição ou o código não têm cadastro)."""
     saida: list[LinhaLiquidacao] = []
-    periodo: dict[int, tuple[date, date]] = {}
     for titular, mov, produto, codigo, instituicao, entrada, dia, quantidade in linhas:
-        ini, fim = periodo.get(titular, (dia, dia))
-        periodo[titular] = (min(ini, dia), max(fim, dia))
         if not e_liquidacao_termo(mov):
             continue
         achado = next((a for c in codigos_do_produto(produto, codigo)
@@ -106,7 +103,7 @@ def ler_linhas(
         saida.append(LinhaLiquidacao(titular=titular, corretora=corretora_b3(instituicao),
                                      ativo=achado, entrada=entrada, data=dia,
                                      quantidade=abs(quantidade)))  # fmt: skip
-    return saida, periodo
+    return saida
 
 
 def liquidacoes(
@@ -123,12 +120,22 @@ def liquidacoes(
     liquidação não apareceu nela. Sem ela (parecer do especialista de 17/11/2026), a venda a
     termo sempre avisa (quem antecipa é o comprador); a compra a termo só avisa quando o titular
     vendeu o ativo à vista entre o pregão e o vencimento (``vendas``: datas das vendas por titular
-    e ativo) ou quando o vencimento cai em outro ano."""
+    e ativo) ou quando o vencimento cai em outro ano. ``periodo``: primeira e última data da
+    movimentação importada de cada titular (um intervalo só: um buraco entre duas planilhas não é
+    visto, por isso o aviso diz "não encontrou", e não que a B3 não mostra).
+
+    Casamento por heurística quando há dois contratos iguais do mesmo ativo e corretora sem linha
+    de quantidade exata: o de vencimento anterior consome primeiro. Linhas a mais (ajuste do
+    contrato por provento, sem norma nem caso real) ficam sem uso."""
     grupos: dict[tuple[int, str | None, int | None, bool], list[_Saldo]] = defaultdict(list)
     for linha in sorted(linhas, key=lambda x: x.data):
         grupos[(linha.titular, linha.corretora, linha.ativo, linha.entrada)].append(
             _Saldo(linha, linha.quantidade)
         )
+    soltas: dict[int, int] = defaultdict(int)  # linhas sem corretora ou ativo cadastrado
+    for linha in linhas:
+        if linha.corretora is None or linha.ativo is None:
+            soltas[linha.titular] += 1
     saida: dict[int, Liquidacao] = {}
     for c in sorted(contratos, key=lambda c: (c.vencimento, c.pregao, c.chave)):
         saldos = [s for s in grupos.get((c.titular, c.corretora, c.ativo, c.cv == "C"), [])
@@ -148,21 +155,32 @@ def liquidacoes(
         if falta > 0:
             partes[c.vencimento] += falta
             vendidas = (vendas or {}).get((c.titular, c.ativo), [])
-            aviso = _aviso(c, falta, periodo.get(c.titular), vendidas)
+            aviso = _aviso(c, falta, periodo.get(c.titular), vendidas, soltas.get(c.titular, 0))
         saida[c.chave] = Liquidacao(tuple(sorted(partes.items())), aviso)
     return saida
 
 
 def _aviso(
-    c: Contrato, falta: Decimal, periodo: tuple[date, date] | None, vendas: Sequence[date]
+    c: Contrato,
+    falta: Decimal,
+    periodo: tuple[date, date] | None,
+    vendas: Sequence[date],
+    soltas: int = 0,
 ) -> str:
     lado = "compra" if c.cv == "C" else "venda"
     qtd = f"{falta.normalize():f}"
     if periodo is not None and periodo[0] <= c.pregao and c.vencimento <= periodo[1]:
+        sem_cadastro = (
+            f' Há {soltas} linha(s) "Liquidação Termo" que o COIR não ligou a uma corretora '
+            "ou a um ativo cadastrado: confira a instituição e o código delas"
+            if soltas
+            else ""
+        )
         return (
-            f"Termo: a movimentação da B3 importada não mostra a liquidação de {qtd} ações da "
-            f"{lado} a termo de {c.pregao:%d/%m/%Y} ({c.ticker}, {c.corretora}); o COIR "
-            f"usou o vencimento, {c.vencimento:%d/%m/%Y}. Confira o extrato da corretora"
+            f"Termo: o COIR não encontrou na movimentação da B3 importada a liquidação de {qtd} "
+            f"ações da {lado} a termo de {c.pregao:%d/%m/%Y} ({c.ticker}, {c.corretora}) e "
+            f"usou o vencimento, {c.vencimento:%d/%m/%Y}. Confira o extrato da corretora e se "
+            f"a movimentação importada cobre todo o período do contrato.{sem_cadastro}"
         )
     if c.cv == "C":
         vendeu = sorted(d for d in vendas if c.pregao <= d < c.vencimento)

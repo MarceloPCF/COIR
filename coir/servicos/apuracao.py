@@ -13,7 +13,7 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from coir import auditoria
@@ -154,7 +154,11 @@ def _nota_bovespa(
 
 def _partes_do_termo(op: OperacaoMotor, liq: Liquidacao) -> list[OperacaoMotor]:
     """Uma operação por data de liquidação (a antecipada pode ser parcial), com a quantidade e
-    o valor da parte; o valor da última fecha o total. O aviso vai na parte do vencimento."""
+    o valor da parte (preço a termo x quantidade; a última leva o resto e fecha o total). Os
+    custos da nota o motor rateia pelas partes como por qualquer operação (pelo valor, centavos
+    pelo maior resto): a soma fecha com a nota. O aviso vai na parte do vencimento."""
+    if not liq.partes:
+        return [op]
     saida: list[OperacaoMotor] = []
     resto = op.total
     for i, (dia, quantidade) in enumerate(liq.partes):
@@ -183,14 +187,21 @@ def _termos(
     ]  # fmt: skip
     if not contratos:
         return {}
-    linhas, periodo = ler_linhas(
+    linhas = ler_linhas(
         sessao.execute(select(
             MovimentacaoB3.titular_id, MovimentacaoB3.movimentacao, MovimentacaoB3.produto,
             MovimentacaoB3.codigo, MovimentacaoB3.instituicao, MovimentacaoB3.entrada,
             MovimentacaoB3.data, MovimentacaoB3.quantidade,
-        )).all(),
+        ).where(MovimentacaoB3.movimentacao.ilike("%termo%"))).all(),
         refs.corretora_b3, tickers.ativo,
     )  # fmt: skip
+    periodo = {
+        t: (ini, fim)
+        for t, ini, fim in sessao.execute(
+            select(MovimentacaoB3.titular_id, func.min(MovimentacaoB3.data),
+                   func.max(MovimentacaoB3.data)).group_by(MovimentacaoB3.titular_id)
+        ).all()
+    }  # fmt: skip
     vendas: dict[tuple[int, int], list[date]] = {}
     for r in registros:
         for o in r.operacoes:
