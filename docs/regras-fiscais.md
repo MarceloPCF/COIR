@@ -257,6 +257,15 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
   custos da nota lançados só em parte (o COIR usa o total, que concilia com o resumo); IRRF de day
   trade que a v2 não deduziu; vendas tratadas como isentas em meses acima de R$ 20 mil (explicadas
   pela isenção de PME); prejuízo de mês isento descartado; IRRF não transportado.
+- **IRRF por operação no gabarito (revisão de 17/11/2026):** o motor usa o IRRF impresso na nota
+  (0,005% e 1% de day trade), pelo total da nota (`coir/engine/fichas.py`, `irrf_retido`); só a
+  ferramenta de comparação (`coir/gabarito/candidato.py`) reparte esse total entre as linhas da nota.
+  As 16 diferenças de IRRF por operação que sobraram na 3.1.2 têm a soma da nota igual à da planilha e
+  vêm só do critério de repartição: a planilha põe o 0,005% também na venda de PME isenta (pares de
+  sinal oposto na mesma nota); casa o day trade pela quantidade antes de repartir, onde o candidato
+  segue a marcação D da nota; e, nas opções de milho da BM&F de 2022, reparte pela quantidade de
+  contratos, compras inclusive. Nenhum dos lados erra o imposto; ficam explicadas em
+  `COIR_DADOS/gabarito/divergencias-conhecidas.csv`, sem mudar o cálculo.
 
 - **Comparação com uma planilha externa (`coir gabarito externo`, operações finalizadas exportadas
   de outro sistema de IR):** compara o resultado por dia, corretora e ativo e por mês e mercado.
