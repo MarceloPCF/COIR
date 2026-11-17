@@ -6,7 +6,7 @@ Fontes: programa IRPF, ficha de renda variável (linhas "Mercado de opções - a
 "Mercado futuro - juros" e "Mercado a termo - ações/ouro"); P&R IRPF 2026 pergunta 707 (cotas de
 fundo de índice não são ações); IN RFB 1.585/2015 art. 62 I e §1º (ganho do comprador a termo pela
 venda à vista na data da liquidação; vendido depois, custo = preço a termo) e art. 59 §2º IV (esse
-ganho não é isento); art. 58 (custo médio); decisões do usuário de 20/10/2026 (linha do
+ganho não é isento); art. 58 (custo médio); critérios do COIR de 20/10/2026 (linha do
 termo) e de 21/10/2026 (lote do termo vendido primeiro, pela ordem dos negócios).
 """
 
@@ -115,7 +115,7 @@ def test_venda_no_dia_acima_do_termo_sai_das_antigas_pelo_pm() -> None:
 
 def test_varias_vendas_no_dia_consomem_o_termo_pela_ordem() -> None:
     """C2 (variante): 1.000 a 11,00 e depois 500 a 12,00 no dia da liquidação. Pela ordem dos
-    negócios (decisão do usuário de 21/10/2026), a primeira venda é do termo (1.000,00 na linha do
+    negócios (critério do COIR de 21/10/2026), a primeira venda é do termo (1.000,00 na linha do
     termo) e a segunda das antigas: 6.000,00 - 4.500,00 = 1.500,00, isento (vendas de 17.000,00).
     Imposto 150,00."""
     livro = Livro()

@@ -16,13 +16,21 @@ from pathlib import Path
 from sqlalchemy import select
 
 from coir import referencias
-from coir.db.modelos import CreditoJcp, MovimentacaoB3, OrigemReembolso
+from coir.db.modelos import (
+    Conta,
+    CreditoJcp,
+    EventoCorporativo,
+    MovimentacaoB3,
+    OrigemReembolso,
+)
 from coir.db.sessao import conectar
 from coir.domain.b3 import LinhaMovimentacao
+from coir.domain.fiscal import TipoEvento
 from coir.domain.parametros import ReferenciasFiscais
-from coir.domain.proventos import LinhaB3, Provento
+from coir.domain.proventos import LinhaB3, Provento, TipoProvento
 from coir.engine.proventos import JCP, REEMBOLSO, proventos
 from coir.erros import ImportacaoError
+from coir.servicos.apuracao import Tickers
 
 log = logging.getLogger(__name__)
 JCP_B3 = "JRS CAP PROPRIO"
@@ -74,7 +82,7 @@ def creditos_b3(
     """Completa a data do crédito dos JCP sem correção do usuário pela B3. O crédito é a mais tarde
     entre a aprovação e a data com: antes da data com o acionista não está definido e não há
     crédito individualizado (IN SRF 41/1998 art. 3º; IN RFB 1.700/2017 art. 75 §10; Lei
-    6.404/1976 art. 205; decisão do usuário de 21/10/2026). Casamento: mesma empresa e data de
+    6.404/1976 art. 205; critério do COIR de 21/10/2026). Casamento: mesma empresa e data de
     pagamento no pacote; havendo mais de um (ON e PN), o de valor por ação mais próximo do preço
     da movimentação, dentro de 1%. Sem pagamento no pacote (anos que ele não alcança), vale o
     ``historico`` (sem data de pagamento): mesma empresa e classe, valor por ação dentro de 1% e a
@@ -164,7 +172,43 @@ def proventos_banco(
     linhas = creditos_b3(linhas_banco(banco, titular), publicos, emissor_de, avisos,
                          referencias.proventos_historico_b3(pasta), classe_de)  # fmt: skip
     lista = proventos(linhas, fiscais.tipos, fiscais.parametros, avisos, por_pagamento(publicos))
-    return lista, avisos
+    lista += dividendos_em_bens(banco, titular)
+    return sorted(lista, key=lambda p: p.data), avisos
+
+
+def dividendos_em_bens(banco: Path, titular: int | None = None) -> list[Provento]:
+    """O dividendo pago em bens, lançado na tela Eventos, como rendimento isento da companhia que
+    pagou (Lei 9.249/1995 art. 10; linha 09), pelo valor atribuído no aviso aos acionistas. Não
+    vem na movimentação da B3 como dinheiro: sai do evento."""
+    consulta = (
+        select(EventoCorporativo)
+        .join(Conta, EventoCorporativo.conta_id == Conta.id)
+        .where(EventoCorporativo.tipo == TipoEvento.DIVIDENDO_EM_BENS.value)
+        .order_by(EventoCorporativo.data, EventoCorporativo.id)
+    )
+    if titular is not None:
+        consulta = consulta.where(Conta.titular_id == titular)
+    with conectar(banco) as fabrica, fabrica() as s:
+        tickers = Tickers(s)  # sem ticker vigente: ReferenciaError (falha alto, nunca "?")
+
+        def ticker(ativo: int | None, dia: date) -> str:
+            if ativo is None:
+                raise ImportacaoError(f"dividendo em bens de {dia:%d/%m/%Y} sem o bem recebido")
+            return tickers.ticker(ativo, dia)
+
+        return [
+            Provento(
+                data=e.data, titular=e.conta.titular_id, codigo=ticker(e.ativo_id, e.data),
+                empresa=ticker(e.ativo_id, e.data), instituicao=e.conta.corretora.nome,
+                tipo=TipoProvento.DIVIDENDO, quantidade=e.quantidade_destino or Decimal(0),
+                liquido=e.valor, bruto=e.valor, irrf=Decimal(0), aliquota=Decimal(0),
+                ano_declaracao=e.data.year, origem=f"evento:{e.id}",
+                observacao=f"dividendo pago em bens ({e.quantidade_destino} "
+                           f"{ticker(e.ativo_destino_id, e.data)}): valor atribuído no aviso aos "
+                           "acionistas; confira o informe da empresa",
+            )
+            for e in s.scalars(consulta)
+        ]  # fmt: skip
 
 
 TIPO_B3 = {JCP_B3: "JCP", "DIVIDENDO": "DIVIDENDO"}

@@ -2,12 +2,14 @@
 usuário (em COIR_DADOS) -> banco.
 
 Colunas: data, corretora, conta, ticker, tipo, cv, quantidade, valor, corretora_destino,
-conta_destino, observacao, origem e, opcionais, ticker_destino, quantidade_destino, natureza e
-percentual_custo. Ajuste de posição: C soma quantidade e custo (valor), V subtrai (como na aba
-Eventos_B3 do gabarito). Transferência: cv vazio, conta de destino e quantidade (vazia = toda a
-posição). Incorporação e cisão: cv vazio, quantidade de origem, ativo e quantidade recebidos
-(natureza na incorporação; percentual do custo na cisão). Leilão de fração: quantidade e valor
-líquido. Reimportar o mesmo CSV não duplica (chave = hash da linha).
+conta_destino, observacao, origem e, opcionais, ticker_destino, quantidade_destino, natureza,
+percentual_custo e valor_corrente. Ajuste de posição: C soma quantidade e custo (valor), V
+subtrai (como na aba Eventos_B3 do gabarito). Transferência: cv vazio, conta de destino e
+quantidade (vazia = toda a posição). Incorporação e cisão: cv vazio, quantidade de origem, ativo
+e quantidade recebidos (natureza na incorporação; percentual do custo na cisão). Leilão de
+fração: quantidade e valor líquido. Dividendo em bens: cv vazio, ticker da companhia que pagou,
+ativo e quantidade recebidos, valor atribuído no aviso e valor_corrente (o de mercado na
+entrega). Reimportar o mesmo CSV não duplica (chave = hash da linha).
 """
 
 import csv
@@ -56,8 +58,9 @@ from coir.servicos.apuracao import Tickers, entradas
 
 COLUNAS = ("data", "corretora", "conta", "ticker", "tipo", "cv", "quantidade", "valor",
            "corretora_destino", "conta_destino", "observacao", "origem")  # fmt: skip
-EXTRAS = ("ticker_destino", "quantidade_destino", "natureza", "percentual_custo")  # opcionais
-NUMERICAS = {"quantidade", "valor", "quantidade_destino", "percentual_custo"}
+EXTRAS = ("ticker_destino", "quantidade_destino", "natureza", "percentual_custo",
+          "valor_corrente")  # opcionais  # fmt: skip
+NUMERICAS = {"quantidade", "valor", "quantidade_destino", "percentual_custo", "valor_corrente"}
 
 
 @dataclass
@@ -82,7 +85,7 @@ def _decimal(texto: str, campo: str, linha: int) -> Decimal | None:
 
 EXIGE_QUANTIDADE = {TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO, TipoEvento.BONIFICACAO,
                     TipoEvento.SUBSCRICAO, TipoEvento.CUSTODIA_INICIAL,
-                    TipoEvento.OFERTA_PUBLICA}  # fmt: skip
+                    TipoEvento.OFERTA_PUBLICA, TipoEvento.DIREITO_RECEBIDO}  # fmt: skip
 
 
 def _conta(sessao: Session, corretora: str, numero: str, linha: int) -> Conta:
@@ -195,6 +198,7 @@ def importar_eventos(
                 natureza=natureza,
                 percentual_custo=_decimal(linha.get("percentual_custo", ""), "percentual_custo",
                                           n),
+                valor_corrente=_decimal(linha.get("valor_corrente", ""), "valor_corrente", n),
                 observacao=linha["observacao"], origem=linha["origem"] or "manual",
             )  # fmt: skip
             try:
@@ -226,7 +230,10 @@ NOTA_DATA_EX = ("a B3 informa a data do crédito: use a data ex (primeiro pregã
 SEM_CV = frozenset({TipoEvento.TRANSFERENCIA, *TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO,
                     TipoEvento.DIREITO_NAO_EXERCIDO})  # fmt: skip
 # direito não exercido sem quantidade baixa todo o saldo: a linha "não exercido" da B3 vem sem ela
-QUANTIDADE_OBRIGATORIA = EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO}
+# no dividendo em bens a quantidade é só a do bem recebido (a de destino)
+QUANTIDADE_OBRIGATORIA = (EXIGE_QUANTIDADE | {*TIPOS_COM_DESTINO, TipoEvento.LEILAO_FRACAO}) - {
+    TipoEvento.DIVIDENDO_EM_BENS
+}
 AVISO_INCORPORACAO_ACOES = (
     "incorporação de ações (Lei 6.404 art. 252): o COIR mantém o custo (posição do Judiciário); a "
     "Receita trata como alienação com ganho de capital (SC Cosit 224/2014). Avalie com o seu "
@@ -251,6 +258,7 @@ class DadosEvento:
     percentual_custo: Decimal | None = None
     observacao: str = ""
     origem: str = "tela"
+    valor_corrente: Decimal | None = None  # dividendo em bens: valor de mercado na entrega
 
 
 @dataclass(frozen=True)
@@ -308,6 +316,7 @@ def listar(banco: Path, titular: int) -> list[EventoLancado]:
                 quantidade_destino=e.quantidade_destino,
                 natureza=None if e.natureza is None else NaturezaEvento(e.natureza),
                 percentual_custo=e.percentual_custo, observacao=e.observacao, origem=e.origem,
+                valor_corrente=e.valor_corrente,
             )  # fmt: skip
             destino_nome = None if e.conta_destino is None else _nome_conta(e.conta_destino)
             saida.append(EventoLancado(e.id, _nome_conta(e.conta), destino_nome, dados))
@@ -328,7 +337,8 @@ def _validar(d: DadosEvento) -> None:
     elif d.cv not in ("C", "V"):
         raise erro("informe o C/V: C soma, V subtrai")
     for nome, numero in (("quantidade", d.quantidade), ("valor", d.valor),
-                         ("quantidade recebida", d.quantidade_destino)):  # fmt: skip
+                         ("quantidade recebida", d.quantidade_destino),
+                         ("valor de mercado", d.valor_corrente)):  # fmt: skip
         if numero is not None and (not numero.is_finite() or numero < 0):
             raise erro(f"{nome} deve ser um número >= 0")
     if d.tipo in QUANTIDADE_OBRIGATORIA and not d.quantidade:
@@ -340,8 +350,25 @@ def _validar(d: DadosEvento) -> None:
             raise erro("a oferta pública é uma compra (C)")
         if not d.valor:
             raise erro("informe o valor pago")
+    if d.tipo is TipoEvento.DIREITO_RECEBIDO and (d.cv != "C" or d.valor):
+        raise erro("o direito recebido entra com custo zero; o direito comprado vem na nota de "
+                   "corretagem")  # fmt: skip
+    if d.tipo is TipoEvento.DIVIDENDO_EM_BENS:
+        if not d.valor:
+            raise erro("informe o valor atribuído aos bens no aviso aos acionistas (é o "
+                       "dividendo, rendimento isento)")  # fmt: skip
+        if not d.valor_corrente:
+            # critério do COIR (16/11/2026): o custo é o menor entre o atribuído e o de mercado
+            raise erro("informe o valor de mercado dos bens na data da entrega (quantidade vezes "
+                       "a cotação de fechamento do dia)")  # fmt: skip
+        if d.quantidade:
+            raise erro("informe só a quantidade recebida")
+    elif d.valor_corrente is not None:
+        raise erro("valor de mercado na entrega só vale no dividendo em bens")
+    if d.tipo is TipoEvento.EXERCICIO_DIREITO and not d.valor:
+        raise erro("informe o valor pago na subscrição (quantidade vezes o preço de subscrição)")
     if d.tipo is TipoEvento.CUSTODIA_INICIAL:
-        # decisões do usuário (25/10/2026): só em 31/12 e só posição comprada
+        # critérios do COIR (25/10/2026): só em 31/12 e só posição comprada
         if (d.data.month, d.data.day) != (12, 31):
             raise erro("a custódia inicial é a posição em 31/12 (a do Bens e Direitos da última "
                        "declaração)")  # fmt: skip
@@ -360,7 +387,8 @@ def _validar(d: DadosEvento) -> None:
     if d.tipo is TipoEvento.INCORPORACAO and d.natureza is None:
         raise erro("informe a natureza (incorporação, fusão, conversão, ajuste de série...)")
     if d.tipo not in TIPOS_COM_DESTINO and (d.ticker_destino or d.quantidade_destino):
-        raise erro("ativo e quantidade recebidos só valem em incorporação e cisão")
+        raise erro("ativo e quantidade recebidos só valem em incorporação, cisão, exercício de "
+                   "direito de subscrição e dividendo em bens")  # fmt: skip
     outra_classe = (d.tipo in (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO)
                     and d.natureza is NaturezaEvento.OUTRA_CLASSE)  # fmt: skip
     if d.tipo is not TipoEvento.INCORPORACAO and d.natureza is not None and not outra_classe:
@@ -368,7 +396,7 @@ def _validar(d: DadosEvento) -> None:
     if d.tipo is not TipoEvento.CISAO and d.percentual_custo is not None:
         raise erro("percentual do custo só vale na cisão")
     if d.tipo is TipoEvento.CISAO and not (d.percentual_custo and 0 < d.percentual_custo < 1):
-        # decisão do usuário (P4, 19/10/2026): sem o percentual divulgado, não calcula
+        # critério do COIR (P4, 19/10/2026): sem o percentual divulgado, não calcula
         raise erro("informe o percentual do custo que vai para o ativo recebido (aviso aos "
                    "acionistas da companhia)")  # fmt: skip
 
@@ -389,6 +417,7 @@ def _campos_chave(conta: Conta, destino: Conta | None, d: DadosEvento) -> dict[s
         "quantidade_destino": numero(d.quantidade_destino),
         "natureza": "" if d.natureza is None else d.natureza.value,
         "percentual_custo": numero(d.percentual_custo),
+        "valor_corrente": numero(d.valor_corrente),
     }  # fmt: skip
 
 
@@ -420,6 +449,11 @@ def salvar_lote(
     return feitos
 
 
+# o direito recebido e exercido pode nunca ter passado por uma nota de corretagem
+SEM_NEGOCIO_NO_BANCO = frozenset({
+    TipoEvento.CUSTODIA_INICIAL, TipoEvento.OFERTA_PUBLICA, TipoEvento.DIREITO_RECEBIDO,
+    TipoEvento.EXERCICIO_DIREITO,
+})  # fmt: skip
 RE_TICKER_CUSTODIA = re.compile(r"^[A-Z0-9]{4}\d{1,2}$")  # ação, unit, ETF, BDR, FII
 
 
@@ -452,10 +486,9 @@ def _gravar(
         or repo.ativo_pelo_codigo_antigo(s, d.ticker, d.data)
     )
     outra_classe = d.origem == "b3" and d.natureza is NaturezaEvento.OUTRA_CLASSE
-    if ativo is None and (outra_classe or d.tipo in (TipoEvento.CUSTODIA_INICIAL,
-                                                     TipoEvento.OFERTA_PUBLICA)):  # fmt: skip
-        # quem começa sem as notas antigas, compra na oferta ou recebe outra classe da companhia
-        # lança ativo ainda sem negócio no banco
+    if ativo is None and (outra_classe or d.tipo in SEM_NEGOCIO_NO_BANCO):
+        # quem começa sem as notas antigas, compra na oferta, recebe outra classe da companhia
+        # ou recebe e exerce um direito de subscrição lança ativo ainda sem negócio no banco
         if not RE_TICKER_CUSTODIA.match(d.ticker):
             raise ImportacaoError(f"{d.ticker}: código de negociação inválido (ex.: PETR4)")
         ativo = repo.Ativos(s).ativo_id(atual, d.data)
@@ -484,6 +517,7 @@ def _preencher(
     )
     registro.quantidade_destino, registro.percentual_custo = (
         d.quantidade_destino, d.percentual_custo)  # fmt: skip
+    registro.valor_corrente = d.valor_corrente
     registro.natureza = None if d.natureza is None else d.natureza.value
     registro.observacao, registro.origem = d.observacao, d.origem
 
@@ -600,11 +634,13 @@ PROPOSTAS: dict[str, tuple[TipoEvento, str | None]] = {
     "desdobro": (TipoEvento.DESDOBRAMENTO, "C"),
     "bonificação em ativos": (TipoEvento.BONIFICACAO, "C"),
     "restituição de capital": (TipoEvento.REDUCAO_CAPITAL, "V"),
+    # com código de recibo (final 9 ou 10), vira o exercício do direito (ver _mapa_proposta)
     "recibo de subscrição": (TipoEvento.SUBSCRICAO, "C"),
+    "direito de subscrição": (TipoEvento.DIREITO_RECEBIDO, "C"),
     "incorporação": (TipoEvento.INCORPORACAO, None),
     "cisão": (TipoEvento.CISAO, None),
     "leilão de fração": (TipoEvento.LEILAO_FRACAO, None),
-    # só em cotas de FI-Infra e FIP-IE (ver _mapa_proposta)
+    # só em cotas de FI-Infra, FIP-IE e FIP comum (ver _mapa_proposta)
     "amortização": (TipoEvento.REDUCAO_CAPITAL, "V"),
 }
 SEM_CUSTO_NO_PACOTE = (
@@ -620,13 +656,28 @@ NOTAS_PROPOSTA = {
     TipoEvento.LEILAO_FRACAO: "fração vendida pela companhia: venda comum no mês do crédito",
     TipoEvento.DIREITO_NAO_EXERCIDO: "o custo pago pelos direitos comprados vira perda em "
                                      "operações comuns; os recebidos sem custo não dão resultado",
+    TipoEvento.DIREITO_RECEBIDO: "direito creditado pela companhia ou pelo fundo: entra com custo "
+                                 "zero e compõe o custo médio dos direitos",
+    TipoEvento.EXERCICIO_DIREITO: "direitos exercidos: informe o valor pago na subscrição; o custo "
+                                  "dos direitos comprados soma ao do recibo",
 }  # fmt: skip
+NOTA_CREDITO = "data do crédito na B3"
+NOTA_CONVERSAO = ("o recibo de subscrição virou ação: o custo passa inteiro, sem resultado; a data "
+                  "é a do crédito das ações na B3")  # fmt: skip
+JANELA_RECIBO = 180  # dias entre o crédito do recibo e o das ações (homologação do aumento)
+ACAO_DO_RECIBO = {"9": "3", "10": "4"}  # recibo ON -> ação ON; recibo PN -> ação PN
+DIREITO_DO_RECIBO = {"9": "1", "10": "2"}
 NAO_EXERCIDO = ("não exercid", "nao exercid")  # "Direitos de Subscrição - Não Exercido"
 AMORTIZACAO_FUNDO = ("amortização de cotas de FI-Infra ou FIP-IE: reduz o custo das cotas (Lei "
                      "11.478/2007 art. 2º §2º e IN RFB 1.585/2015 art. 33, FIP-IE; Lei 12.431/2011 "
                      "art. 3º e IN art. 34, FI-Infra); o que passar do "
                      "custo é rendimento (confira o informe do administrador)")  # fmt: skip
-RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z]{4})(?P<classe>9|10)$")  # recibo de subscrição ON/PN
+AMORTIZACAO_FIP = ("amortização de cotas de FIP: troque o valor pela parcela de custo que o "
+                   "informe do administrador mostra. Desde 2024 só essa parcela devolve custo; o "
+                   "restante é rendimento com IRRF de 15% (Lei 14.754/2023 art. 24). Até 2023 a "
+                   "amortização reduz o custo e só o excedente é rendimento (IN RFB 1.585/2015 "
+                   "art. 32 §2º)")  # fmt: skip
+RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z0-9]{4})(?P<classe>9|10)$")  # recibo de subscrição ON/PN
 JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data ex)
 
 
@@ -645,25 +696,34 @@ def propostas(
         contas = list(s.scalars(select(Conta).where(Conta.titular_id == titular)
                                 .options(selectinload(Conta.corretora))))  # fmt: skip
         # a compra numa oferta não é o evento proposto: não esconde uma bonificação de dias depois
-        lancados = [(e.ativo_id, e.ativo_destino_id, e.data) for e in s.scalars(
+        eventos_lancados = list(s.scalars(
             select(EventoCorporativo).where(EventoCorporativo.conta_id.in_([c.id for c in contas]),
                                             EventoCorporativo.tipo != TipoEvento.OFERTA_PUBLICA)
-        )]  # fmt: skip
+        ))  # fmt: skip
+        lancados = [(e.ativo_id, e.ativo_destino_id, e.data) for e in eventos_lancados]
         saida: list[Proposta] = []
         bonificacoes = _bonificacoes_do_pacote(fiscais, pasta)
-        for m in s.scalars(select(MovimentacaoB3).where(MovimentacaoB3.titular_id == titular)
-                           .order_by(MovimentacaoB3.data.desc(), MovimentacaoB3.id)):  # fmt: skip
-            codigo = m.codigo or m.produto.split(" - ")[0].strip()
-            mapa = _mapa_proposta(m, codigo, fiscais)
-            if mapa is None:
-                continue
-            tipo, cv = mapa
+        linhas = list(s.scalars(
+            select(MovimentacaoB3).where(MovimentacaoB3.titular_id == titular)
+            .order_by(MovimentacaoB3.data.desc(), MovimentacaoB3.id)
+        ))  # fmt: skip
+        convertidos = _recibos_convertidos(linhas)
+        for m in linhas:
+            codigo = _codigo_b3(m)
             corretora = refs.corretora_b3(m.instituicao)
             das_contas = [c for c in contas if c.corretora.nome == corretora]
             conta = das_contas[0].id if len(das_contas) == 1 else None
-            recibo = RE_RECIBO.match(codigo) if tipo is TipoEvento.SUBSCRICAO else None
-            ticker = (f"{recibo['raiz']}{3 if recibo['classe'] == '9' else 4}" if recibo
-                      else codigo)  # fmt: skip
+            convertido = convertidos.get(m.chave)
+            mapa = ((TipoEvento.INCORPORACAO, None) if convertido
+                    else _mapa_proposta(m, codigo, fiscais))  # fmt: skip
+            if mapa is None:
+                continue
+            tipo, cv = mapa
+            if convertido or tipo is TipoEvento.EXERCICIO_DIREITO:
+                saida.append(_proposta_do_recibo(s, refs, m, codigo, conta, corretora, convertido,
+                                                 ignoradas, eventos_lancados))  # fmt: skip
+                continue
+            ticker = codigo
             recebido = tipo is TipoEvento.INCORPORACAO  # a B3 mostra o crédito de B
             # restituição de capital e amortização: a quantidade da B3 é a posição sobre a qual o
             # dinheiro foi pago, não ações ou cotas canceladas; levada ao evento, zeraria a posição
@@ -671,8 +731,11 @@ def propostas(
             data, nota_data = m.data, NOTA_DATA_EX
             if tipo is TipoEvento.DIREITO_NAO_EXERCIDO:
                 data, nota_data = _fim_do_prazo(codigo, m.data, fiscais, pasta)
+            elif tipo is TipoEvento.DIREITO_RECEBIDO:
+                nota_data = NOTA_CREDITO
             elif m.movimentacao.strip().lower() == "amortização":
-                nota_data = AMORTIZACAO_FUNDO
+                fip = fiscais is not None and fiscais.tipos.tipo_ou_sem(codigo) is TipoAtivo.FIP
+                nota_data = AMORTIZACAO_FIP if fip else AMORTIZACAO_FUNDO
             dados = DadosEvento(
                 tipo=tipo, data=data, conta=conta, ticker="" if recebido else ticker, cv=cv,
                 quantidade=None if recebido or so_valor else m.quantidade,
@@ -731,6 +794,111 @@ def propostas(
                    key=lambda p: p.data, reverse=True)  # fmt: skip
     trilha.propostas(titular, lista)
     return _sem_pendencia_antes(lista)
+
+
+def _codigo_b3(m: MovimentacaoB3) -> str:
+    return m.codigo or m.produto.split(" - ")[0].strip()
+
+
+def _recibos_convertidos(linhas: Sequence[MovimentacaoB3]) -> dict[str, str]:
+    """Chave da linha -> código do recibo de subscrição que virou as ações dela: uma "Atualização"
+    de entrada na ação, de um recibo da mesma companhia e classe creditado até JANELA_RECIBO dias
+    antes. A quantidade pode ser menor que a do recibo (parte dele pode ter sido vendida), e cada
+    recibo só cobre conversões até a quantidade dele: depois disso, a "Atualização" é outra coisa.
+    Vale o recibo mais recente que ainda cobre a linha."""
+    recibos = [m for m in linhas if m.entrada and RE_RECIBO.match(_codigo_b3(m))
+               and m.movimentacao.strip().lower() == "recibo de subscrição"]  # fmt: skip
+    resta = {r.chave: r.quantidade for r in recibos}
+    saida: dict[str, str] = {}
+    for m in sorted(linhas, key=lambda x: (x.data, x.id)):
+        if not m.entrada or m.movimentacao.strip().lower() != "atualização" or m.quantidade <= 0:
+            continue
+        codigo = _codigo_b3(m)
+        candidatos = [
+            r for r in recibos
+            if (recibo := RE_RECIBO.match(_codigo_b3(r)))
+            and codigo == recibo["raiz"] + ACAO_DO_RECIBO[recibo["classe"]]
+            and m.quantidade <= resta[r.chave]
+            and 0 <= (m.data - r.data).days <= JANELA_RECIBO
+        ]  # fmt: skip
+        if candidatos:
+            usado = max(candidatos, key=lambda r: r.data)
+            resta[usado.chave] -= m.quantidade
+            saida[m.chave] = _codigo_b3(usado)
+    return saida
+
+
+def _lancado_do_recibo(
+    s: Session, dia: date, lancados: Sequence[EventoCorporativo], *,
+    exercicio: tuple[str, str, str] | None = None, conversao_de: str | None = None,
+) -> bool:  # fmt: skip
+    """O evento certo já está lançado perto da data? Olha o tipo, não só o ativo: o crédito do
+    direito dias antes não é o exercício, e o exercício não é a conversão. Exercício: evento de
+    exercício no direito ou no recibo, ou a subscrição do jeito antigo, direto na ação. Conversão:
+    incorporação de natureza recibo saindo do recibo."""
+    perto = timedelta(days=JANELA)
+
+    def ativos(ticker: str) -> set[int]:
+        achado = repo.ativo_existente(s, ticker, dia)
+        return {achado} if achado is not None else _ativos_do_ticker(s, ticker)
+
+    proximos = [e for e in lancados if abs(e.data - dia) <= perto]
+    if conversao_de is not None:
+        recibo = ativos(conversao_de)
+        return any(
+            e.tipo == TipoEvento.INCORPORACAO and e.ativo_id in recibo
+            and e.natureza == NaturezaEvento.RECIBO_SUBSCRICAO
+            for e in proximos
+        )  # fmt: skip
+    if exercicio is None:
+        return False
+    direito, recibo, acao = (ativos(t) for t in exercicio)
+    return any(
+        (e.tipo == TipoEvento.EXERCICIO_DIREITO
+         and (e.ativo_id in direito or e.ativo_destino_id in recibo))
+        or (e.tipo == TipoEvento.SUBSCRICAO and e.ativo_id in acao)
+        for e in proximos
+    )  # fmt: skip
+
+
+def _proposta_do_recibo(
+    s: Session, refs: Referencias, m: MovimentacaoB3, codigo: str, conta: int | None,
+    corretora: str | None, convertido: str | None, ignoradas: set[str],
+    lancados: Sequence[EventoCorporativo],
+) -> Proposta:  # fmt: skip
+    """O crédito do recibo propõe o exercício do direito (o direito sai e o recibo entra pelo
+    valor pago mais o custo dos direitos); o crédito das ações propõe a conversão do recibo.
+    Quem já lançou a subscrição do jeito antigo, direto na ação, vê o exercício como lançado."""
+    observacao = f"proposto da movimentação da B3 ({m.movimentacao})"
+    if convertido:
+        dados = DadosEvento(
+            tipo=TipoEvento.INCORPORACAO, data=m.data, conta=conta, ticker=convertido,
+            quantidade=m.quantidade, ticker_destino=codigo, quantidade_destino=m.quantidade,
+            natureza=NaturezaEvento.RECIBO_SUBSCRICAO, observacao=observacao, origem="b3",
+        )  # fmt: skip
+        nota = NOTA_CONVERSAO
+        feito = _lancado_do_recibo(s, m.data, lancados, conversao_de=convertido)
+    else:
+        recibo = RE_RECIBO.match(codigo)
+        if recibo is None:  # _mapa_proposta só manda código de recibo
+            raise ImportacaoError(f"{codigo}: código de recibo de subscrição inválido")
+        direito = recibo["raiz"] + DIREITO_DO_RECIBO[recibo["classe"]]
+        acao = recibo["raiz"] + ACAO_DO_RECIBO[recibo["classe"]]
+        dados = DadosEvento(
+            tipo=TipoEvento.EXERCICIO_DIREITO, data=m.data, conta=conta, ticker=direito,
+            quantidade=m.quantidade, ticker_destino=codigo, quantidade_destino=m.quantidade,
+            observacao=observacao, origem="b3",
+        )  # fmt: skip
+        nota = f"{NOTAS_PROPOSTA[TipoEvento.EXERCICIO_DIREITO]}; {NOTA_CREDITO}"
+        feito = _lancado_do_recibo(s, m.data, lancados, exercicio=(direito, codigo, acao))
+    if m.chave in ignoradas:
+        situacao = "ignorada"
+    elif feito:
+        situacao = "lançado"
+    else:
+        situacao = "pendente"
+    return Proposta(m.chave, m.data, m.movimentacao, codigo, m.quantidade, m.valor, corretora,
+                    situacao, dados, nota)  # fmt: skip
 
 
 BonificacoesDoPacote = dict[str, list[tuple[date, Decimal, str]]]
@@ -836,17 +1004,22 @@ def _mapa_proposta(
     m: MovimentacaoB3, codigo: str, fiscais: ReferenciasFiscais | None
 ) -> tuple[TipoEvento, str | None] | None:
     """Tipo e C/V do evento que a linha da movimentação sugere (None: nenhum). A baixa do direito
-    não exercido é uma saída; a amortização só reduz o custo em cotas de FI-Infra e FIP-IE (parecer
-    do especialista de 09/11/2026; nos outros fundos fica como estava)."""
+    não exercido é uma saída; a amortização só reduz o custo em cotas de FI-Infra, FIP-IE e FIP
+    comum (pareceres do especialista de 09/11 e 13/11/2026; nos outros fundos fica como
+    estava)."""
     movimentacao = m.movimentacao.strip().lower()
     if any(x in movimentacao for x in NAO_EXERCIDO):
         return None if m.entrada else (TipoEvento.DIREITO_NAO_EXERCIDO, None)
     mapa = PROPOSTAS.get(movimentacao)
-    if mapa is None or (mapa[0] is TipoEvento.SUBSCRICAO and not m.entrada):
+    if mapa is None or (
+        mapa[0] in (TipoEvento.SUBSCRICAO, TipoEvento.DIREITO_RECEBIDO) and not m.entrada
+    ):
         return None
+    if movimentacao == "recibo de subscrição" and RE_RECIBO.match(codigo):
+        return TipoEvento.EXERCICIO_DIREITO, None  # o direito sai e o recibo entra com o custo
     if movimentacao == "amortização" and (
         not m.entrada or fiscais is None
-        or fiscais.tipos.tipo_ou_sem(codigo) is not TipoAtivo.FUNDO_INFRA
+        or fiscais.tipos.tipo_ou_sem(codigo) not in (TipoAtivo.FUNDO_INFRA, TipoAtivo.FIP)
     ):  # fmt: skip
         return None
     return mapa
@@ -1225,7 +1398,7 @@ def _fator(ev: dict[str, str], tipo: TipoEvento | None) -> str:
 
 def _fracao(total: Decimal) -> tuple[Decimal, str]:
     """Quantidade do evento com a fração: ela fica na posição até o leilão, que a vende pelo custo
-    médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º; decisão do usuário de
+    médio (IN RFB 1.585/2015 art. 58 caput; Lei 6.404/1976 art. 169 §3º; critério do COIR de
     10/11/2026). Sem isso, o leilão tirava a fração das ações inteiras e a posição ficava
     fracionada."""
     inteiro = total.to_integral_value(ROUND_FLOOR)

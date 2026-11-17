@@ -262,7 +262,7 @@ def comparar(
 # ---------------------------------------------------------------------------------- explicações
 @dataclass(frozen=True)
 class Explicacao:
-    """Divergência conhecida (decisão do usuário ou erro da planilha): nota e data do pregão e,
+    """Divergência conhecida (critério do COIR ou erro da planilha): nota e data do pregão e,
     opcionalmente, o papel (sem papel, vale para a nota toda)."""
 
     nota: str

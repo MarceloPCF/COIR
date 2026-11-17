@@ -5,8 +5,9 @@ negócios, art. 65 §3º; o excedente vira comum pelo preço do próprio negóci
 exercícios; vendas; vencimento (pó).
 
 Fontes:
-- Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora desde a
-  MP 497/2010; antes, qualquer corretora); §13: exercício de opção não é day trade.
+- Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da
+  MP 497/2010, a operação entre corretoras com liquidação física também não era day trade: IN SRF
+  25/2001 art. 31 §6º); §13: exercício de opção não é day trade.
 - Exercício (art. 60 II a-d e §§1º e 3º): titular de call soma o prêmio ao custo; lançador de
   call soma o prêmio à alienação; titular de put subtrai o prêmio da alienação; lançador de put
   subtrai do custo.
@@ -14,7 +15,12 @@ Fontes:
 - Termo: as ações entram na carteira na liquidação, pelo preço a termo + custos da nota. Vendas
   à vista na mesma data consomem primeiro o lote do termo, pelo preço a termo (art. 62 I, linha do
   termo, sem isenção); o excedente sai da posição anterior pelo PM. O que sobra do lote fica no
-  custo médio (art. 62 §1º e art. 58). Decisões do usuário de 20 e 21/10/2026.
+  custo médio (art. 62 §1º e art. 58). Critérios do COIR de 20 e 21/10/2026.
+- Venda a termo: a alienação se dá na liquidação (art. 59 §2º IV), no vencimento do contrato. O
+  ganho é o preço a termo, menos os custos da nota, menos o custo médio da posição na abertura
+  desse dia (art. 62 II e III; art. 58): coberto e descoberto dão a mesma conta. Linha do termo,
+  nunca isento; o valor bruto entra na soma do limite do mês da liquidação. Sem ações para
+  entregar, o motor para. Parecer do especialista de 13/11/2026.
 """
 
 from calendar import monthrange
@@ -52,9 +58,12 @@ MERCADOS_EXERCICIO = frozenset({"EXERC CALL", "EXERC PUT"})
 # a venda não entra na base que reparte o IRRF de 0,005% entre as fichas: o imposto desses é
 # exclusivo na fonte (ETF de renda fixa) ou de alíquota zero (FI-Infra e FIP-IE)
 SEM_IRRF_DA_VENDA = frozenset({TipoAtivo.ETF_RF, TipoAtivo.FUNDO_INFRA})
+# cota de fundo com regra própria na venda em bolsa: o parâmetro diz se o COIR apura
+REGRA_DO_FUNDO = {TipoAtivo.FIP: "fip_venda_bolsa", TipoAtivo.FIDC: "fidc_venda_bolsa"}
 ABREM_POSICAO = frozenset(
-    {TipoEvento.SUBSCRICAO, TipoEvento.OFERTA_PUBLICA, TipoEvento.CUSTODIA_INICIAL}
-)
+    {TipoEvento.SUBSCRICAO, TipoEvento.OFERTA_PUBLICA, TipoEvento.CUSTODIA_INICIAL,
+     TipoEvento.DIREITO_RECEBIDO}
+)  # fmt: skip
 
 # titular, grupo da visão (None por titular; corretora; conta), ativo, vencimento (opção: o
 # código da série se repete de um ano para outro, ex.: TAEEL382 em dez/2023 e dez/2025)
@@ -92,6 +101,74 @@ class _Dia:
     eventos: list[Evento] = field(default_factory=lambda: list[Evento]())
     termos: list[_Op] = field(default_factory=lambda: list[_Op]())
     operacoes: list[_Op] = field(default_factory=lambda: list[_Op]())
+
+
+def _conferir_fundo(livro: "Livro", tipo: TipoAtivo | None, ticker: str, dia: date) -> None:
+    """FIP comum e FIDC só entram na apuração com o parâmetro em ``ganho_liquido`` (15% na
+    categoria comum, sem isenção e fora do limite de R$ 20 mil). FIP: IN RFB 1.585/2015 art. 32
+    §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I. FIDC: sem norma expressa para a venda em bolsa
+    por pessoa física (o art. 16 I a da IN só alcança fundo fechado com carteira de ações, art. 18
+    §2º): o padrão é isolar o ativo, com este motivo (parecer do especialista de 13/11/2026). Sem
+    vigência do parâmetro na data, também isola: nada de palpite."""
+    if tipo is None or tipo not in REGRA_DO_FUNDO:
+        return
+    nome = REGRA_DO_FUNDO[tipo]
+    regras = {p.valor for p in livro.parametros.parametros if p.nome == nome and p.vigente(dia)}
+    if regras == {"ganho_liquido"}:
+        return
+    if tipo is TipoAtivo.FIDC:
+        raise MotorError(
+            f"{ticker} é cota de FIDC: não há norma expressa para a venda de FIDC em bolsa por "
+            "pessoa física, e o COIR deixa o fundo fora do cálculo desde o primeiro negócio, "
+            "inclusive as compras. Confira com o administrador do "
+            "fundo. A prática de mercado recolhe 15% (DARF 6015); com o parâmetro "
+            "fidc_venda_bolsa = ganho_liquido o COIR apura assim"
+        )
+    raise MotorError(
+        f"{ticker} é cota de FIP: o COIR não tem regra para a venda em {dia:%d/%m/%Y} (parâmetro "
+        f"{nome}); confira com o administrador do fundo"
+    )
+
+
+def _avisar_come_cotas(livro: "Livro", ticker: str, dia: date, params: ParametrosFiscais) -> None:
+    """Desde 2024 o FIP que não é entidade de investimento tem tributação periódica (Lei
+    14.754/2023 art. 26), e o imposto pago nela aumenta o custo da cota (art. 17 §2º II). O COIR
+    não tem esse dado: sem ele o ganho na venda sai maior (imposto a mais, nunca a menos). Só
+    avisa, uma vez por fundo (parecer do especialista de 13/11/2026)."""
+    regime = {p.valor for p in params.parametros
+              if p.nome == "fip_amortizacao_custo" and p.vigente(dia)}  # fmt: skip
+    aviso = (
+        f"Venda de {ticker} (FIP): se o fundo não é entidade de investimento, teve tributação "
+        "periódica (come-cotas) desde 2024, e o rendimento já tributado aumenta o custo das cotas "
+        "(Lei 14.754/2023 arts. 26 e 17 §2º II). O COIR não tem esse dado e usou só o custo de "
+        "compra: o ganho pode ter saído maior. Confira o informe do administrador"
+    )
+    if regime == {"proporcional_vp"} and aviso not in livro.avisos:
+        livro.avisos.append(aviso)
+
+
+def _avisar_conjugadas(
+    livro: "Livro",
+    vendas: Sequence[tuple[NotaMotor, OperacaoMotor]],
+    compras: set[tuple[int, str, int, date]],
+) -> None:
+    """Compra à vista e venda a termo do mesmo ativo, no mesmo pregão e na mesma corretora: pode
+    ser a operação conjugada com rendimento predeterminado, que é renda fixa (IN RFB 1.585/2015
+    art. 47 I b e §1º I). O COIR apura como venda a termo coberta (art. 62 III) e avisa (parecer
+    do especialista de 13/11/2026)."""
+    for nota, op in vendas:
+        if (nota.titular, nota.corretora, op.ativo, nota.data) not in compras:
+            continue
+        aviso = (
+            f"{nota.data:%d/%m/%Y}: compra à vista e venda a termo de {op.ticker} no mesmo "
+            f"pregão, na {nota.corretora}: pode ser uma operação conjugada, que a Receita trata "
+            "como renda fixa (IN RFB 1.585/2015 art. 47 I b). O COIR apurou como venda a termo, "
+            "com o ganho na liquidação. Se o informe da corretora mostrar essa operação como "
+            "renda fixa, com imposto retido na fonte, o ganho não entra na apuração de renda "
+            "variável: confira com a corretora"
+        )
+        if aviso not in livro.avisos:
+            livro.avisos.append(aviso)
 
 
 def _grupo(tipo: TipoAtivo) -> Grupo:
@@ -136,6 +213,7 @@ class Livro:
         # (quantidade e custo pelo preço a termo), por posição
         self.termo_hoje: dict[Chave, Posicao] = {}
         self.parametros = ParametrosFiscais(parametros=())  # os do livro, ao percorrer
+        self.hoje: date | None = None  # o dia em processamento
         self.fins_pme: set[date] = set()  # dias seguintes ao fim de uma isenção de PME
         self.movimentos: list[Movimento] = []
         self.avisos: list[str] = []
@@ -155,7 +233,10 @@ class Livro:
     def processando(self, titular: int, *ativos: int | None) -> None:
         self.em_curso = (titular, frozenset(a for a in ativos if a is not None))
         for ativo in self.em_curso[1]:
-            if self.tipos.get(ativo) is TipoAtivo.SEM_TIPO:
+            tipo = self.tipos.get(ativo)
+            if tipo in REGRA_DO_FUNDO and self.hoje is not None:
+                _conferir_fundo(self, tipo, self.tickers.get(ativo, str(ativo)), self.hoje)
+            if tipo is TipoAtivo.SEM_TIPO:
                 raise MotorError(
                     f"{self.tickers.get(ativo, ativo)} não tem tipo de ativo nas tabelas do COIR, "
                     "e sem o tipo não se sabe como ele é tributado. Atualize as tabelas em "
@@ -275,16 +356,17 @@ def carteira(
 
 
 def termos_em_aberto(notas: Iterable[NotaMotor], ate: date) -> list[TermoAberto]:
-    """Compras a termo feitas até `ate` e ainda não liquidadas no fim desse dia. Não mudam a
-    carteira nem o PM (entram na liquidação, ver `carteira`): são só para mostrar. O custo é o
-    mesmo que entrará no PM: valor a termo + custos da nota rateados como em `_percorrer`."""
+    """Compras e vendas a termo feitas até `ate` e ainda não liquidadas no fim desse dia. Não
+    mudam a carteira nem o PM (entram na liquidação, ver `carteira`): são só para mostrar. Na
+    compra, o custo é o que entrará no PM: valor a termo + custos da nota rateados como em
+    `_percorrer`; na venda, o valor da alienação: valor a termo - custos."""
     saida: list[TermoAberto] = []
     for nota in notas:
         if nota.data > ate or not nota.operacoes:
             continue
         custos = ratear(nota.custos, [o.total for o in nota.operacoes])
         for op, custo in zip(nota.operacoes, custos, strict=True):
-            if (op.mercado != "TERMO" or op.cv != "C" or op.liquidacao_termo is None
+            if (op.mercado != "TERMO" or op.liquidacao_termo is None
                     or op.liquidacao_termo <= ate):  # fmt: skip
                 continue
             saida.append(
@@ -292,7 +374,7 @@ def termos_em_aberto(notas: Iterable[NotaMotor], ate: date) -> list[TermoAberto]
                     titular=nota.titular, corretora=nota.corretora, conta=nota.conta,
                     nota=nota.id, ativo=op.ativo, ticker=op.ticker, tipo=op.tipo,
                     pregao=nota.data, liquidacao=op.liquidacao_termo, quantidade=op.quantidade,
-                    custo=op.total + custo,
+                    custo=op.total + custo if op.cv == "C" else op.total - custo, cv=op.cv,
                 )
             )  # fmt: skip
     return saida
@@ -358,7 +440,7 @@ OpsDoDia = list[tuple[date, _Op]]
 
 def _desde_zerado(livro: Livro, meses: Meses) -> None:
     """O evento que falta pode ser anterior ao dia em que o motor parou: os meses do ativo desde
-    a última vez que a posição zerou também ficam incompletos (decisão do usuário de 03/11/2026,
+    a última vez que a posição zerou também ficam incompletos (critério do COIR de 03/11/2026,
     parecer do especialista)."""
     for (titular, ativo), corte in livro.cortes.items():
         movs = [m for m in livro.movimentos
@@ -373,7 +455,7 @@ def _venda_isolada(livro: Livro, dia: date, o: _Op) -> None:
     do usuário de 03/11/2026). O IRRF da nota continua crédito do mês. O ativo sem tipo conta
     como ação: se for, não contar isentaria vendas de ações acima do limite (imposto a menos, com
     multa de ofício); se não for, contar só faz pagar a mais, o que se restitui (parecer do
-    especialista de 09/11/2026, seguido pelo usuário). A apuração avisa o mês em que isso decide
+    especialista de 09/11/2026). A apuração avisa o mês em que isso decide
     o limite."""
     op = o.op
     if op.cv != "V" or op.mercado == "TERMO":
@@ -396,6 +478,14 @@ def _venda_isolada(livro: Livro, dia: date, o: _Op) -> None:
     ))  # fmt: skip
 
 
+def _ativos_do_evento(e: Evento) -> tuple[int | None, ...]:
+    """Os ativos que o evento liga no isolamento. O dividendo em bens só mexe no bem recebido: a
+    posição na companhia que pagou não muda, e uma não deve puxar a outra."""
+    if e.tipo is TipoEvento.DIVIDENDO_EM_BENS:
+        return (e.ativo_destino,)
+    return (e.ativo, e.ativo_destino)
+
+
 def _isolar(
     livro: Livro, ops: OpsDoDia, eventos: list[Evento]
 ) -> tuple[OpsDoDia, OpsDoDia, list[Evento], Meses]:
@@ -405,7 +495,7 @@ def _isolar(
     if not livro.cortes:
         return ops, [], eventos, meses
     itens = [(dia, o.nota.titular, (o.op.ativo, o.op.opcao)) for dia, o in ops] + [
-        (e.data, e.titular, (e.ativo, e.ativo_destino)) for e in eventos
+        (e.data, e.titular, _ativos_do_evento(e)) for e in eventos
     ]
     mudou = True
     while mudou:  # o corte de um ativo pode puxar o de outro
@@ -432,7 +522,7 @@ def _isolar(
     tiradas: OpsDoDia = []
     for dia, o in ops:
         (tiradas if tirar(dia, o.nota.titular, (o.op.ativo, o.op.opcao)) else fica).append((dia, o))
-    eventos = [e for e in eventos if not tirar(e.data, e.titular, (e.ativo, e.ativo_destino))]
+    eventos = [e for e in eventos if not tirar(e.data, e.titular, _ativos_do_evento(e))]
     return fica, tiradas, eventos, meses
 
 
@@ -444,6 +534,8 @@ def _percorrer(
     dias: dict[date, _Dia] = defaultdict(_Dia)
     vencimentos: set[date] = set()
     ops: list[tuple[date, _Op]] = []  # dia em que a operação entra no livro
+    vendas_a_termo: list[tuple[NotaMotor, OperacaoMotor]] = []
+    compras_a_vista: set[tuple[int, str, int, date]] = set()  # titular, corretora, ativo, pregão
     for nota in notas:
         if nota.data > ate or not nota.operacoes:
             continue  # nota BM&F: só ajustes (futuros.py)
@@ -462,15 +554,21 @@ def _percorrer(
                 if (op.objeto_tipo is None and livro.visao is Visao.TITULAR
                         and aviso not in livro.avisos):  # fmt: skip
                     livro.avisos.append(aviso)
+            if op.tipo is TipoAtivo.FIP and op.cv == "V" and livro.visao is Visao.TITULAR:
+                _avisar_come_cotas(livro, op.ticker, nota.data, parametros)
             item = _Op(nota, op, custo)
             if op.mercado == "TERMO":
-                if op.cv == "V" or op.liquidacao_termo is None:
-                    raise MotorError(f"nota {nota.numero} de {nota.data}, {op.ticker}: venda a "
-                                     "termo ou termo sem data de liquidação (prazo)")  # fmt: skip
+                if op.liquidacao_termo is None:
+                    raise MotorError(f"nota {nota.numero} de {nota.data}, {op.ticker}: termo sem "
+                                     "data de liquidação (prazo)")  # fmt: skip
+                if op.cv == "V":
+                    vendas_a_termo.append((nota, op))
                 if op.liquidacao_termo <= ate:
                     ops.append((op.liquidacao_termo, item))
                 continue
             ops.append((nota.data, item))
+            if op.cv == "C" and op.mercado in MERCADOS_ACAO_A_VISTA:
+                compras_a_vista.add((nota.titular, nota.corretora, op.ativo, nota.data))
             if op.tipo is TipoAtivo.OPCAO:
                 if op.vencimento is None or op.vencimento < nota.data:
                     raise MotorError(
@@ -478,6 +576,8 @@ def _percorrer(
                         "anterior ao negócio (confira data/vencimentos_opcoes*.csv)"
                     )
                 vencimentos.add(op.vencimento)
+    if livro.visao is Visao.TITULAR:
+        _avisar_conjugadas(livro, vendas_a_termo, compras_a_vista)
     ate_hoje: list[Evento] = []
     for evento in eventos:
         if evento.data <= ate:
@@ -505,6 +605,7 @@ def _percorrer(
     ofertas = [e for e in eventos if e.tipo is TipoEvento.OFERTA_PUBLICA
                and not livro.fora(e.titular, e.ativo, e.data)]  # fmt: skip
     for dia in sorted(dias):
+        livro.hoje = dia
         try:
             _antecipar_ofertas(livro, dia, dias, ofertas, parametros)
             _processar_dia(livro, dia, dias[dia], parametros)
@@ -524,7 +625,7 @@ def _antecipar_ofertas(
 ) -> None:  # fmt: skip
     """A negociação pode começar antes da liquidação da oferta: a venda do dia que deixaria a
     posição vendida é das ações da oferta, então a aquisição entra antes dela, e o ganho fica no
-    mês do pregão da venda (decisão do usuário de 08/11/2026; IN RFB 1.585/2015 art. 58). Antecipa
+    mês do pregão da venda (critério do COIR de 08/11/2026; IN RFB 1.585/2015 art. 58). Antecipa
     só o que cobre a venda, da oferta mais próxima para a mais distante. A posição vendida há mais
     tempo que a janela não é venda das ações da oferta: o motor falha alto em _evento."""
     hoje = dias[dia]
@@ -595,6 +696,16 @@ def _direitos_recebidos(livro: Livro, dia: date, ops: Sequence[_Op]) -> None:
             continue
         o = venda[chave]
         livro.processando(o.nota.titular, o.op.ativo)
+        if pos.custo > 0 and livro.visao is Visao.TITULAR:
+            # com direitos comprados na posição, a data do crédito muda o custo médio: lançado só
+            # na venda, o ganho desta venda sai menor (ou adiado) do que o devido
+            livro.avisos.append(
+                f"{dia:%d/%m/%Y}: {o.op.ticker}: direito vendido sem o crédito lançado: os "
+                f"{falta} recebidos entraram com custo zero só nesta venda. Como havia direitos "
+                "comprados, o custo médio pode ter ficado maior e o ganho menor: lance o "
+                '"Direito recebido" na data do crédito (tela Eventos; a movimentação da B3 '
+                "traz a data)"
+            )
         pos.comprar(falta, ZERO)
         livro.registrar(chave, dia, f"direito:{o.op.id}",
                         "direito recebido sem custo: entra antes da venda, com custo zero (IN RFB "
@@ -609,6 +720,11 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
     # cisões depois dos demais eventos do dia (agrupadas por posição de origem e destino)
     cisoes: dict[tuple[Chave, int | None], list[Evento]] = defaultdict(list)
     for evento in sorted(d.eventos, key=lambda e: e.id):
+        if evento.tipo is TipoEvento.DIVIDENDO_EM_BENS:
+            # só o bem recebido muda; a companhia que pagou não entra na conta
+            livro.processando(evento.titular, evento.ativo_destino)
+            _dividendo_em_bens(livro, evento, params)
+            continue
         livro.processando(evento.titular, evento.ativo, evento.ativo_destino)
         if evento.tipo is TipoEvento.CISAO:
             # as contas que formam a posição (visão por titular) entram juntas: o custo repartido
@@ -620,6 +736,8 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
             _leilao_fracao(livro, evento, params)
         elif evento.tipo is TipoEvento.DIREITO_NAO_EXERCIDO:
             _direito_nao_exercido(livro, evento)
+        elif evento.tipo is TipoEvento.EXERCICIO_DIREITO:
+            _exercicio_direito(livro, evento)
         else:
             _evento(livro, evento)
     origens = [chave for chave, _ in cisoes]
@@ -630,10 +748,14 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
                              "mesmo dia (não implementado)")  # fmt: skip
         _cisao(livro, chave, grupo)
     livro.termo_hoje = {}
-    for t in sorted(d.termos, key=lambda t: (t.nota.id, t.op.ordem)):
+    # as compras a termo liquidam antes das vendas a termo: as ações recebidas podem ser entregues
+    for t in sorted(d.termos, key=lambda t: (t.op.cv == "V", t.nota.id, t.op.ordem)):
         livro.processando(t.nota.titular, t.op.ativo)
         chave = livro.chave(t.nota.titular, _de(t), t.op.ativo)
         pos = livro.posicoes[chave]
+        if t.op.cv == "V":
+            _venda_a_termo(livro, dia, chave, t)
+            continue
         # ações vendidas antes da liquidação: a posição ficou vendida e o termo a cobre (resultado
         # na liquidação, limite de isenção do mês da venda, como na recompra da venda a descoberto)
         mes_limite = pos.descoberto_desde if pos.quantidade < 0 else None
@@ -809,7 +931,7 @@ def _movimento_day_trade(
     origem = "op:" + ",".join(str(o.op.id) for o in sorted(grupo, key=lambda o: o.op.id))
     tipo = primeiro.op.tipo
     # day trade com ações de PME no período: isento (leitura literal do art. 59 §2º I, que só
-    # afasta o limite de R$ 20 mil; decisão do usuário de 15/10/2026)
+    # afasta o limite de R$ 20 mil; critério do COIR de 15/10/2026)
     pme = all(p.base.op.pme_ate is not None and dia <= p.base.op.pme_ate for p in compras)
     # a venda de ação em day trade entra na soma do limite de R$ 20 mil (parâmetro
     # day_trade_na_soma_limite, ligado: leitura literal de "total das alienações" da Lei 11.033
@@ -833,7 +955,7 @@ def _aplicar(livro: Livro, dia: date, p: _Peca) -> None:
     if o.op.cv != "V" or o.op.mercado in MERCADOS_EXERCICIO or lote is None or not lote.quantidade:
         _aplicar_parte(livro, dia, chave, p)
         return
-    # venda na data da liquidação do termo (decisão do usuário de 21/10/2026, parecer do
+    # venda na data da liquidação do termo (critério do COIR de 21/10/2026, parecer do
     # especialista): consome primeiro o lote do termo, pela ordem dos negócios; o excedente sai da
     # posição anterior pelo PM, como venda à vista comum
     q = min(p.quantidade, lote.quantidade)
@@ -856,7 +978,7 @@ def _fatia(p: _Peca, quantidade: Decimal, regra: str) -> _Peca:
 def _vender_por_lote(livro: Livro, dia: date, chave: Chave, p: _Peca) -> None:
     """IN 1.585 art. 69-A §4º: cada lote tem o seu PM. A IN não fixa qual sai primeiro
     (parâmetro pme_lote_ordem_venda). Padrão ``proporcional``: a venda se reparte entre os lotes na
-    proporção das quantidades, como na SC Cosit 148/2025 (analogia; decisão do usuário de
+    proporção das quantidades, como na SC Cosit 148/2025 (analogia; critério do COIR de
     10/11/2026, leitura conservadora), com a parte isenta arredondada para baixo na unidade da
     quantidade vendida. ``isento_primeiro`` e ``tributado_primeiro`` continuam como opções
     (decisão de 08/11/2026). O que passar da posição é venda a descoberto, como em qualquer ativo;
@@ -915,7 +1037,7 @@ def _aplicar_parte(
 ) -> None:  # fmt: skip
     """Aplica a peça à posição. Com `custo_termo`, é a venda de ações do lote do termo na data da
     liquidação: sai pelo preço a termo, vai para a linha "Mercado a termo" da ficha do IRPF e nunca
-    é isenta (IN 1.585 art. 62 I e art. 59 §2º IV; decisão do usuário de 20/10/2026)."""
+    é isenta (IN 1.585 art. 62 I e art. 59 §2º IV; critério do COIR de 20/10/2026)."""
     o = p.base
     pos = livro.posicoes[chave]
     if (o.op.cv == "V" and custo_termo is None and lote is None and pos.quantidade > 0
@@ -925,9 +1047,9 @@ def _aplicar_parte(
     # ação ou unit no mercado à vista (units só entram com o parâmetro units_na_isencao)
     acao = o.op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT) and o.op.mercado in MERCADOS_ACAO_A_VISTA
     # IN 1.585 art. 59 §2º IV: a isenção não se aplica à alienação por exercício de opção; o valor
-    # continua na soma do limite (decisão do usuário de 15/10/2026, leitura conservadora)
+    # continua na soma do limite (critério do COIR de 15/10/2026, leitura conservadora)
     isentavel = acao and o.op.mercado not in MERCADOS_EXERCICIO
-    # venda a descoberto (leitura A1, decisão do usuário de 15/10/2026, sem norma específica): o
+    # venda a descoberto (leitura A1, critério do COIR de 15/10/2026, sem norma específica): o
     # resultado sai na recompra, mas o limite de isenção é o do mês da venda
     mes_limite = pos.descoberto_desde if o.op.cv == "C" and pos.quantidade < 0 else None
     pme = False
@@ -967,9 +1089,13 @@ def _aplicar_parte(
     # usuário de 25/10/2026); passar de comprado a vendido e continuar vendido no fim do mês
     # costuma ser evento que falta: só avisa, o cálculo não muda (decisão de 03/11/2026)
     # base do IRRF 0,005% (Lei 11.033/2004 art. 2º §§1º e 2º): venda comum, sem exercício, PME
-    # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas
+    # nem ETF de renda fixa (tributação exclusiva); usada só para repartir o IRRF entre as fichas.
+    # Em opções a base é a soma dos prêmios do dia, se positiva (IN RFB 1.585/2015 art. 63 II e
+    # §1º II): a compra entra negativa e a soma por dia é feita na repartição
     base_irrf = p.bruto if (o.op.cv == "V" and o.op.mercado not in MERCADOS_EXERCICIO and not pme
                             and o.op.tipo not in SEM_IRRF_DA_VENDA) else ZERO  # fmt: skip
+    if o.op.cv == "C" and o.op.tipo is TipoAtivo.OPCAO and o.op.mercado not in MERCADOS_EXERCICIO:
+        base_irrf = -p.bruto
     termo = custo_termo is not None
     livro.registrar(chave, dia, f"op:{o.op.id}", p.regra, de=_de(o),
                     categoria=_categoria(o.op.tipo, day_trade=False), cv=o.op.cv,
@@ -1081,6 +1207,10 @@ def _incorporacao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
     quantidade = e.quantidade or ZERO
     custo = pos.baixar_sem_resultado(quantidade)
     regra = f"incorporação ({e.natureza.value.lower()}, IN 1.585 art. 58 §6º): "
+    if e.natureza is NaturezaEvento.RECIBO_SUBSCRICAO:
+        # o recibo vira a ação ou a cota: não há alienação pelo titular (Lei 7.713/1988 art. 3º
+        # §3º); o custo integral segue com ela (IN 1.585 art. 58 §§4º e 6º, por analogia)
+        regra = "recibo de subscrição convertido (IN 1.585 art. 58 §§4º e 6º, por analogia): "
     livro.registrar(chave, e.data, f"evento:{e.id}",
                     regra + f"sai para {e.ticker_destino} com o custo, sem resultado", de=de,
                     categoria=Categoria.COMUM, cv="V" if sinal > 0 else "C",
@@ -1135,10 +1265,121 @@ def _cisao(livro: Livro, chave: Chave, grupo: list[Evento]) -> None:
                         quantidade=e.quantidade_destino or ZERO, valor=custo)  # fmt: skip
 
 
+def _venda_a_termo(livro: Livro, dia: date, chave: Chave, t: _Op) -> None:
+    """Liquidação da venda a termo, no vencimento do contrato: é quando a alienação se dá (IN RFB
+    1.585/2015 art. 59 §2º IV). Ganho = preço a termo x quantidade, menos os custos da nota da
+    venda, menos o custo médio da posição na abertura deste dia (art. 62 II, vendedor descoberto,
+    e III, vendedor coberto; art. 58): as compras feitas entre o contrato e a liquidação entram no
+    custo médio. Linha "Mercado a termo" da ficha, 15%, nunca isento (art. 59 §2º IV); o valor
+    bruto entra na soma do limite de R$ 20 mil do mês da liquidação, como no exercício e no day
+    trade (leitura literal do art. 59 I). Sem ações para entregar, ou com lote isento de PME, o
+    motor para: nada de palpite (parecer do especialista de 13/11/2026)."""
+    op, pos = t.op, livro.posicoes[chave]
+    onde = f"venda a termo de {op.ticker} (nota {t.nota.numero} de {t.nota.data:%d/%m/%Y})"
+    if pos.quantidade < op.quantidade:
+        raise MotorError(
+            f"{onde}: faltam ações para entregar na liquidação do termo em {dia:%d/%m/%Y} "
+            f"(contrato de {op.quantidade}, posição de {pos.quantidade}). Confira se falta uma "
+            "nota de compra ou um evento, ou se o contrato foi liquidado antes do vencimento"
+        )
+    if pos.isento_em(dia):  # sem norma para a isenção de PME na entrega do termo e sem caso real
+        raise MotorError(f"{onde}: lote isento de PME dentro do prazo da isenção")
+    baixa = pos.vender(op.quantidade, t.valor)
+    lote = livro.termo_hoje.get(chave)
+    if lote is not None and lote.quantidade > pos.quantidade:
+        # ações de uma compra a termo liquidada hoje foram entregues: saem do lote do dia
+        lote.baixar_sem_resultado(lote.quantidade - pos.quantidade)
+    acao = op.tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT)
+    livro.registrar(
+        chave, dia, f"termo:{op.id}",
+        "venda a termo liquidada: preço a termo - custos da venda - custo médio do dia da "
+        "liquidação (IN 1.585 art. 62 II e III); nunca isento (art. 59 §2º IV)",
+        de=_de(t), categoria=Categoria.COMUM, cv="V", quantidade=op.quantidade, valor=t.valor,
+        custos=t.custos, baixa=baixa, venda_acao=op.total if acao else ZERO, isentavel=False,
+        grupo=Grupo.TERMO,
+    )  # fmt: skip
+
+
+def _dividendo_em_bens(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
+    """Dividendo pago em bens (ações ou cotas de outra empresa): o bem entra na posição na data da
+    entrega. O dividendo é rendimento isento pelo valor atribuído no aviso (Lei 9.249/1995 art.
+    10), fora da apuração mensal. Custo do bem: não houve valor pago, e a norma manda usar o valor
+    corrente na data da aquisição (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V);
+    o COIR fica com o menor entre o atribuído e o corrente (parâmetro custo_dividendo_em_bens,
+    conservador: custo menor, ganho maior na venda), com aviso quando o corrente é o menor
+    (parecer do especialista e decisão de 16/11/2026). A posição na companhia que pagou não
+    muda."""
+    if not e.quantidade_destino or e.quantidade_destino <= 0 or e.valor <= 0:
+        raise MotorError(f"{_nome(e)} sem a quantidade recebida ou o valor atribuído")
+    if e.valor_corrente is None or e.valor_corrente <= 0:
+        raise MotorError(f"{_nome(e)} sem o valor de mercado dos bens na entrega")
+    criterio = params.texto("custo_dividendo_em_bens", e.data)
+    if criterio not in ("menor_valor", "valor_atribuido"):
+        raise MotorError(f"parâmetro custo_dividendo_em_bens: valor {criterio!r} desconhecido")
+    de = (e.conta, e.corretora)
+    destino = _destino(livro, e, livro.chave(e.titular, de, e.ativo), 1)
+    custo = e.valor
+    regra = "custo pelo valor atribuído no aviso"
+    if criterio == "menor_valor" and e.valor_corrente < e.valor:
+        custo = e.valor_corrente
+        regra = "custo pelo valor de mercado na entrega, menor que o atribuído no aviso"
+        aviso = (
+            f"{e.data:%d/%m/%Y}: dividendo de {e.ticker} pago em {e.ticker_destino}: o custo "
+            f"ficou pelo valor de mercado na entrega ({reais(custo)}), menor que o atribuído no "
+            f"aviso ({reais(e.valor)}), que continua sendo o rendimento isento. É a leitura "
+            "conservadora (IN RFB 1.585/2015 art. 58 §3º IV); o parâmetro "
+            "custo_dividendo_em_bens muda o critério"
+        )
+        if livro.visao is Visao.TITULAR and aviso not in livro.avisos:
+            livro.avisos.append(aviso)
+    livro.posicoes[destino].comprar(e.quantidade_destino, custo)
+    livro.registrar(destino, e.data, f"evento:{e.id}",
+                    f"dividendo de {e.ticker} pago em bens (Lei 9.249/1995 art. 10): {regra}, sem "
+                    "resultado", de=de, categoria=Categoria.COMUM, cv="C",
+                    quantidade=e.quantidade_destino, valor=custo, evento=e.tipo)  # fmt: skip
+
+
+def _amortizacao_fip(livro: Livro, e: Evento, pos: Posicao, custo: Decimal) -> Decimal:
+    """Amortização de cotas de FIP comum: quanto do valor lançado reduz o custo (negativo).
+
+    Até 31/12/2023 (parâmetro fip_amortizacao_custo = excedente): o imposto na fonte só incide
+    sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a
+    amortização reduz o custo até zero, e o excedente é rendimento tributado na fonte.
+    Desde 01/01/2024 (proporcional_vp): só a parcela custo x amortização / valor patrimonial é
+    devolução de custo; o restante é rendimento com IRRF de 15%, definitivo (Lei 14.754/2023 art.
+    24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I). O COIR não tem o valor patrimonial:
+    o usuário lança a parcela de custo do informe; com o valor inteiro, o custo cai até zero
+    (custo menor, imposto maior na venda: nunca a menos), sempre com aviso (critério do COIR,
+    conservador; parecer do especialista de 13/11/2026)."""
+    regime = {p.valor for p in livro.parametros.parametros
+              if p.nome == "fip_amortizacao_custo" and p.vigente(e.data)}  # fmt: skip
+    avisar = livro.visao is Visao.TITULAR
+    if pos.custo + custo < 0 < pos.quantidade:
+        excedente = -(pos.custo + custo)
+        custo = -pos.custo
+        if avisar:
+            livro.avisos.append(
+                f"{e.data:%d/%m/%Y}: amortização de {e.ticker} acima do custo: o custo foi a zero "
+                f"e o excedente de {reais(excedente)} é rendimento do fundo, tributado na fonte "
+                "pelo administrador (IN RFB 1.585/2015 art. 32 §2º; Lei 14.754/2023 art. 24): "
+                "declare pelo informe, na ficha de tributação exclusiva, pelo valor líquido"
+            )
+    if regime == {"proporcional_vp"} and avisar:
+        livro.avisos.append(
+            f"{e.data:%d/%m/%Y}: amortização de {e.ticker}: desde 2024 só parte do valor "
+            "amortizado devolve custo (o custo vezes a amortização dividida pelo valor "
+            "patrimonial da cota; Lei 14.754/2023 art. 24 §2º); o restante é rendimento com IRRF "
+            "de 15%, definitivo. O COIR reduziu o custo pelo valor lançado no evento: lance só a "
+            "parcela de custo que o informe do administrador mostra. Com o valor inteiro, o "
+            "custo fica menor e o imposto na venda, maior"
+        )
+    return custo
+
+
 def _leilao_fracao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
     """Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo
     PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro
-    leilao_fracao_isentavel (decisão do usuário de 19/10/2026: entra no limite do mês do crédito,
+    leilao_fracao_isentavel (critério do COIR de 19/10/2026: entra no limite do mês do crédito,
     que é a data do evento)."""
     chave = _chave_evento(livro, e)
     pos = _origem_do_evento(livro, e, chave)
@@ -1182,6 +1423,59 @@ def _direito_nao_exercido(livro: Livro, e: Evento) -> None:
             f"{e.data}: {e.ticker}: o evento de direito não exercido baixou {quantidade}, e "
             f"{pos.quantidade} continuam na posição (confira a quantidade na movimentação da B3)"
         )
+
+
+DIREITO_RECEBIDO = (
+    "direito de subscrição recebido sem custo, na data do crédito (IN RFB 1.585/2015 art. 58 §7º, "
+    "por analogia; Lei 7.713/1988 art. 16 §4º): entra no custo médio dos direitos com custo zero"
+)
+
+
+def _exercicio_direito(livro: Livro, e: Evento) -> None:
+    """Direito de subscrição exercido: os direitos saem pelo custo médio, sem resultado, e o
+    recibo (ou a ação) subscrito entra pelo valor pago mais o custo dos direitos usados (Lei
+    7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por
+    analogia com a opção de compra exercida). O exercício não é alienação: sem resultado, fora do
+    limite de R$ 20 mil e sem IRRF. Os direitos que faltarem na posição foram recebidos sem custo
+    e não estavam no livro: entram com custo zero, com aviso."""
+    if not e.quantidade or e.quantidade <= 0:
+        raise MotorError(f"{_nome(e)} sem a quantidade de direitos exercidos")
+    if not e.quantidade_destino or e.quantidade_destino <= 0:
+        raise MotorError(f"{_nome(e)} sem a quantidade subscrita")
+    if e.valor <= 0:
+        raise MotorError(f"{_nome(e)} sem o valor pago na subscrição")
+    chave = _chave_evento(livro, e)
+    pos = livro.posicoes[chave]
+    if pos.quantidade < 0:
+        raise MotorError(f"{_nome(e)} em posição vendida")
+    de = (e.conta, e.corretora)
+    falta = e.quantidade - pos.quantidade
+    if falta > 0:
+        pos.comprar(falta, ZERO)
+        livro.registrar(chave, e.data, f"evento:{e.id}",
+                        "direito recebido sem custo: entra antes do exercício, com custo zero (IN "
+                        "RFB 1.585/2015 art. 58 §7º, por analogia)", de=de,
+                        categoria=Categoria.COMUM, cv="C", quantidade=falta,
+                        valor=ZERO)  # fmt: skip
+        if livro.visao is Visao.TITULAR:
+            livro.avisos.append(
+                f"{e.data:%d/%m/%Y}: {e.ticker}: {falta} direito(s) exercido(s) não estavam na "
+                "posição e entraram como recebidos sem custo; se foram comprados, falta a nota "
+                "(confira a movimentação da B3)"
+            )
+    destino = _destino(livro, e, chave, 1)
+    custo = pos.baixar_sem_resultado(e.quantidade)
+    regra = "direito de subscrição exercido (IN 1.585 art. 58 caput e art. 60 II a, por analogia): "
+    livro.registrar(chave, e.data, f"evento:{e.id}",
+                    regra + f"sai para {e.ticker_destino} com o custo, sem resultado", de=de,
+                    categoria=Categoria.COMUM, cv="V", quantidade=e.quantidade, valor=custo,
+                    evento=e.tipo)  # fmt: skip
+    livro.posicoes[destino].ajustar(e.quantidade_destino, custo + e.valor)
+    livro.registrar(destino, e.data, f"evento:{e.id}",
+                    regra + f"entra pelo valor pago ({reais(e.valor)}) mais o custo dos direitos "
+                    f"({reais(custo)})", de=de, categoria=Categoria.COMUM, cv="C",
+                    quantidade=e.quantidade_destino, valor=custo + e.valor,
+                    evento=e.tipo)  # fmt: skip
 
 
 CUSTODIA = (
@@ -1251,11 +1545,23 @@ def _evento(livro: Livro, e: Evento) -> None:
     if e.tipo is TipoEvento.CUSTODIA_INICIAL and (
         e.cv != "C" or e.tipo_ativo in (TipoAtivo.OPCAO, TipoAtivo.FUTURO)
     ):
-        # decisão do usuário (25/10/2026): só posição comprada à vista; opção, futuro e posição
+        # critério do COIR (25/10/2026): só posição comprada à vista; opção, futuro e posição
         # vendida em aberto pedem as notas desde a abertura (prêmio, ajustes diários)
         raise MotorError(f"custódia inicial de {e.ticker} ({e.data}): só compra de ações, ETF, "
                          "BDR, units e FII; para opções, futuros e posição vendida, importe as "
                          "notas desde a abertura")  # fmt: skip
+    if e.tipo is TipoEvento.DIREITO_RECEBIDO and (e.cv != "C" or e.valor):
+        raise MotorError(f"{_nome(e)}: o direito recebido entra (C) com custo zero; o comprado "
+                         "vem na nota de corretagem")  # fmt: skip
+    if e.tipo is TipoEvento.DIREITO_RECEBIDO and any(
+        m.ativo == e.ativo and m.titular == e.titular and m.origem.startswith("direito:")
+        for m in livro.movimentos
+    ):
+        # uma venda anterior já pôs esses direitos no livro, a custo zero: somar de novo deixaria
+        # direitos que não existem na carteira
+        raise MotorError(f"{_nome(e)}: há venda deste direito antes da data do crédito, e os "
+                         "direitos recebidos já entraram nessa venda. Use no evento a data em que "
+                         "a B3 creditou os direitos, anterior à primeira venda")  # fmt: skip
     abre = (e.tipo in ABREM_POSICAO or e.natureza is NaturezaEvento.OUTRA_CLASSE) and e.cv == "C"
     if pos.quantidade == 0 and not abre:
         # só a subscrição, a oferta pública, a custódia inicial e a bonificação noutra classe abrem
@@ -1272,12 +1578,14 @@ def _evento(livro: Livro, e: Evento) -> None:
             f"{e.tipo.value.lower()} de {e.ticker} ({e.data}): há venda antes desta data e a "
             f"posição está vendida em {pos.quantidade} (confira a data do evento e as vendas)"
         )
-    if e.tipo is TipoEvento.REDUCAO_CAPITAL and pos.custo + custo < 0 < pos.quantidade:
+    if e.tipo is TipoEvento.REDUCAO_CAPITAL and e.tipo_ativo is TipoAtivo.FIP:
+        custo = _amortizacao_fip(livro, e, pos, custo)
+    elif e.tipo is TipoEvento.REDUCAO_CAPITAL and pos.custo + custo < 0 < pos.quantidade:
         if e.tipo_ativo is not TipoAtivo.FUNDO_INFRA:
             raise MotorError(f"redução de capital de {e.ticker} ({e.data}) maior que o custo")
         # amortização de FI-Infra ou FIP-IE acima do custo: o custo vai a zero e o excedente é
         # rendimento (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), de alíquota zero para
-        # a pessoa física; o COIR não o lança, só avisa (decisão do usuário de 10/11/2026)
+        # a pessoa física; o COIR não o lança, só avisa (critério do COIR de 10/11/2026)
         excedente = -(pos.custo + custo)
         custo = -pos.custo
         if livro.visao is Visao.TITULAR:
@@ -1307,6 +1615,8 @@ def _evento(livro: Livro, e: Evento) -> None:
     regra = (
         CUSTODIA
         if e.tipo is TipoEvento.CUSTODIA_INICIAL
+        else DIREITO_RECEBIDO
+        if e.tipo is TipoEvento.DIREITO_RECEBIDO
         else f"evento {e.tipo.value.lower()}: ajusta quantidade e custo, sem resultado"
     )
     livro.registrar(chave, e.data, f"evento:{e.id}", regra, de=de, categoria=Categoria.COMUM,

@@ -66,8 +66,11 @@ RE_IRRF = re.compile(
 )
 # a XP cola "IRRFDay Trade": aqui o rótulo pode começar no meio da palavra
 _DAY_TRADE_PROJECAO = padrao("day_trade", colado=True), padrao("projecao")
+# o layout b3rv imprime esta linha com ponto decimal e sem milhar ("Projeção R$ 0.00")
+RE_DECIMAL_PONTO = r"-?\d+\.\d{2}(?![\d.,])"
 RE_IRRF_DT = re.compile(
-    rf"{_DAY_TRADE_PROJECAO[0]}.*?{_DAY_TRADE_PROJECAO[1]}\s*R\$\s*(?P<valor>{RE_DECIMAL})"
+    rf"{_DAY_TRADE_PROJECAO[0]}.*?{_DAY_TRADE_PROJECAO[1]}\s*R\$\s*"
+    rf"(?:(?P<valor>{RE_DECIMAL})|(?P<ponto>{RE_DECIMAL_PONTO}))"
 )
 RE_TEM_IRRF_DT = re.compile(rf"{_DAY_TRADE_PROJECAO[0]}[\s\S]*?{_DAY_TRADE_PROJECAO[1]}")
 RE_ISS_AGORA = re.compile(
@@ -357,19 +360,33 @@ def _custo(rotulo: str, categoria: CategoriaCusto, grupo: GrupoCusto, v: Montant
 def _colunas(trecho: Sequence[str]) -> list[tuple[str, Montante]]:
     """Bloco do layout b3rv: os rótulos, depois os valores, depois os D/C, cada um em sua linha, na
     mesma ordem. O valor pode vir na linha do rótulo; o IRRF, com base e valor, é lido à parte. Sem
-    um valor e um D/C por rótulo, a nota não entra: casar errado trocaria um custo por outro."""
+    um valor e um D/C por rótulo, a nota não entra: casar errado trocaria um custo por outro.
+
+    A linha do IRRF às vezes tem o seu D/C na coluna dos indicadores, na posição dela, e às vezes
+    não (nas notas reais conferidas, 8 com e 78 sem, sempre "D"): com um D/C a mais que os rótulos
+    e uma linha de IRRF no bloco, o da posição dela sai, desde que seja "D" (o IRRF é sempre
+    débito). Um "C" ali não é do IRRF: a nota não entra."""
     rotulos: list[tuple[str, str | None]] = []
     soltos: list[str] = []
     indicadores: list[DC] = []
+    posicao_irrf: int | None = None  # quantos rótulos vêm antes da linha do IRRF
     for linha in trecho:
         s = linha.strip()
         if s == "D" or s == "C":
             indicadores.append(s)
         elif RE_SO_VALOR.match(s):
             soltos.append(s)
-        elif not RE_IRRF.search(s):
+        elif RE_IRRF.search(s):
+            posicao_irrf = len(rotulos)
+        else:
             na_linha = re.search(rf"\s(?P<valor>{RE_DECIMAL})$", s)
             rotulos.append((s[: na_linha.start()], na_linha["valor"]) if na_linha else (s, None))
+    if (
+        posicao_irrf is not None
+        and len(indicadores) == len(rotulos) + 1
+        and indicadores[posicao_irrf] == "D"
+    ):
+        del indicadores[posicao_irrf]
     faltam_valor = sum(valor is None for _, valor in rotulos)
     if faltam_valor != len(soltos) or len(rotulos) != len(indicadores):
         raise ExtracaoError(
@@ -425,7 +442,8 @@ def _resumo_b3rv(texto: str) -> ResumoBovespa:
     transferencia = rotulos.valor_apos(texto, "taxa_transferencia_ativos")
     if transferencia is not None:
         custos.append(
-            _custo("Taxa de Transferência de Ativos", CategoriaCusto.TRANSFERENCIA, "cblc",
+            # impressa depois do quadro, fora do Total CBLC, e descontada no líquido
+            _custo("Taxa de Transferência de Ativos", CategoriaCusto.TRANSFERENCIA, "liquido",
                    transferencia)
         )  # fmt: skip
     valores = [montantes(s)[0].valor for s in linhas[quadro[1] + 1 : i_obs] if RE_SO_VALOR.match(s)]
@@ -476,7 +494,9 @@ def _irrf_day_trade(texto: str) -> Decimal:
     m_dt = RE_IRRF_DT.search(texto)
     if m_dt is None and RE_TEM_IRRF_DT.search(texto):
         raise ExtracaoError("linha de IRRF day trade (projeção) fora do padrão")
-    return decimal_br(m_dt["valor"]) if m_dt else Decimal(0)
+    if m_dt is None:
+        return Decimal(0)
+    return decimal_br(m_dt["valor"]) if m_dt["valor"] else Decimal(m_dt["ponto"])
 
 
 def resumo(texto: str, variante: Variante) -> ResumoBovespa:

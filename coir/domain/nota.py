@@ -86,7 +86,8 @@ class NegocioBMF(Modelo):
         return self.tipo.replace(" ", "").upper() == "DAYTRADE"
 
 
-GrupoCusto = Literal["cblc", "bolsa", "despesas", "bmf"]
+# "liquido": custo impresso fora dos três subtotais e descontado direto no líquido da nota
+GrupoCusto = Literal["cblc", "bolsa", "despesas", "bmf", "liquido"]
 ROTULO_AJUSTE = "Ajuste de arredondamento"  # linha criada na conciliação, não impressa na nota
 
 

@@ -13,6 +13,8 @@ O titular sai do CPF impresso na nota; se ele não existir, é criado (confira o
 
 **Corretora que o COIR ainda não conhece:** ele tenta ler a nota pelos layouts padrão. Se os totais fecharem, a nota entra com um aviso para você conferir as operações (se algo estiver errado, mande a nota pela tela [Suporte](suporte.md)); se não fecharem, ela é recusada com o motivo, e nada dela é gravado.
 
+**Nome de pregão que vale para dois códigos:** a nota traz o nome do ativo, não o código, e às vezes o mesmo nome valia para dois códigos na data (dois BDR da mesma companhia, por exemplo). O COIR não escolhe no palpite. Se a planilha de negociação da B3 do período já estiver importada, ele acha o código pelo negócio (mesmo dia, compra ou venda, quantidade e preço). Se não, a nota é recusada e a tela pergunta **Qual é o código do ativo?**: confira no extrato da corretora ou na Área do Investidor, marque o código e clique em **Gravar a escolha e importar de novo**. A escolha fica guardada para as notas dessa conta naquele pregão (os dois códigos podem ter sido negociados em dias diferentes, por isso a pergunta vem uma vez por dia). Nota já gravada fica com o código com que entrou; se mais tarde a planilha da B3 mostrar outro código, vale a planilha.
+
 Depois de importar notas, os desdobramentos, grupamentos e bonificações com custo publicado das ações em carteira entram sozinhos, e um aviso diz quantos; veja a tela [Eventos](eventos.md).
 
 [Voltar ao índice do manual](../README.md)

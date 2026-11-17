@@ -24,6 +24,15 @@ alguém incorporar o código num produto fechado ou num serviço web pago sem de
   revê-la exige nova ADR.
 - Contribuições de terceiros: antes de aceitar a primeira, criar `CONTRIBUTING.md` com cláusula em que o
   contribuidor autoriza o mantenedor a relicenciar a contribuição; sem ela, cada contribuição amarra a licença.
+  Feito em 13/11/2026: `CONTRIBUTING.md` traz o Termo de Licença de Contribuição (versão 1.0), aceito
+  por uma caixa no modelo de pull request (`.github/pull_request_template.md`). É **licença não
+  exclusiva**, gratuita e irrevogável, com direito de sublicenciar e de distribuir sob outra licença,
+  e não cessão: a Lei 9.610/1998 prevê o licenciamento como forma de transferência (art. 49), e a
+  cessão pede mais (art. 50: sempre por escrito, presumida onerosa, com tempo, lugar e preço). O
+  termo declara a gratuidade (contra a presunção do art. 50), cobre as modalidades de uso existentes
+  na data (o art. 49, V não deixa ir além) e pede a autorização do empregador quando o vínculo der a
+  ele os direitos sobre o programa (Lei 9.609/1998, art. 4º). Os direitos morais ficam com o autor
+  (Lei 9.609, art. 2º §1º). Não passou por advogado.
 - A interface (F6) deve mostrar a licença e o link do código-fonte (tela "Sobre"). Feito em
   11/11/2026 na seção "Licença e código-fonte" de Configurações.
 - O pacote leva `AVISOS-DE-TERCEIROS.txt` com o texto integral das licenças de tudo o que vai no

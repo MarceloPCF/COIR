@@ -34,7 +34,7 @@ class SecaoRendaVariavel(Modelo):
 
 
 TipoBem = Literal["ACAO", "UNIT", "BDR", "OPCAO", "ETF", "ETF_RF", "FII", "FIAGRO", "DIREITO",
-                  "FI_INFRA", "FIP_IE",
+                  "FI_INFRA", "FIP_IE", "FIP",
                   "JCP_A_RECEBER"]  # fmt: skip
 
 

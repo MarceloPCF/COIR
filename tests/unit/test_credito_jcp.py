@@ -42,7 +42,7 @@ def _linha(codigo: str, dia: date, preco: str, i: int = 1) -> LinhaB3:
 
 def test_credito_pela_b3_casando_empresa_pagamento_e_valor() -> None:
     """O crédito é a mais tarde entre a aprovação e a data com (IN SRF 41/1998 art. 3º; IN RFB
-    1.700/2017 art. 75 §10; decisão do usuário de 21/10/2026)."""
+    1.700/2017 art. 75 §10; critério do COIR de 21/10/2026)."""
     itsa = _linha("ITSA4", date(2025, 3, 10), "0.02424250")
     on, pn = _linha("BBDC3", date(2026, 4, 30), "0.3238587", 2), _linha("BBDC4",
                                                                        date(2026, 4, 30),
@@ -61,7 +61,7 @@ def test_credito_pela_b3_casando_empresa_pagamento_e_valor() -> None:
         (None, ""),  # pagamento em outra data: sem crédito
         (date(2024, 12, 1), "informada"),  # a correção do usuário vale
     ]
-    # informada antes da data com da B3: vale, com aviso (decisão do usuário de 21/10/2026)
+    # informada antes da data com da B3: vale, com aviso (critério do COIR de 21/10/2026)
     assert avisos == ["JCP de ITSA4 pago em 10/03/2025: crédito informado em 01/12/2024, antes "
                       "da data com 19/12/2024 da B3 (confira o informe)"]  # fmt: skip
 

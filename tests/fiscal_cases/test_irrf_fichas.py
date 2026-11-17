@@ -1,4 +1,4 @@
-"""IRRF por ficha do programa IRPF com a DARF no saldo único (decisão do usuário de 16/10/2026:
+"""IRRF por ficha do programa IRPF com a DARF no saldo único (critério do COIR de 16/10/2026:
 separar o IRRF de FII só na declaração). Casos do especialista fiscal, conferidos à mão.
 
 Fontes: Lei 11.033/2004 art. 2º §§1º, 2º, 5º e 7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §§8º e 9º;
@@ -13,7 +13,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from coir.domain.fiscal import Categoria, Ficha, TipoAtivo
-from tests.fiscal_cases.apoio import D, Livro, categoria, mes
+from tests.fiscal_cases.apoio import D, Livro, categoria, mes, parametros
 
 FII = TipoAtivo.FII
 
@@ -124,7 +124,7 @@ def test_irrf_de_day_trade_nao_abate_fii_antes_do_0005() -> None:
     na venda de FII e IRRF de day trade de 5,00. A ficha FII consome 10,00 do 0,005% dela; o day
     trade fica para restituição (5,00) e 10,00 de 0,005% para a declaração.
 
-    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): IRRF em nota só de compra
+    Entrada simplificada (critério do COIR de 10/11/2026: só anotar): IRRF em nota só de compra
     não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
     ele só exercita o saldo de IRRF."""
     livro = Livro()
@@ -181,6 +181,28 @@ def test_base_da_reparticao_usa_o_bruto_e_ignora_venda_por_exercicio() -> None:
     assert (fii.irrf_mes, ago.ficha(Ficha.COMUNS).irrf_mes) == (D("0.50"), D("0.50"))
 
 
+def test_base_da_reparticao_em_opcoes_e_a_soma_positiva_dos_premios_do_dia() -> None:
+    """IN RFB 1.585/2015 art. 63 II e §1º II: em opções a base do 0,005% é a soma dos prêmios
+    recebidos e pagos no dia, se positiva. Setembro/2026, uma nota: V 100 XPML11 a 100 (bruto
+    10.000, PM 100: sem imposto, cada ficha fica com o IRRF retido nela), V 10.000
+    AAAAJ30 a 1,00 (recebe 10.000) e C 10.000 AAAAJ32 a 0,40 (paga 4.000).
+    Base: 10.000 de FII + 6.000 de prêmios (não os 10.000 da venda). IRRF 0,80: FII 0,80 x
+    10.000/16.000 = 0,50; comuns 0,30. No dia 15, só compra de opção (paga 1.000): a soma
+    negativa não reduz a base do mês."""
+    livro = Livro()
+    v = date(2026, 10, 16)
+    livro.nota(date(2026, 8, 3), livro.op("C", "XPML11", 100, "100", tipo=FII))
+    livro.nota(date(2026, 9, 10), livro.op("V", "XPML11", 100, "100", tipo=FII),
+               livro.op("V", "AAAAJ30", 10000, "1", mercado="CALL", vencimento=v),
+               livro.op("C", "AAAAJ32", 10000, "0.40", mercado="CALL", vencimento=v),
+               irrf="0.80")  # fmt: skip
+    livro.nota(date(2026, 9, 15),
+               livro.op("C", "AAAAJ34", 10000, "0.10", mercado="CALL", vencimento=v))  # fmt: skip
+    setembro = mes(livro.apurar(date(2026, 9, 30)), 2026, 9)
+    assert (setembro.ficha(Ficha.FII).irrf_mes, setembro.ficha(Ficha.COMUNS).irrf_mes) == (
+        D("0.50"), D("0.30"))  # fmt: skip
+
+
 def test_darf_de_janeiro_paga_o_acumulado_de_dezembro() -> None:
     """Lei 9.430/1996 art. 68 §1º: dezembro/2025 com imposto 6,00 acumula e entra na DARF de
     janeiro/2026 (6,00 + 8,25 = 14,25): o "pago" de dezembro é 6,00 no relatório de 2025."""
@@ -195,20 +217,38 @@ def test_darf_de_janeiro_paga_o_acumulado_de_dezembro() -> None:
     assert (dez.ficha(Ficha.COMUNS).pago, jan.ficha(Ficha.COMUNS).pago) == (D("6.00"), D("8.25"))
 
 
-def test_day_trade_usado_no_imposto_de_fii_gera_aviso() -> None:
-    """IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day trade deduz o imposto do mês (saldo único da
-    DARF), mas a ficha FII do programa não tem a linha: dezembro/2026 com imposto só de FII
-    (V 100 XPML11 a 105, PM 100: ganho 500, 20% = 100,00) e IRRF só de day trade (5,00) -> DARF
-    95,00 e aviso.
+def test_irrf_de_day_trade_nao_abate_o_imposto_de_fii() -> None:
+    """A ficha de FII do programa IRPF não tem linha de IR fonte de day trade (parâmetro
+    ``irrf_day_trade_abate_fii`` desligado; parecer de 16/11/2026): dezembro/2026 com imposto só de
+    FII (V 100 XPML11 a 105, PM 100: ganho 500, 20% = 100,00) e IRRF só de day trade (5,00) -> DARF
+    de 100,00, igual ao "a pagar" da ficha FII; os 5,00 ficam no saldo de day trade (restituição).
 
-    Entrada simplificada (decisão do usuário de 10/11/2026: só anotar): IRRF em nota só de compra
-    não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
+    Entrada simplificada (só anotar): IRRF em nota só de compra não acontece na nota real; aqui
     ele só exercita o saldo de IRRF."""
     livro = Livro()
     livro.nota(date(2026, 11, 3), livro.op("C", "XPML11", 100, "100", tipo=FII))
     livro.nota(date(2026, 12, 1), livro.op("C", "AAAA3", 10, "10"), irrf_dt="5")
     livro.nota(date(2026, 12, 10), livro.op("V", "XPML11", 100, "105", tipo=FII))
     ap = livro.apurar(date(2026, 12, 31))
+    fii = mes(ap, 2026, 12).ficha(Ficha.FII)
+    assert (mes(ap, 2026, 12).darf, fii.irrf_day_trade_mes, fii.a_pagar) == (D(100), 0, D(100))
+    assert not any("day trade deduzido do imposto de FII" in a for a in ap.avisos)
+
+
+def test_day_trade_usado_no_imposto_de_fii_gera_aviso() -> None:
+    """Com ``irrf_day_trade_abate_fii`` ligado (IN RFB 1.585/2015 art. 65 §8º I: o IRRF de day
+    trade deduz o imposto do mês), o mesmo caso: dezembro/2026 com imposto só de FII (V 100 XPML11
+    a 105, PM 100: ganho 500, 20% = 100,00) e IRRF só de day trade (5,00) -> DARF 95,00 e aviso,
+    porque a ficha FII do programa não tem a linha.
+
+    Entrada simplificada (critério do COIR de 10/11/2026: só anotar): IRRF em nota só de compra
+    não acontece na nota real (o 0,005% vem com a venda e o 1% com o ganho de day trade); aqui
+    ele só exercita o saldo de IRRF."""
+    livro = Livro()
+    livro.nota(date(2026, 11, 3), livro.op("C", "XPML11", 100, "100", tipo=FII))
+    livro.nota(date(2026, 12, 1), livro.op("C", "AAAA3", 10, "10"), irrf_dt="5")
+    livro.nota(date(2026, 12, 10), livro.op("V", "XPML11", 100, "105", tipo=FII))
+    ap = livro.apurar(date(2026, 12, 31), parametros(irrf_day_trade_abate_fii="true"))
     fii = mes(ap, 2026, 12).ficha(Ficha.FII)
     assert (mes(ap, 2026, 12).darf, fii.irrf_day_trade_mes, fii.a_pagar) == (
         D(95), D(5), D(95))  # fmt: skip

@@ -126,3 +126,11 @@ Varredura do mercado inteiro e casos conferidos (`historico.saltos`, `sem_evento
 Restituição de capital em dinheiro: a aba de proventos da B3 (`REST CAP DIN`) traz só as
 companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020, Tarpon 2019, GTD
 2013...) fica registrada em `sem_evento.csv` como redução de capital, sem proposta no app.
+
+Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
+
+- CVM: contém informações do Portal de Dados Abertos da CVM (https://dados.cvm.gov.br), sob a
+  Open Database License (ODbL) 1.0; as linhas derivadas ficam sob a mesma licença;
+- Banco Central: série 4390 do SGS, do Portal de Dados Abertos do Banco Central, sob a ODbL 1.0;
+- B3: páginas e arquivos públicos, sujeitos aos termos de uso da B3. O COIR não tem vínculo com a
+  B3 nem é endossado por ela.

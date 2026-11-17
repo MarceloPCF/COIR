@@ -2,7 +2,7 @@
 pela lista de fundos da B3: o ganho de pessoa física tem alíquota zero, fica fora da apuração
 mensal, do limite de R$ 20 mil e do DARF, e o prejuízo não compensa outros ganhos (IN RFB
 1.585/2015 art. 64 só admite as perdas dos arts. 27, 58 e 60 a 62). Parecer do especialista de
-09/11/2026, seguido pelo usuário."""
+09/11/2026."""
 
 from datetime import date
 
@@ -97,7 +97,7 @@ def test_rendimentos_distribuidos_vao_para_a_exclusiva_06() -> None:
 
 
 def test_amortizacao_acima_do_custo_zera_o_custo_e_avisa_o_excedente() -> None:
-    """Decisão do usuário de 10/11/2026 (leitura conservadora): C 10 JURO11 a 100,00 (custo
+    """Critério do COIR de 10/11/2026 (leitura conservadora): C 10 JURO11 a 100,00 (custo
     1.000,00); amortização de 1.200,00 em 15/06/2025. O custo vai a zero e o excedente de 200,00 é
     rendimento do fundo (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), com alíquota zero:
     o COIR avisa e não o lança. Antes, o motor falhava."""

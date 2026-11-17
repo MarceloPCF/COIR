@@ -773,6 +773,7 @@ BLOCOS_CARTEIRA: tuple[tuple[str, Callable[[PosicaoAtivo], bool]], ...] = (
     ),
     ("Fundos imobiliários e Fiagro", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.FII),
     ("FI-Infra e FIP-IE", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.FUNDO_INFRA),
+    ("FIP e FIDC", lambda p: p.quantidade > 0 and p.tipo in (TipoAtivo.FIP, TipoAtivo.FIDC)),
     ("Opções", lambda p: p.quantidade > 0 and p.tipo is TipoAtivo.OPCAO),
     (
         "Direitos, recibos e bônus de subscrição",
@@ -993,8 +994,10 @@ NOME_PROVENTO = {
     TipoProvento.RENDIMENTO_FII: "Rendimento de FII", TipoProvento.REEMBOLSO_BTC: "Reembolso BTC",
     TipoProvento.RENDIMENTO_FUNDO_INFRA: "Rendimento de FI-Infra/FIP-IE",
     TipoProvento.ATUALIZACAO: "Atualização (Selic)",
+    TipoProvento.RENDIMENTO_ETF: "Rendimento de ETF",
+    TipoProvento.RENDIMENTO_ETF_RF: "Rendimento de ETF de renda fixa",
     TipoProvento.RESTITUICAO_CAPITAL: "Restituição de capital",
-    TipoProvento.FORA_DO_ESCOPO: "Fora da v3.0",
+    TipoProvento.FORA_DO_ESCOPO: "Só aviso (o COIR não calcula)",
 }  # fmt: skip
 
 
@@ -1023,7 +1026,7 @@ def _por_empresa(lista: list[Provento], jcp: bool = False) -> Secao | None:
 
 def proventos(d: DadosRelatorio) -> Relatorio:
     """Proventos do ano para o IRPF (declarados no ano: o JCP creditado no ano e pago no seguinte
-    entra no ano do crédito, decisão do usuário de 19/10/2026)."""
+    entra no ano do crédito, critério do COIR de 19/10/2026)."""
     do_ano = [p for p in d.proventos if p.ano_declaracao == d.ano]
     secoes: list[Secao] = []
     blocos = (
@@ -1039,6 +1042,14 @@ def proventos(d: DadosRelatorio) -> Relatorio:
          "Rendimentos de FI-Infra e FIP-IE (tributação exclusiva, código 06)", False,
          "Lei 12.431/2011 art. 3º §§1º e 2º; Lei 11.478/2007 art. 2º §3º: alíquota zero para "
          "pessoa física, pelo valor líquido. Vale o informe do administrador."),
+        (TipoProvento.RENDIMENTO_ETF,
+         "Rendimentos distribuídos por ETF (tributação exclusiva, código 06)", True,
+         "Lei 14.754/2023 arts. 18 II, 24 e 32 I: IRRF de 15% na distribuição, definitivo para a "
+         "pessoa física, desde 2024. Pelo valor líquido; vale o informe do administrador."),
+        (TipoProvento.RENDIMENTO_ETF_RF,
+         "Rendimentos distribuídos por ETF de renda fixa (tributação exclusiva, código 06)", True,
+         "Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II: exclusiva na "
+         "fonte, retida pelo administrador. Pelo valor líquido; vale o informe."),
         (TipoProvento.ATUALIZACAO, "Atualização de proventos pela Selic (tributação exclusiva)",
          True, "Lei 8.981/1995 art. 65 §4º c; IRRF retido pela empresa (renda fixa). Código 06 ou "
          "12 na ficha exclusiva, conforme o informe da empresa."),

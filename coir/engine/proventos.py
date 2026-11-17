@@ -1,8 +1,16 @@
-"""Proventos a partir da movimentação da B3 (decisões do usuário de 19/10/2026).
+"""Proventos a partir da movimentação da B3 (critérios do COIR de 19/10/2026).
 
-- Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR, ETF ou
-  FII: fora da v3.0, listado com aviso (BDR não é isento: Lei 9.249/1995 art. 10 só alcança
-  PJ brasileira).
+- Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR: não é
+  isento (o art. 10 só alcança PJ tributada no País); é rendimento do exterior, sujeito ao
+  carnê-leão pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só
+  alcança operações fora do País). O COIR não calcula (faltam o imposto retido no exterior e a
+  tabela progressiva): só lista, com aviso (parecer do especialista de 16/11/2026).
+- Dividendo ou rendimento de ETF de ações desde 01/01/2024: IRRF de 15% na distribuição,
+  definitivo para a pessoa física (Lei 14.754/2023 arts. 18 II, 24 e 32 I); ficha exclusiva 06
+  pelo líquido (parâmetro rendimento_etf_exclusivo). Antes de 2024: sem norma lida, só aviso.
+  De ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN RFB
+  1.585/2015 arts. 29 III e 30 II), ficha exclusiva 06 pelo líquido. Nenhum dos dois entra na
+  apuração mensal; vale o informe do administrador.
 - JCP: tributação exclusiva; a B3 credita o líquido e o preço unitário é o bruto por ação, o que
   mostra a alíquota retida: 15% até 2025, 17,5% desde 2026, pela data do pagamento ou do crédito,
   o que vier primeiro (LC 224/2025 art. 8º). Pago num ano com a alíquota do ano anterior = creditado
@@ -22,7 +30,8 @@
   valor líquido. Preço x quantidade acima do líquido sugere retenção (fundo desenquadrado): aviso.
   Amortização dessas cotas: reduz o custo (FIP-IE: Lei 11.478 art. 2º §2º e IN 1.585 art. 33
   §§2º-3º; FI-Infra: Lei 12.431 art. 3º e IN 1.585 art. 34), listada e proposta como redução de
-  capital (parecer do especialista de 09/11/2026).
+  capital (parecer do especialista de 09/11/2026). Amortização de FIP comum: também listada e
+  proposta como redução de capital, pela parcela de custo do informe (ver engine/movimentos).
 - Restituição de capital: reduz o custo das ações (IN 1.585 art. 58 §8º): listada e proposta como
   evento de redução de capital; não é rendimento.
 - Linhas "- Transferido": o provento acompanhando a transferência de custódia, em pares que se
@@ -62,7 +71,7 @@ def _origem_reembolso(x: LinhaMovimentacao, params: ParametrosFiscais,
     """Reembolso de BTC: substitui dividendo ou JCP? O valor é a quantidade emprestada vezes o
     valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º
     §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica; nenhuma ou
-    mais de uma: ("", 0), com aviso (parecer do especialista e decisão do usuário de 21/10/2026)."""
+    mais de uma: ("", 0), com aviso (parecer do especialista e critério do COIR de 21/10/2026)."""
     valor = x.valor or ZERO
     taxas = {t for t in (_vigente(params, "aliquota_irrf_jcp", x.data),
                          _vigente(params, "aliquota_irrf_jcp", date(x.data.year - 1, 12, 31)))
@@ -91,7 +100,7 @@ def _informada(item: LinhaB3, de: str, acoes: int, candidatos: Candidatos,
     """Origem do reembolso informada pelo usuário (informe da empresa ou extrato da corretora):
     prevalece sobre a identificada pelo valor, com aviso quando a contradiz ou quando não há
     provento dessa origem da empresa no dia. A quantidade só fica quando as duas coincidem
-    (parecer do especialista e pendência do usuário, F9)."""
+    (parecer do especialista e critério do COIR, F9)."""
     x, informada = item.linha, item.reembolso_informado
     nome = NOME_ORIGEM[informada]
     if de and de != informada:
@@ -156,7 +165,8 @@ def proventos(
         if x.movimentacao not in (DIVIDENDO, JCP, RENDIMENTO, REEMBOLSO, RESTITUICAO, AMORTIZACAO):
             continue
         if (x.movimentacao == AMORTIZACAO
-                and tipos.tipo_ou_sem(x.codigo) is not TipoAtivo.FUNDO_INFRA):  # fmt: skip
+                and tipos.tipo_ou_sem(x.codigo) not in (TipoAtivo.FUNDO_INFRA,
+                                                         TipoAtivo.FIP)):  # fmt: skip
             continue  # amortização de outros fundos: fora, como antes
         if not x.entrada:
             raise MotorError(
@@ -227,18 +237,18 @@ def _provento(
         if tipo_ativo in ISENTO_DIVIDENDO:
             tipo = TipoProvento.DIVIDENDO
         elif tipo_ativo is TipoAtivo.BDR:
-            obs = (
-                "dividendo de BDR não é isento (Lei 9.249/1995 art. 10 só alcança PJ "
-                "brasileira); a tributação fica para uma "
-                "versão futura"
-            )
+            obs = AVISO_BDR
+        elif tipo_ativo in (TipoAtivo.ETF, TipoAtivo.ETF_RF):
+            return _rendimento_etf(item, tipo_ativo, params)
         else:
-            obs = f"dividendo de {nome_tipo}: tratamento fora da v3.0"
+            obs = f"dividendo de {nome_tipo}: o COIR não classifica; confira o informe"
     elif x.movimentacao == RENDIMENTO:
         if tipo_ativo is TipoAtivo.FII:
             tipo = TipoProvento.RENDIMENTO_FII
         elif tipo_ativo is TipoAtivo.FUNDO_INFRA:
             return _rendimento_fundo_infra(item, avisos)
+        elif tipo_ativo in (TipoAtivo.ETF, TipoAtivo.ETF_RF):
+            return _rendimento_etf(item, tipo_ativo, params)
         elif (item.titular, x.codigo, x.data) in pagos and x.preco and x.quantidade:
             bruto = (x.quantidade * x.preco).quantize(CENTAVO, rounding=ROUND_HALF_UP)
             liquido = x.valor or ZERO
@@ -252,6 +262,11 @@ def _provento(
                 "atualização do provento pela Selic: tributação exclusiva na fonte "
                 "(código 06 ou 12, conforme o informe da empresa)",
             )
+        elif tipo_ativo in (TipoAtivo.FIP, TipoAtivo.FIDC):
+            obs = (f"rendimento de {nome_tipo}: tributado na fonte pelo administrador do fundo "
+                   "(Lei 14.754/2023 arts. 24 e 26; antes de 2024, IN RFB 1.585/2015 arts. 16 e "
+                   "32); o COIR não classifica: declare pelo informe, na ficha de tributação "
+                   "exclusiva, pelo valor líquido")  # fmt: skip
         else:
             obs = f"rendimento em {nome_tipo} sem dividendo ou JCP no mesmo dia: fora"
     elif x.movimentacao == REEMBOLSO:
@@ -285,6 +300,43 @@ def _provento(
         tipo = TipoProvento.RESTITUICAO_CAPITAL
         obs = "reduz o custo das ações (evento de redução de capital), não é rendimento"
     return _criar(item, tipo, x.valor or ZERO, ZERO, x.data.year, obs)
+
+
+AVISO_BDR = (
+    "dividendo de BDR: rendimento do exterior, não é isento (a Lei 9.249/1995 art. 10 só alcança "
+    "empresa tributada no Brasil). Pela leitura literal da lei fica sujeito ao carnê-leão e ao "
+    "ajuste anual (Lei 7.713/1988 art. 8º), com o imposto pago no exterior a compensar; o COIR "
+    "não calcula. Confira o informe do banco depositário"
+)
+
+
+def _rendimento_etf(item: LinhaB3, tipo_ativo: TipoAtivo, params: ParametrosFiscais) -> Provento:
+    """Distribuição de ETF: tributação exclusiva na fonte, ficha 06 pelo líquido que a B3
+    creditou. ETF de renda fixa: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30
+    II. ETF de ações: só desde 01/01/2024 (Lei 14.754/2023 arts. 18 II, 24 e 32 I; parâmetro
+    rendimento_etf_exclusivo); antes, sem norma lida, fica só o aviso. Bruto = quantidade x preço
+    quando maior que o líquido (estimativa: vale o informe do administrador)."""
+    x = item.linha
+    liquido = x.valor or ZERO
+    renda_fixa = tipo_ativo is TipoAtivo.ETF_RF
+    if not renda_fixa and not params.booleano("rendimento_etf_exclusivo", x.data):
+        return _criar(item, TipoProvento.FORA_DO_ESCOPO, liquido, ZERO, x.data.year,
+                      "rendimento de ETF de ações antes de 2024: sem regra na IN RFB 1.585/2015 "
+                      "(arts. 24 a 27); o COIR não classifica, confira o informe do "
+                      "administrador")  # fmt: skip
+    bruto = liquido
+    if x.preco and x.quantidade:
+        bruto = max(liquido, (x.quantidade * x.preco).quantize(CENTAVO, rounding=ROUND_HALF_UP))
+    retida = ((1 - liquido / bruto) if bruto else ZERO).quantize(Decimal("0.001"))
+    if renda_fixa:
+        tipo, obs = TipoProvento.RENDIMENTO_ETF_RF, (
+            "rendimento de ETF de renda fixa: tributação exclusiva na fonte, ficha 06 pelo valor "
+            "líquido (vale o informe do administrador)")  # fmt: skip
+    else:
+        tipo, obs = TipoProvento.RENDIMENTO_ETF, (
+            "rendimento de ETF: IRRF de 15% na distribuição, definitivo (Lei 14.754/2023); ficha "
+            "exclusiva 06 pelo valor líquido (vale o informe do administrador)")  # fmt: skip
+    return _criar(item, tipo, bruto, retida, x.data.year, obs)
 
 
 def _rendimento_fundo_infra(item: LinhaB3, avisos: list[str]) -> Provento:
@@ -330,7 +382,7 @@ def _jcp_com_credito(item: LinhaB3, credito: date, params: ParametrosFiscais) ->
     art. 9º §2º; a receber em 31/12 se pago depois: art. 3º parágrafo único), com a alíquota da
     data do crédito ou do pagamento, o que vier primeiro (LC 224/2025 art. 8º). Retenção implícita
     com a alíquota do ano anterior: só aviso (a empresa tratou o crédito como do ano anterior;
-    decisão do usuário de 21/10/2026). Crédito depois do pagamento falha alto."""
+    critério do COIR de 21/10/2026). Crédito depois do pagamento falha alto."""
     x = item.linha
     if credito > x.data:
         raise MotorError(f"{x.data}: JCP de {x.codigo} (mov:{item.id}) creditado em {credito}, "

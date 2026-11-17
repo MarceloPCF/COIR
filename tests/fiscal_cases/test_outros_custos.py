@@ -90,7 +90,7 @@ def _a_descoberto_isento(valor_custo: str) -> object:
 def test_custo_em_mes_de_ganho_isento_reduz_o_isento() -> None:
     """Venda a descoberto de 500 x 30,00 (15.000,00, dentro do limite) em fevereiro; recompra de 500
     x 20,00 em março: ganho isento de 5.000,00. Custo de 30,00: isento de 4.970,00, sem prejuízo a
-    compensar (decisão do usuário de 08/11/2026)."""
+    compensar (critério do COIR de 08/11/2026)."""
     c = _a_descoberto_isento("30")
     assert (c.isento, c.resultado, c.prejuizo_a_compensar) == (D("4970.00"), D(0), D(0))  # type: ignore[attr-defined]
 

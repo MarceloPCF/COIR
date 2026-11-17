@@ -272,3 +272,70 @@ def test_exercicio_de_opcao_depois_da_troca_da_classe(classe: str) -> None:
     )
     nova = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": date(2026, 11, 20)})
     assert operacoes(nova, REFS, {})[0].papel == "RAIZ55"
+
+
+DIREITOS = REFS.model_copy(update={"nomes_historicos": {
+    "empresaxon": (("2010-01-04", "2026-11-09", "EMPX3"),),
+    "empresaxdirord": (
+        ("2020-07-14", "2020-08-07", "EMPX1"), ("2023-03-01", "2023-03-20", "EMPX1"),
+    ),
+    "empresaxdirpre": (("2023-03-01", "2023-03-20", "EMPX2"),),
+    "fiifundoyci": (("2018-07-31", "2026-11-09", "FNDY11"),),
+    "fiifundoydir": (("2019-01-21", "2019-02-08", "FNDY12"),),
+    # outra empresa, com o nome começando igual: não é o direito de "EMPRESA Z"
+    "empresazdirecionalon": (("2010-01-04", "2026-11-09", "DIRZ3"),),
+}})  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("especificacao", "dia", "ticker"),
+    [
+        ("EMPRESA X DO 6,93", date(2020, 7, 20), "EMPX1"),  # um direito só no período
+        ("FII FUNDO Y DM 86,50", date(2019, 1, 25), "FNDY12"),  # a letra não precisa ser conhecida
+        ("EMPRESA X DO 12,00", date(2023, 3, 10), "EMPX1"),  # duas classes no dia: a letra decide
+        ("EMPRESA X DP 12,00", date(2023, 3, 10), "EMPX2"),
+    ],
+)
+def test_direito_de_subscricao_com_o_preco_no_nome(
+    especificacao: str, dia: date, ticker: str
+) -> None:
+    """A nota imprime o direito como "<nome> D<classe> <preço de subscrição>"; a B3 o lista como
+    "<nome> DIR ORD" (ou PRE, ou só DIR). Vale o direito daquele nome negociado na data."""
+    nota = _nota("agora_2008_04_bovespa")
+    neg = nota.negocios_bovespa[0].model_copy(update={"especificacao": especificacao})
+    nova = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": dia})
+    assert operacoes(nova, DIREITOS, {})[0].papel == ticker
+
+
+@pytest.mark.parametrize(
+    ("especificacao", "dia"),
+    [
+        ("EMPRESA X DO 6,93", date(2021, 5, 5)),  # nenhum direito negociado na data
+        ("EMPRESA X DM 12,00", date(2023, 3, 10)),  # duas classes e a letra não decide
+        ("OUTRA EMPRESA DO 6,93", date(2020, 7, 20)),  # empresa sem direito na tabela
+        ("EMPRESA Z DO 6,93", date(2020, 7, 20)),  # só há "EMPRESA Z DIRECIONAL ON": outra empresa
+    ],
+)
+def test_direito_sem_um_unico_candidato_nao_e_chutado(especificacao: str, dia: date) -> None:
+    nota = _nota("agora_2008_04_bovespa")
+    neg = nota.negocios_bovespa[0].model_copy(update={"especificacao": especificacao})
+    nova = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": dia})
+    with pytest.raises(ReferenciaError, match="não encontrado"):
+        operacoes(nova, DIREITOS, {})
+
+
+def test_nome_de_dois_codigos_na_data_diz_quais_sao() -> None:
+    """Dois BDR da mesma companhia com o mesmo nome de pregão no período: a nota é recusada dizendo
+    os dois códigos, em vez de "ativo não encontrado"."""
+    refs = REFS.model_copy(update={"nomes_historicos": {
+        "empresaydr1": (
+            ("2021-10-04", "2026-11-09", "EMPY31"), ("2023-07-03", "2024-09-12", "EMPY20"),
+        ),
+    }})  # fmt: skip
+    nota = _nota("agora_2008_04_bovespa")
+    neg = nota.negocios_bovespa[0].model_copy(update={"especificacao": "EMPRESA Y DR1"})
+    antes = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": date(2022, 5, 5)})
+    assert operacoes(antes, refs, {})[0].papel == "EMPY31"  # fora do período em comum: decide
+    durante = nota.model_copy(update={"negocios_bovespa": (neg,), "data_pregao": date(2023, 8, 1)})
+    with pytest.raises(ReferenciaError, match=r"mais de um código \(EMPY20, EMPY31\)"):
+        operacoes(durante, refs, {})

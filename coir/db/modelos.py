@@ -1,6 +1,6 @@
 """Esquema do banco (SQLAlchemy 2). Mudanças só por migração Alembic (regra 11).
 
-Cadastros: titular, corretora, conta, ativo, ticker_historico, serie_opcao.
+Cadastros: titular, corretora, conta, ativo, ticker_historico, serie_opcao, codigo_escolhido.
 Fatos (imutáveis, regra 7): arquivo_importado, nota_corretagem, nota_custo, operacao. Só o
 reprocessamento pedido pelo usuário troca uma nota, e a versão anterior vai para
 nota_anterior.
@@ -92,6 +92,23 @@ class SerieOpcao(Base):
 
     serie: Mapped[str] = mapped_column(String(20), primary_key=True)
     classe: Mapped[str] = mapped_column(String(5))
+
+
+class CodigoEscolhido(Base):
+    """Código que o usuário escolheu para um nome de pregão que valia para mais de um na data
+    (a nota não diz qual). Vale para as notas da conta naquele pregão; ``nome``: o nome de pregão
+    compacto."""
+
+    __tablename__ = "codigo_escolhido"
+    __table_args__ = (UniqueConstraint("corretora", "conta", "nome", "data"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    corretora: Mapped[str] = mapped_column(String(40))  # como na nota normalizada
+    conta: Mapped[str] = mapped_column(String(40))
+    nome: Mapped[str] = mapped_column(Text)
+    data: Mapped[date]  # pregão da nota
+    ticker: Mapped[str] = mapped_column(String(20))
+    registrado_em: Mapped[datetime]
 
 
 class ArquivoImportado(Base):
@@ -215,6 +232,7 @@ class EventoCorporativo(Base):
     quantidade_destino: Mapped[Decimal | None]
     natureza: Mapped[str | None] = mapped_column(String(24))
     percentual_custo: Mapped[Decimal | None]
+    valor_corrente: Mapped[Decimal | None]  # dividendo em bens: valor de mercado na entrega
 
     conta: Mapped[Conta] = relationship(foreign_keys=[conta_id])
     conta_destino: Mapped[Conta | None] = relationship(foreign_keys=[conta_destino_id])

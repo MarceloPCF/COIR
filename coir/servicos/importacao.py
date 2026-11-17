@@ -15,6 +15,7 @@ from collections import Counter
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from decimal import Decimal
 from functools import partial
 from pathlib import Path
 
@@ -24,20 +25,42 @@ from sqlalchemy.orm import Session
 from coir import auditoria
 from coir.config import VERSAO
 from coir.db import repositorio as repo
-from coir.db.modelos import ArquivoImportado, NotaCorretagem, Titular
+from coir.db.modelos import (
+    ArquivoImportado,
+    CodigoEscolhido,
+    Conta,
+    Corretora,
+    NegociacaoB3,
+    NotaCorretagem,
+    Titular,
+)
 from coir.db.sessao import conectar, fazer_backup, marca_do_banco, migrar
 from coir.domain.cpf import cpf_valido
-from coir.domain.nota import Cliente, NotaExtraida, OperacaoExtraida
+from coir.domain.nota import Cliente, NegocioBovespa, NotaExtraida, OperacaoExtraida
 from coir.domain.referencias import Referencias
-from coir.erros import ExtracaoError, ImportacaoError
+from coir.erros import ExtracaoError, ImportacaoError, NomeAmbiguoError
 from coir.parsing.extrair import Rejeitada, ResultadoExtracao, extrair_pdf, sem_duplicadas
-from coir.parsing.normalizar import classes_das_series, operacoes
+from coir.parsing.normalizar import Desempate, classes_das_series, operacoes
 from coir.parsing.texto_pdf import senhas_do_cpf
 from coir.servicos import trilha
 
 log = logging.getLogger(__name__)
 Extrator = Callable[[Path], ResultadoExtracao]  # outro leitor (textos nos testes); None: o PDF
 Progresso = Callable[[int, int, str], None]  # (feitos, total, arquivo em leitura)
+
+
+@dataclass(frozen=True)
+class NomeAmbiguo:
+    """Nota recusada porque o nome de pregão valia para mais de um código na data e nada
+    desempatou: a tela Importar pergunta qual é e guarda a escolha para a conta."""
+
+    arquivo: str
+    corretora: str
+    conta: str
+    data: date
+    especificacao: str  # como impresso na nota
+    nome: str  # nome compacto em dúvida (chave da escolha)
+    codigos: tuple[str, ...]
 
 
 @dataclass
@@ -52,6 +75,7 @@ class RelatorioImportacao:
     notas_removidas: int = 0  # reprocessamento: a releitura deu outra chave à nota do arquivo
     alteradas_desde: dict[int, date] = field(default_factory=dict[int, date])  # por titular
     rejeitadas: list[Rejeitada] = field(default_factory=list)
+    ambiguos: list[NomeAmbiguo] = field(default_factory=list[NomeAmbiguo])  # a perguntar
     avisos: list[str] = field(default_factory=list)
     titulares_criados: list[str] = field(default_factory=list)  # "nome (id N)", nunca o CPF
     gravadas_por_arquivo: Counter[str] = field(default_factory=Counter[str])
@@ -157,8 +181,10 @@ def importar_arquivos(
         # antes de gravar o lote: só as notas antigas podem ter normalização desatualizada
         rel.notas_renormalizadas = _renormalizar(sessao, refs, series, ativos)
 
+        padrao = _titular(sessao, titular)
         for nota in lote.notas:
-            ops = _normalizar(nota, refs, series, rel)
+            dono = _titular_da_nota(sessao, nota, clientes.get(nota.chave), padrao)
+            ops = _normalizar(nota, refs, series, rel, _desempate(sessao, nota, dono))
             if ops is not None:
                 _gravar(sessao, nota, ops, registros[nota.arquivo], contas, ativos, rel,
                         clientes.get(nota.chave), agora, reprocessar)  # fmt: skip
@@ -209,23 +235,147 @@ def _desatualizadas(
     """Notas gravadas cujas operações mudam com a normalização e as tabelas atuais."""
     for registro in repo.notas_gravadas(sessao):
         nota = NotaExtraida.model_validate_json(registro.json_nota)
+        gravadas = repo.operacoes_gravadas(registro)
         try:
-            novas = operacoes(nota, refs, series)
+            desempate = _desempate(sessao, nota, registro.conta.titular_id, gravadas)
+            novas = operacoes(nota, refs, series, desempate)
         except ExtracaoError as erro:
             raise ImportacaoError(
                 f"nota {registro.numero} de {registro.data_pregao} (já no banco) não normaliza "
                 f"com as tabelas atuais: {erro}"
             ) from erro
-        if novas != repo.operacoes_gravadas(registro):
+        if novas != gravadas:
             yield registro, novas
 
 
+def _titular_da_nota(
+    sessao: Session, nota: NotaExtraida, cliente: Cliente | None, padrao: Titular | None
+) -> int | None:
+    """De quem é a nota, só para consultar a planilha da B3 (nada é criado aqui): o dono da conta
+    já cadastrada; senão o CPF impresso; senão o titular escolhido ou o único do banco."""
+    conta = sessao.scalar(
+        select(Conta).join(Corretora).where(Corretora.nome == nota.corretora,
+                                            Conta.numero == nota.conta)
+    )  # fmt: skip
+    if conta is not None:
+        return conta.titular_id
+    dono = repo.titular_por_cpf(sessao, cliente.cpf) if cliente is not None else padrao
+    return None if dono is None else dono.id
+
+
+def _desempate(
+    sessao: Session,
+    nota: NotaExtraida,
+    titular: int | None,
+    gravadas: Sequence[OperacaoExtraida] = (),
+) -> Desempate:
+    """Quem decide o código de um nome de pregão que valia para mais de um na data, nesta ordem:
+    a planilha de negociação da B3 do titular; na nota já gravada, o código com que ela entrou (a
+    planilha pode não estar mais lá, e uma escolha nova não troca o código em silêncio); a escolha
+    guardada para a conta e a data do pregão."""
+
+    def escolher(n: NegocioBovespa, i: int, nome: str, codigos: tuple[str, ...]) -> str | None:
+        return (
+            _pela_negociacao_b3(sessao, nota, titular, n, codigos)
+            or _ja_gravado(gravadas, i, codigos)
+            or _codigo_escolhido(sessao, nota, nome, codigos)
+        )
+
+    return escolher
+
+
+def _pela_negociacao_b3(
+    sessao: Session,
+    nota: NotaExtraida,
+    titular: int | None,
+    n: NegocioBovespa,
+    codigos: tuple[str, ...],
+) -> str | None:
+    """O código, entre os candidatos, que a planilha de negociação da B3 mostra para o mesmo
+    titular, dia, C/V e preço, com a mesma quantidade (a do negócio, ou a soma do dia naquele
+    preço: a planilha e a nota nem sempre repartem igual). Nenhum, ou mais de um: None."""
+    if titular is None:
+        return None
+    na_nota = sum(
+        (x.quantidade for x in nota.negocios_bovespa
+         if (x.especificacao, x.cv, x.preco) == (n.especificacao, n.cv, n.preco)),
+        start=Decimal(0),
+    )  # fmt: skip
+    linhas: dict[str, list[NegociacaoB3]] = {}
+    for linha in sessao.scalars(
+        select(NegociacaoB3).where(NegociacaoB3.titular_id == titular,
+                                   NegociacaoB3.data == nota.data_pregao,
+                                   NegociacaoB3.cv == n.cv)
+    ):  # fmt: skip
+        # fracionário (final F) é o mesmo ativo; preço comparado como número, não como texto
+        codigo = linha.codigo.removesuffix("F")
+        if codigo in codigos and linha.preco == n.preco:
+            linhas.setdefault(codigo, []).append(linha)
+    batem = [
+        codigo
+        for codigo, do_codigo in linhas.items()
+        if any(x.quantidade == n.quantidade for x in do_codigo)
+        or sum((x.quantidade for x in do_codigo), start=Decimal(0)) == na_nota
+    ]
+    return batem[0] if len(batem) == 1 else None
+
+
+def _codigo_escolhido(
+    sessao: Session, nota: NotaExtraida, nome: str, codigos: tuple[str, ...]
+) -> str | None:
+    escolhido = sessao.scalar(
+        select(CodigoEscolhido.ticker).where(CodigoEscolhido.corretora == nota.corretora,
+                                             CodigoEscolhido.conta == nota.conta,
+                                             CodigoEscolhido.nome == nome,
+                                             CodigoEscolhido.data == nota.data_pregao)
+    )  # fmt: skip
+    return escolhido if escolhido in codigos else None
+
+
+def _ja_gravado(
+    gravadas: Sequence[OperacaoExtraida], i: int, codigos: tuple[str, ...]
+) -> str | None:
+    if i >= len(gravadas):
+        return None
+    codigo = gravadas[i].ticker_impresso or gravadas[i].papel
+    return codigo if codigo in codigos else None
+
+
+def escolher_codigo(
+    banco: Path, corretora: str, conta: str, nome: str, dia: date, ticker: str, agora: datetime
+) -> None:
+    """Guarda o código que o usuário escolheu para o nome de pregão em dúvida nas notas da conta
+    naquele pregão (os dois códigos podem ter sido negociados em dias diferentes; escolher de
+    novo troca). Vale para nota ainda não gravada: a já gravada fica com o seu código."""
+    migrar(banco, agora)
+    with conectar(banco) as fabrica, fabrica.begin() as sessao:
+        registro = sessao.scalar(
+            select(CodigoEscolhido).where(CodigoEscolhido.corretora == corretora,
+                                          CodigoEscolhido.conta == conta,
+                                          CodigoEscolhido.nome == nome,
+                                          CodigoEscolhido.data == dia)
+        )  # fmt: skip
+        if registro is None:
+            sessao.add(CodigoEscolhido(corretora=corretora, conta=conta, nome=nome, data=dia,
+                                       ticker=ticker, registrado_em=agora))  # fmt: skip
+        else:
+            registro.ticker, registro.registrado_em = ticker, agora
+
+
 def _normalizar(
-    nota: NotaExtraida, refs: Referencias, series: dict[str, str], rel: RelatorioImportacao
+    nota: NotaExtraida,
+    refs: Referencias,
+    series: dict[str, str],
+    rel: RelatorioImportacao,
+    desempate: Desempate | None = None,
 ) -> list[OperacaoExtraida] | None:
     try:
-        return operacoes(nota, refs, series)
+        return operacoes(nota, refs, series, desempate)
     except ExtracaoError as erro:
+        if isinstance(erro, NomeAmbiguoError):
+            rel.ambiguos.append(NomeAmbiguo(nota.arquivo, nota.corretora, nota.conta,
+                                            nota.data_pregao, erro.especificacao, erro.nome,
+                                            erro.codigos))  # fmt: skip
         rel.rejeitadas.append(Rejeitada(nota.arquivo, nota.paginas, f"nota {nota.numero}: {erro}",
                                         nota.numero, nota.data_pregao, erro))  # fmt: skip
         trilha.rejeicao(rel.rejeitadas[-1])

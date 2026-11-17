@@ -14,6 +14,9 @@ from coir.erros import ReferenciaError
 
 RE_ACAO = re.compile(r"^[A-Z0-9]{4}[3-8]$")
 RE_BDR = re.compile(r"^[A-Z0-9]{4}3[1-9]$")
+# códigos de negociação da B3: final 1 e 2, direito de subscrição (ON e PN); 9 e 10, recibo de
+# subscrição (ON e PN). Valem quando o direito não está nas tabelas (ex.: nunca foi negociado)
+RE_DIREITO = re.compile(r"^[A-Z0-9]{4}(?:1|2|9|10)$")
 
 
 class Modelo(BaseModel):
@@ -55,8 +58,9 @@ class ParametrosFiscais(Modelo):
 
 
 class TiposAtivo(Modelo):
-    """Ticker -> tipo. Sufixo 3 a 8: ação; 31 a 39: BDR; final 11 (unit, ETF, FII) e exceções
-    vêm da tabela (sem palpite: ticker sem tipo é erro)."""
+    """Ticker -> tipo. Sufixo 3 a 8: ação; 31 a 39: BDR; 1, 2, 9 e 10: direito ou recibo de
+    subscrição; final 11 (unit, ETF, FII), 12 em diante e exceções vêm da tabela (sem palpite:
+    ticker sem tipo é erro)."""
 
     tabela: dict[str, TipoAtivo]
 
@@ -67,9 +71,11 @@ class TiposAtivo(Modelo):
             return TipoAtivo.ACAO
         if RE_BDR.match(ticker):
             return TipoAtivo.BDR
+        if RE_DIREITO.match(ticker):
+            return TipoAtivo.DIREITO
         raise ReferenciaError(
             f"ticker {ticker} sem tipo de ativo: cadastre em data/tipos_ativo.csv "
-            "(UNIT, ETF, ETF_RF, BDR, FII, ACAO, DIREITO ou FUNDO_INFRA)"
+            "(UNIT, ETF, ETF_RF, BDR, FII, ACAO, DIREITO, FUNDO_INFRA, FIP ou FIDC)"
         )
 
     def tipo_ou_sem(self, ticker: str) -> TipoAtivo:

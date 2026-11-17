@@ -4,7 +4,7 @@ Fontes: Lei 9.430/1996 art. 61 caput (0,33% por dia), §1º (contagem a partir d
 ao vencimento até o pagamento) e §2º (teto de 20%); RFB, "Como calcular multa de mora" e
 glossário do Sicalc (contagem a partir do primeiro dia útil seguinte ao vencimento; pagamento
 em dia não útil vale no próximo dia útil); art. 68 §1º (valor abaixo de R$ 10 acumula e vence
-com o último período). Decisões do usuário (17/10/2026): contagem como a Receita (``rfb``) e
+com o último período). Critérios do COIR (17/10/2026): contagem como a Receita (``rfb``) e
 data não útil ajustada. Centavos truncados (ROUND_DOWN), conferido no Sicalc pelo usuário
 (caso C8b: competência 08/2026, consolidação em 07/10/2026, multa 28,51).
 """

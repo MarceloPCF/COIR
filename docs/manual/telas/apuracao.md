@@ -6,6 +6,8 @@ O imposto mês a mês por categoria (comum, day trade, FII): vendas de ações n
 
 No quadro **Limite de isenção**, a soma das vendas de ações do mês aparece com as duas parcelas, operações comuns e day trade, quando há day trade. A venda em day trade entra na soma (critério do COIR, leitura literal da Lei 11.033/2004 art. 3º I), mas o ganho dela nunca é isento: dentro do limite, só o ganho das vendas comuns de ações é isento. Num mês em que só o day trade leva a soma acima de R$ 20 mil, a apuração avisa. Vendas de ações de pequena ou média empresa (PME) aparecem em linhas próprias: o ganho é isento e fica fora do limite, e a perda não compensa outros ganhos.
 
+**Cotas de FIP e de FIDC:** cota de fundo não é ação, então a venda não entra na soma do limite de R$ 20 mil. O ganho na venda de cotas de FIP (o que não é de infraestrutura) paga 15%, sem isenção, junto com as operações comuns. Para o FIDC não há norma expressa sobre a venda em bolsa por pessoa física: o COIR deixa o fundo fora do cálculo e avisa; confira com o administrador (a prática de mercado recolhe 15%).
+
 Abaixo dos movimentos, **Resultado por ativo** junta o mês por dia e ativo (custo médio, preço final, lucratividade e resultado); clique numa linha para ver só os movimentos dela.
 
 [Voltar ao índice do manual](../README.md)

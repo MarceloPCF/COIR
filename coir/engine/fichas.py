@@ -1,7 +1,7 @@
 """IRRF por ficha do programa IRPF (comuns/day trade e FII), com a DARF no saldo único.
 
 A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015
-arts. 63 §8º e 65 §8º; decisão do usuário de 16/10/2026: separar só na declaração). O programa
+arts. 63 §8º e 65 §8º; critério do COIR de 16/10/2026: separar só na declaração). O programa
 IRPF tem uma ficha para comuns/day trade e outra para FII, cada uma com o próprio IR fonte e
 saldo. Para as fichas fecharem com a DARF sem usar o mesmo IRRF duas vezes, cada IRRF retido
 vira um lote (mês, natureza, ficha de origem) e o valor deduzido do saldo único é atribuído aos
@@ -19,12 +19,15 @@ Repartição do 0,005% de uma nota que mistura FII e outros ativos: proporcional
 (`Movimento.base_irrf`: sem day trade, venda por exercício, PME nem ETF de renda fixa; Lei
 11.033/2004 art. 2º §§1º e 2º) de cada ficha, por
 titular, corretora, conta e mês (a unidade da dispensa de R$ 1, §5º); o centavo residual fica em
-comuns. IRRF de nota sem operações (BM&F) fica em comuns.
+comuns. As opções entram pela soma dos prêmios recebidos e pagos no dia, se positiva (IN RFB
+1.585/2015 art. 63 II e §1º II; parecer de 16/11/2026), e não pela venda bruta. IRRF de nota sem
+operações (BM&F) fica em comuns.
 """
 
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
 from coir.domain.fiscal import (
@@ -35,6 +38,7 @@ from coir.domain.fiscal import (
     MesApurado,
     Movimento,
     NotaMotor,
+    TipoAtivo,
 )
 from coir.erros import MotorError
 
@@ -61,10 +65,16 @@ class Retido:
 def irrf_retido(notas: Iterable[NotaMotor], movimentos: Iterable[Movimento]) -> dict[Chave, Retido]:
     """IRRF das notas por titular e mês, com o 0,005% repartido entre as fichas."""
     vendas: dict[tuple[int, str, int, int, int], list[Decimal]] = defaultdict(lambda: [ZERO, ZERO])
+    premios: dict[tuple[tuple[int, str, int, int, int], date], Decimal] = defaultdict(lambda: ZERO)
     for m in movimentos:
         if m.base_irrf and m.corretora is not None and m.conta is not None:
             chave = (m.titular, m.corretora, m.conta, m.data.year, m.data.month)
-            vendas[chave][m.categoria is Categoria.FII] += m.base_irrf
+            if m.tipo is TipoAtivo.OPCAO:
+                premios[chave, m.data] += m.base_irrf
+            else:
+                vendas[chave][m.categoria is Categoria.FII] += m.base_irrf
+    for (chave, _dia), soma in premios.items():
+        vendas[chave][0] += max(soma, ZERO)
     retido_unidade: dict[tuple[int, str, int, int, int], Decimal] = defaultdict(lambda: ZERO)
     saida: dict[Chave, Retido] = defaultdict(Retido)
     for n in notas:
@@ -122,12 +132,18 @@ class SaldoPorFicha:
                 usado += lote.consumir(ficha, mes, falta - usado)
         return usado
 
-    def deduzir(self, mes: int, imposto_comuns: Decimal, imposto_fii: Decimal) -> Decimal:
-        """Deduz do imposto do mês (o total é min(imposto, saldo), como no saldo único)."""
+    def deduzir(self, mes: int, imposto_comuns: Decimal, imposto_fii: Decimal,
+                day_trade_abate_fii: bool = False) -> Decimal:  # fmt: skip
+        """Deduz do imposto do mês. O IRRF de day trade só abate o imposto de FII com
+        ``day_trade_abate_fii`` (parâmetro ``irrf_day_trade_abate_fii``): a ficha de FII do
+        programa IRPF não tem a linha, e sem ele o que sobra do 1% segue para os meses seguintes
+        e, em dezembro, para restituição."""
         c, f = Ficha.COMUNS, Ficha.FII
         falta = {c: imposto_comuns, f: imposto_fii}
-        for ficha, dt, origem in ((c, True, c), (c, False, c), (f, False, f), (c, False, f),
-                                  (f, False, c), (f, True, c)):  # fmt: skip
+        passos = [(c, True, c), (c, False, c), (f, False, f), (c, False, f), (f, False, c)]
+        if day_trade_abate_fii:
+            passos.append((f, True, c))
+        for ficha, dt, origem in passos:
             falta[ficha] -= self._pegar(ficha, mes, falta[ficha], dt, origem)
         return imposto_comuns + imposto_fii - falta[c] - falta[f]
 

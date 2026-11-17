@@ -125,6 +125,17 @@ body.body--dark {{ --q-primary: #2E6FB8; }}
 .coir-positivo {{ color: var(--coir-positivo); }}
 .coir-negativo {{ color: var(--coir-negativo); }}
 .coir-carimbo {{ color: var(--coir-carimbo); }}
+.coir-cortina {{ position: fixed; inset: 0; z-index: 9000; align-items: center;
+  justify-content: center; background: rgba(10, 22, 40, .45); cursor: progress; }}
+/* o display só vale sem a classe hidden: esta folha vence a camada do Tailwind, e um display
+   fixo aqui deixaria a cortina sempre na frente */
+.coir-cortina:not(.hidden) {{ display: flex; }}
+.coir-cortina.hidden {{ display: none; }}
+.coir-cortina-cartao {{ background: var(--coir-superficie); border: 1px solid var(--coir-linha);
+  border-radius: 8px; padding: 24px 32px; min-width: 320px; max-width: 520px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .28); }}
+.coir-cortina-texto {{ font-family: {FONTE_TITULO}; font-size: 18px; font-weight: 600;
+  text-align: center; }}
 .coir-ajuda {{ position: absolute; top: 0; right: 0; color: var(--coir-caneta); z-index: 1; }}
 .coir-manual {{ background: var(--coir-superficie); border-right: 1px solid var(--coir-linha);
   border-radius: 0; padding: 16px 20px; }}

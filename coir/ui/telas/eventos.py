@@ -16,7 +16,7 @@ from coir.reports.modelo import Coluna, TipoColuna, Valor
 from coir.servicos import eventos
 from coir.servicos.estado import Estado
 from coir.servicos.eventos import AVISO_INCORPORACAO_ACOES, DadosEvento, EventoLancado, Proposta
-from coir.ui import tabela
+from coir.ui import ocupado, tabela
 from coir.ui.entrada import valor_br
 
 T = TipoColuna
@@ -33,6 +33,9 @@ TIPOS = {
     TipoEvento.CISAO: "Cisão",
     TipoEvento.LEILAO_FRACAO: "Leilão de fração",
     TipoEvento.DIREITO_NAO_EXERCIDO: "Direito não exercido",
+    TipoEvento.DIREITO_RECEBIDO: "Direito de subscrição recebido",
+    TipoEvento.EXERCICIO_DIREITO: "Subscrição com direito (exercício)",
+    TipoEvento.DIVIDENDO_EM_BENS: "Dividendo pago em bens",
 }
 NATUREZAS = {
     NaturezaEvento.CONVERSAO: "Conversão de classe (ex.: PN em ON)",
@@ -40,6 +43,7 @@ NATUREZAS = {
     NaturezaEvento.INCORPORACAO_ACOES: "Incorporação de ações (art. 252)",
     NaturezaEvento.FUSAO: "Fusão",
     NaturezaEvento.AJUSTE_SERIE: "Ajuste de série de opção pela B3",
+    NaturezaEvento.RECIBO_SUBSCRICAO: "Recibo de subscrição que virou ação",
 }
 AJUDA = {
     TipoEvento.DESDOBRAMENTO: "Informe as ações recebidas. O custo total não muda e o preço médio "
@@ -70,6 +74,21 @@ AJUDA = {
                                      "operações comuns, fora do limite de isenção. Use o fim do "
                                      "prazo de exercício. Sem quantidade, baixa todo o saldo; "
                                      "os recebidos sem custo não dão resultado.",
+    TipoEvento.DIREITO_RECEBIDO: "Direitos que a companhia ou o fundo creditou para você, sem "
+                                 "custo. Use a data do crédito (a movimentação da B3 traz). O "
+                                 "direito comprado em bolsa já vem na nota de corretagem.",
+    TipoEvento.EXERCICIO_DIREITO: "Você usou os direitos para subscrever. Informe os direitos "
+                                  "usados, o recibo (ou a ação) recebido e o valor pago. O custo "
+                                  "dos direitos comprados soma ao valor pago; o exercício não gera "
+                                  "imposto. Quando o recibo virar ação, lance a conversão na aba "
+                                  "Conversões.",
+    TipoEvento.DIVIDENDO_EM_BENS: "A empresa pagou o dividendo com ações ou cotas de outra "
+                                  "empresa. Informe a empresa que pagou, o ativo e a quantidade "
+                                  "recebidos, o valor atribuído a eles no aviso aos acionistas "
+                                  "(é o dividendo, rendimento isento) e o valor de mercado na "
+                                  "data da entrega (quantidade vezes a cotação de fechamento). "
+                                  "O custo fica pelo menor dos dois. O dividendo em dinheiro já "
+                                  "vem na movimentação da B3.",
 }  # fmt: skip
 ROTULO_DATA = {
     TipoEvento.SUBSCRICAO: "Data da subscrição",
@@ -77,6 +96,9 @@ ROTULO_DATA = {
     TipoEvento.TRANSFERENCIA: "Data da transferência",
     TipoEvento.LEILAO_FRACAO: "Data do crédito",
     TipoEvento.DIREITO_NAO_EXERCIDO: "Fim do prazo de exercício",
+    TipoEvento.DIREITO_RECEBIDO: "Data do crédito",
+    TipoEvento.EXERCICIO_DIREITO: "Data do exercício",
+    TipoEvento.DIVIDENDO_EM_BENS: "Data da entrega",
     TipoEvento.CUSTODIA_INICIAL: "Data",
 }
 ROTULO_QUANTIDADE = {
@@ -89,6 +111,8 @@ ROTULO_QUANTIDADE = {
     TipoEvento.CISAO: "Quantidade de origem (posição da conta)",
     TipoEvento.LEILAO_FRACAO: "Fração vendida",
     TipoEvento.DIREITO_NAO_EXERCIDO: "Direitos que venceram (vazio: todo o saldo)",
+    TipoEvento.DIREITO_RECEBIDO: "Direitos recebidos",
+    TipoEvento.EXERCICIO_DIREITO: "Direitos exercidos",
 }
 ROTULO_VALOR = {
     TipoEvento.BONIFICACAO: "Custo atribuído",
@@ -97,6 +121,13 @@ ROTULO_VALOR = {
     TipoEvento.CUSTODIA_INICIAL: "Custo de aquisição",
     TipoEvento.REDUCAO_CAPITAL: "Valor restituído",
     TipoEvento.LEILAO_FRACAO: "Valor líquido recebido",
+    TipoEvento.EXERCICIO_DIREITO: "Valor pago na subscrição",
+    TipoEvento.DIVIDENDO_EM_BENS: "Valor atribuído no aviso (total)",
+}
+ROTULO_ATIVO = {TipoEvento.DIVIDENDO_EM_BENS: "Empresa que pagou (código)"}
+# incorporação e cisão: "Ativo recebido" e "Quantidade recebida"
+ROTULO_RECEBIDO = {
+    TipoEvento.EXERCICIO_DIREITO: ("Recibo (ou ação) recebido", "Quantidade subscrita")
 }
 # se o evento soma ou tira da posição: só aparece para escolher quando foge do normal (ajuste de
 # série de opção vendida, evento antigo lançado ao contrário)
@@ -108,10 +139,19 @@ SENTIDO = {
     TipoEvento.OFERTA_PUBLICA: "C",
     TipoEvento.CUSTODIA_INICIAL: "C",
     TipoEvento.REDUCAO_CAPITAL: "V",
+    TipoEvento.DIREITO_RECEBIDO: "C",
 }
-SEM_CUSTO = frozenset({TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO})
+SEM_CUSTO = frozenset(
+    {TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO, TipoEvento.DIREITO_RECEBIDO}
+)
 COM_OUTRA_CLASSE = frozenset({TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO})
 COM_DESTINO = frozenset({TipoEvento.INCORPORACAO, TipoEvento.CISAO})
+# têm o ativo recebido no formulário; o exercício do direito fica na aba Subscrições, com valor
+COM_RECEBIDO = COM_DESTINO | {TipoEvento.EXERCICIO_DIREITO, TipoEvento.DIVIDENDO_EM_BENS}
+SEM_QUANTIDADE = frozenset({TipoEvento.DIVIDENDO_EM_BENS})  # só a quantidade recebida
+SUBSCRICOES = frozenset(
+    {TipoEvento.SUBSCRICAO, TipoEvento.EXERCICIO_DIREITO, TipoEvento.DIREITO_RECEBIDO}
+)
 NOS_LANCADOS = frozenset(TIPOS) - {TipoEvento.CUSTODIA_INICIAL}  # a custódia fica em Cadastros
 
 COLUNAS_PROPOSTAS = (
@@ -172,6 +212,13 @@ def _linha_compra(e: EventoLancado) -> tuple[Valor, ...]:
     return (d.data, d.ticker, e.conta_nome, d.quantidade, d.valor or None)
 
 
+def _linha_subscricao(e: EventoLancado) -> tuple[Valor, ...]:
+    d = e.dados
+    ativo = f"{d.ticker} → {d.ticker_destino}" if d.ticker_destino else d.ticker
+    return (d.data, TIPOS[d.tipo], ativo, e.conta_nome, d.quantidade_destino or d.quantidade,
+            d.valor or None)  # fmt: skip
+
+
 def _linha_transferencia(e: EventoLancado) -> tuple[Valor, ...]:
     d = e.dados
     quanto = _numero(d.quantidade) or "toda a posição"
@@ -209,7 +256,8 @@ ABAS = (
     Aba(
         "lancados", "Lançados", "Eventos lançados", NOS_LANCADOS,
         (TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO, TipoEvento.BONIFICACAO,
-         TipoEvento.REDUCAO_CAPITAL, TipoEvento.LEILAO_FRACAO, TipoEvento.DIREITO_NAO_EXERCIDO),
+         TipoEvento.REDUCAO_CAPITAL, TipoEvento.LEILAO_FRACAO, TipoEvento.DIREITO_NAO_EXERCIDO,
+         TipoEvento.DIVIDENDO_EM_BENS),
         "Outro evento",
         "Todos os eventos do titular. Clique num deles para corrigir ou excluir.",
         "Nenhum evento lançado.",
@@ -219,10 +267,15 @@ ABAS = (
         _linha_lancado,
     ),
     Aba(
-        "subscricoes", "Subscrições", "Subscrições", frozenset({TipoEvento.SUBSCRICAO}),
-        (TipoEvento.SUBSCRICAO,), "Nova subscrição",
-        "Ações novas que você decidiu comprar pelo direito de acionista.",
-        "Nenhuma subscrição lançada.", COLUNAS_COMPRA, _linha_compra,
+        "subscricoes", "Subscrições", "Subscrições", SUBSCRICOES,
+        (TipoEvento.EXERCICIO_DIREITO, TipoEvento.DIREITO_RECEBIDO, TipoEvento.SUBSCRICAO),
+        "Nova subscrição",
+        "Direitos de subscrição que você recebeu e ações novas que comprou com eles. O custo do "
+        "direito comprado em bolsa entra no custo das ações subscritas.",
+        "Nenhuma subscrição lançada.",
+        (Coluna("Data", T.DATA), Coluna("O que houve"), Coluna("Ativo"), Coluna("Conta"),
+         Coluna("Quantidade", T.QUANTIDADE), Coluna("Valor pago", T.DINHEIRO)),
+        _linha_subscricao,
     ),
     Aba(
         "transferencias", "Transferências", "Transferências",
@@ -352,6 +405,7 @@ class _Painel:
                     else None
                 ),
                 percentual_custo=None if percentual is None else percentual / 100,
+                valor_corrente=numero("valor_corrente"),
                 observacao=texto("observacao"),
             )
         except ValueError:
@@ -501,7 +555,7 @@ class _Painel:
                 )
             with ui.row().classes("w-full gap-2 flex-nowrap items-center"):
                 c["ticker"] = (
-                    ui.input("Ativo", value=d.ticker)
+                    ui.input(ROTULO_ATIVO.get(d.tipo, "Ativo"), value=d.ticker)
                     .props("outlined dense")
                     .classes("flex-1")
                     .mark(m("ativo-evento"))
@@ -513,13 +567,14 @@ class _Painel:
                         .mark(m("cv-evento"))
                     )
             with ui.row().classes("w-full gap-2 flex-nowrap"):
-                c["quantidade"] = (
-                    ui.input(ROTULO_QUANTIDADE.get(d.tipo, "Quantidade"),
-                             value=_numero(d.quantidade))
-                    .props("outlined dense input-class=text-right")
-                    .classes("flex-1")
-                    .mark(m("quantidade-evento"))
-                )  # fmt: skip
+                if d.tipo not in SEM_QUANTIDADE:
+                    c["quantidade"] = (
+                        ui.input(ROTULO_QUANTIDADE.get(d.tipo, "Quantidade"),
+                                 value=_numero(d.quantidade))
+                        .props("outlined dense input-class=text-right")
+                        .classes("flex-1")
+                        .mark(m("quantidade-evento"))
+                    )  # fmt: skip
                 sem_valor = (d.tipo in COM_DESTINO or d.tipo in (TipoEvento.TRANSFERENCIA,
                                                                  TipoEvento.DIREITO_NAO_EXERCIDO)
                              or (d.tipo in SEM_CUSTO and not d.valor))  # fmt: skip
@@ -530,16 +585,27 @@ class _Painel:
                         .classes("flex-1")
                         .mark(m("valor-evento"))
                     )
-            if d.tipo in COM_DESTINO:
+                if d.tipo is TipoEvento.DIVIDENDO_EM_BENS:
+                    c["valor_corrente"] = (
+                        ui.input("Valor de mercado na entrega (total)",
+                                 value=_numero(d.valor_corrente))
+                        .props("outlined dense input-class=text-right")
+                        .classes("flex-1")
+                        .mark(m("valor-corrente-evento"))
+                    )  # fmt: skip
+            if d.tipo in COM_RECEBIDO:
+                recebido, quanto = ROTULO_RECEBIDO.get(
+                    d.tipo, ("Ativo recebido", "Quantidade recebida")
+                )
                 with ui.row().classes("w-full gap-2 flex-nowrap"):
                     c["ticker_destino"] = (
-                        ui.input("Ativo recebido", value=d.ticker_destino or "")
+                        ui.input(recebido, value=d.ticker_destino or "")
                         .props("outlined dense")
                         .classes("flex-1")
                         .mark(m("recebido-evento"))
                     )
                     c["quantidade_destino"] = (
-                        ui.input("Quantidade recebida", value=_numero(d.quantidade_destino))
+                        ui.input(quanto, value=_numero(d.quantidade_destino))
                         .props("outlined dense input-class=text-right")
                         .classes("flex-1")
                         .mark(m("qtd-recebida-evento"))
@@ -793,10 +859,11 @@ class _Conferir:
         t = self.tela
         estado = t.estado
         try:
-            resultado = await run.io_bound(
-                eventos.lancar_seguras, estado.banco, t.titular, [p.chave for p in seguras],
-                estado.refs, estado.fiscais, estado.pasta_refs,
-            )  # fmt: skip
+            with ocupado.processando("Lançando os eventos"):
+                resultado = await run.io_bound(
+                    eventos.lancar_seguras, estado.banco, t.titular, [p.chave for p in seguras],
+                    estado.refs, estado.fiscais, estado.pasta_refs,
+                )  # fmt: skip
         except CoirError as erro:
             ui.notify(str(erro), type="negative", multi_line=True, timeout=12000)
             return
@@ -930,7 +997,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     async def abrir() -> None:
         """Ao abrir a tela, lança o que não pede nada (notas importadas, tabelas novas)."""
         try:
-            automaticos = await run.io_bound(estado.lancar_eventos_automaticos)
+            with ocupado.processando("Conferindo os eventos das suas notas"):
+                automaticos = await run.io_bound(estado.lancar_eventos_automaticos)
         except CoirError as erro:
             ui.notify(f"Eventos não lançados: {erro}", type="warning", multi_line=True)
         else:

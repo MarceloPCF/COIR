@@ -16,7 +16,7 @@ REFS = referencias.carregar()
 def test_parametros_por_vigencia() -> None:
     p = FISCAIS.parametros
     assert p.decimal("limite_isencao_acoes", date(2020, 1, 31)) == Decimal("20000.00")
-    assert p.booleano("day_trade_mesma_corretora", date(2010, 7, 27)) is False
+    assert p.booleano("day_trade_mesma_corretora", date(2010, 7, 27)) is True  # IN SRF 25/2001
     assert p.booleano("day_trade_mesma_corretora", date(2010, 7, 28)) is True
     with pytest.raises(ReferenciaError, match="sem vigência"):
         p.decimal("aliquota_comum", date(2004, 12, 31))
@@ -31,6 +31,10 @@ def test_tipos_de_ativo() -> None:
     assert t.tipo("XPML11") is TipoAtivo.FII  # pela tabela gerada do cadastro da B3 (F7b)
     with pytest.raises(ReferenciaError, match=r"tipos_ativo.csv"):
         t.tipo("XYZW11")  # sem cadastro: sem palpite
+    # direito (final 1 e 2) e recibo de subscrição (9 e 10) fora das tabelas: pelo código da B3
+    assert {t.tipo(x) for x in ("XYZW1", "XYZW2", "XYZW9", "XYZW10")} == {TipoAtivo.DIREITO}
+    with pytest.raises(ReferenciaError, match=r"tipos_ativo.csv"):
+        t.tipo("XYZW12")  # direito de cota ou de unit: só pela tabela
 
 
 def test_serie_de_opcao_segue_a_troca_do_ativo_objeto() -> None:

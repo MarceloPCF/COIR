@@ -31,12 +31,20 @@ class TipoAtivo(StrEnum):
     FUTURO = "FUTURO"
     # direito, recibo e bônus de subscrição (de ação ou de cota de FII): 15% ou 20% em day trade,
     # sem isenção e fora do limite (SC Cosit 145 e 166/2021; recibo pela posição B do parecer do
-    # especialista de 09/11/2026, seguido pelo usuário)
+    # especialista de 09/11/2026)
     DIREITO = "DIREITO"
     # cota de FI-Infra (Lei 12.431/2011 art. 3º) ou de FIP-IE/FIP-PD&I (Lei 11.478/2007 art. 2º),
     # pela lista de fundos da B3: alíquota zero para pessoa física, fora do limite e da
-    # compensação de prejuízo (parecer do especialista de 09/11/2026, seguido pelo usuário)
+    # compensação de prejuízo (parecer do especialista de 09/11/2026)
     FUNDO_INFRA = "FUNDO_INFRA"
+    # cota de FIP comum (não o de infraestrutura), pela lista de fundos da B3: vendida em bolsa
+    # por pessoa física, ganho líquido a 15% (IN RFB 1.585/2015 art. 32 §1º I a; Lei 11.312/2006
+    # art. 2º §1º I), sem isenção e fora do limite de R$ 20 mil (cota de fundo não é ação: Lei
+    # 11.033/2004 art. 3º I; SC Cosit 145 e 166/2021); parecer do especialista de 13/11/2026
+    FIP = "FIP"
+    # cota de FIDC, pela lista de fundos da B3: sem norma expressa para a venda em bolsa por
+    # pessoa física; o motor isola por desenho (parâmetro fidc_venda_bolsa), fora do limite
+    FIDC = "FIDC"
     SEM_TIPO = "SEM_TIPO"  # fora das tabelas: o motor isola o ativo, sem palpite de tributação
 
 
@@ -66,7 +74,9 @@ class Grupo(StrEnum):
     DOLAR = "dolar"
     JUROS = "juros"
     COMMODITY = "commodity"
-    TERMO = "termo"  # venda à vista na data da liquidação do termo (IN RFB 1.585 art. 62 I)
+    # venda à vista na data da liquidação do termo (IN RFB 1.585 art. 62 I) e venda a termo,
+    # na liquidação (art. 62 II e III)
+    TERMO = "termo"
 
 
 # ------------------------------------------------------------------------------------- entradas
@@ -162,7 +172,7 @@ class SaldoInicial(Modelo):
     (comum, day trade e FII não se compensam entre si; IN RFB 1.585/2015 arts. 37 §2º, 64 e 65).
     Vem da ficha de renda variável de dezembro da última declaração. ``darf_acumulado`` é o imposto
     devido e ainda não pago por ficar abaixo do mínimo da DARF: continua acumulando no ano seguinte
-    (Lei 9.430/1996 art. 68 §1º; decisão do usuário de 10/11/2026, leitura conservadora)."""
+    (Lei 9.430/1996 art. 68 §1º; critério do COIR de 10/11/2026, leitura conservadora)."""
 
     titular: int
     ano: int
@@ -190,6 +200,13 @@ class TipoEvento(StrEnum):
     OFERTA_PUBLICA = "OFERTA_PUBLICA"  # compra em IPO ou follow-on: não aparece em nota
     # direito ou bônus de subscrição que venceu sem exercício nem venda: o custo pago vira perda
     DIREITO_NAO_EXERCIDO = "DIREITO_NAO_EXERCIDO"
+    # direito de subscrição creditado pela companhia ou pelo fundo: entra com custo zero
+    DIREITO_RECEBIDO = "DIREITO_RECEBIDO"
+    # direito exercido: sai sem resultado, e o custo dele vai para o recibo (ou a ação) subscrito
+    EXERCICIO_DIREITO = "EXERCICIO_DIREITO"
+    # dividendo pago em bens (ações ou cotas de outra empresa): o bem entra na posição e o valor
+    # atribuído no aviso é rendimento isento (Lei 9.249/1995 art. 10)
+    DIVIDENDO_EM_BENS = "DIVIDENDO_EM_BENS"
 
 
 class NaturezaEvento(StrEnum):
@@ -202,9 +219,13 @@ class NaturezaEvento(StrEnum):
     CONVERSAO = "CONVERSAO"  # de classe na mesma companhia (ex.: PN -> ON)
     AJUSTE_SERIE = "AJUSTE_SERIE"  # série de opção com código ou quantidade ajustados pela B3
     OUTRA_CLASSE = "OUTRA_CLASSE"  # bonificação ou subscrição noutra classe (quem tem PN recebe ON)
+    RECIBO_SUBSCRICAO = "RECIBO_SUBSCRICAO"  # o recibo de subscrição vira a ação ou a cota
 
 
-TIPOS_COM_DESTINO = frozenset({TipoEvento.INCORPORACAO, TipoEvento.CISAO})
+TIPOS_COM_DESTINO = frozenset(
+    {TipoEvento.INCORPORACAO, TipoEvento.CISAO, TipoEvento.EXERCICIO_DIREITO,
+     TipoEvento.DIVIDENDO_EM_BENS}
+)  # fmt: skip
 
 
 class Evento(Modelo):
@@ -214,7 +235,10 @@ class Evento(Modelo):
 
     Incorporação e cisão (sem C/V): ``quantidade`` é a quantidade de origem (a da conta) e
     ``quantidade_destino`` a de B recebida; na cisão, ``percentual_custo`` é a parte do custo de
-    A que vai para B. Leilão de fração (sem C/V): ``quantidade`` vendida por ``valor`` líquido."""
+    A que vai para B. Leilão de fração (sem C/V): ``quantidade`` vendida por ``valor`` líquido.
+    Dividendo em bens (sem C/V): o ativo é a companhia que pagou, o de destino é o bem recebido
+    (``quantidade_destino``), ``valor`` é o atribuído no aviso (o rendimento isento) e
+    ``valor_corrente`` o de mercado na entrega."""
 
     id: int
     data: date
@@ -239,6 +263,7 @@ class Evento(Modelo):
     pme_media_fim: Decimal | None = None  # média dos 30 pregões do fim da isenção (art. 17 §6º)
     aviso: str = ""  # o que a apuração mostra sobre o evento (presunção da custódia de PME)
     percentual_custo: Decimal | None = None  # cisão: fração do custo de A que vai para B (0..1)
+    valor_corrente: Decimal | None = None  # dividendo em bens: valor de mercado na entrega
     observacao: str = ""
     pme_ate: date | None = None  # oferta de PME: vendas isentas até a data (Lei 13.043 art. 16)
 
@@ -270,7 +295,8 @@ class Movimento(Modelo):
     isentavel: bool = False  # resultado de ação à vista (comum): isento se vendas <= limite
     mes_limite: date | None = None  # recompra de venda a descoberto: o limite é o do mês da venda
     isento_pme: bool = False  # venda de ações de PME (Lei 13.043): fora da apuração e do limite
-    base_irrf: Decimal = ZERO  # venda comum bruta na base do IRRF 0,005% (repartição por ficha)
+    base_irrf: Decimal = ZERO  # venda comum bruta na base do IRRF 0,005% (repartição por ficha);
+    # em opção, o prêmio com sinal (a compra é negativa: a base é a soma do dia, se positiva)
     evento: TipoEvento | None = None  # passo de um evento corporativo: o tipo
     quantidade_apos: Decimal
     custo_apos: Decimal  # custo total da posição (negativo se vendida)
@@ -299,8 +325,9 @@ class PosicaoAtivo(Modelo):
 
 
 class TermoAberto(Modelo):
-    """Compra a termo ainda não liquidada numa data: fica fora da carteira e do PM até a
-    liquidação, mas a tela a mostra numa linha própria, como a B3 (decisão do usuário, F2)."""
+    """Compra ou venda a termo ainda não liquidada numa data. A compra fica fora da carteira e do
+    PM até a liquidação; na venda, as ações continuam na carteira até a entrega. A tela mostra
+    cada uma numa linha própria, como a B3 (critério do COIR, F2)."""
 
     titular: int
     corretora: str
@@ -312,7 +339,10 @@ class TermoAberto(Modelo):
     pregao: date
     liquidacao: date
     quantidade: Decimal
-    custo: Decimal  # preço a termo x quantidade + custos da nota rateados (o que entra no PM)
+    # compra: preço a termo x quantidade + custos da nota rateados (o que entra no PM);
+    # venda: preço a termo x quantidade - custos (o valor da alienação na liquidação)
+    custo: Decimal
+    cv: CV = "C"
 
 
 class AtivoIsolado(Modelo):

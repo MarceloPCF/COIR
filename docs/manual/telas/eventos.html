@@ -65,11 +65,25 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <h2 id="lancados">Lançados</h2>
 
-<p>Todos os eventos do titular. Clique num deles para corrigir ou excluir. Aqui também entram os que não têm aba própria: desdobramento, grupamento, bonificação, redução de capital, leilão de fração e direito não exercido.</p>
+<p>Todos os eventos do titular. Clique num deles para corrigir ou excluir. Aqui também entram os que não têm aba própria: desdobramento, grupamento, bonificação, redução de capital, leilão de fração, direito não exercido e dividendo pago em bens.</p>
+
+<p><strong>Amortização de cotas de FIP:</strong> a tela propõe uma redução de capital pela linha "Amortização" da movimentação da B3. Troque o valor pela <strong>parcela de custo</strong> que o informe do administrador mostra: desde 2024 só essa parcela devolve custo, e o restante é rendimento já tributado na fonte. Se você lançar o valor inteiro, o custo fica menor e o imposto na venda, maior; a Apuração avisa.</p>
+
+<p><strong>Dividendo pago em bens:</strong> a empresa pagou o dividendo (ou parte dele) com ações ou cotas de outra empresa. Informe a empresa que pagou, a data da entrega, o ativo e a quantidade recebidos, o <strong>valor atribuído</strong> a eles no aviso aos acionistas e o <strong>valor de mercado na entrega</strong> (a quantidade vezes a cotação de fechamento do dia). O valor atribuído é o dividendo: vai para os rendimentos isentos, na tela Proventos e na Declaração. O ativo recebido entra na carteira pelo menor dos dois valores; quando é o de mercado, a Apuração avisa. A parte do dividendo paga em dinheiro não é lançada aqui: ela já vem na movimentação da B3.</p>
 
 <h2 id="subscricoes">Subscrições</h2>
 
-<p>Ações novas que você decidiu comprar pelo direito de acionista. Informe a data, a conta, o ativo, as ações subscritas e o valor pago.</p>
+<p>Direitos de subscrição que você recebeu e ações novas que comprou com eles. São três lançamentos, e a movimentação da B3 propõe cada um na aba <strong>A conferir</strong>:</p>
+
+<ul>
+<li><strong>Direito de subscrição recebido:</strong> os direitos que a companhia ou o fundo creditou para você, sem custo, na data do crédito. O direito comprado em bolsa não é lançado aqui: ele já vem na nota de corretagem.</li>
+<li><strong>Subscrição com direito (exercício):</strong> você usou os direitos para subscrever. Informe os direitos usados, o recibo recebido e o <strong>valor pago</strong> (a B3 não informa esse valor: é a quantidade vezes o preço de subscrição). O custo dos direitos comprados soma ao valor pago, e o exercício não gera imposto.</li>
+<li><strong>Recibo que virou ação:</strong> quando as ações são creditadas, o recibo vira ação com o mesmo custo. Esse lançamento fica na aba <strong>Conversões</strong>. Até lá, as ações novas não entram no preço médio das antigas, e o recibo vendido antes é tributado como direito (15%, sem isenção).</li>
+</ul>
+
+<p>A opção <strong>Subscrição</strong> simples (ações subscritas e valor pago, direto na ação) continua valendo para quem não tem o direito nem o recibo na movimentação. Use-a também para ações de pequenas e médias empresas subscritas até 2023 dentro da isenção: pela conversão do recibo, as ações entram como tributadas.</p>
+
+<p>Se você vender um direito recebido sem ter lançado o crédito, o COIR o considera com custo zero na própria venda. Quando também há direitos comprados, ele avisa: sem a data do crédito, o custo médio dos direitos sai errado.</p>
 
 <h2 id="transferencias">Transferências</h2>
 

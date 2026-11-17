@@ -7,7 +7,7 @@ units_na_isencao,false,2005-01-01,,critério do COIR: units fora do limite e da 
 custodia_no_custo,false,2005-01-01,,SC Cosit 227/2018 §§17-18 (taxa de custódia não é custo nem despesa da operação; fundamento geral); critério do COIR (leitura conservadora)
 day_trade_na_soma_limite,true,2005-01-01,,"Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)"
 prejuizo_mes_isento_compensavel,true,2005-01-01,,Lei 8.981/1995 art. 72 §4º; Manual MIR 2026
-day_trade_mesma_corretora,false,2000-01-01,2010-07-27,Lei 9.959/2000 art. 8º §1º I a (redação original): day trade em qualquer corretora
+day_trade_mesma_corretora,true,2000-01-01,2010-07-27,"Lei 9.959/2000 art. 8º §1º I a (redação original: a quantidade negociada tem de ter sido liquidada); IN SRF 25/2001 art. 31 §6º e IN RFB 1.022/2010 art. 54 §6º (redação original): operação iniciada numa instituição e encerrada em outra, com liquidação física e movimentação da custódia, não é day trade"
 day_trade_mesma_corretora,true,2010-07-28,,MP 497/2010 art. 21 (conv. Lei 12.350/2010 art. 45): mesma corretora
 darf_minimo,10.00,1997-01-01,,Lei 9.430/1996 art. 68 caput e §1º (abaixo do mínimo acumula)
 darf_codigo,6015,2005-01-01,,P&R IRPF 2026 pergunta 730; Agenda Tributária RFB (código de renda variável PF)
@@ -32,6 +32,7 @@ day_trade_criterio,marcacao_corretora,2000-01-01,,"IN RFB 1.585/2015 art. 65 §3
 pme_lote_ordem_venda,proporcional,2014-07-10,,"IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; proporcional pela SC Cosit 148/2025 §§32-33 (analogia; critério do COIR, leitura conservadora); alternativas isento_primeiro e tributado_primeiro"
 janela_liquidacao_oferta_dias,7,2000-01-01,,"Sem norma: critério do COIR para venda antes da liquidação da oferta; a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)"
 direito_recebido_custo_zero,true,2005-01-01,,IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); critério do COIR
+irrf_day_trade_abate_fii,false,2000-01-01,,"IN RFB 1.585/2015 art. 65 §8º I (a lei permite deduzir do imposto do mês); programa IRPF: a ficha de fundos imobiliários não tem linha de IR fonte de day trade (leiaute DIRPF, registro 42); critério do COIR, conservador: o 1% só abate o imposto de operações comuns e day trade, e o que sobrar em dezembro é restituição"
 direito_vencido_data,fim_do_prazo,2005-01-01,,"IN RFB 1.585/2015 art. 60 §3º (analogia: perda na data do vencimento); Lei 6.404 art. 171 §4º (prazo decadencial): o direito comprado não exercido vira perda no fim do prazo de subscrição do pacote da B3, ou na data da baixa na B3 sem ele; alternativa baixa_b3 (critério do COIR)"
 fiagro_rendimento_isento,false,2021-03-29,2021-06-10,Lei 14.130/2021 (cria o Fiagro em 29/03/2021; a extensão da isenção da Lei 11.033 art. 3º III foi vetada e o veto derrubado só no DOU de 11/06/2021); critério do COIR (leitura conservadora)
 fiagro_rendimento_isento,true,2021-06-11,,"Lei 11.033/2004 art. 3º III (red. Lei 14.130/2021 art. 4º; veto derrubado, DOU 11/06/2021)"
@@ -41,3 +42,10 @@ obrigatoriedade_bolsa_criterio,qualquer_operacao,2015-01-01,2021-12-31,"IN RFB a
 obrigatoriedade_bolsa_criterio,vendas_ou_ganho,2022-01-01,,"IN RFB anuais da DIRPF desde o exercício 2023, art. 2º IV a e b: alienações em bolsa acima do limite no ano ou ganhos líquidos sujeitos ao imposto; o parâmetro vale pelo ano-calendário"
 obrigatoriedade_bolsa_vendas,40000.00,2022-01-01,,"IN RFB anuais da DIRPF desde o exercício 2023, art. 2º IV a (soma das alienações em bolsa no ano-calendário)"
 irpf_minimo_renda_anual,600000.00,2026-01-01,,"Lei 9.250/1995 art. 16-A (incl. Lei 15.270/2025): IR mínimo de quem recebe mais de R$ 600 mil no ano; os ganhos líquidos em bolsa, inclusive os isentos, entram na base (§1º I); só aviso informativo (critério do COIR)"
+rendimento_etf_exclusivo,false,2000-01-01,2023-12-31,"IN RFB 1.585/2015 arts. 24 a 27 não tratam da distribuição de rendimentos de ETF de ações: sem norma lida, o COIR só avisa"
+rendimento_etf_exclusivo,true,2024-01-01,,"Lei 14.754/2023 arts. 18 II, 24 caput e 32 I: IRRF de 15% na data da distribuição, definitivo para a pessoa física; ficha exclusiva 06 pelo líquido"
+custo_dividendo_em_bens,menor_valor,1996-01-01,,"Lei 9.249/1995 art. 10 (o dividendo é isento pelo valor atribuído no aviso). Custo do bem recebido: o valor atribuído ou, quando menor, o valor corrente na data da entrega (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); critério do COIR, conservador. Alternativa: valor_atribuido"
+fip_venda_bolsa,ganho_liquido,2015-09-02,,"IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I (não revogado: Lei 14.754/2023 art. 46)"
+fip_amortizacao_custo,excedente,2015-09-02,2023-12-31,"IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º"
+fip_amortizacao_custo,proporcional_vp,2024-01-01,,"Lei 14.754/2023 art. 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I; sem a parcela do informe, reduz até zero com aviso (critério do COIR, conservador)"
+fidc_venda_bolsa,isolar,2015-09-02,,"sem norma expressa: IN RFB 1.585/2015 art. 16 I a só para fundo fechado com carteira de ações (art. 18 §2º); critério do COIR. Alternativa: ganho_liquido (15%, a prática de mercado)"

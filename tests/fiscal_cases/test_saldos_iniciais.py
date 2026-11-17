@@ -1,4 +1,4 @@
-"""Saldos iniciais de quem começa a usar o COIR sem o histórico de notas (F9, decisões do usuário
+"""Saldos iniciais de quem começa a usar o COIR sem o histórico de notas (F9, critérios do COIR
 de 25/10/2026; parecer do especialista).
 
 Custódia inicial: a posição em 31/12 entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58),
@@ -54,7 +54,7 @@ def test_prejuizo_inicial_compensa_por_categoria() -> None:
     ("cv", "tipo_ativo"), [("V", TipoAtivo.ACAO), ("C", TipoAtivo.OPCAO), ("C", TipoAtivo.FUTURO)]
 )
 def test_custodia_inicial_so_de_posicao_comprada_a_vista(cv: str, tipo_ativo: TipoAtivo) -> None:
-    """Decisão do usuário: opções, futuros e posição vendida pedem as notas desde a abertura."""
+    """Critério do COIR: opções, futuros e posição vendida pedem as notas desde a abertura."""
     livro = Livro()
     livro.evento(FIM, "XPTO3", TipoEvento.CUSTODIA_INICIAL, cv, "100", "1000",
                  tipo_ativo=tipo_ativo)  # fmt: skip
@@ -68,7 +68,7 @@ def test_custodia_inicial_so_de_posicao_comprada_a_vista(cv: str, tipo_ativo: Ti
 
 
 def test_imposto_acumulado_abaixo_do_minimo_continua_no_ano_seguinte() -> None:
-    """Decisão do usuário de 10/11/2026 (leitura conservadora): o imposto abaixo de R$ 10 em
+    """Critério do COIR de 10/11/2026 (leitura conservadora): o imposto abaixo de R$ 10 em
     31/12 não some; acumula até o total chegar a R$ 10 (Lei 9.430/1996 art. 68 §1º).
 
     Saldo inicial em 31/12/2024: imposto acumulado de 6,00. Março/2025: venda de 1.000 PETR4 a

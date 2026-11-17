@@ -21,6 +21,7 @@ TIPOS = {
     TipoAtivo.OPCAO: "Opção", TipoAtivo.FUTURO: "Futuro",
     TipoAtivo.DIREITO: "Direito/recibo/bônus de subscrição",
     TipoAtivo.FUNDO_INFRA: "FI-Infra/FIP-IE",
+    TipoAtivo.FIP: "FIP", TipoAtivo.FIDC: "FIDC",
     TipoAtivo.SEM_TIPO: "Sem tipo",
 }  # fmt: skip
 RE_ORIGEM = re.compile(r"^(op|termo|nota):(\d+)")
@@ -39,6 +40,7 @@ class LinhaPosicao:
     pm: Decimal
     custo: Decimal
     liquidacao: date | None = None  # compra a termo ainda não liquidada (fora do PM)
+    venda_a_termo: bool = False  # venda a termo ainda não liquidada (ações ainda na carteira)
     nota: int | None = None  # termo: a nota da compra, se for uma só
 
 
@@ -73,7 +75,7 @@ def posicoes(
         if titular is None or t.titular == titular:
             onde = {Visao.TITULAR: (t.titular,), Visao.CORRETORA: (t.titular, t.corretora),
                     Visao.CONTA: (t.titular, t.conta)}[visao]  # fmt: skip
-            grupos[(*onde, t.ativo, t.liquidacao)].append(t)
+            grupos[(*onde, t.ativo, t.liquidacao, t.cv)].append(t)
     for grupo in grupos.values():
         t = grupo[0]
         quantidade = sum((x.quantidade for x in grupo), Decimal(0))
@@ -82,7 +84,11 @@ def posicoes(
         linha = LinhaPosicao(
             ativo=t.ativo,
             ticker=t.ticker,
-            tipo=f"Termo · liquida em {t.liquidacao:%d/%m/%Y}",
+            tipo=(
+                f"Termo · liquida em {t.liquidacao:%d/%m/%Y}"
+                if t.cv == "C"
+                else f"Venda a termo · entrega em {t.liquidacao:%d/%m/%Y}"
+            ),
             corretora=t.corretora if visao is not Visao.TITULAR else "",
             conta=conta,
             numero_conta=contas.get(conta, "") if conta is not None else "",
@@ -91,6 +97,7 @@ def posicoes(
             pm=custo / quantidade,
             custo=custo,
             liquidacao=t.liquidacao,
+            venda_a_termo=t.cv == "V",
             nota=t.nota if len({x.nota for x in grupo}) == 1 else None,
         )
         linhas.append(linha)

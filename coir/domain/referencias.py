@@ -11,6 +11,12 @@ from pydantic import BaseModel, ConfigDict
 
 RE_SERIE_OPCAO = re.compile(r"^[A-Z0-9]{4}[A-X]\d")
 DIAS_NOME_PROXIMO = 365
+# o que a B3 escreve depois do nome no direito de subscrição (nome compacto): DIR, DIR ORD,
+# DIR PRE, DIR P/A, DIR UNT, DIR CI, DIR DEB, DIR BNS, DIR 11... Só isso: "X DIRECIONAL ON"
+# é outra empresa, não o direito de X
+RE_SUFIXO_DIREITO = re.compile(
+    r"dir(?:ord|pre|pr|prb|pna|pnb|pa|pb|p/[a-z]|unt|untdb|ci|deb|bns|[a-z]?\d{2,3})?"
+)
 
 
 def opcao_de_compra(serie: str) -> bool:
@@ -90,6 +96,32 @@ class Referencias(BaseModel):
             return periodos[0][2]
         perto = min(periodos, key=distancia)
         return perto[2] if distancia(perto) <= DIAS_NOME_PROXIMO else None
+
+    def tickers_do_nome_na_data(self, chave: str, dia: date) -> tuple[str, ...]:
+        """Os códigos que usavam o nome de pregão em ``dia`` (mais de um: o nome não decide)."""
+        hoje = dia.isoformat()
+        periodos = self.nomes_historicos.get(chave, ())
+        return tuple(sorted({t for desde, ate, t in periodos if desde <= hoje <= ate}))
+
+    def direito_na_data(self, base: str, letra: str, dia: date) -> str | None:
+        """Direito de subscrição que a nota imprime com o preço no nome ("IRBBRASIL RE DO 6,93"): o
+        ticker do direito de ``base`` (nome compacto da empresa ou do fundo) negociado em ``dia``.
+        A B3 o lista como "<nome> DIR ORD", "DIR PRE", "DIR"...; com direitos de duas classes no
+        mesmo dia, a letra da nota decide (O = ordinária, P = preferencial). Nenhum, ou mais de
+        um sem a letra decidir: None, sem palpite."""
+        hoje = dia.isoformat()
+        achados = {
+            (nome, ticker)
+            for nome, periodos in self.nomes_historicos.items()
+            if nome.startswith(base) and RE_SUFIXO_DIREITO.fullmatch(nome[len(base) :])
+            for desde, ate, ticker in periodos
+            if desde <= hoje <= ate
+        }
+        if len({t for _, t in achados}) > 1:
+            classe = {"O": "dirord", "P": "dirpre"}.get(letra)
+            achados = {(n, t) for n, t in achados if classe and n == base + classe}
+        tickers = {t for _, t in achados}
+        return next(iter(tickers)) if len(tickers) == 1 else None
 
     def corretora_b3(self, instituicao: str) -> str | None:
         """Instituição como a B3 escreve ("XP INVESTIMENTOS CCTVM S/A.") -> corretora do COIR."""

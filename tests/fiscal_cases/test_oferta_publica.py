@@ -53,7 +53,7 @@ def test_venda_no_dia_da_liquidacao_usa_o_custo_da_oferta() -> None:
 def test_venda_antes_da_liquidacao_tem_a_compra_antes_dela() -> None:
     """Negociação em 30/06/2026 e liquidação em 01/07/2026, oferta de 1.000 a 20,00. Venda em 30/06
     de 1.000 a 26,00, custos 6,00: resultado 5.994,00 em junho, imposto 899,10, IRRF 1,30, DARF
-    897,80, vencimento 31/07/2026; a posição termina zerada (decisão do usuário de 08/11/2026)."""
+    897,80, vencimento 31/07/2026; a posição termina zerada (critério do COIR de 08/11/2026)."""
     for ate in (date(2026, 6, 30), date(2026, 7, 31)):  # a mesma resposta antes da liquidação
         livro = Livro()
         livro.nota(date(2026, 6, 30), livro.op("V", "CCCC3", 1000, "26"), custos="6", irrf="1.30")

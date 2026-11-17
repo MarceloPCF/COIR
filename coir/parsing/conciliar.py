@@ -79,9 +79,10 @@ def _parcelas(custos: Iterable[Custo], grupo: GrupoCusto) -> int:
     return sum(1 for c in custos if c.grupo == grupo and c.valor != 0) + 1
 
 
-def _parcelas_liquido(*subtotais: Montante) -> int:
-    """Subtotais não zerados mais o próprio líquido impresso."""
-    return sum(1 for s in subtotais if s.valor != 0) + 1
+def _parcelas_liquido(custos: Iterable[Custo], *subtotais: Montante) -> int:
+    """Subtotais não zerados, custos impressos fora deles e o próprio líquido impresso."""
+    fora = sum(1 for c in custos if c.grupo == "liquido" and c.valor != 0)
+    return sum(1 for s in subtotais if s.valor != 0) + fora + 1
 
 
 def _outros_custos(nota: NotaExtraida) -> Decimal:
@@ -194,7 +195,8 @@ def _bovespa(nota: NotaExtraida) -> NotaExtraida:
         and (r.irrf > 2 * folga or despesas + r.irrf == lido_despesas)
     )
     com_despesas = despesas + (r.irrf if irrf_nas_despesas else ZERO)
-    base = r.total_cblc.assinado - lido_bolsa - lido_despesas
+    # custo impresso fora dos subtotais (taxa de transferência do layout b3rv): só no líquido
+    base = r.total_cblc.assinado - lido_bolsa - lido_despesas - _soma(custos, "liquido")
     # IRRF fora das despesas: algumas corretoras descontam do líquido, outras só no mês (BTG, Ágora)
     tentativas = [
         (com_irrf, base - (r.irrf if com_irrf and not irrf_nas_despesas else ZERO)
@@ -210,7 +212,7 @@ def _bovespa(nota: NotaExtraida) -> NotaExtraida:
         _Diferenca("Total de despesas", lido_despesas - com_despesas,
                    _parcelas(custos, "despesas") + int(irrf_nas_despesas), "despesas",
                    com_despesas, lido_despesas),
-        _Diferenca("líquido", sobra, _parcelas_liquido(r.total_cblc, r.total_bovespa,
+        _Diferenca("líquido", sobra, _parcelas_liquido(custos, r.total_cblc, r.total_bovespa,
                                                        r.total_despesas), "despesas",
                    r.liquido.assinado + sobra, r.liquido.assinado),
     ]  # fmt: skip

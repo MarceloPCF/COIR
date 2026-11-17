@@ -64,10 +64,13 @@ def _total(linhas: list[carteira.LinhaPosicao], visao: Visao) -> tuple[Valor, ..
 
 
 def _resumo(linhas: list[carteira.LinhaPosicao], ate: date) -> str:
-    termos = sum(1 for p in linhas if p.liquidacao is not None)
-    texto = f"{len(linhas) - termos} posições em {ate:%d/%m/%Y}"
-    if termos:
-        texto += f" e {termos} compra{'s' if termos > 1 else ''} a termo a liquidar"
+    compras = sum(1 for p in linhas if p.liquidacao is not None and not p.venda_a_termo)
+    vendas = sum(1 for p in linhas if p.venda_a_termo)
+    texto = f"{len(linhas) - compras - vendas} posições em {ate:%d/%m/%Y}"
+    if compras:
+        texto += f" e {compras} compra{'s' if compras > 1 else ''} a termo a liquidar"
+    if vendas:
+        texto += f"; {vendas} venda{'s' if vendas > 1 else ''} a termo a liquidar"
     return texto
 
 
@@ -210,9 +213,36 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     ui.timer(0.01, carregar, once=True)
 
 
+def _venda_a_termo(p: carteira.LinhaPosicao, onde: str) -> None:
+    """Venda a termo em aberto: as ações continuam na carteira até a entrega, na liquidação."""
+    with ui.row().classes("items-baseline gap-3"):
+        ui.label(f"Venda a termo: {p.ticker}").classes("coir-titulo text-lg")
+        if onde:
+            ui.label(onde).classes("coir-subtitulo text-sm")
+    ui.label(
+        f"{formatar(p.quantidade, T.QUANTIDADE)} ações · preço a termo sem custos "
+        f"{formatar(p.pm, T.PM)} · valor {formatar(p.custo, T.DINHEIRO)}"
+    ).classes("coir-numero")
+    assert p.liquidacao is not None
+    ui.label(
+        f"Ações comprometidas com a venda a termo: continuam na carteira e no preço médio até "
+        f"{p.liquidacao:%d/%m/%Y}, data da liquidação (pregão + prazo do contrato). Nesse dia "
+        "saem pelo preço médio, e o ganho entra na apuração do mês, sem isenção (IN RFB "
+        "1.585/2015 art. 59 §2º IV e art. 62). Se o contrato foi liquidado antes do vencimento, "
+        "o COIR ainda não sabe: a data usada é a do vencimento."
+    ).classes("coir-subtitulo").mark("venda-a-termo-aberta")
+    if p.nota is not None:
+        nota = p.nota
+        ui.button("Abrir a nota da venda", icon="description",
+                  on_click=lambda: ui.navigate.to(f"/notas/{nota}")).props("flat")  # fmt: skip
+
+
 def _termo(p: carteira.LinhaPosicao) -> None:
     """Compra a termo em aberto: ainda não tem trilha, porque só entra no PM na liquidação."""
     onde = " · ".join(x for x in (p.corretora, p.numero_conta and f"conta {p.numero_conta}") if x)
+    if p.venda_a_termo:
+        _venda_a_termo(p, onde)
+        return
     with ui.row().classes("items-baseline gap-3"):
         ui.label(f"Compra a termo: {p.ticker}").classes("coir-titulo text-lg")
         if onde:
@@ -231,6 +261,16 @@ def _termo(p: carteira.LinhaPosicao) -> None:
         nota = p.nota
         ui.button("Abrir a nota da compra", icon="description",
                   on_click=lambda: ui.navigate.to(f"/notas/{nota}")).props("flat")  # fmt: skip
+
+
+# parecer do especialista de 16/11/2026: não há norma de "preço médio de venda"; a ordem dos
+# negócios é o único critério de ordem escrito (IN RFB 1.585/2015 art. 65 §3º)
+NOTA_ORDEM_DOS_NEGOCIOS = (
+    "Vendas no mesmo pregão que passam de zero: vale a ordem dos negócios da nota. As primeiras "
+    "vendas zeram a posição pelo preço médio de compra, e o que vem depois abre uma venda a "
+    "descoberto pelo preço de cada negócio. A corretora costuma mostrar a média das vendas do "
+    "dia; por isso o resultado de cada parte pode diferir do dela, mas a soma é a mesma."
+)
 
 
 def _trilha(p: carteira.LinhaPosicao, passos: list[Movimento], mapa: dict[int, int]) -> None:
@@ -268,3 +308,4 @@ def _trilha(p: carteira.LinhaPosicao, passos: list[Movimento], mapa: dict[int, i
     ui.label("Clique num passo para abrir a nota de origem (eventos não têm nota).").classes(
         "coir-subtitulo text-xs"
     )
+    ui.label(NOTA_ORDEM_DOS_NEGOCIOS).classes("coir-subtitulo text-xs").mark("nota-ordem-negocios")

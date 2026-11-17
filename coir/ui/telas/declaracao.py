@@ -1,6 +1,6 @@
 """Tela 14 — Declaração anual (IRPF): as fichas na ordem do programa da Receita, cada valor com
 botão de copiar e cada item com a marcação "lançado no programa" (gravada por titular e ano), e a
-conferência com a declaração entregue quando o PDF está em <dados>/_dirpf (escolha do usuário de
+conferência com a declaração entregue quando o PDF está em <dados>/_dirpf (critério do COIR de
 20/10/2026: alternativa COIR, ficha a ficha)."""
 
 from collections.abc import Awaitable, Callable
