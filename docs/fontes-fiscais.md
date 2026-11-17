@@ -105,7 +105,7 @@ Regras da combinação (`tools/referencias/gerar.py`, `historico.py`):
   publica; quando a B3 só guardou uma delas, a outra vem do documento (BEES 2012). O par que se
   anula (100 para 1 e 1 para 100) não entra em proposta nem em controle nenhum, porque a quantidade
   não muda: o de ITUB 2011 saiu do pacote pela lista de exclusões, e os demais (BBDC 2009, MERC
-  2023, TIMS 2025...) o COIR descarta ao ler o pacote (`coir/referencias.eventos_b3`), sem
+  2023, TIMS 2025...) o COIR descarta ao ler o pacote (`coir/fontes.eventos`), sem
   depender da lista;
 - a unit entra com o fator das ações só quando todas as espécies tiveram o mesmo fator e a mesma
   data com e a cotação da unit confirma; o custo atribuído da unit é o da ação vezes a composição
@@ -146,7 +146,7 @@ Trocas de código (`data/trocas_ticker.csv`, curada à mão, uma linha por espé
   novo: o evento do FRE (que é por CNPJ) de antes da troca entra no ISIN antigo, e o que tem a data
   ex no dia da troca (LLIS3 -> VSTE3 com grupamento 8:1 em 09/02/2023) entra no ISIN que vale na
   data ex. Sem isso o evento se perdia, porque o ISIN antigo não tem o código do emissor atual;
-- o app (`coir/referencias.tickers_por_isin`) leva o ISIN antigo ao ticker da época
+- o app (`coir/fontes.tickers_por_isin`) leva o ISIN antigo ao ticker da época
   (`BRKROTACNOR9` -> KROT3), que o cadastro de instrumentos de hoje não tem, e a troca liga os dois
   tickers ao mesmo ativo.
 

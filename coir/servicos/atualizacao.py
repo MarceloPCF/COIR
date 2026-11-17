@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from coir import referencias
+from coir import fontes, referencias
 from coir.config import VERSAO
 from coir.erros import AtualizacaoError, ConfiguracaoError
 
@@ -212,7 +212,7 @@ def preparar(dados: Path, remoto: PacoteRemoto, obter: Baixar = baixar) -> Mudan
         # sem o cache de carregar(): a pasta "novo" é a mesma a cada pacote preparado
         referencias.carregar.__wrapped__(nova)
         referencias.carregar_fiscais.__wrapped__(nova)
-        referencias.validar_tabelas_b3(nova)
+        fontes.validar_pacote(nova)
     except (AtualizacaoError, ConfiguracaoError, ValueError, KeyError) as erro:
         shutil.rmtree(nova, ignore_errors=True)
         raise AtualizacaoError(f"pacote recusado: {erro}") from erro

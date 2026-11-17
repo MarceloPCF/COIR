@@ -10,7 +10,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from coir import referencias
+from coir import fontes, referencias
 from coir.config import dentro_do_repositorio
 from coir.db import repositorio as repo
 from coir.db.modelos import Conta
@@ -40,8 +40,8 @@ def info_ativos(
 ) -> dict[str, InfoAtivo]:  # fmt: skip
     """Cadastro público de cada ticker para a declaração: emissor e especificação pelo cadastro de
     instrumentos da B3, CNPJ pelo pacote (emissores.csv por cima); opção pelo ativo-objeto."""
-    instrumentos = referencias.instrumentos(pasta)
-    emissores = referencias.emissores(pasta)
+    instrumentos = fontes.instrumentos(pasta)
+    emissores = fontes.emissores(pasta)
     saida: dict[str, InfoAtivo] = {}
     for ticker in sorted(set(tickers)):
         objeto = None

@@ -120,7 +120,7 @@ def test_cnpj_novo_de_emissor_conhecido_fica_no_historico(tmp_path: Path) -> Non
 
 
 def test_emissores_no_app_curado_por_cima(tmp_path: Path) -> None:
-    from coir import referencias
+    from coir import fontes
     from coir.erros import ConfiguracaoError
 
     pasta = _copia_data(tmp_path / "data")
@@ -134,15 +134,15 @@ def test_emissores_no_app_curado_por_cima(tmp_path: Path) -> None:
     (pasta / "emissores.csv").write_text(
         "emissor,cnpj,razao_social,observacao\nTAEE,10406511000161,CURADO,teste\n", encoding="utf-8"
     )
-    e = referencias.emissores(pasta)
+    e = fontes.emissores(pasta)
     assert e["HGLG"] == ("63375304000153", "NOVO", "FII")  # o visto por último
     assert e["TAEE"] == ("10406511000161", "CURADO", "COMPANHIA")  # a curada vale
-    referencias.validar_tabelas_b3(pasta)
+    fontes.validar_pacote(pasta)
     (pasta / "emissores.csv").write_text(
         "emissor,cnpj,razao_social,observacao\nTAEE,11111111111111,X,\n", encoding="utf-8"
     )
     with pytest.raises(ConfiguracaoError, match="CNPJ inválido"):
-        referencias.emissores(pasta)
+        fontes.emissores(pasta)
 
 
 def test_resposta_fora_do_formato_falha_alto(tmp_path: Path) -> None:

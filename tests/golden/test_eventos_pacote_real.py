@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from coir import referencias
+from coir import fontes, referencias
 from coir.domain.fiscal import TipoEvento
 from coir.recursos import pasta_data
 from coir.servicos import eventos
@@ -43,15 +43,15 @@ def _quantidade(tipo: TipoEvento, base: Decimal, fator: str, serie: bool) -> Dec
 def test_todo_evento_validado_esta_no_pacote(copia: Path) -> None:
     [titular] = Estado(copia).titulares()
     pasta = pasta_data()
-    emissores = {i[0] for i in referencias.instrumentos(pasta).values()}
+    emissores = {i[0] for i in fontes.instrumentos(pasta).values()}
     validados = [e.dados for e in eventos.listar(copia, titular.id)
                  if e.dados.tipo in TIPOS and e.dados.ticker[:4] in emissores]  # fmt: skip
     assert len(validados) >= 25
     lista = eventos.propostas(copia, titular.id, referencias.carregar(pasta),
                               referencias.carregar_fiscais(pasta), pasta)  # fmt: skip
     do_pacote = [p for p in lista if "eventos da B3" in p.movimentacao]
-    por_isin = referencias.tickers_por_isin(pasta)
-    linhas = referencias.eventos_b3(pasta)
+    por_isin = fontes.tickers_por_isin(pasta)
+    linhas = fontes.eventos(pasta)
 
     def confere(p: eventos.Proposta, v: eventos.DadosEvento) -> bool:
         d = p.dados
@@ -66,9 +66,9 @@ def test_todo_evento_validado_esta_no_pacote(copia: Path) -> None:
         sinal = 1 if v.cv == "C" else -1
         base = p.quantidade - (sinal * Decimal(v.quantidade or 0) if v.data <= data_com else 0)
         serie = d.observacao.startswith("ajuste da série")
-        fatores = {r["fator"] for r in linhas
-                   if r["tipo"] == v.tipo.value and date.fromisoformat(r["data_com"]) == data_com
-                   and por_isin.get(r["isin"], "")[:4] == v.ticker[:4]}  # fmt: skip
+        fatores = {r.fator for r in linhas
+                   if r.tipo == v.tipo.value and date.fromisoformat(r.data_com) == data_com
+                   and por_isin.get(r.isin, "")[:4] == v.ticker[:4]}  # fmt: skip
         return any(_quantidade(v.tipo, base, f, serie) == Decimal(v.quantidade or 0)
                    for f in fatores)  # fmt: skip
 

@@ -11,7 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from coir.referencias import evento_b3_valido, eventos_b3, tickers_por_isin
+from coir import fontes
+from coir.fontes import evento_valido
 from tools.referencias import gerar, historico
 from tools.referencias.gerar import EventoB3, Resumo
 from tools.referencias.historico import LinhaFre, Pregao
@@ -181,7 +182,7 @@ def test_eventos_fre_com_especie_irma_e_unit() -> None:
         (PN, "10", "2016-04-27", "cvm_fre"),  # a data com da ON, com mudança no mesmo pregão
         (UNIT, "10", "2016-04-27", "cvm_fre"),  # a unit caiu como o fator manda
     ]
-    assert all(evento_b3_valido(e.linha()) for e in eventos)
+    assert all(evento_valido(e.linha()) for e in eventos)
 
 
 def test_grupamento_e_desdobramento_no_mesmo_ato_vao_para_revisao() -> None:
@@ -255,7 +256,7 @@ def test_eventos_curados_dos_avisos_da_cvm() -> None:
     curados = gerar.eventos_curados()
     assert len(curados) >= 30
     for e in curados:
-        assert evento_b3_valido(e.linha()), e
+        assert evento_valido(e.linha()), e
         assert e.origem == "cvm_ipe"
         if e.tipo == "REDUCAO_CAPITAL":  # dinheiro junto de incorporação: o ISIN é o de origem
             assert e.referencia and e.preco and e.data_subscricao and e.isin != e.isin_emitido
@@ -422,9 +423,10 @@ def test_grupamento_e_desdobramento_que_se_anulam_nao_entram(tmp_path: Path) -> 
         + "".join(f"{e},{i},{t},{f},{d},,{i},,,,b3,,\n" for e, i, t, f, d in linhas),
         "utf-8",
     )
-    assert [(r["emissor"], r["tipo"], r["data_com"]) for r in eventos_b3(tmp_path)] == [
-        ("ITUB", "BONIFICACAO", "2013-05-20"), ("NGRD", "GRUPAMENTO", "2024-10-07"),
-        ("NGRD", "DESDOBRAMENTO", "2024-10-07")]  # fmt: skip
+    # na ordem da chave do evento (data com, ISIN, tipo...), como o pipeline grava a tabela
+    assert [(r.emissor, r.tipo, r.data_com) for r in fontes.eventos(tmp_path)] == [
+        ("ITUB", "BONIFICACAO", "2013-05-20"), ("NGRD", "DESDOBRAMENTO", "2024-10-07"),
+        ("NGRD", "GRUPAMENTO", "2024-10-07")]  # fmt: skip
 
 
 def test_ticker_do_isin_antigo_pela_tabela_de_trocas(tmp_path: Path) -> None:
@@ -435,7 +437,7 @@ def test_ticker_do_isin_antigo_pela_tabela_de_trocas(tmp_path: Path) -> None:
         "ticker_impresso,ticker,ate,isin_antigo,isin_novo,fonte\n"
         f"KROT3,COGN3,2019-10-10,{KROT},{COGN},B3 COTAHIST; CVM FCA\n"
         "JSLG3,SIMH3,2020-09-18,,BRSIMHACNOR0,curada\n", "utf-8")  # fmt: skip
-    assert tickers_por_isin(tmp_path) == {
+    assert fontes.tickers_por_isin(tmp_path) == {
         COGN: "COGN3", KROT: "KROT3", "BRSIMHACNOR0": "SIMH3"}  # fmt: skip
 
 

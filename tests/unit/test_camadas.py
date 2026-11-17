@@ -31,9 +31,11 @@ INTERNOS_PERMITIDOS = {
     "reports": ("coir.reports", "coir.domain", "coir.erros"),
     "servicos": (
         "coir.servicos", "coir.db", "coir.domain", "coir.engine", "coir.erros", "coir.parsing",
-        "coir.reports", "coir.config", "coir.referencias", "coir.importers", "coir.gabarito",
-        "coir.auditoria",
+        "coir.reports", "coir.config", "coir.referencias", "coir.fontes", "coir.importers",
+        "coir.gabarito", "coir.auditoria",
     ),
+    # dados de referência por conceito: só leem tabelas (sem banco, motor, UI nem relógio)
+    "fontes": ("coir.fontes", "coir.domain", "coir.erros", "coir.parsing", "coir.recursos"),
     # interface: só apresenta; dados e cálculos vêm dos serviços (nunca motor ou banco direto)
     "ui": ("coir.ui", "coir.servicos", "coir.reports", "coir.domain", "coir.config", "coir.erros",
            "coir.auditoria", "coir.recursos"),
@@ -128,7 +130,7 @@ def test_camada_respeita_dependencias(camada: str) -> None:
     assert violacoes == []
 
 
-@pytest.mark.parametrize("camada", ["engine", "domain"])
+@pytest.mark.parametrize("camada", ["engine", "domain", "fontes"])
 def test_camada_sem_float_nem_relogio(camada: str) -> None:
     violacoes = [
         f"{arq.relative_to(RAIZ)} {v}"

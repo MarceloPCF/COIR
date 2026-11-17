@@ -25,7 +25,7 @@ from pathlib import Path
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from coir import auditoria, referencias
+from coir import auditoria, fontes
 from coir.db import repositorio as repo
 from coir.db.modelos import (
     Conta,
@@ -911,21 +911,21 @@ def _bonificacoes_do_pacote(
     público que trazem o custo (eventos_b3.csv). Vazio sem o pacote."""
     if fiscais is None or pasta is None:
         return {}
-    por_isin = referencias.tickers_por_isin(pasta)
+    por_isin = fontes.tickers_por_isin(pasta)
     saida: BonificacoesDoPacote = defaultdict(list)
-    for ev in referencias.eventos_b3(pasta):
-        if ev["tipo"] != "BONIFICACAO" or not ev.get("custo_atribuido"):
+    for ev in fontes.eventos(pasta):
+        if ev.tipo != "BONIFICACAO" or not ev.custo_atribuido:
             continue
-        ticker = por_isin.get(ev["isin_emitido"] or ev["isin"])
+        ticker = por_isin.get(ev.isin_emitido or ev.isin)
         if ticker is None:
             continue
         try:
-            data_ex = proximo_pregao(date.fromisoformat(ev["data_com"]), fiscais.calendario)
-            custo = Decimal(ev["custo_atribuido"])
+            data_ex = proximo_pregao(date.fromisoformat(ev.data_com), fiscais.calendario)
+            custo = Decimal(ev.custo_atribuido)
         except (ReferenciaError, InvalidOperation, ValueError):
             continue
         if custo > 0:
-            saida[ticker].append((data_ex, custo, ev.get("referencia", "")))
+            saida[ticker].append((data_ex, custo, ev.referencia))
     return saida
 
 
@@ -1043,12 +1043,12 @@ def _fim_do_prazo(
     if fiscais.parametros.texto("direito_vencido_data", baixa) != "fim_do_prazo":
         return (baixa, "data da baixa na B3 (parâmetro direito_vencido_data)")
     fins: list[date] = []
-    for ev in referencias.eventos_b3(pasta):
-        if ev["tipo"] != "SUBSCRICAO" or ev["emissor"] != codigo[:4]:
+    for ev in fontes.eventos(pasta):
+        if ev.tipo != "SUBSCRICAO" or ev.emissor != codigo[:4]:
             continue
-        datas = [ev["data_subscricao"]] if ev["data_subscricao"] else []
-        if " a " in ev["periodo"]:
-            datas.append(ev["periodo"].split(" a ")[1].strip())
+        datas = [ev.data_subscricao] if ev.data_subscricao else []
+        if " a " in ev.periodo:
+            datas.append(ev.periodo.split(" a ")[1].strip())
         try:
             fim = max(date.fromisoformat(x) if "-" in x else datetime.strptime(x, "%d/%m/%Y").date()
                       for x in datas)  # fmt: skip
@@ -1126,10 +1126,10 @@ def _do_pacote(
 ) -> list[Proposta]:  # fmt: skip
     """Para cada evento do pacote de ativo que o titular tinha na data com (por conta), o evento
     com a quantidade pelo fator e, nas séries de opção abertas do ativo, o ajuste de quantidade."""
-    eventos = referencias.eventos_b3(pasta)
+    eventos = fontes.eventos(pasta)
     if not eventos:
         return []
-    por_isin = referencias.tickers_por_isin(pasta)
+    por_isin = fontes.tickers_por_isin(pasta)
     notas, evs = entradas(s, refs, fiscais)
     notas = [n for n in notas if n.titular == titular]
     evs = [e for e in evs if e.titular == titular]
@@ -1159,12 +1159,12 @@ def _do_pacote(
     nome_conta = {c.id: c.corretora.nome for c in contas}
     saida: list[Proposta] = []
     for ev in eventos:
-        tipo = TIPOS_PACOTE.get(ev["tipo"])
-        cisao = ev["tipo"].startswith("CIS") and ev["isin_emitido"] != ev["isin"]
-        ticker = por_isin.get(ev["isin"])
+        tipo = TIPOS_PACOTE.get(ev.tipo)
+        cisao = ev.tipo.startswith("CIS") and ev.isin_emitido != ev.isin
+        ticker = por_isin.get(ev.isin)
         if ticker is None or (tipo is None and not cisao):
             continue
-        data_com = date.fromisoformat(ev["data_com"])  # linhas já validadas (eventos_b3)
+        data_com = date.fromisoformat(ev.data_com)  # registros já validados (fontes.eventos)
         cal = fiscais.calendario
         if not cal.primeiro_ano <= data_com.year <= cal.ultimo_ano or data_com < inicio:
             continue  # antes do primeiro negócio (ou fora do calendário): não atinge a carteira
@@ -1175,7 +1175,7 @@ def _do_pacote(
         if data_ex > limite:
             continue  # depois de onde o livro parou: a posição na data com não é conhecida
         # a B3 escreve o grupamento como razão (0,1 = 10 viram 1) e os demais em % (200 = +200%)
-        fator = Decimal(ev["fator"]) / (1 if tipo is TipoEvento.GRUPAMENTO else 100)
+        fator = Decimal(ev.fator) / (1 if tipo is TipoEvento.GRUPAMENTO else 100)
         ativos = _ativos_do_ticker(s, ticker)
         nomes = {ticker} | {t for a in ativos for t in s.scalars(
             select(TickerHistorico.ticker).where(TickerHistorico.ativo_id == a))}  # fmt: skip
@@ -1199,8 +1199,8 @@ def _do_pacote(
                 continue
             if dados is None:
                 continue
-            chave = hashlib.sha256(f"b3pub|{ev['isin']}|{ev['tipo']}|{ev['data_com']}|"
-                                   f"{ev['isin_emitido']}|{ev['fator']}|{conta}|{dados.ticker}"
+            chave = hashlib.sha256(f"b3pub|{ev.isin}|{ev.tipo}|{ev.data_com}|"
+                                   f"{ev.isin_emitido}|{ev.fator}|{conta}|{dados.ticker}"
                                    .encode()).hexdigest()  # fmt: skip
             if chave in ignoradas:
                 situacao = "ignorada"
@@ -1210,16 +1210,16 @@ def _do_pacote(
             else:
                 situacao = "pendente"
             saida.append(Proposta(
-                chave, dados.data, f"{ev['tipo'].capitalize()} (eventos da B3)", dados.ticker, q,
+                chave, dados.data, f"{ev.tipo.capitalize()} (eventos da B3)", dados.ticker, q,
                 None, nome_conta[conta], situacao, dados,
                 "; ".join(x for x in (NOTA_PACOTE.format(data_com=f"{data_com:%d/%m/%Y}"), nota)
                           if x),
-                segura=(serie is None and ev["isin_emitido"] in ("", ev["isin"])
-                        and _segura(dados, fator, ev.get("origem", ""))),
-                custo_por_acao=(Decimal(ev["custo_atribuido"]) if serie is None
+                segura=(serie is None and ev.isin_emitido in ("", ev.isin)
+                        and _segura(dados, fator, ev.origem)),
+                custo_por_acao=(Decimal(ev.custo_atribuido) if serie is None
                                 and dados.tipo is TipoEvento.BONIFICACAO
-                                and ev.get("custo_atribuido") else None),
-                referencia=ev.get("referencia", "")))  # fmt: skip
+                                and ev.custo_atribuido else None),
+                referencia=ev.referencia))  # fmt: skip
     saida += _propor_restituicoes(s, refs, fiscais, pasta, por_isin, historico, nome_conta,
                                   tickers_serie, parou_em, inicio, limite, ignoradas,
                                   lancados)  # fmt: skip
@@ -1237,14 +1237,14 @@ def _restituicoes(pasta: Path, refs: Referencias,
     """(ticker, data com, valor por ação) das restituições de capital em dinheiro do pacote: as
     recentes (com ISIN) e as do histórico (empresa e classe); a mesma nas duas entra uma vez."""
     achadas: dict[tuple[str, str], Decimal] = {}
-    for r in referencias.proventos_b3(pasta):
-        ticker = por_isin.get(r["isin"])
-        if r["tipo"] == REST_CAP and ticker and r.get("data_com"):
-            achadas.setdefault((ticker, r["data_com"]), Decimal(r["valor"]))
-    for r in referencias.proventos_historico_b3(pasta):
-        digito = refs.classes.get(r["classe"])
-        if r["tipo"] == REST_CAP and digito:
-            achadas.setdefault((r["emissor"] + digito, r["data_com"]), Decimal(r["valor"]))
+    for r in fontes.proventos(pasta):
+        ticker = por_isin.get(r.isin)
+        if r.tipo == REST_CAP and ticker and r.data_com:
+            achadas.setdefault((ticker, r.data_com), Decimal(r.valor))
+    for r in fontes.proventos_historicos(pasta):
+        digito = refs.classes.get(r.classe)
+        if r.tipo == REST_CAP and digito:
+            achadas.setdefault((r.emissor + digito, r.data_com), Decimal(r.valor))
     saida: list[tuple[str, date, Decimal]] = []
     for (ticker, data_com), valor in sorted(achadas.items()):
         try:
@@ -1391,9 +1391,9 @@ def lancar_automaticos(
         recusadas.extend(rodada.recusadas)
 
 
-def _fator(ev: dict[str, str], tipo: TipoEvento | None) -> str:
+def _fator(ev: fontes.Evento, tipo: TipoEvento | None) -> str:
     """Como a B3 escreve: grupamento em razão (0,1 = 10 viram 1); os demais em %."""
-    return f"razão {ev['fator']}" if tipo is TipoEvento.GRUPAMENTO else f"{ev['fator']}%"
+    return f"razão {ev.fator}" if tipo is TipoEvento.GRUPAMENTO else f"{ev.fator}%"
 
 
 def _fracao(total: Decimal) -> tuple[Decimal, str]:
@@ -1408,7 +1408,7 @@ def _fracao(total: Decimal) -> tuple[Decimal, str]:
 
 
 def _resgate(
-    ev: dict[str, str], ticker: str, conta: int, q: Decimal, custo: Decimal, parte: Decimal,
+    ev: fontes.Evento, ticker: str, conta: int, q: Decimal, custo: Decimal, parte: Decimal,
     data_ex: date, por_isin: dict[str, str],
 ) -> tuple[DadosEvento | None, str]:  # fmt: skip
     """Dinheiro junto de uma incorporação: a parte do custo que era da ação resgatada sai das ações
@@ -1416,12 +1416,12 @@ def _resgate(
     valor do evento é esse custo, nunca o dinheiro. O resgate é alienação fora de bolsa."""
     if q <= 0:
         return None, ""
-    destino = por_isin.get(ev["isin_emitido"], ticker)
+    destino = por_isin.get(ev.isin_emitido, ticker)
     valor = (custo * parte).quantize(Decimal("0.01"), ROUND_HALF_UP)
-    dinheiro = (q * Decimal(ev["preco"] or 0)).quantize(Decimal("0.01"), ROUND_HALF_UP)
-    pago = date.fromisoformat(ev["data_subscricao"]) if ev["data_subscricao"] else data_ex
+    dinheiro = (q * Decimal(ev.preco or 0)).quantize(Decimal("0.01"), ROUND_HALF_UP)
+    pago = date.fromisoformat(ev.data_subscricao) if ev.data_subscricao else data_ex
     nota = (
-        f"o valor proposto é a parte do custo que sai de {destino} ({ev['fator']}%), não o "
+        f"o valor proposto é a parte do custo que sai de {destino} ({ev.fator}%), não o "
         f"dinheiro. O dinheiro ({reais(dinheiro)}, pago em {pago:%d/%m/%Y}) é resgate de "
         "ações: menos este custo, dá "
         "ganho ou perda fora da bolsa, no programa GCAP da Receita. O COIR não calcula esse "
@@ -1430,12 +1430,12 @@ def _resgate(
     return DadosEvento(
         tipo=TipoEvento.REDUCAO_CAPITAL, data=data_ex, conta=conta, ticker=destino, cv="V",
         quantidade=None, valor=valor, origem="b3",
-        observacao=f"pacote público da B3: parte do custo na incorporação ({ev['fator']}%)",
+        observacao=f"pacote público da B3: parte do custo na incorporação ({ev.fator}%)",
     ), nota  # fmt: skip
 
 
 def _evento_acao(
-    ev: dict[str, str], tipo: TipoEvento | None, cisao: bool, ticker: str, conta: int,
+    ev: fontes.Evento, tipo: TipoEvento | None, cisao: bool, ticker: str, conta: int,
     q: Decimal, fator: Decimal, data_ex: date, por_isin: dict[str, str],
 ) -> tuple[DadosEvento | None, str]:  # fmt: skip
     if q < 0:
@@ -1443,8 +1443,8 @@ def _evento_acao(
     # subscrição e bonificação podem entregar outra classe (quem tem PN recebe ON): o crédito é na
     # classe emitida, não na ação que o titular tem
     outra = (tipo in (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO)
-             and ev["isin_emitido"] not in ("", ev["isin"]))  # fmt: skip
-    emitida = por_isin.get(ev["isin_emitido"]) if outra else None
+             and ev.isin_emitido not in ("", ev.isin))  # fmt: skip
+    emitida = por_isin.get(ev.isin_emitido) if outra else None
     classe = ""
     if outra:
         classe = (f"a companhia entrega {emitida}, outra classe da ação que você tem" if emitida
@@ -1454,11 +1454,11 @@ def _evento_acao(
         tipo=tipo or TipoEvento.DESDOBRAMENTO, data=data_ex, conta=conta, ticker=emitida or ticker,
         cv="C", origem="b3",
         natureza=NaturezaEvento.OUTRA_CLASSE if emitida else None,
-        observacao=f"pacote público da B3: {ev['tipo']} {_fator(ev, tipo)} (data com "
-                   f"{ev['data_com']})",
+        observacao=f"pacote público da B3: {ev.tipo} {_fator(ev, tipo)} (data com "
+                   f"{ev.data_com})",
     )  # fmt: skip
     if cisao:
-        destino = por_isin.get(ev["isin_emitido"])
+        destino = por_isin.get(ev.isin_emitido)
         if destino is None:
             return None, ""
         recebida, _ = _fracao(q * fator)
@@ -1473,17 +1473,17 @@ def _evento_acao(
     quantidade, nota = _fracao(q * fator)
     if tipo is TipoEvento.SUBSCRICAO:
         quantidade = quantidade.to_integral_value(ROUND_FLOOR)  # só se subscrevem ações inteiras
-        preco = Decimal(ev["preco"] or 0)
-        dia = date.fromisoformat(ev["data_subscricao"]) if ev["data_subscricao"] else data_ex
+        preco = Decimal(ev.preco or 0)
+        dia = date.fromisoformat(ev.data_subscricao) if ev.data_subscricao else data_ex
         return replace(base, data=dia, quantidade=quantidade,
                        valor=(quantidade * preco).quantize(Decimal("0.01"))), (
             "; ".join(x for x in (classe, f"subscrição é opcional (preço {preco}, período "
-                                          f"{ev['periodo']}): lance só o que você exerceu")
+                                          f"{ev.periodo}): lance só o que você exerceu")
                       if x))  # fmt: skip
     if tipo is TipoEvento.BONIFICACAO:
         # o pacote traz o custo por ação quando o aviso aos acionistas informa: a proposta já sai
         # com o custo total; sem ele, o usuário informa (com custo zero o PM da venda fica errado)
-        custo = Decimal(ev.get("custo_atribuido") or 0)
+        custo = Decimal(ev.custo_atribuido or 0)
         if custo:
             valor = (quantidade * custo).quantize(Decimal("0.01"), ROUND_HALF_UP)
             pedido = (f"custo atribuído de R$ {custo} por ação, do aviso aos acionistas "
