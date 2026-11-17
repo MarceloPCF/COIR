@@ -8,7 +8,7 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
-## [Não lançado]
+## [3.1.2] - 2026-11-17
 
 ### Adicionado
 - **"Processando dados, aguarde"**: enquanto o COIR importa notas ou planilhas da B3, confere os eventos, atualiza as tabelas ou restaura um backup, um aviso cobre a janela, mostra o que está sendo feito (na importação, quantos arquivos já foram) e some quando termina. Antes dava para trocar de tela no meio do processamento, e a operação terminava numa tela que já não existia.
@@ -344,6 +344,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.1.2]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.2
 [3.1.1]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.1
 [3.1.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.0
 [3.0.1]: https://github.com/MarceloPCF/COIR/releases/tag/v3.0.1

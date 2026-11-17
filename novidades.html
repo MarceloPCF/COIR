@@ -44,9 +44,42 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <p>O formato deste arquivo segue o <a href="https://keepachangelog.com/pt-BR/">Keep a Changelog</a>.</p>
 
-<h2 id="311-2026-11-12">[3.1.1] - 2026-11-12</h2>
+<h2 id="312-2026-11-17">[3.1.2] - 2026-11-17</h2>
 
 <h3 id="adicionado">Adicionado</h3>
+
+<ul>
+<li><strong>"Processando dados, aguarde"</strong>: enquanto o COIR importa notas ou planilhas da B3, confere os eventos, atualiza as tabelas ou restaura um backup, um aviso cobre a janela, mostra o que está sendo feito (na importação, quantos arquivos já foram) e some quando termina. Antes dava para trocar de tela no meio do processamento, e a operação terminava numa tela que já não existia.</li>
+<li><strong>Venda a termo</strong>: o COIR passa a apurar a venda a termo de ações. Antes, uma nota com venda a termo parava o cálculo do ativo. Agora o ganho entra no mês da liquidação, pelo preço a termo menos o preço médio da posição nesse dia, sem isenção. Até lá, as ações continuam na carteira, e a tela Carteira mostra a venda numa linha própria, com a data da entrega. Compra à vista e venda a termo do mesmo ativo no mesmo pregão geram um aviso de possível operação conjugada, que a Receita trata como renda fixa.</li>
+<li><strong>Cotas de FIP e de FIDC</strong>: o COIR passa a reconhecer, pela lista de fundos da B3, as cotas de FIP comum (que não é de infraestrutura) e de FIDC. A venda delas não entra mais na soma do limite de R$ 20 mil das ações, o que podia tirar a isenção de um mês sem motivo. O ganho na venda de FIP é apurado a 15%, sem isenção; a amortização reduz o custo pela parcela que o informe do administrador mostra, e a tela Eventos a propõe pela movimentação da B3. O FIDC continua fora do cálculo, agora com o motivo certo: não há norma expressa para a venda em bolsa por pessoa física. Esses tipos entram nas tabelas na próxima atualização delas; até lá, o fundo continua como "sem tipo".</li>
+<li><strong>Rendimentos de ETF na declaração</strong>: o rendimento distribuído por ETF de renda fixa, e por ETF de ações desde 2024, passa a aparecer na tela Proventos e na ficha de tributação exclusiva (código 06), pelo valor líquido. Antes ficava só como "fora da v3.0". O rendimento de ETF de ações de antes de 2024 continua só listado, com aviso.</li>
+<li><strong>Dividendo pago em bens</strong>: novo lançamento na tela Eventos (aba Lançados) para o dividendo pago com ações ou cotas de outra empresa. O ativo recebido entra na carteira, e o valor atribuído no aviso aos acionistas vai para os dividendos isentos. O custo fica pelo valor de mercado na data da entrega quando ele for menor que o valor atribuído, com aviso na Apuração.</li>
+<li><strong>Direito de subscrição recebido, na data do crédito</strong>: a tela Eventos propõe, pela movimentação da B3, o crédito do direito (custo zero), o exercício (pelo crédito do recibo) e a conversão do recibo em ação (pelo crédito das ações). Com o crédito lançado, os direitos recebidos e os comprados formam um custo médio só, como a norma pede. Sem ele, a venda do direito recebido continua com custo zero, e o COIR avisa quando havia direitos comprados. Direito e recibo que não estão nas tabelas têm o tipo reconhecido pelo final do código (1, 2, 9 e 10).</li>
+</ul>
+
+<h3 id="alterado">Alterado</h3>
+
+<ul>
+<li><strong>Nota na trilha do preço médio</strong>: a tela Carteira e preço médio explica que, em vendas do mesmo pregão que passam de zero, vale a ordem dos negócios da nota, e não o preço médio das vendas do dia que a corretora mostra. O cálculo não mudou; a soma dos resultados é a mesma.</li>
+<li><strong>Aviso do dividendo de BDR</strong>: o texto passa a explicar que é rendimento do exterior, que não é isento e que fica sujeito ao carnê-leão. O COIR continua sem calcular esse imposto.</li>
+<li><strong>IRRF de day trade e imposto de fundos imobiliários</strong>: o 1% retido em day trade deixa de abater o imposto de FII e Fiagro na DARF. A ficha de fundos imobiliários do programa da Receita não tem linha para esse IRRF, e a DARF ficava menor que o "a pagar" que o programa calcula. O 1% continua abatendo o imposto de operações comuns e de day trade; o que sobrar segue para os meses seguintes e, em dezembro, vira restituição. O imposto total do ano não muda, só a época. Um mês antigo com day trade de FII pode passar a mostrar DARF maior: confira a Apuração depois de atualizar. O parâmetro <code>irrf_day_trade_abate_fii</code> volta ao comportamento anterior.</li>
+<li><strong>IRRF de 0,005% em nota com opções e fundos imobiliários</strong>: a parte do IRRF que vai para a ficha de fundos imobiliários passa a considerar, nas opções, a soma dos prêmios recebidos e pagos no dia (IN RFB 1.585/2015 art. 63), e não o valor das vendas. Muda centavos entre as duas fichas; a DARF é a mesma.</li>
+<li><strong>Day trade entre corretoras antes de 28/07/2010</strong>: compra numa corretora e venda em outra no mesmo dia deixa de ser day trade também nesse período, como já era depois dele. Pela norma da época (IN SRF 25/2001 art. 31 §6º), a operação encerrada em outra instituição, com liquidação física, não era day trade. Só afeta meses já decaídos; pode mudar o prejuízo e o preço médio transportados de quem tem notas daquele tempo.</li>
+</ul>
+
+<h3 id="corrigido">Corrigido</h3>
+
+<ul>
+<li><strong>Direito de subscrição exercido</strong>: o custo pago pelo direito comprado em bolsa passa a entrar no custo das ações subscritas (antes ele se perdia, e a venda das ações pagava imposto a mais; o direito ficava para sempre na carteira). O direito usado sai sem resultado, o recibo de subscrição entra pelo valor pago mais o custo dos direitos e, quando as ações são creditadas, o recibo vira ação com o mesmo custo. O recibo vendido antes disso sai com o custo certo, e não mais com custo zero. As ações novas só entram no preço médio das antigas na data em que são creditadas.</li>
+<li><strong>Nome de pregão usado por dois códigos</strong>: quando o nome impresso na nota valia para mais de um código na data (dois BDR da mesma companhia, por exemplo), o COIR dizia só que o ativo não estava nas tabelas, e a nota não entrava. Agora ele acha o código pela planilha de negociação da B3 já importada (mesmo titular, dia, compra ou venda, quantidade e preço). Sem a planilha, a nota é recusada mostrando os códigos possíveis, e a tela Importar pergunta qual deles foi negociado, guarda a escolha para as notas da conta naquele pregão e importa a nota de novo. Uma nota já gravada não muda de código por uma escolha nova. O COIR continua sem escolher no palpite.</li>
+<li><strong>Venda de direito de subscrição com o preço no nome</strong>: a nota imprime o direito como "IRBBRASIL RE DO 6,93" ou "FII ... DM 86,50" (o número é o preço de subscrição), e o COIR dizia que o ativo não estava nas tabelas. Agora ele acha o direito daquela empresa ou fundo negociado na data (IRBR1, por exemplo). Se houver mais de um candidato e a letra da classe não decidir, a nota continua recusada, sem palpite.</li>
+<li><strong>Notas da Clear de 2018 a 2020 que eram recusadas</strong>: três formas do resumo financeiro passaram a ser lidas. A linha do I.R.R.F. com o seu D/C na coluna dos indicadores (a recusa dizia "6 rótulos para 6 valores soltos e 7 D/C"); a projeção do IRRF de day trade escrita com ponto decimal; e a taxa de transferência de ativos, que nessas notas fica fora do Total CBLC e é descontada no líquido (a recusa mostrava diferença de centavos no Total CBLC).</li>
+<li><strong>Valores em reais nos avisos no padrão brasileiro</strong>: alguns avisos mostravam "R$ 112626.22" em vez de "R$ 112.626,22". Valia para a obrigatoriedade da declaração e o IR mínimo (Declaração anual), o excedente da amortização de FI-Infra e FIP-IE, o rendimento de Fiagro antes da isenção, os dividendos perto do limite da Lei 15.270/2025, a diferença de centavos ao importar a nota e o dinheiro do resgate de ações. Os valores não mudam, só a forma de escrever.</li>
+</ul>
+
+<h2 id="311-2026-11-12">[3.1.1] - 2026-11-12</h2>
+
+<h3 id="adicionado-2">Adicionado</h3>
 
 <ul>
 <li><strong>Rótulos das notas escritos de outro jeito</strong>: o COIR passa a reconhecer os rótulos da nota em outras grafias, o que ajuda a ler notas de corretoras que ele ainda não conhece. Valem, por exemplo, "Data do pregão", "Data pregao", "D. pregão", "Dt pregão" e "Datapregão"; "Nº da nota" e "Número da nota"; "Fl."; "Cód. cliente"; e "Tx. liquidação". Também valem acentos e maiúsculas trocados, palavras coladas ou separadas e o rótulo quebrado em duas linhas. As formas aceitas ficam reunidas num só arquivo (<code>coir/parsing/rotulos.yaml</code>). Nenhuma delas casa com outro campo: "Data liquidação" não vira data do pregão, e "Taxas BM&amp;F (emol+f.gar)" não vira emolumentos. As notas que o COIR já lia saem iguais.</li>
@@ -82,7 +115,7 @@ conferência de privacidade, e abre o e-mail; você anexa e envia.</li>
 Os links estão no alto da tela <strong>Suporte</strong>, no rodapé do site e no manual.</li>
 </ul>
 
-<h3 id="alterado">Alterado</h3>
+<h3 id="alterado-2">Alterado</h3>
 
 <ul>
 <li><strong>Limite de isenção de R$ 20 mil</strong>: a venda de ações em day trade passa a entrar na soma das vendas do mês, como já entravam a venda por exercício de opção e a do termo (Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I). O ganho do day trade continua sem isenção. Num mês em que só o day trade leva a soma acima de R$ 20 mil, o lucro das vendas comuns passa a ser tributado, e a apuração avisa. A memória de cálculo mostra a soma e as duas parcelas (operações comuns e day trade). É critério do COIR (a lei soma "o valor das alienações"; nenhuma norma diz expressamente se o day trade entra), com o parâmetro <code>day_trade_na_soma_limite</code>, e vale para todos os meses: um mês antigo tratado como isento pode passar a ter imposto e aparecer como DARF em atraso; confira a Apuração depois de atualizar.</li>
@@ -94,7 +127,7 @@ Os links estão no alto da tela <strong>Suporte</strong>, no rodapé do site e n
 <li><strong>Manual:</strong> imagens de todas as telas refeitas com a versão atual, e as páginas de Eventos, Apuração, Carteira, Importar e Configurações descrevem o que entrou nesta versão (avisos e propostas da aba A conferir, soma do limite com o day trade, resultado por ativo, termo em aberto, corretora sem perfil, licença e o botão <strong>Como faço?</strong>).</li>
 </ul>
 
-<h3 id="corrigido">Corrigido</h3>
+<h3 id="corrigido-2">Corrigido</h3>
 
 <ul>
 <li><strong>Avisos de licença de terceiros completos no pacote</strong>: o <code>AVISOS-DE-TERCEIROS.txt</code> trazia só nome e licença das bibliotecas, incluía ferramentas de desenvolvimento que não vão no .zip e deixava de fora o que não é pacote Python. Agora traz o texto integral de cada licença, com os avisos de copyright, de tudo o que vai no .zip e só disso: bibliotecas Python, o próprio Python e as bibliotecas que ele incorpora (OpenSSL, SQLite, zlib...), o runtime da Microsoft, o carregador do PyInstaller, o WebView2, os JavaScript e as fontes da interface (Vue, Quasar, AG Grid, ECharts, Material Icons, Roboto...). A montagem do pacote falha se algum arquivo ficar sem licença declarada.</li>
@@ -156,7 +189,7 @@ arquivo rejeitado pode não ter titular conhecido.</li>
 
 <h2 id="310-2026-11-04">[3.1.0] - 2026-11-04</h2>
 
-<h3 id="adicionado-2">Adicionado</h3>
+<h3 id="adicionado-3">Adicionado</h3>
 
 <ul>
 <li><p><strong>Tela Suporte</strong>, para mandar uma nota que o COIR não lê ou lê errado (uma corretora nova,
@@ -195,7 +228,7 @@ ano do item (a DARF em atraso mais antiga, o ano mais recente com aviso). O cart
 Painel mostra a mesma lista.</li>
 </ul>
 
-<h3 id="corrigido-2">Corrigido</h3>
+<h3 id="corrigido-3">Corrigido</h3>
 
 <ul>
 <li><strong>Notas da Clear de 2026 recusadas</strong> com "página sem perfil de corretora conhecido": o
@@ -235,7 +268,7 @@ vez: um evento só é recusado se criar pendência nova.</li>
 
 <h2 id="301-2026-10-27">[3.0.1] - 2026-10-27</h2>
 
-<h3 id="corrigido-3">Corrigido</h3>
+<h3 id="corrigido-4">Corrigido</h3>
 
 <ul>
 <li><strong>A janela não abria</strong> depois de extrair o <code>.zip</code> baixado: o Windows marca cada arquivo
@@ -245,7 +278,7 @@ DLLs ao abrir. Na 3.0.0, o contorno é desbloquear o <code>.zip</code> (Propried
 de extrair.</li>
 </ul>
 
-<h3 id="adicionado-3">Adicionado</h3>
+<h3 id="adicionado-4">Adicionado</h3>
 
 <ul>
 <li>Página do manual <strong>Se o COIR não abrir</strong>: aviso do Windows, antivírus que põe o programa em
@@ -302,7 +335,7 @@ da v2 (todas são correções da v2):
   vencimento.
 - <strong>IRRF até R$ 1,00</strong> (dispensado, não retido) não vira crédito.</p>
 
-<h3 id="adicionado-4">Adicionado</h3>
+<h3 id="adicionado-5">Adicionado</h3>
 
 <ul>
 <li>Licença da v3: AGPL-3.0-or-later (a v2 em <code>legacy/</code> continua MIT).</li>
@@ -319,7 +352,7 @@ da v2 (todas são correções da v2):
 
 <p>Os resultados foram comparados com os da versão 2.1.1 em todas as notas de teste (XP, BTG e Rico), valor por valor, e no Excel em uma amostra de notas de todos os anos e corretoras.</p>
 
-<h3 id="corrigido-4">Corrigido</h3>
+<h3 id="corrigido-5">Corrigido</h3>
 
 <ul>
 <li>Preenchimento de células vazias com <code>fillna(..., inplace=True)</code> em uma coluna trocado por atribuição. No pandas 3 a forma antiga não altera nada e os valores vazios das taxas continuariam vazios. (@tommmdl)</li>
@@ -329,7 +362,7 @@ da v2 (todas são correções da v2):
 <li>Python 3.15 usa UTF-8 por padrão; a saída do <code>taskkill</code> (usado para fechar o Excel) é lida agora com tolerância a caracteres inválidos, em vez de interromper a gravação no Excel.</li>
 </ul>
 
-<h3 id="alterado-2">Alterado</h3>
+<h3 id="alterado-3">Alterado</h3>
 
 <ul>
 <li>Python mínimo: 3.12 (exigido pelo numpy 2.5). Pacote para Windows com Python 3.15.</li>
@@ -341,13 +374,13 @@ da v2 (todas são correções da v2):
 
 <p>Correção de instalação: uma instalação nova da 2.1.0 falhava por incompatibilidade de bibliotecas. Nenhuma alteração no código do programa.</p>
 
-<h3 id="corrigido-5">Corrigido</h3>
+<h3 id="corrigido-6">Corrigido</h3>
 
 <ul>
 <li><code>requirements.txt</code> fixa <code>numpy==1.23.5</code> e <code>setuptools==69.5.1</code>. Sem isso o pip instalava o numpy 2.x, incompatível com o pandas 1.3.3, e o setuptools 81 ou superior, que não traz o <code>pkg_resources</code> usado pelo tabula-py 2.3.0.</li>
 </ul>
 
-<h3 id="alterado-3">Alterado</h3>
+<h3 id="alterado-4">Alterado</h3>
 
 <ul>
 <li>O pacote para Windows passa a levar o <strong>Python 3.9.7 e o Java 17 (Temurin) embutidos</strong>. Não é preciso instalar Python, bibliotecas nem Java: basta extrair o <code>.zip</code> e dar dois cliques em <code>COIR.bat</code>.</li>
@@ -361,7 +394,7 @@ da v2 (todas são correções da v2):
 
 <p>Primeira versão do repositório reorganizado. O histórico anterior foi reiniciado (veja "Removido").</p>
 
-<h3 id="alterado-4">Alterado</h3>
+<h3 id="alterado-5">Alterado</h3>
 
 <ul>
 <li>Pastas reorganizadas: código em <code>coir/</code> (antes <code>Utils/</code>), planilha-modelo em <code>modelos/</code>, tabelas auxiliares em <code>dados/</code> (antes <code>Utils/Tickets/</code>) e capturas de tela em <code>docs/imagens/</code> (antes <code>Utils/Screenshots/</code>).</li>
@@ -371,7 +404,7 @@ da v2 (todas são correções da v2):
 <li><code>requirements.txt</code> convertido para UTF-8 (as versões das bibliotecas não foram alteradas).</li>
 </ul>
 
-<h3 id="adicionado-5">Adicionado</h3>
+<h3 id="adicionado-6">Adicionado</h3>
 
 <ul>
 <li>Leitura da conta do cliente por nota, quando um mesmo PDF reúne notas de contas diferentes.</li>
