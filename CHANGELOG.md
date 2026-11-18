@@ -8,7 +8,7 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
-## [Não lançado]
+## [3.1.3] - 2026-11-18
 
 ### Adicionado
 - **Dados abertos da CVM no pacote de referências**: duas tabelas novas vêm da CVM. Uma tem os códigos de negociação das companhias, com o CNPJ e a razão social do formulário cadastral. A outra tem as cotas de FII e Fiagro negociadas em bolsa, pelos informes mensais. Elas completam o CNPJ do Bens e Direitos e o tipo FII ou unit onde as tabelas da bolsa não dizem. Também dão o ticker de eventos de ativos que já saíram da bolsa, quando o ISIN não está em nenhuma tabela.
@@ -357,6 +357,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.1.3]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.3
 [3.1.2]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.2
 [3.1.1]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.1
 [3.1.0]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.0
