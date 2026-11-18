@@ -8,6 +8,18 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+- **Dados abertos da CVM no pacote de referências**: duas tabelas novas vêm da CVM. Uma tem os códigos de negociação das companhias, com o CNPJ e a razão social do formulário cadastral. A outra tem as cotas de FII e Fiagro negociadas em bolsa, pelos informes mensais. Elas completam o CNPJ do Bens e Direitos e o tipo FII ou unit onde as tabelas da bolsa não dizem. Também dão o ticker de eventos de ativos que já saíram da bolsa, quando o ISIN não está em nenhuma tabela.
+- **Escolha das fontes de dados**: a chave `fontes.b3` do arquivo de configuração (`config.json`) desliga as tabelas da bolsa (`"desligada"`). Assim, o COIR usa só a curadoria do projeto e os dados abertos da CVM e do Banco Central. As telas Eventos e Proventos dizem o que fica sem cobertura. O padrão (`"pacote"`) não muda nada.
+
+### Alterado
+- **Pacote de referências no formato 3**: cada origem tem os seus arquivos. Os eventos ficam em `eventos_cvm.csv` e `eventos_b3.csv`, e a tabela de saídas passa a se chamar `saidas.csv`. O `pacote.json` lista as fontes e as licenças. O COIR aceita pacotes dos formatos 2 e 3, com o mesmo resultado.
+
+### Corrigido
+- **CNPJ de ticker antigo no Bens e Direitos**: quando o código de um ativo antigo passou depois para outra empresa, a declaração saía com o CNPJ da empresa nova. Era o caso de EMBR3 (saía o CNPJ da Embrast, não o da Embraer), JBSS3, TRPL3 e TRPL4 (que ainda saíam como FII) e ENAT3. TUPY3 saía com o CNPJ de uma filial. Agora vale o CNPJ da companhia que declarou o ticker à CVM. Confira a declaração de quem teve esses ativos.
+
 ## [3.1.2] - 2026-11-17
 
 ### Adicionado

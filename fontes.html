@@ -315,8 +315,9 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 <h2 id="fontes-dos-dados-publicos-pacote-de-referencias">Fontes dos dados públicos (pacote de referências)</h2>
 
 <p>As tabelas geradas em <code>data/</code> (o pacote que vai no zip do programa e no release
-<code>referencias-AAAA.MM.DD</code>) vêm só de fontes públicas, sem login. Cada linha de
-<code>data/eventos_b3.csv</code> diz de onde veio (coluna <code>origem</code>, e <code>referencia</code> com o documento).</p>
+<code>referencias-AAAA.MM.DD</code>) vêm só de fontes públicas, sem login. Os eventos ficam num arquivo por
+fonte (<code>data/eventos_cvm.csv</code> e <code>data/eventos_b3.csv</code>), e cada linha diz de onde veio (coluna
+<code>origem</code>, e <code>referencia</code> com o documento).</p>
 
 <table>
 <thead>
@@ -373,8 +374,20 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 <tr>
   <td>CVM, cadastro de companhias abertas</td>
   <td><code>https://dados.cvm.gov.br/dados/CIA_ABERTA/CAD/DADOS/cad_cia_aberta.csv</code></td>
-  <td>CNPJ, nome e data do cancelamento do registro. Liga ao FRE e ao IPE a companhia que saiu da bolsa antes de 2018 (o FCA não tem o código dela).</td>
-  <td><code>tools/referencias/emissores_antigos.csv</code> (curado, com a fonte)</td>
+  <td>CNPJ, nome e data do cancelamento do registro. Liga ao FRE e ao IPE a companhia que saiu da bolsa antes de 2018 (o FCA não tem o código dela) e dá a razão social dos códigos do FCA.</td>
+  <td><code>tools/referencias/emissores_antigos.csv</code> (curado, com a fonte) e <code>valores_mobiliarios_cvm.csv</code></td>
+</tr>
+<tr>
+  <td>CVM, FCA, tabela <code>valor_mobiliario</code></td>
+  <td><code>https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FCA/DADOS/fca_cia_aberta_AAAA.zip</code> (2018 em diante)</td>
+  <td>Código de negociação de cada ação e unit em bolsa, com o CNPJ da companhia e a espécie.</td>
+  <td><code>python -m tools.referencias cvm</code> → <code>valores_mobiliarios_cvm.csv</code></td>
+</tr>
+<tr>
+  <td>CVM, informe mensal de FII (tabela <code>geral</code>) e de Fiagro</td>
+  <td><code>https://dados.cvm.gov.br/dados/FII/DOC/INF_MENSAL/DADOS/inf_mensal_fii_AAAA.zip</code> (2016 em diante) e <code>https://dados.cvm.gov.br/dados/FIAGRO/DOC/INF_MENSAL/DADOS/inf_mensal_fiagro_AAAAMM.zip</code> (últimos doze meses)</td>
+  <td>CNPJ, nome e ISIN da cota de cada fundo negociado em bolsa. O ISIN é declarado pelo fundo: o que dois fundos declararam fica de fora.</td>
+  <td><code>python -m tools.referencias cvm</code> → <code>fundos_cvm.csv</code></td>
 </tr>
 <tr>
   <td>Banco Central, série 4390 (Selic mensal)</td>
@@ -412,7 +425,7 @@ revisão e o tipo certo sai do aviso aos acionistas;</li>
 publica; quando a B3 só guardou uma delas, a outra vem do documento (BEES 2012). O par que se
 anula (100 para 1 e 1 para 100) não entra em proposta nem em controle nenhum, porque a quantidade
 não muda: o de ITUB 2011 saiu do pacote pela lista de exclusões, e os demais (BBDC 2009, MERC
-2023, TIMS 2025...) o COIR descarta ao ler o pacote (<code>coir/referencias.eventos_b3</code>), sem
+2023, TIMS 2025...) o COIR descarta ao ler o pacote (<code>coir/fontes.eventos</code>), sem
 depender da lista;</li>
 <li>a unit entra com o fator das ações só quando todas as espécies tiveram o mesmo fator e a mesma
 data com e a cotação da unit confirma; o custo atribuído da unit é o da ação vezes a composição
@@ -455,7 +468,7 @@ tabela não representa a volta, e as séries de cotação se misturariam;</li>
 novo: o evento do FRE (que é por CNPJ) de antes da troca entra no ISIN antigo, e o que tem a data
 ex no dia da troca (LLIS3 -> VSTE3 com grupamento 8:1 em 09/02/2023) entra no ISIN que vale na
 data ex. Sem isso o evento se perdia, porque o ISIN antigo não tem o código do emissor atual;</li>
-<li>o app (<code>coir/referencias.tickers_por_isin</code>) leva o ISIN antigo ao ticker da época
+<li>o app (<code>coir/fontes.tickers_por_isin</code>) leva o ISIN antigo ao ticker da época
 (<code>BRKROTACNOR9</code> -> KROT3), que o cadastro de instrumentos de hoje não tem, e a troca liga os dois
 tickers ao mesmo ativo.</li>
 </ul>
@@ -503,6 +516,18 @@ na pasta de <code>COIR_CACHE_B3</code>) exige que tudo isso saia vazio.</li>
 <p>Restituição de capital em dinheiro: a aba de proventos da B3 (<code>REST CAP DIN</code>) traz só as
 companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020, Tarpon 2019, GTD
 2013...) fica registrada em <code>sem_evento.csv</code> como redução de capital, sem proposta no app.</p>
+
+<p>Fontes por origem e a chave <code>fontes.b3</code> (decisão em <code>docs/adr/0005-fontes-por-origem.md</code>):</p>
+
+<ul>
+<li>cada origem tem os seus arquivos, e <code>data/procedencia.csv</code> diz a categoria e a licença de cada
+um; o app junta as origens por conceito (eventos, emissores, tipos de ativo);</li>
+<li><code>"fontes.b3": "desligada"</code> no <code>config.json</code> faz o app usar só a curadoria e os dados abertos da
+CVM e do Banco Central, sem abrir as tabelas da bolsa. Fica sem cobertura o que só a bolsa
+dá: nome de pregão de ativo fora de <code>ativos.csv</code>, eventos que só a bolsa lista, proventos em
+dinheiro, restituição de capital, o aviso de ativo que parou de negociar e o tipo de ETF, BDR,
+FIP, FIDC e FI-Infra que não estiver em <code>tipos_ativo.csv</code>.</li>
+</ul>
 
 <p>Licenças e atribuição (<code>data/LICENCA_DADOS.md</code> acompanha as tabelas):</p>
 

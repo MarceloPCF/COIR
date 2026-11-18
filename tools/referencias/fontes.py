@@ -18,6 +18,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, cast
 
+from tools.referencias import cvm
 from tools.referencias import historico as hist
 from tools.referencias.gerar import (
     Coleta,
@@ -45,6 +46,12 @@ B3_COTAHIST = "https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_A{ano}.
 ANOS_FRE = range(2010, 2024)  # o FRE de 2024 em diante não tem mais a tabela de desdobramentos
 CVM_FCA = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FCA/DADOS/fca_cia_aberta_{ano}.zip"
 FCA_DESDE = 2018  # o FCA traz o código de negociação de 2018 em diante
+CVM_CADASTRO = "https://dados.cvm.gov.br/dados/CIA_ABERTA/CAD/DADOS/cad_cia_aberta.csv"
+CVM_FII = "https://dados.cvm.gov.br/dados/FII/DOC/INF_MENSAL/DADOS/inf_mensal_fii_{ano}.zip"
+FII_DESDE = 2016  # primeiro informe mensal de FII nos dados abertos
+CVM_FIAGRO = ("https://dados.cvm.gov.br/dados/FIAGRO/DOC/INF_MENSAL/DADOS/"
+              "inf_mensal_fiagro_{mes}.zip")  # fmt: skip
+MESES_FIAGRO = 13  # a CVM mantém só os últimos doze meses (o do mês corrente pode faltar)
 NOMES_DESDE = 2008  # primeiro ano com notas
 Baixar = Callable[[str], bytes]
 
@@ -351,3 +358,31 @@ def historico_eventos(emissor_por_cnpj: Mapping[str, str], ate: date, cache: Pat
     log.info("companhias fora do cadastro de hoje, pelo FCA: %d", len(fora))
     eventos, revisao = hist.eventos_fre(linhas, {**emissor_por_cnpj, **fora}, series, pregoes)
     return eventos, revisao, series, sorted(pregoes)
+
+
+def cadastros_cvm(ate: date, cache: Path | None = None, obter: Baixar = baixar,
+                  ) -> tuple[list[dict[str, str]], list[dict[str, str]], set[str],
+                             list[str]]:  # fmt: skip
+    """Códigos de negociação das companhias (FCA de 2018 até ``ate``, com a razão social do
+    cadastro de companhias abertas), cotas de FII e Fiagro em bolsa (informes mensais) e os ISIN
+    que mais de um fundo declarou (ficam de fora). O
+    cadastro e o ano corrente mudam: só os anos fechados vão para o ``cache``. Mês de Fiagro sem
+    arquivo vai para a lista de faltas (o informe do mês ainda não saiu)."""
+
+    def anual(url: str, ano: int) -> bytes:
+        return _em_cache(url, cache if ano < ate.year else None, obter)
+
+    razoes = cvm.razoes_sociais(obter(CVM_CADASTRO))
+    valores = cvm.ler_valores((anual(CVM_FCA.format(ano=a), a)
+                               for a in range(FCA_DESDE, ate.year + 1)), razoes)  # fmt: skip
+    fiagro: list[bytes] = []
+    faltas: list[str] = []
+    for n in range(MESES_FIAGRO):
+        ano, mes = divmod(ate.year * 12 + ate.month - 1 - n, 12)
+        try:
+            fiagro.append(obter(CVM_FIAGRO.format(mes=f"{ano}{mes + 1:02d}")))
+        except GeracaoError:
+            faltas.append(f"informe de Fiagro de {mes + 1:02d}/{ano}")
+    anos_fii = range(FII_DESDE, ate.year + 1)
+    fundos, ambiguos = cvm.ler_fundos((anual(CVM_FII.format(ano=a), a) for a in anos_fii), fiagro)
+    return valores, fundos, ambiguos, faltas

@@ -14,9 +14,13 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
   e FIP-IE, só pela lista de fundos da B3, viram FUNDO_INFRA; FIP comum e FIDC, também só pela
   lista, viram FIP e FIDC (fora dela ficam sem tipo: sem palpite, o motor isola o ativo);
 - ``opcoes_raiz_b3.csv``: raiz de 4 letras -> ativo-objeto (só raiz com um objeto só);
-- ``eventos_b3.csv``: desdobramentos, grupamentos, bonificações, cisões e subscrições (nunca apaga),
-  com a origem de cada linha (``b3``, ``cvm_fre``, ``cvm_ipe``; ``b3+cvm_fre`` quando as duas
-  concordam); divergência entre fontes não entra e vai para o resumo do PR (``historico.py``);
+- ``eventos_cvm.csv`` e ``eventos_b3.csv``: desdobramentos, grupamentos, bonificações, cisões e
+  subscrições (nunca apaga), cada arquivo com as linhas da sua fonte (``cvm_fre``, ``cvm_ipe``;
+  ``b3``). O evento que as duas trazem aparece nos dois, cada um com a sua origem; o documento
+  (``referencia``), o custo atribuído e ``conferido_cotahist`` (data com fixada pela cotação: a
+  do FRE sempre; a do aviso, quando ele não a informa) ficam do lado da CVM. A junção
+  (``ler_eventos_pacote``) soma as origens; divergência entre fontes não entra e vai para o
+  resumo do PR (``historico.py``);
 - ``selic_mensal.csv``: série 4390 do BCB, só meses encerrados;
 - ``proventos_b3.csv``: proventos em dinheiro (dividendo, JCP, rendimento) com data de aprovação,
   data com, pagamento e valor por ação (o crédito do JCP; a B3 só lista os últimos meses, nunca
@@ -27,7 +31,7 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
   nunca apaga;
 - ``emissores_b3.csv``: CNPJ e razão social de cada emissor (companhias e fundos FII, Fiagro e ETF),
   para o Bens e Direitos do IRPF (histórico: o CNPJ de um fundo pode mudar; nunca apaga linha);
-- ``pacote.json``: formato e data do pacote.
+- ``pacote.json``: formato, data e os arquivos por fonte, com a licença (``procedencia.csv``).
 """
 
 from __future__ import annotations
@@ -46,7 +50,9 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-FORMATO = 2  # esquema dos arquivos de data/; o app só aceita pacote do mesmo formato
+FORMATO = 3  # esquema dos arquivos de data/; o app só aceita pacote de formato que conhece
+# formato 3: eventos divididos por origem (eventos_cvm.csv e eventos_b3.csv), saidas.csv e a lista
+# de arquivos por fonte e licença em pacote.json
 CAIXA = "CASH"
 CATEGORIAS = {"SHARES", "UNIT", "BDR", "FUNDS", "ETF EQUITIES", "ETF FOREIGN INDEX"}
 # ETF de renda fixa: a B3 os publica fora do segmento à vista, sem especificação nem razão social
@@ -97,6 +103,10 @@ HISTORICO_DESDE = "2016-01-01"  # data com mais antiga guardada (dez anos antes 
 COLUNAS_EVENTOS = ("emissor", "isin", "tipo", "fator", "data_com", "aprovado_em", "isin_emitido",
                    "preco", "periodo", "data_subscricao", "origem", "referencia",
                    "custo_atribuido")  # fmt: skip
+COLUNAS_EVENTOS_CVM = (*COLUNAS_EVENTOS, "conferido_cotahist")
+EVENTOS_CVM = "eventos_cvm.csv"
+EVENTOS_B3 = "eventos_b3.csv"
+PROCEDENCIA = "procedencia.csv"
 TIPOS_COM_FATOR = ("DESDOBRAMENTO", "GRUPAMENTO", "BONIFICACAO")  # comparáveis entre fontes
 MESMO_EVENTO = timedelta(days=30)  # mesma espécie, tipo e fator, data com tão perto: mesmo evento
 
@@ -895,8 +905,8 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
         "instrumentos_b3.csv": texto_csv(COLUNAS_INSTRUMENTOS, historico),
         "ativos_b3.csv": texto_csv(("nome_pregao", "ticker"), ativos(historico, nomes, resumo)),
         "opcoes_raiz_b3.csv": texto_csv(("raiz", "ticker"), opcoes_raiz(opcoes, resumo)),
-        "eventos_b3.csv": texto_csv(COLUNAS_EVENTOS, juntar_eventos(
-            ler_csv(pasta / "eventos_b3.csv"), eventos, resumo, excluidos)),
+        **arquivos_eventos(juntar_eventos(ler_eventos_pacote(pasta), eventos, resumo,
+                                          excluidos)),
         "selic_mensal.csv": texto_csv(("mes", "taxa"), juntar_selic(
             ler_csv(pasta / "selic_mensal.csv"), ler_selic(coleta.selic, coleta.data), resumo)),
         "proventos_b3.csv": texto_csv(COLUNAS_PROVENTOS, juntar_proventos(
@@ -922,9 +932,98 @@ def _gerar(pasta: Path, coleta: Coleta) -> tuple[dict[str, str], Resumo]:
         arquivos["trocas_ticker.csv"] = texto_csv(COLUNAS_TROCAS, juntar_trocas(
             ler_csv(pasta / "trocas_ticker.csv"), resumo.trocas_candidatas, historico,
             nomes))  # fmt: skip
-    arquivos["pacote.json"] = json.dumps({"formato": FORMATO, "data": coleta.data.isoformat()},
-                                         indent=1) + "\n"  # fmt: skip
+    arquivos["pacote.json"] = pacote_json(pasta, coleta.data)
     return arquivos, resumo
+
+
+def pacote_json(pasta: Path, data: date) -> str:
+    """Formato, data e, pelo manifesto de procedência, os arquivos de cada fonte com a licença."""
+    fontes: dict[str, dict[str, Any]] = {}
+    for r in ler_csv(pasta / PROCEDENCIA):
+        item = fontes.setdefault(r["categoria"], {"licenca": r["licenca"], "arquivos": []})
+        if item["licenca"] != r["licenca"]:
+            raise GeracaoError(f"{PROCEDENCIA}: fonte {r['categoria']} com duas licenças")
+        item["arquivos"].append(r["arquivo"])
+    info: dict[str, Any] = {"formato": FORMATO, "data": data.isoformat()}
+    if fontes:
+        info["fontes"] = {c: {"licenca": f["licenca"], "arquivos": sorted(f["arquivos"])}
+                          for c, f in sorted(fontes.items())}  # fmt: skip
+    return json.dumps(info, indent=1, ensure_ascii=False) + "\n"
+
+
+def data_do_pacote(pasta: Path) -> date:
+    """A data gravada em ``pacote.json``."""
+    info = json.loads((pasta / "pacote.json").read_text(encoding="utf-8"))
+    return date.fromisoformat(info["data"])
+
+
+def _chave_evento(r: Mapping[str, str]) -> tuple[str, ...]:
+    return tuple(r[c] for c in COLUNAS_CHAVE)
+
+
+def _ordem_evento(k: tuple[str, ...]) -> tuple[str, ...]:
+    return (k[2], k[0], k[1], k[3], k[4])  # data com, ISIN, tipo, ISIN emitido, fator
+
+
+def ler_eventos_pacote(pasta: Path) -> list[dict[str, str]]:
+    """Os eventos do pacote numa linha por evento, com as origens somadas: ``eventos_cvm.csv`` e
+    ``eventos_b3.csv`` (formato 3) ou só ``eventos_b3.csv`` com as origens juntas (formato 2)."""
+    return juntar_divididos(ler_csv(pasta / EVENTOS_CVM), ler_csv(pasta / EVENTOS_B3))
+
+
+def eventos_dos_arquivos(arquivos: Mapping[str, str]) -> list[dict[str, str]]:
+    """Os eventos numa linha por evento a partir dos textos gerados (antes de gravar)."""
+    return juntar_divididos(*(list(csv.DictReader(io.StringIO(arquivos.get(n, ""))))
+                              for n in (EVENTOS_CVM, EVENTOS_B3)))  # fmt: skip
+
+
+def juntar_divididos(cvm: Iterable[Mapping[str, str]], b3: Iterable[Mapping[str, str]]
+                     ) -> list[dict[str, str]]:  # fmt: skip
+    """O inverso de ``dividir_eventos``: uma linha por evento, origens e documentos somados."""
+    todos: dict[tuple[str, ...], dict[str, str]] = {}
+    for r in [*cvm, *b3]:
+        linha = {c: r.get(c, "") for c in COLUNAS_EVENTOS}
+        linha["origem"] = linha["origem"] or "b3"
+        atual = todos.get(_chave_evento(linha))
+        if atual is None:
+            todos[_chave_evento(linha)] = linha
+            continue
+        _somar_origem(atual, linha)
+        atual["custo_atribuido"] = atual["custo_atribuido"] or linha["custo_atribuido"]
+    return [todos[k] for k in sorted(todos, key=_ordem_evento)]
+
+
+PELA_COTACAO = "data com pela cotação"  # na referência do aviso que não informa a data com
+
+
+def _pela_cotacao(origens: Collection[str], r: Mapping[str, str]) -> bool:
+    """A data com veio da cotação: a do FRE sempre (o formulário só traz o ano); a do aviso, quando
+    a referência diz que ele não a informa."""
+    return "cvm_fre" in origens or PELA_COTACAO in r.get("referencia", "")
+
+
+def dividir_eventos(linhas: Iterable[Mapping[str, str]]
+                    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:  # fmt: skip
+    """(linhas da CVM, linhas da bolsa). O documento, o custo atribuído e a marca da data com
+    conferida pela cotação ficam do lado da CVM; a linha só da bolsa fica como está."""
+    cvm: list[dict[str, str]] = []
+    b3: list[dict[str, str]] = []
+    for r in linhas:
+        partes = set((r.get("origem") or "b3").split("+"))
+        da_cvm = sorted(p for p in partes if p.startswith("cvm_"))
+        if da_cvm:
+            conferido = "sim" if _pela_cotacao(da_cvm, r) else "nao"
+            cvm.append({**r, "origem": "+".join(da_cvm), "conferido_cotahist": conferido})
+        if "b3" in partes:
+            so_da_bolsa = {"referencia": "", "custo_atribuido": ""} if da_cvm else {}
+            b3.append({**r, "origem": "b3", **so_da_bolsa})
+    return cvm, b3
+
+
+def arquivos_eventos(linhas: Iterable[Mapping[str, str]]) -> dict[str, str]:
+    cvm, b3 = dividir_eventos(linhas)
+    return {EVENTOS_CVM: texto_csv(COLUNAS_EVENTOS_CVM, cvm),
+            EVENTOS_B3: texto_csv(COLUNAS_EVENTOS, b3)}  # fmt: skip
 
 
 CURADOS = Path(__file__).with_name("eventos_cvm_ipe.csv")
@@ -973,16 +1072,12 @@ def sem_evento(caminho: Path = SEM_EVENTO) -> set[tuple[str, str, str]]:
 
 def incorporar_eventos(pasta: Path, novos: Iterable[EventoB3],
                        data: date) -> tuple[dict[str, str], Resumo]:  # fmt: skip
-    """``eventos_b3.csv`` com os eventos do histórico (FRE + COTAHIST) e os curados, e o resumo
-    (novos e divergências). O ``pacote.json`` leva a data, se o arquivo mudou."""
+    """Os arquivos de eventos com os do histórico (FRE + COTAHIST) e os curados, e o resumo
+    (novos e divergências). O ``pacote.json`` leva a data, se algum arquivo mudou."""
     resumo = Resumo()
-    texto = texto_csv(COLUNAS_EVENTOS, juntar_eventos(
-        ler_csv(pasta / "eventos_b3.csv"), [*novos, *eventos_curados()], resumo,
-        eventos_excluidos()))  # fmt: skip
-    arquivos = {"eventos_b3.csv": texto,
-                "pacote.json": json.dumps({"formato": FORMATO, "data": data.isoformat()},
-                                          indent=1) + "\n"}  # fmt: skip
-    return arquivos, resumo
+    linhas = juntar_eventos(ler_eventos_pacote(pasta), [*novos, *eventos_curados()], resumo,
+                            eventos_excluidos())  # fmt: skip
+    return {**arquivos_eventos(linhas), "pacote.json": pacote_json(pasta, data)}, resumo
 
 
 def houve_pregao(dia: date, feriados: Iterable[Mapping[str, str]]) -> bool:

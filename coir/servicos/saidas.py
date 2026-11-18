@@ -2,7 +2,7 @@
 troca, OPA, cisão). Vale para qualquer cliente e para o que acontecer amanhã: a rede pega o caso que
 a tabela de trocas ainda não tem, como foi o de PETZ3 -> AUAU3.
 
-Só avisa e, se souber, diz o que houve (``data/saidas_b3.csv``); o custo e a quantidade só mudam
+Só avisa e, se souber, diz o que houve (``data/saidas.csv``); o custo e a quantidade só mudam
 quando o usuário lança o evento, conferido com as notas dele.
 """
 
@@ -12,7 +12,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-from coir import referencias
+from coir import fontes
 from coir.domain.fiscal import PosicaoAtivo, TipoAtivo
 
 # ativo com pouca liquidez fica semanas sem negócio: abaixo disso não dá para dizer que saiu
@@ -70,12 +70,12 @@ def ativos_que_sairam(
     """Posições abertas do titular em ativo sem negócio há mais de ``DIAS_SEM_NEGOCIO``, contados
     da última data do pacote de referências (não do relógio: sem pacote novo, nada muda). Ativo
     que a tabela já diz que saiu avisa sem esperar esse prazo."""
-    ultimos = referencias.ultimos_negocios(pasta)
+    ultimos = fontes.ultimos_negocios(pasta)
     if not ultimos:
         return []
     pacote = max(ultimos.values())
     corte = pacote - DIAS_SEM_NEGOCIO
-    conhecidas = referencias.saidas_b3(pasta)
+    conhecidas = fontes.saidas(pasta)
     quantidades: dict[str, Decimal] = {}
     for p in carteira:
         if p.titular == titular and p.quantidade > 0 and p.tipo in TIPOS_VISTA:

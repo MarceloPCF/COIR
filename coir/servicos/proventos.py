@@ -15,7 +15,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from coir import referencias
+from coir import fontes, referencias
 from coir.db.modelos import (
     Conta,
     CreditoJcp,
@@ -75,9 +75,9 @@ def linhas_banco(banco: Path, titular: int | None = None) -> list[LinhaB3]:
 
 
 def creditos_b3(
-    linhas: Iterable[LinhaB3], publicos: Iterable[Mapping[str, str]],
+    linhas: Iterable[LinhaB3], publicos: Iterable[fontes.Provento],
     emissor_de: Mapping[str, str], avisos: list[str] | None = None,
-    historico: Iterable[Mapping[str, str]] = (), classe_de: Mapping[str, str] | None = None,
+    historico: Iterable[fontes.ProventoHistorico] = (), classe_de: Mapping[str, str] | None = None,
 ) -> list[LinhaB3]:  # fmt: skip
     """Completa a data do crédito dos JCP sem correção do usuário pela B3. O crédito é a mais tarde
     entre a aprovação e a data com: antes da data com o acionista não está definido e não há
@@ -91,25 +91,25 @@ def creditos_b3(
     pelo usuário antes da data com da B3 vale, com aviso (o informe da companhia prevalece)."""
     por_pagamento: dict[tuple[str, date], list[tuple[Decimal, date, date | None]]] = {}
     for r in publicos:
-        if r["tipo"] == JCP_B3 and r["pagamento"]:
-            pagamento, aprovado = date.fromisoformat(r["pagamento"]), date.fromisoformat(
-                r["aprovado_em"])  # fmt: skip
-            data_com = date.fromisoformat(r["data_com"]) if r.get("data_com") else None
+        if r.tipo == JCP_B3 and r.pagamento:
+            pagamento, aprovado = date.fromisoformat(r.pagamento), date.fromisoformat(
+                r.aprovado_em)  # fmt: skip
+            data_com = date.fromisoformat(r.data_com) if r.data_com else None
             credito = max(aprovado, data_com or aprovado)
             if credito > pagamento:
                 if avisos is not None:
-                    avisos.append(f"pacote da B3: JCP de {r['emissor']} pago em {pagamento} com "
+                    avisos.append(f"pacote da B3: JCP de {r.emissor} pago em {pagamento} com "
                                   f"crédito em {credito}, ignorado")  # fmt: skip
                 continue
-            por_pagamento.setdefault((r["emissor"], pagamento), []).append(
-                (Decimal(r["valor"]), credito, data_com)
+            por_pagamento.setdefault((r.emissor, pagamento), []).append(
+                (Decimal(r.valor), credito, data_com)
             )
     por_classe: dict[tuple[str, str], list[tuple[date, Decimal, date]]] = {}
     for r in historico:
-        if r["tipo"] == JCP_B3:
-            com = date.fromisoformat(r["data_com"])
-            por_classe.setdefault((r["emissor"], r["classe"]), []).append(
-                (com, Decimal(r["valor"]), max(com, date.fromisoformat(r["aprovado_em"])))
+        if r.tipo == JCP_B3:
+            com = date.fromisoformat(r.data_com)
+            por_classe.setdefault((r.emissor, r.classe), []).append(
+                (com, Decimal(r.valor), max(com, date.fromisoformat(r.aprovado_em)))
             )
     saida: list[LinhaB3] = []
     for item in linhas:
@@ -165,12 +165,12 @@ def proventos_banco(
 ) -> tuple[list[Provento], list[str]]:  # fmt: skip
     avisos: list[str] = []
     pasta = pasta_refs or referencias.pasta_efetiva(None)
-    cadastro = referencias.instrumentos(pasta)
+    cadastro = fontes.instrumentos(pasta)
     emissor_de = {t: e for t, (e, _, _) in cadastro.items()}
     classe_de = {t: (s.split() or [""])[0] for t, (_, s, _) in cadastro.items()}
-    publicos = referencias.proventos_b3(pasta)
+    publicos = fontes.proventos(pasta)
     linhas = creditos_b3(linhas_banco(banco, titular), publicos, emissor_de, avisos,
-                         referencias.proventos_historico_b3(pasta), classe_de)  # fmt: skip
+                         fontes.proventos_historicos(pasta), classe_de)  # fmt: skip
     lista = proventos(linhas, fiscais.tipos, fiscais.parametros, avisos, por_pagamento(publicos))
     lista += dividendos_em_bens(banco, titular)
     return sorted(lista, key=lambda p: p.data), avisos
@@ -215,15 +215,15 @@ TIPO_B3 = {JCP_B3: "JCP", "DIVIDENDO": "DIVIDENDO"}
 
 
 def por_pagamento(
-    publicos: Iterable[Mapping[str, str]],
+    publicos: Iterable[fontes.Provento],
 ) -> dict[tuple[str, date], list[tuple[str, Decimal]]]:
     """Proventos do pacote da B3 por (emissor, pagamento): a origem dos reembolsos de BTC."""
     saida: dict[tuple[str, date], list[tuple[str, Decimal]]] = {}
     for r in publicos:
-        tipo = TIPO_B3.get(r["tipo"])
-        if tipo and r["pagamento"]:
-            chave = (r["emissor"], date.fromisoformat(r["pagamento"]))
-            item = (tipo, Decimal(r["valor"]))
+        tipo = TIPO_B3.get(r.tipo)
+        if tipo and r.pagamento:
+            chave = (r.emissor, date.fromisoformat(r.pagamento))
+            item = (tipo, Decimal(r.valor))
             if item not in saida.setdefault(chave, []):
                 saida[chave].append(item)
     return saida

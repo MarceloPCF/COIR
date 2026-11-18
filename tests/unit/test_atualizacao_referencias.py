@@ -1,7 +1,6 @@
 """F7b: "Atualizar tabelas" — o app só usa o pacote público se cada arquivo bater com o SHA-256 do
-manifesto, o formato for o desta versão e as tabelas carregarem; sem rede, nada muda."""
+manifesto, o formato for um dos que esta versão lê e as tabelas carregarem; sem rede, nada muda."""
 
-import csv
 import json
 import shutil
 import zipfile
@@ -9,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from coir import referencias
+from coir import fontes, referencias
 from coir.erros import AtualizacaoError
 from coir.recursos import pasta_data
 from coir.servicos import atualizacao, versao
 from tools.referencias import pacote
-from tools.referencias.gerar import COLUNAS_EVENTOS
+from tools.referencias.gerar import COLUNAS_EVENTOS, ler_eventos_pacote
 
 URL_ZIP = "https://github.com/MarceloPCF/COIR/releases/download/referencias-2099.01.01/p.zip"
 
@@ -173,11 +172,10 @@ def test_segundo_pacote_preparado_e_conferido_de_novo(tmp_path: Path) -> None:
 
 def test_tabelas_embutidas_integras() -> None:
     """O data/ que vai na instalação passa na mesma conferência de um pacote baixado."""
-    referencias.validar_tabelas_b3(pasta_data())
-    linhas = (pasta_data() / "eventos_b3.csv").read_text(encoding="utf-8").splitlines()
+    fontes.validar_pacote(pasta_data())
+    linhas = ler_eventos_pacote(pasta_data())  # uma linha por evento, as duas fontes juntas
     # nenhuma descartada por inválida; só saem os pares grupamento + desdobramento que se anulam
-    lidos = referencias.eventos_b3(pasta_data())
-    sairam = {(r["isin"], r["data_com"]) for r in csv.DictReader(linhas)} - {
-        (r["isin"], r["data_com"]) for r in lidos}  # fmt: skip
+    lidos = fontes.eventos(pasta_data())
+    sairam = {(r["isin"], r["data_com"]) for r in linhas} - {(r.isin, r.data_com) for r in lidos}
     assert ("BRBBDCACNOR1", "2009-06-08") in sairam and len(sairam) == 12
-    assert len(lidos) == len(linhas) - 1 - 2 * len(sairam)
+    assert len(lidos) == len(linhas) - 2 * len(sairam)

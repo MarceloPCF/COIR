@@ -13,15 +13,29 @@ from coir.db.sessao import conectar
 from coir.domain.b3 import LinhaMovimentacao
 from coir.domain.proventos import LinhaB3
 from coir.erros import ImportacaoError
+from coir.fontes import Provento, ProventoHistorico
 from coir.servicos.b3 import importar_planilhas
 from coir.servicos.cadastros import adicionar_titular
 from coir.servicos.estado import Estado
-from coir.servicos.proventos import creditos_b3, informar_credito
+from coir.servicos.proventos import creditos_b3 as _creditos_b3
+from coir.servicos.proventos import informar_credito
 from tests.apoio import cpf_de_teste
 from tests.unit.test_importador_b3 import AGORA, CAB_MOV, XP, planilha
 
 D = Decimal
 JCP = "Juros Sobre Capital Próprio"
+
+
+def creditos_b3(
+    linhas: list[LinhaB3], publicos: list[dict[str, str]], emissor_de: dict[str, str],
+    avisos: list[str] | None = None, historico: list[dict[str, str]] | tuple[()] = (),
+    classe_de: dict[str, str] | None = None,
+) -> list[LinhaB3]:  # fmt: skip
+    """As tabelas do teste ficam como linhas de CSV; o serviço recebe os registros da fonte."""
+    return _creditos_b3(linhas, [Provento.de_linha(r) for r in publicos], emissor_de, avisos,
+                        [ProventoHistorico.de_linha(r) for r in historico], classe_de)  # fmt: skip
+
+
 PUBLICOS = [
     {"emissor": "ITSA", "isin": "BRITSAACNOR1", "tipo": "JRS CAP PROPRIO", "valor": "0.0242425",
      "aprovado_em": "2024-12-16", "data_com": "2024-12-19", "pagamento": "2025-03-10"},
@@ -83,9 +97,9 @@ def _banco(tmp_path: Path) -> Estado:
 def test_correcao_do_usuario_muda_o_ano_do_jcp(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from coir import referencias
+    from coir import fontes
 
-    monkeypatch.setattr(referencias, "proventos_b3", lambda _pasta: [])  # sem o pacote real
+    monkeypatch.setattr(fontes, "proventos", lambda _pasta: [])  # sem o pacote real
     estado = _banco(tmp_path)
     with conectar(estado.banco) as fabrica, fabrica() as s:
         chaves = {m.movimentacao: m.chave for m in s.scalars(select(MovimentacaoB3))}

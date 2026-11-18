@@ -7,8 +7,6 @@ o que está conferido em ``sem_evento.csv`` com motivo e fonte.
 Sem a pasta (ou sem rede para baixar o que falta), o teste é pulado. Falha lista o que falta.
 """
 
-import csv
-import io
 import os
 from datetime import date
 from pathlib import Path
@@ -38,7 +36,7 @@ def test_todo_evento_do_mercado_esta_no_pacote_ou_conferido() -> None:
     ate = date.fromisoformat(pacote.split('"data": "')[1][:10])
     eventos, revisao, series, calendario = fontes.historico_eventos(
         companhias, ate, Path(pasta), obter=_sem_rede, pares=pares)  # fmt: skip
-    linhas = list(csv.DictReader(io.StringIO((DATA / "eventos_b3.csv").read_text("utf-8"))))
+    linhas = gerar.ler_eventos_pacote(DATA)  # os arquivos da CVM e da bolsa numa linha por evento
     conferidos = gerar.sem_evento()
     faltam = [r.texto() for r in historico.cobertas(revisao, linhas, conferidos)]
     faltam += [s.texto() for s in historico.saltos(series, calendario, linhas, conferidos, pares)]

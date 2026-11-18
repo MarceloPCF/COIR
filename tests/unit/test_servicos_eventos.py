@@ -236,6 +236,8 @@ def _pacote_eventos(tmp: Path, linhas: list[str]) -> Path:
     (pasta / "eventos_b3.csv").write_text(
         "emissor,isin,tipo,fator,data_com,aprovado_em,isin_emitido,preco,periodo,data_subscricao\n"
         + "".join(f"{x}\n" for x in linhas), encoding="utf-8")  # fmt: skip
+    # só os eventos do teste: os reais da CVM achariam o ticker pela estrutura do ISIN
+    (pasta / "eventos_cvm.csv").unlink()
     return pasta
 
 
