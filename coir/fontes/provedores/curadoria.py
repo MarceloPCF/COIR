@@ -8,7 +8,8 @@ from coir.fontes.leitura import opcionais
 from coir.fontes.modelo import CURADORIA, Emissor, TrocaCodigo
 
 EMISSORES = "emissores.csv"
-SAIDAS = "saidas_b3.csv"  # curada, apesar do nome (o nome muda junto com o formato do pacote)
+SAIDAS = "saidas.csv"
+SAIDAS_FORMATO_2 = "saidas_b3.csv"  # o mesmo arquivo, com o nome antigo
 TROCAS = "trocas_ticker.csv"
 COLUNAS_SAIDAS = ("ticker", "ultimo_negocio", "situacao", "destino", "relacao",
                   "dinheiro_por_acao", "confianca", "fonte", "observacao")  # fmt: skip
@@ -27,9 +28,10 @@ def emissores(pasta: Path) -> list[Emissor]:
 
 def saidas(pasta: Path) -> dict[str, dict[str, str]]:
     """O que houve com o ativo que parou de negociar, por ticker, com a fonte de cada linha."""
-    tabela = opcionais(pasta / SAIDAS)
+    nome = SAIDAS if (pasta / SAIDAS).is_file() else SAIDAS_FORMATO_2
+    tabela = opcionais(pasta / nome)
     if tabela and set(COLUNAS_SAIDAS) - set(tabela[0]):
-        raise ConfiguracaoError(f"{SAIDAS}: colunas ausentes")
+        raise ConfiguracaoError(f"{nome}: colunas ausentes")
     return {r["ticker"]: r for r in tabela}
 
 

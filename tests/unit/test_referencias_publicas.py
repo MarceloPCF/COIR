@@ -180,8 +180,9 @@ def test_tabela_gerada_entra_por_baixo_da_manual(tmp_path: Path) -> None:
     ("formato", "data", "baixada"),
     [
         (2, "2099-01-01", True),
+        (3, "2099-01-01", True),
         (1, "2099-01-01", False),
-        (3, "2099-01-01", False),
+        (4, "2099-01-01", False),
         (2, "2000-01-01", False),
     ],
 )

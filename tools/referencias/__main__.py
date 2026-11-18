@@ -13,14 +13,13 @@ o resumo das mudanças (corpo do PR semanal). Sai com código 0 mesmo sem mudan�
 ano corrente). ``pregao`` diz se vale coletar hoje: fim de semana e feriado da B3 ficam para o
 próximo dia útil.
 
-``historico`` completa ``eventos_b3.csv`` desde 2008 com o FRE da CVM e o COTAHIST da B3 (uns 1,5 GB
-de zips anuais; ``--cache`` guarda e reaproveita). O histórico não muda de uma semana para outra:
-roda à mão (ou pelo workflow, sob demanda), e o resumo lista divergências e revisões.
+``historico`` completa os eventos (``eventos_cvm.csv`` e ``eventos_b3.csv``) desde 2008 com o FRE
+da CVM e o COTAHIST da B3 (uns 1,5 GB de zips anuais; ``--cache`` guarda e reaproveita). O
+histórico não muda de uma semana para outra: roda à mão (ou pelo workflow, sob demanda), e o resumo
+lista divergências e revisões.
 """
 
 import argparse
-import csv
-import io
 import logging
 import sys
 from datetime import date
@@ -84,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
         eventos, revisao, series, calendario = fontes.historico_eventos(
             companhias, args.data, args.cache, pares=pares)  # fmt: skip
         arquivos, resumo = gerar.incorporar_eventos(args.pasta, eventos, args.data)
-        juntos = list(csv.DictReader(io.StringIO(arquivos["eventos_b3.csv"])))
+        juntos = gerar.eventos_dos_arquivos(arquivos)
         conferidos = gerar.sem_evento()
         resumo.revisao = [r.texto() for r in historico.cobertas(revisao, juntos, conferidos)]
         resumo.saltos = [s.texto() for s in historico.saltos(series, calendario, juntos,

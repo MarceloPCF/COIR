@@ -11,14 +11,15 @@ from tools.procedencia import DATA, ProcedenciaError, conferir, origens
 
 def test_data_real_tem_procedencia_completa() -> None:
     entradas = conferir()
-    curadas = ("eventos_b3.csv", "saidas_b3.csv", "instituicoes_b3.csv")  # "b3" só no nome
+    curadas = ("instituicoes_b3.csv",)  # "b3" só no nome
     assert all(e.categoria == "b3" for n, e in entradas.items()
                if n.endswith("_b3.csv") and n not in curadas)  # fmt: skip
     assert entradas["selic_mensal.csv"].licenca == "ODbL-1.0"
 
 
-def test_eventos_tem_so_origens_conhecidas() -> None:
-    assert set(origens(DATA, "eventos_b3.csv")) <= {"b3", "cvm_fre", "cvm_ipe"}
+def test_eventos_tem_so_origens_da_sua_fonte() -> None:
+    assert set(origens(DATA, "eventos_cvm.csv", "cvm")) == {"cvm_fre", "cvm_ipe"}
+    assert set(origens(DATA, "eventos_b3.csv", "b3")) == {"b3"}
 
 
 def _copia(tmp_path: Path) -> Path:
@@ -52,10 +53,10 @@ def test_categoria_desconhecida_falha(tmp_path: Path) -> None:
 
 def test_origem_desconhecida_falha(tmp_path: Path) -> None:
     pasta = _copia(tmp_path)
-    eventos = pasta / "eventos_b3.csv"
+    eventos = pasta / "eventos_cvm.csv"
     with eventos.open(encoding="utf-8", newline="") as f:
         linhas = list(csv.DictReader(f))
-    linhas[0]["origem"] = "b3+outra"
+    linhas[0]["origem"] = "cvm_fre+b3"  # linha da bolsa no arquivo da CVM
     with eventos.open("w", encoding="utf-8", newline="") as f:
         escritor = csv.DictWriter(f, fieldnames=list(linhas[0]))
         escritor.writeheader()

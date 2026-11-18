@@ -283,6 +283,8 @@ def montar(estado: Estado) -> None:
     with ui.column().classes("w-full max-w-[1400px] mx-auto px-6 py-5 gap-4"):
         if estado.aviso_tabelas:
             ui.label(estado.aviso_tabelas).classes("coir-carimbo text-sm").mark("aviso-tabelas")
+        if estado.aviso_fonte_b3:
+            ui.label(estado.aviso_fonte_b3).classes("coir-carimbo text-sm").mark("aviso-fonte-b3")
         rotas: dict[str, Callable[..., None]] = {
             t.rota: _construtor(t, estado, mudou) for t in (*TELAS, INICIO)
         }

@@ -2,7 +2,7 @@
 troca, OPA, cisão). Vale para qualquer cliente e para o que acontecer amanhã: a rede pega o caso que
 a tabela de trocas ainda não tem, como foi o de PETZ3 -> AUAU3.
 
-Só avisa e, se souber, diz o que houve (``data/saidas_b3.csv``); o custo e a quantidade só mudam
+Só avisa e, se souber, diz o que houve (``data/saidas.csv``); o custo e a quantidade só mudam
 quando o usuário lança o evento, conferido com as notas dele.
 """
 

@@ -1,8 +1,8 @@
 """Confere o manifesto de procedência das tabelas de referência (``data/procedencia.csv``).
 
 Cada arquivo (ou pasta) de ``data/`` tem de estar no manifesto, com uma categoria conhecida, a
-licença e a fonte. Tabela com a origem por linha (``por_linha``) tem de ter a coluna de origem e
-só valores conhecidos nela. Arquivo novo sem procedência, ou entrada do manifesto sem arquivo,
+licença e a fonte. Tabela com a origem por linha (``POR_LINHA``) tem de ter a coluna de origem e
+só origens da sua categoria. Arquivo novo sem procedência, ou entrada do manifesto sem arquivo,
 falha alto.
 
 Uso: uv run python -m tools.procedencia
@@ -18,9 +18,11 @@ RAIZ = Path(__file__).resolve().parents[1]
 DATA = RAIZ / "data"
 MANIFESTO = "procedencia.csv"
 COLUNAS = ("arquivo", "categoria", "licenca", "fonte")
-CATEGORIAS = frozenset({"projeto", "curadoria", "norma", "cvm", "bcb", "b3", "por_linha"})
-# tabelas com origem por linha: arquivo -> (coluna, origens aceitas; "a+b" é a soma de fontes)
-POR_LINHA = {"eventos_b3.csv": ("origem", frozenset({"b3", "cvm_fre", "cvm_ipe"}))}
+CATEGORIAS = frozenset({"projeto", "curadoria", "norma", "cvm", "bcb", "b3"})
+# tabelas com a origem de cada linha (coluna origem; "a+b" é a soma de fontes): as origens têm de
+# ser da categoria do arquivo
+POR_LINHA = {"eventos_cvm.csv": "origem", "eventos_b3.csv": "origem"}
+ORIGENS_DA_CATEGORIA = {"cvm": frozenset({"cvm_fre", "cvm_ipe"}), "b3": frozenset({"b3"})}
 
 
 class ProcedenciaError(Exception):
@@ -54,11 +56,11 @@ def ler(pasta: Path = DATA) -> dict[str, Entrada]:
     return entradas
 
 
-def origens(pasta: Path, arquivo: str) -> Counter[str]:
-    """Quantas linhas de cada origem a tabela ``por_linha`` tem; origem desconhecida falha."""
+def origens(pasta: Path, arquivo: str, categoria: str) -> Counter[str]:
+    """Quantas linhas de cada origem a tabela tem; origem fora da categoria falha."""
     if arquivo not in POR_LINHA:
         raise ProcedenciaError(f"{arquivo}: sem coluna de origem declarada")
-    coluna, aceitas = POR_LINHA[arquivo]
+    coluna, aceitas = POR_LINHA[arquivo], ORIGENS_DA_CATEGORIA.get(categoria, frozenset())
     with (pasta / arquivo).open(encoding="utf-8", newline="") as f:
         linhas = list(csv.DictReader(f))
     if linhas and coluna not in linhas[0]:
@@ -82,11 +84,8 @@ def conferir(pasta: Path = DATA) -> dict[str, Entrada]:
     sem_arquivo = sorted(set(entradas) - presentes)
     if sem_arquivo:
         raise ProcedenciaError(f"{MANIFESTO} cita o que não existe: {', '.join(sem_arquivo)}")
-    for nome, e in entradas.items():
-        if e.categoria == "por_linha":
-            origens(pasta, nome)
-        elif nome in POR_LINHA:
-            raise ProcedenciaError(f"{nome}: tem origem por linha, categoria deve ser por_linha")
+    for nome in POR_LINHA:
+        origens(pasta, nome, entradas[nome].categoria)
     return entradas
 
 
@@ -99,8 +98,9 @@ def main() -> int:
     por_categoria = Counter(e.categoria for e in entradas.values())
     for categoria, n in sorted(por_categoria.items()):
         print(f"{categoria}: {n}")
-    for nome in sorted(n for n, e in entradas.items() if e.categoria == "por_linha"):
-        resumo = ", ".join(f"{o} {n}" for o, n in sorted(origens(DATA, nome).items()))
+    for nome in sorted(POR_LINHA):
+        contagem = origens(DATA, nome, entradas[nome].categoria)
+        resumo = ", ".join(f"{o} {n}" for o, n in sorted(contagem.items()))
         print(f"{nome}: {resumo}")
     return 0
 

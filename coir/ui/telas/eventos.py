@@ -944,6 +944,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         "O que muda a sua posição sem passar por uma nota de corretagem. Cada evento é conferido "
         "com as suas operações antes de ser gravado."
     ).classes("coir-subtitulo")
+    if aviso_b3 := estado.sem_fonte_b3("eventos"):
+        ui.label(aviso_b3).classes("coir-carimbo text-sm").mark("sem-fonte-b3")
     if not estado.existe or estado.titular is None:
         ui.label("Cadastre o titular primeiro.").classes("coir-vazio w-full")
         return

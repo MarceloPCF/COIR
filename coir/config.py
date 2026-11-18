@@ -117,6 +117,14 @@ def salvar_preferencia(chave: str, valor: str, ambiente: Mapping[str, str] | Non
     _gravar_config(chave, valor, os.environ if ambiente is None else ambiente)
 
 
+CHAVE_FONTE_B3 = "fontes.b3"
+
+
+def modo_fonte_b3(ambiente: Mapping[str, str] | None = None) -> str:
+    """Modo da fonte da bolsa (``pacote``, ``local`` ou ``desligada``); sem a chave, ``pacote``."""
+    return ler_preferencia(CHAVE_FONTE_B3, ambiente) or "pacote"
+
+
 # ------------------------------------------------------------------- registro de atividades
 ARQUIVO_REGISTRO = Path("logs") / "coir.log"
 RE_CPF = re.compile(r"\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2}")  # sem limite de palavra: mascara a mais

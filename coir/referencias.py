@@ -16,6 +16,7 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
+from coir import fontes
 from coir.domain.fiscal import TipoAtivo
 from coir.domain.irpf import MapeamentoIrpf
 from coir.domain.parametros import (
@@ -34,7 +35,11 @@ from coir.fontes.provedores import b3, bcb
 from coir.parsing.numeros import compactar
 from coir.recursos import pasta_data
 
-FORMATO = 2  # esquema de data/ que esta versão lê (igual ao de tools/referencias/gerar.py)
+FORMATO = 3  # esquema de data/ desta versão (igual ao de tools/referencias/gerar.py)
+FORMATOS_ACEITOS = frozenset(
+    {2, 3}
+)  # o 2 tem os eventos juntos e saidas_b3.csv; os provedores leem
+MODOS_B3 = ("pacote", "local", "desligada")  # chave fontes.b3 da configuração
 PACOTE = "pacote.json"
 PASTA_BAIXADA = Path("referencias") / "atual"
 
@@ -56,9 +61,25 @@ def pasta_efetiva(dados: Path | None) -> Path:
         return embutida
     baixada = dados / PASTA_BAIXADA
     b, e = info_pacote(baixada), info_pacote(embutida)
-    if b is not None and b[0] == FORMATO and (e is None or b[1] > e[1]):
+    if b is not None and b[0] in FORMATOS_ACEITOS and (e is None or b[1] > e[1]):
         return baixada
     return embutida
+
+
+def definir_fonte_b3(modo: str) -> bool:
+    """Liga ou desliga a fonte da bolsa (chave ``fontes.b3``) e limpa os caches das tabelas;
+    devolve se ela ficou ligada. ``pacote`` (padrão) lê os arquivos da bolsa do pacote em uso;
+    ``desligada`` não abre nenhum. ``local`` (baixar no PC do usuário) ainda não existe: sem os
+    arquivos locais, vale como desligada."""
+    if modo not in MODOS_B3:
+        raise ConfiguracaoError(f"fontes.b3: {modo!r} inválido (use {', '.join(MODOS_B3)})")
+    ligada = modo == "pacote"
+    if ligada != b3.ligada():
+        b3.ligar(ligada)
+        carregar.cache_clear()
+        carregar_fiscais.cache_clear()
+        fontes.ultimos_negocios.cache_clear()
+    return ligada
 
 
 @cache

@@ -280,7 +280,8 @@ def test_historico_soma_curados_e_grava_data_do_pacote(tmp_path: Path) -> None:
     arquivos, resumo = gerar.incorporar_eventos(tmp_path, [_ev("10", "2011-04-29")], dia)
     assert '"data": "2026-10-28"' in arquivos["pacote.json"]
     assert len(resumo.eventos_novos) == len(gerar.eventos_curados()) + 1
-    assert gerar.gravar(tmp_path, arquivos) == ["eventos_b3.csv"]
+    # o histórico (FRE) e os curados (avisos) são da CVM: o arquivo da bolsa não muda
+    assert gerar.gravar(tmp_path, arquivos) == ["eventos_cvm.csv"]
     assert timedelta(days=270) == historico.JANELA
 
 

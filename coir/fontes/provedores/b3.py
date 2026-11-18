@@ -1,5 +1,10 @@
 """Arquivos públicos da bolsa, gerados pelo pipeline (``tools/referencias``): cadastro de
-instrumentos e de emissores, nomes de pregão, eventos e proventos."""
+instrumentos e de emissores, nomes de pregão, eventos e proventos.
+
+A fonte pode ser desligada (configuração ``fontes.b3``): desligada, nenhum arquivo da bolsa é
+aberto e cada conceito fica só com as outras fontes. Quem muda a chave é
+``coir.referencias.definir_fonte_b3``, que também limpa os caches das tabelas.
+"""
 
 from datetime import date
 from decimal import Decimal
@@ -30,6 +35,21 @@ ATIVOS = "ativos_b3.csv"
 OPCOES_RAIZ = "opcoes_raiz_b3.csv"
 TIPOS_ATIVO = "tipos_ativo_b3.csv"
 
+_LIGADA = [True]  # o modo vale para o processo (o app é de um usuário só)
+
+
+def ligada() -> bool:
+    return _LIGADA[0]
+
+
+def ligar(sim: bool) -> None:
+    _LIGADA[0] = sim
+
+
+def _tabela(caminho: Path) -> list[dict[str, str]]:
+    return opcionais(caminho) if ligada() else []
+
+
 COLUNAS = {
     EVENTOS: ("emissor", "isin", "tipo", "fator", "data_com", "aprovado_em", "isin_emitido",
               "preco", "periodo", "data_subscricao"),
@@ -44,7 +64,7 @@ COLUNAS = {
 
 def eventos(pasta: Path) -> list[Evento]:
     """Eventos utilizáveis que a bolsa lista (origem vazia, em pacote antigo, vale bolsa)."""
-    return [Evento.de_linha(r) for r in opcionais(pasta / EVENTOS)
+    return [Evento.de_linha(r) for r in _tabela(pasta / EVENTOS)
             if B3 in partes_da_origem(r.get("origem", "")) and evento_valido(r)]  # fmt: skip
 
 
@@ -61,7 +81,7 @@ def _provento_valido(r: dict[str, str]) -> bool:
 def proventos(pasta: Path) -> list[Provento]:
     """Proventos em dinheiro com aprovação válida, pagamento válido ou ainda a definir (vazio) e
     valor numérico."""
-    return [Provento.de_linha(r) for r in opcionais(pasta / PROVENTOS) if _provento_valido(r)]
+    return [Provento.de_linha(r) for r in _tabela(pasta / PROVENTOS) if _provento_valido(r)]
 
 
 def _historico_valido(r: dict[str, str]) -> bool:
@@ -75,7 +95,7 @@ def _historico_valido(r: dict[str, str]) -> bool:
 
 def proventos_historicos(pasta: Path) -> list[ProventoHistorico]:
     """JCP e restituição de capital de anos antigos, com datas válidas e valor numérico."""
-    return [ProventoHistorico.de_linha(r) for r in opcionais(pasta / HISTORICO)
+    return [ProventoHistorico.de_linha(r) for r in _tabela(pasta / HISTORICO)
             if _historico_valido(r)]  # fmt: skip
 
 
@@ -86,7 +106,7 @@ def instrumentos(pasta: Path) -> list[Instrumento]:
         Instrumento(ticker=r["ticker"], isin=r["isin"], especificacao=r.get("especificacao", ""),
                     emissor=r.get("emissor", ""), nome=r.get("nome", ""),
                     visto_ate=r["visto_ate"], origem=B3)
-        for r in opcionais(pasta / INSTRUMENTOS)
+        for r in _tabela(pasta / INSTRUMENTOS)
     ]  # fmt: skip
 
 
@@ -95,29 +115,29 @@ def emissores(pasta: Path) -> list[Emissor]:
     return [
         Emissor(emissor=r["emissor"], cnpj=r["cnpj"], razao_social=r["razao_social"],
                 tipo=r["tipo"], visto_ate=r["visto_ate"], origem=B3)
-        for r in opcionais(pasta / EMISSORES) if cnpj_valido(r["cnpj"])
+        for r in _tabela(pasta / EMISSORES) if cnpj_valido(r["cnpj"])
     ]  # fmt: skip
 
 
 def ativos(pasta: Path) -> dict[str, str]:
     """Nome de pregão (compacto) -> ticker, do cadastro da bolsa."""
-    return mapa_opcional(pasta / ATIVOS, "nome_pregao", "ticker", compacta=True)
+    return mapa_opcional(pasta / ATIVOS, "nome_pregao", "ticker", compacta=True) if ligada() else {}
 
 
 def opcoes_raiz(pasta: Path) -> dict[str, str]:
     """Raiz da opção -> ativo-objeto, do cadastro da bolsa."""
-    return mapa_opcional(pasta / OPCOES_RAIZ, "raiz", "ticker")
+    return mapa_opcional(pasta / OPCOES_RAIZ, "raiz", "ticker") if ligada() else {}
 
 
 def tipos_ativo(pasta: Path) -> list[tuple[str, str]]:
     """(ticker, tipo) do cadastro da bolsa, na ordem da tabela."""
-    return [(t["ticker"], t["tipo"]) for t in opcionais(pasta / TIPOS_ATIVO)]
+    return [(t["ticker"], t["tipo"]) for t in _tabela(pasta / TIPOS_ATIVO)]
 
 
 def nomes_pregao(pasta: Path) -> list[NomePregao]:
     return [NomePregao(nome_pregao=r.get("nome_pregao", ""), ticker=r["ticker"],
                        desde=r.get("desde", ""), ate=r["ate"], origem=B3)
-            for r in opcionais(pasta / NOMES_PREGAO)]  # fmt: skip
+            for r in _tabela(pasta / NOMES_PREGAO)]  # fmt: skip
 
 
 def validar(pasta: Path) -> None:

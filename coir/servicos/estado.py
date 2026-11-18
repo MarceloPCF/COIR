@@ -20,6 +20,7 @@ from coir.config import (
     dados_dir,
     dentro_do_repositorio,
     ler_preferencia,
+    modo_fonte_b3,
     salvar_dados_dir,
     salvar_preferencia,
 )
@@ -61,6 +62,24 @@ from coir.servicos.relatorios import dados_banco, info_ativos
 from coir.servicos.versao import VersaoRemota
 
 log = logging.getLogger(__name__)
+# o que fica sem cobertura com a fonte da bolsa desligada (configuração fontes.b3)
+SEM_FONTE_B3 = {
+    "eventos": (
+        "Fonte da bolsa desligada (configuração fontes.b3): as propostas vêm só dos documentos da "
+        "CVM. Ficam de fora os eventos que só a bolsa lista, a restituição de capital e o aviso de "
+        "ativo que parou de negociar. Confira os avisos aos acionistas das suas empresas."
+    ),
+    "proventos": (
+        "Fonte da bolsa desligada (configuração fontes.b3): a data do crédito do JCP sai só da "
+        "sua correção ou da alíquota retida, e a origem do reembolso de aluguel de ações não é "
+        "identificada pelo valor."
+    ),
+}  # fmt: skip
+SEM_FONTE_B3_FORMATO_2 = (
+    "Fonte da bolsa desligada (configuração fontes.b3) com tabelas de referência antigas: sem "
+    "propostas de eventos. Atualize as tabelas (Configurações) para ter os eventos dos documentos "
+    "da CVM, ou lance os eventos pelos avisos aos acionistas das suas empresas."
+)
 T = TypeVar("T")
 
 
@@ -90,6 +109,8 @@ class Estado:
     ) -> None:  # fmt: skip
         self.banco = banco or dados_dir() / NOME_BANCO
         self._fixas = refs is not None or fiscais is not None  # testes passam as tabelas
+        self.aviso_fonte_b3: str | None = None
+        self.fonte_b3 = self._aplicar_fonte_b3()
         pasta = referencias.pasta_efetiva(self.banco.parent)  # pacote baixado, se mais novo
         self.pasta_refs = pasta  # tabelas em uso (eventos e instrumentos da B3 também)
         self.refs = refs or referencias.carregar(pasta)
@@ -170,8 +191,27 @@ class Estado:
             self.recarregar_referencias()
         self.preparar(agora)
 
+    def _aplicar_fonte_b3(self) -> bool:
+        """Liga ou desliga a fonte da bolsa pela configuração (``fontes.b3``); valor inválido
+        fica no padrão (``pacote``), com aviso."""
+        try:
+            return referencias.definir_fonte_b3(modo_fonte_b3())
+        except ConfiguracaoError as erro:
+            self.aviso_fonte_b3 = f"{erro}; vale o padrão (pacote)"
+            log.warning("%s", self.aviso_fonte_b3)
+            return referencias.definir_fonte_b3("pacote")
+
+    def sem_fonte_b3(self, tela: str) -> str | None:
+        """O aviso do que a tela perde com a fonte da bolsa desligada (None com ela ligada)."""
+        if self.fonte_b3:
+            return None
+        if tela == "eventos" and not (self.pasta_refs / "eventos_cvm.csv").is_file():
+            return SEM_FONTE_B3_FORMATO_2  # pacote antigo: os eventos da CVM estão na tabela junta
+        return SEM_FONTE_B3[tela]
+
     def recarregar_referencias(self) -> None:
         """Depois de atualizar as tabelas (ou trocar a pasta de dados): relê o pacote em uso."""
+        self.fonte_b3 = self._aplicar_fonte_b3()
         if not self._fixas:
             pasta = referencias.pasta_efetiva(self.dados)
             self.pasta_refs = pasta

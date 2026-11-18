@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from hypothesis import settings
 
-from coir import auditoria
+from coir import auditoria, referencias
 from coir.config import VAR_CONFIG, dados_dir
 
 # Testes de propriedade determinísticos (mesmos exemplos em toda execução e no CI).
@@ -26,6 +26,13 @@ def _registro_desligado() -> Iterator[None]:
     """O registro de auditoria que um teste ligou não fica ligado no próximo."""
     yield
     auditoria.desligar()
+
+
+@pytest.fixture(autouse=True)
+def _fonte_b3_ligada() -> Iterator[None]:
+    """A fonte da bolsa (chave fontes.b3, estado do processo) que um teste desligou volta ligada."""
+    yield
+    referencias.definir_fonte_b3("pacote")
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:

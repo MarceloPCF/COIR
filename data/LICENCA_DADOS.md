@@ -11,8 +11,8 @@ portal e disponibilizadas sob a Open Database License (ODbL) 1.0
 (https://opendatacommons.org/licenses/odbl/1-0/): Formulário de Referência (FRE), Informações
 Periódicas e Eventuais (IPE), Formulário Cadastral (FCA) e cadastro de companhias abertas.
 
-- Onde entram: as linhas de `eventos_b3.csv` com `cvm_fre` ou `cvm_ipe` na coluna `origem`, as
-  linhas de `trocas_ticker.csv` e de `saidas_b3.csv` cuja `fonte` cita a CVM, e as tabelas de
+- Onde entram: `eventos_cvm.csv` (coluna `origem`: `cvm_fre` ou `cvm_ipe`), as linhas de
+  `trocas_ticker.csv` e de `saidas.csv` cuja `fonte` cita a CVM, e as tabelas de
   `tools/referencias/` (`eventos_cvm_ipe.csv`, `emissores_antigos.csv`, `sem_evento.csv`).
 - Essas linhas, como base de dados derivada, ficam disponíveis sob a mesma ODbL 1.0.
 - A CVM fornece os dados como estão e não responde pelo uso feito deles; a seleção, a
@@ -28,7 +28,7 @@ Aberto.
 ## B3 S.A. – Brasil, Bolsa, Balcão
 
 Fonte das tabelas com `_b3` no nome (cadastro de instrumentos, nomes de pregão, tipos de ativo,
-emissores, eventos e proventos) e das linhas de `eventos_b3.csv` com `b3` na coluna `origem`:
+emissores, eventos e proventos):
 páginas e arquivos públicos da B3 (https://www.b3.com.br), consultados sem login. As tabelas não
 trazem cotações.
 

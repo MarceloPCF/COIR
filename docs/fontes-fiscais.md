@@ -64,8 +64,9 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 ## Fontes dos dados públicos (pacote de referências)
 
 As tabelas geradas em `data/` (o pacote que vai no zip do programa e no release
-`referencias-AAAA.MM.DD`) vêm só de fontes públicas, sem login. Cada linha de
-`data/eventos_b3.csv` diz de onde veio (coluna `origem`, e `referencia` com o documento).
+`referencias-AAAA.MM.DD`) vêm só de fontes públicas, sem login. Os eventos ficam num arquivo por
+fonte (`data/eventos_cvm.csv` e `data/eventos_b3.csv`), e cada linha diz de onde veio (coluna
+`origem`, e `referencia` com o documento).
 
 | Fonte | URL | O que cobre | Onde entra |
 |---|---|---|---|

@@ -316,7 +316,6 @@ def gabarito_dirpf(
     """Compara as fichas do COIR com a declaração entregue (critério de saída da F8)."""
     from collections import Counter
 
-    from coir import referencias
     from coir.gabarito.comparar import Tolerancias
     from coir.gabarito.dirpf import ler_dirpf
     from coir.gabarito.dirpf_comparar import carregar_explicacoes, comparar, explicar, gravar
@@ -341,7 +340,7 @@ def gabarito_dirpf(
         declarada = ler_dirpf(pdf)
     if declarada.ano != ano:
         raise typer.BadParameter(f"o PDF é do ano-calendário {declarada.ano}, não de {ano}")
-    pasta_refs = referencias.pasta_efetiva(dados)
+    pasta_refs = _pasta_refs(dados)
     d = dados_banco(_banco(banco), _refs(), _fiscais(), ano, _agora(), titular,
                     pasta_refs=pasta_refs)  # fmt: skip
     geradas = fichas(d)
@@ -875,10 +874,8 @@ def exportar(
     formatos = tuple(f.strip().lower() for f in formato.split(",") if f.strip())
     chaves = tuple(c.strip() for c in relatorio.split(",")) if relatorio else None
     validar(pasta, formatos, chaves)
-    from coir import referencias
-
     dados = dados_banco(_banco(banco), _refs(), _fiscais(), ano, _agora(), titular, dia, vista,
-                        referencias.pasta_efetiva(dados_dir()))  # fmt: skip
+                        _pasta_refs())  # fmt: skip
     arquivos = gravar(dados, pasta, formatos, chaves)
     meses = [m for m in dados.apuracao.meses if m.titular == dados.titular and m.ano == ano]
     total = sum((m.darf for m in meses), Decimal(0))
@@ -904,17 +901,27 @@ def abrir_ui(
             abrir=abrir)  # fmt: skip
 
 
+def _pasta_refs(dados: Path | None = None) -> Path:
+    """Pasta das tabelas em uso (o pacote baixado em <dados>/referencias, se mais novo), com a
+    fonte da bolsa ligada ou não pela configuração (``fontes.b3``)."""
+    from coir import referencias
+    from coir.config import modo_fonte_b3
+
+    referencias.definir_fonte_b3(modo_fonte_b3())
+    return referencias.pasta_efetiva(dados or dados_dir())
+
+
 def _refs() -> "Referencias":
     """Tabelas de referência: o pacote baixado em <dados>/referencias, se mais novo."""
     from coir import referencias
 
-    return referencias.carregar(referencias.pasta_efetiva(dados_dir()))
+    return referencias.carregar(_pasta_refs())
 
 
 def _fiscais() -> "ReferenciasFiscais":
     from coir import referencias
 
-    return referencias.carregar_fiscais(referencias.pasta_efetiva(dados_dir()))
+    return referencias.carregar_fiscais(_pasta_refs())
 
 
 def main() -> None:

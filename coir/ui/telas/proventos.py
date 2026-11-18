@@ -62,6 +62,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         "separados como no IRPF. O JCP creditado num ano e pago no seguinte entra no ano do "
         "crédito. Bruto e IRRF do JCP são estimados: vale o informe de rendimentos da empresa."
     ).classes("coir-subtitulo")
+    if aviso_b3 := estado.sem_fonte_b3("proventos"):
+        ui.label(aviso_b3).classes("coir-carimbo text-sm").mark("sem-fonte-b3")
     corpo = ui.column().classes("w-full gap-4")
 
     async def carregar() -> None:

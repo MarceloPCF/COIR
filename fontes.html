@@ -315,8 +315,9 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 <h2 id="fontes-dos-dados-publicos-pacote-de-referencias">Fontes dos dados públicos (pacote de referências)</h2>
 
 <p>As tabelas geradas em <code>data/</code> (o pacote que vai no zip do programa e no release
-<code>referencias-AAAA.MM.DD</code>) vêm só de fontes públicas, sem login. Cada linha de
-<code>data/eventos_b3.csv</code> diz de onde veio (coluna <code>origem</code>, e <code>referencia</code> com o documento).</p>
+<code>referencias-AAAA.MM.DD</code>) vêm só de fontes públicas, sem login. Os eventos ficam num arquivo por
+fonte (<code>data/eventos_cvm.csv</code> e <code>data/eventos_b3.csv</code>), e cada linha diz de onde veio (coluna
+<code>origem</code>, e <code>referencia</code> com o documento).</p>
 
 <table>
 <thead>
@@ -412,7 +413,7 @@ revisão e o tipo certo sai do aviso aos acionistas;</li>
 publica; quando a B3 só guardou uma delas, a outra vem do documento (BEES 2012). O par que se
 anula (100 para 1 e 1 para 100) não entra em proposta nem em controle nenhum, porque a quantidade
 não muda: o de ITUB 2011 saiu do pacote pela lista de exclusões, e os demais (BBDC 2009, MERC
-2023, TIMS 2025...) o COIR descarta ao ler o pacote (<code>coir/referencias.eventos_b3</code>), sem
+2023, TIMS 2025...) o COIR descarta ao ler o pacote (<code>coir/fontes.eventos</code>), sem
 depender da lista;</li>
 <li>a unit entra com o fator das ações só quando todas as espécies tiveram o mesmo fator e a mesma
 data com e a cotação da unit confirma; o custo atribuído da unit é o da ação vezes a composição
@@ -455,7 +456,7 @@ tabela não representa a volta, e as séries de cotação se misturariam;</li>
 novo: o evento do FRE (que é por CNPJ) de antes da troca entra no ISIN antigo, e o que tem a data
 ex no dia da troca (LLIS3 -> VSTE3 com grupamento 8:1 em 09/02/2023) entra no ISIN que vale na
 data ex. Sem isso o evento se perdia, porque o ISIN antigo não tem o código do emissor atual;</li>
-<li>o app (<code>coir/referencias.tickers_por_isin</code>) leva o ISIN antigo ao ticker da época
+<li>o app (<code>coir/fontes.tickers_por_isin</code>) leva o ISIN antigo ao ticker da época
 (<code>BRKROTACNOR9</code> -> KROT3), que o cadastro de instrumentos de hoje não tem, e a troca liga os dois
 tickers ao mesmo ativo.</li>
 </ul>

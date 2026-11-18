@@ -2,8 +2,9 @@
 
 Só download de dados públicos: o app consulta os releases ``referencias-AAAA.MM.DD`` do repositório
 oficial no GitHub e baixa o zip; nada da carteira sai do PC. O zip só é usado se cada arquivo bater
-com o SHA-256 do manifesto, o formato for o desta versão e as tabelas carregarem sem erro. A troca
-é de uma vez (``referencias/atual``), e a anterior fica em ``referencias/anterior`` para voltar.
+com o SHA-256 do manifesto, o formato for um dos que esta versão lê e as tabelas carregarem sem
+erro. A troca é de uma vez (``referencias/atual``), e a anterior fica em ``referencias/anterior``
+para voltar.
 Sem rede: mensagem, nada muda (vale o pacote em uso ou o da instalação).
 """
 
@@ -25,6 +26,7 @@ from pathlib import Path
 from coir import fontes, referencias
 from coir.config import VERSAO
 from coir.erros import AtualizacaoError, ConfiguracaoError
+from coir.fontes.provedores import b3
 
 log = logging.getLogger(__name__)
 REPOSITORIO = "MarceloPCF/COIR"
@@ -99,9 +101,10 @@ def situacao(dados: Path) -> Situacao:
     info = referencias.info_pacote(em_uso)
     inst = referencias.info_pacote(referencias.pasta_efetiva(None))  # a da instalação
     ant = referencias.info_pacote(anterior)
+    aceita = ant is not None and ant[0] in referencias.FORMATOS_ACEITOS
     return Situacao(em_uso=info[1] if info else None, baixado=em_uso == atual,
                     instalacao=inst[1] if inst else None,
-                    anterior=ant[1] if ant and ant[0] == referencias.FORMATO else None)  # fmt: skip
+                    anterior=ant[1] if ant and aceita else None)  # fmt: skip
 
 
 def verificar(obter: Baixar = baixar) -> PacoteRemoto | None:
@@ -157,7 +160,7 @@ def _conferir(bruto: bytes) -> dict[str, bytes]:
         raise AtualizacaoError("manifesto ilegível") from erro
     if not isinstance(manifesto, dict) or not isinstance(manifesto.get("arquivos"), dict):
         raise AtualizacaoError("manifesto fora do formato")
-    if manifesto.get("formato") != referencias.FORMATO:
+    if manifesto.get("formato") not in referencias.FORMATOS_ACEITOS:
         raise AtualizacaoError(f"pacote no formato {manifesto.get('formato')}; esta versão lê o "
                                f"formato {referencias.FORMATO} (atualize o COIR)")  # fmt: skip
     esperados = {str(k): str(v) for k, v in manifesto["arquivos"].items()}
@@ -177,17 +180,35 @@ def _linhas(pasta: Path, nome: str) -> set[tuple[str, ...]]:
         return {tuple(r) for r in list(csv.reader(f))[1:]}
 
 
+EVENTOS_CVM, EVENTOS_B3 = "eventos_cvm.csv", "eventos_b3.csv"  # o mesmo evento pode estar nos dois
+
+
+def _chave_evento(r: tuple[str, ...]) -> tuple[str, ...]:
+    """Emissor, ISIN, tipo, fator, data com e ISIN emitido (colunas iguais nos dois arquivos)."""
+    return (*r[:5], r[6] if len(r) > 6 else "")
+
+
 def _mudancas(atual: Path, nova: Path) -> Mudancas:
+    """O resumo antes de aplicar. Com a fonte da bolsa desligada (``fontes.b3``), os arquivos
+    dela não entram no resumo nem são abertos para contar."""
+    ligada = b3.ligada()
+
     def novas(nome: str) -> set[tuple[str, ...]]:
         return _linhas(nova, nome) - _linhas(atual, nome)
 
-    ativos = {r[0] for r in novas("instrumentos_b3.csv")} - {
-        r[0] for r in _linhas(atual, "instrumentos_b3.csv")}  # fmt: skip
+    ativos: set[str] = set()
+    if ligada:
+        ativos = {r[0] for r in novas("instrumentos_b3.csv")} - {
+            r[0] for r in _linhas(atual, "instrumentos_b3.csv")}  # fmt: skip
     arquivos = tuple(sorted(
         p.name for p in nova.iterdir()
-        if not (atual / p.name).is_file() or (atual / p.name).read_bytes() != p.read_bytes()
+        if (ligada or not p.name.endswith("_b3.csv"))
+        and (not (atual / p.name).is_file() or (atual / p.name).read_bytes() != p.read_bytes())
     ))  # fmt: skip
-    return Mudancas(ativos_novos=len(ativos), eventos_novos=len(novas("eventos_b3.csv")),
+    nomes = (EVENTOS_CVM, EVENTOS_B3) if ligada else (EVENTOS_CVM,)
+    eventos = {_chave_evento(r) for nome in nomes for r in novas(nome)} - {
+        _chave_evento(r) for nome in nomes for r in _linhas(atual, nome)}  # fmt: skip
+    return Mudancas(ativos_novos=len(ativos), eventos_novos=len(eventos),
                     selic_nova=tuple(sorted(r[0] for r in novas("selic_mensal.csv"))),
                     arquivos=arquivos)  # fmt: skip
 
@@ -207,7 +228,7 @@ def preparar(dados: Path, remoto: PacoteRemoto, obter: Baixar = baixar) -> Mudan
         raise AtualizacaoError(f"não foi possível gravar o pacote: {erro}") from erro
     info = referencias.info_pacote(nova)
     try:
-        if info is None or info != (referencias.FORMATO, remoto.data):
+        if info is None or info[0] not in referencias.FORMATOS_ACEITOS or info[1] != remoto.data:
             raise AtualizacaoError("pacote.json não confere com o release")
         # sem o cache de carregar(): a pasta "novo" é a mesma a cada pacote preparado
         referencias.carregar.__wrapped__(nova)

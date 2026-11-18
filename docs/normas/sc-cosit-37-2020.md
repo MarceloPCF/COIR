@@ -26,7 +26,7 @@
 ## Onde o COIR usa
 
 - `docs/regras-fiscais.md` R8 (PETZ3 -> AUAU3: parte resgatada sai por `REDUCAO_CAPITAL`, resgate é alienação fora de bolsa, no GCAP): **confere** com a SC; o critério de rateio do custo é inferência do projeto (o R8 já diz "confiança média").
-- `data/trocas_ticker.csv` (PETZ3), `data/saidas_b3.csv` (CTIP3 -> BVMF3), `coir/servicos/eventos.py`, `tests/fiscal_cases/test_petz_auau.py`, `tests/unit/test_servicos_eventos.py`: citação **confere** (CTIP3 é exatamente o caso da SC).
+- `data/trocas_ticker.csv` (PETZ3), `data/saidas.csv` (CTIP3 -> BVMF3), `coir/servicos/eventos.py`, `tests/fiscal_cases/test_petz_auau.py`, `tests/unit/test_servicos_eventos.py`: citação **confere** (CTIP3 é exatamente o caso da SC).
 
 ## Pontos em aberto
 

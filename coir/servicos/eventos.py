@@ -908,7 +908,7 @@ def _bonificacoes_do_pacote(
     fiscais: ReferenciasFiscais | None, pasta: Path | None
 ) -> BonificacoesDoPacote:
     """Ticker recebido -> (data ex, custo atribuído por ação, referência) das bonificações do pacote
-    público que trazem o custo (eventos_b3.csv). Vazio sem o pacote."""
+    público que trazem o custo (os da CVM). Vazio sem o pacote."""
     if fiscais is None or pasta is None:
         return {}
     por_isin = fontes.tickers_por_isin(pasta)
@@ -1065,7 +1065,7 @@ def _fim_do_prazo(
                  f"baixou em {baixa:%d/%m/%Y}")  # fmt: skip
 
 
-# eventos do pacote público (eventos_b3.csv: rótulos como a B3 escreve) -> tipo do evento
+# eventos do pacote público (rótulos como a B3 escreve) -> tipo do evento
 TIPOS_PACOTE = {
     "DESDOBRAMENTO": TipoEvento.DESDOBRAMENTO,
     "GRUPAMENTO": TipoEvento.GRUPAMENTO,
@@ -1081,7 +1081,7 @@ AJUSTA_SERIE = {t: t for t in (TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO,
 GRUPAMENTO_EXTREMO = Decimal("0.01")  # 100 viram 1 ou mais forte
 TIPOS_SEGUROS = frozenset({TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO})
 AVISO_ANTERIOR = "lance antes o evento anterior deste ativo: a quantidade pode mudar"
-FONTE_CUSTO_SEGURA = "cvm_ipe"  # coluna origem de eventos_b3.csv: comunicado da companhia na CVM
+FONTE_CUSTO_SEGURA = "cvm_ipe"  # origem do evento: comunicado da companhia na CVM
 AVISO_GRUPAMENTO_EXTREMO = (
     "confira o aviso aos acionistas: grupamento tão forte costuma vir seguido de desdobramento "
     "no mesmo dia (ex.: Itaú em 2011), sem mudar a quantidade; a B3 publica só o grupamento"

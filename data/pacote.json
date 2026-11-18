@@ -1,4 +1,69 @@
 {
- "formato": 2,
- "data": "2026-11-11"
+ "formato": 3,
+ "data": "2026-11-11",
+ "fontes": {
+  "b3": {
+   "licenca": "termos da B3",
+   "arquivos": [
+    "ativos_b3.csv",
+    "emissores_b3.csv",
+    "eventos_b3.csv",
+    "instrumentos_b3.csv",
+    "nomes_pregao_b3.csv",
+    "opcoes_raiz_b3.csv",
+    "proventos_b3.csv",
+    "proventos_historico_b3.csv",
+    "tipos_ativo_b3.csv"
+   ]
+  },
+  "bcb": {
+   "licenca": "ODbL-1.0",
+   "arquivos": [
+    "selic_mensal.csv"
+   ]
+  },
+  "curadoria": {
+   "licenca": "AGPL-3.0-or-later",
+   "arquivos": [
+    "ativos.csv",
+    "classes_acao.csv",
+    "contratos_futuros.csv",
+    "emissores.csv",
+    "instituicoes_b3.csv",
+    "mercados_bovespa.csv",
+    "opcoes_raiz.csv",
+    "saidas.csv",
+    "sufixos_especificacao.csv",
+    "tipos_ativo.csv",
+    "trocas_ticker.csv",
+    "vencimentos_opcoes_excecoes.csv"
+   ]
+  },
+  "cvm": {
+   "licenca": "ODbL-1.0",
+   "arquivos": [
+    "eventos_cvm.csv"
+   ]
+  },
+  "norma": {
+   "licenca": "AGPL-3.0-or-later",
+   "arquivos": [
+    "feriados.csv",
+    "irpf",
+    "isencao_pme.csv",
+    "parametros_fiscais.csv",
+    "vencimentos_opcoes.csv"
+   ]
+  },
+  "projeto": {
+   "licenca": "AGPL-3.0-or-later",
+   "arquivos": [
+    "LICENCA_DADOS.md",
+    "README.md",
+    "pacote.json",
+    "procedencia.csv",
+    "tolerancias.toml"
+   ]
+  }
+ }
 }

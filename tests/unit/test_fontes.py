@@ -5,7 +5,6 @@ fontes entra uma vez, com as origens somadas; conteúdo diferente na mesma chave
 maior precedência e fica registrado.
 """
 
-import csv
 from dataclasses import replace
 from pathlib import Path
 
@@ -14,6 +13,7 @@ from coir.fontes.composicao import juntar_eventos
 from coir.fontes.modelo import Evento, evento_valido
 from coir.fontes.provedores import b3, cvm
 from coir.recursos import pasta_data
+from tools.referencias.gerar import ler_eventos_pacote
 
 BASE = Evento(emissor="FICT", isin="BRFICTACNOR0", tipo="DESDOBRAMENTO", fator="100",
               data_com="2024-05-02", aprovado_em="2024-04-10", isin_emitido="", preco="",
@@ -22,8 +22,8 @@ BASE = Evento(emissor="FICT", isin="BRFICTACNOR0", tipo="DESDOBRAMENTO", fator="
 
 
 def _linhas_validas(pasta: Path) -> list[dict[str, str]]:
-    with (pasta / "eventos_b3.csv").open(encoding="utf-8", newline="") as f:
-        return [r for r in csv.DictReader(f) if evento_valido(r)]
+    """A tabela de eventos numa linha por evento (os arquivos da CVM e da bolsa juntos)."""
+    return [r for r in ler_eventos_pacote(pasta) if evento_valido(r)]
 
 
 def test_provedores_cobrem_a_tabela_sem_perder_linha() -> None:
