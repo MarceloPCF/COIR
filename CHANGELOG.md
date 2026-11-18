@@ -8,7 +8,7 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
-## [Não lançado]
+## [3.1.4] - 2026-11-18
 
 ### Adicionado
 - **Tela Simulação**: digite ordens de venda ou de compra à vista (várias, com preços diferentes) e veja o efeito no imposto antes de operar. O COIR apura as ordens com as mesmas regras da apuração mensal, sobre a carteira das notas importadas, e mostra lado a lado: sem as ordens, cenário A e cenário B. Cada ordem tem uma data em cada cenário; sem data, fica fora dele (execução parcial), e datas em meses diferentes comparam vender de uma vez ou aos poucos. Aparecem o imposto e a DARF de cada mês, o ganho isento e o limite de R$ 20 mil (que, estourado, tira a isenção de todas as vendas de ações do mês), o prejuízo a compensar que sobra, a quantidade e o custo que ficam na carteira e a parte que vira day trade com compra do mesmo dia na mesma corretora. O IRRF que a corretora reteria aparece como estimativa, sem reduzir o imposto. Nada é gravado, e a tela não sugere operações.
@@ -367,6 +367,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.1.4]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.4
 [3.1.3]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.3
 [3.1.2]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.2
 [3.1.1]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.1

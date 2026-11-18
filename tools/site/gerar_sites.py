@@ -89,6 +89,7 @@ TELAS = [
         "Notas em PDF (também com senha) e planilhas da B3, com conferência de cada nota.",
     ),
     ("Notas e operações", "A nota ao lado do original e o livro de operações com filtros."),
+    ("Simulação", "O efeito no imposto de vendas e compras antes de operar, sem gravar nada."),
     ("Apuração mensal", "Resultado por categoria e por ativo, com a memória de cálculo do mês."),
     ("DARF", "Vencimento em dia útil, multa e juros por atraso e o registro do pagamento."),
     ("Proventos", "Dividendos, JCP e reembolsos, com a data do crédito do JCP."),
