@@ -106,6 +106,9 @@ body.body--dark {{ --q-primary: #2E6FB8; }}
 .coir-marca {{ font-family: {FONTE_TITULO}; font-size: 28px; font-weight: 700; line-height: 1;
   letter-spacing: .03em; color: var(--coir-topo-tinta); }}
 .coir-marca-nome {{ font-size: 12px; line-height: 1.2; color: #A8D4FF; max-width: 150px; }}
+.coir-marca-versao {{ font-size: 11px; line-height: 1; color: #A8D4FF; align-self: flex-end;
+  margin-left: -6px; padding-bottom: 3px; font-variant-numeric: tabular-nums;
+  white-space: nowrap; }}
 .coir-lateral {{ background: var(--coir-lateral); color: var(--coir-lateral-tinta); }}
 .coir-lateral, .coir-lateral * {{ scrollbar-color: rgba(255,255,255,.22) transparent; }}
 .coir-lateral .q-item {{ color: var(--coir-lateral-tinta); border-radius: 4px; min-height: 36px;

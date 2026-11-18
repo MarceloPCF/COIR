@@ -11,7 +11,7 @@ from nicegui import run, ui
 from nicegui.events import ValueChangeEventArguments
 
 from coir import auditoria
-from coir.config import ARQUIVO_REGISTRO
+from coir.config import ARQUIVO_REGISTRO, VERSAO
 from coir.erros import CoirError
 from coir.servicos.estado import Estado, Pendencia
 from coir.ui import ajuda, ocupado, preferencias, tema
@@ -134,6 +134,8 @@ def _itens(telas: tuple[Tela, ...]) -> None:
 def _marca() -> None:
     with ui.row().classes("items-center gap-3 no-wrap").mark("marca"):
         ui.label("COIR").classes("coir-marca")
+        versao = ui.label(VERSAO).classes("coir-marca-versao").mark("versao-topo")
+        versao.tooltip("Versão instalada")
         ui.label("Controle de Operações e Imposto de Renda").classes("coir-marca-nome gt-sm")
 
 
