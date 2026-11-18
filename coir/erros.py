@@ -11,11 +11,12 @@ from coir.auditoria import erro_de_dominio
 class CoirError(Exception):
     """Base de todos os erros do COIR. Todo erro nasce registrado na auditoria, porque a tela só
     mostra a mensagem. Ficam de fora os do caminho normal, registrados pelo resultado: a nota
-    rejeitada (``ExtracaoError``) e o ativo isolado (``MotorError``)."""
+    rejeitada (``ExtracaoError``), o ativo isolado (``MotorError``) e a ordem que a tela Simulação
+    recusa (``SimulacaoError``: digitação do usuário, e o motor não escreve em disco)."""
 
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
-        if not isinstance(self, ExtracaoError | MotorError):
+        if not isinstance(self, ExtracaoError | MotorError | SimulacaoError):
             erro_de_dominio(self)
 
 

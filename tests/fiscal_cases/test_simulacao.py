@@ -1,6 +1,6 @@
 """Simulação de ordens (tela Simulação): o motor apura as ordens digitadas como notas a mais, sem
 regra própria, e compara com a base até o mesmo mês. Números conferidos à mão, sem custos e sem
-IRRF nas ordens (casos S1 a S9 do parecer fiscal de 18/11/2026).
+IRRF nas ordens (casos S1 a S9, critério do COIR de 18/11/2026).
 
 Fontes: Lei 11.033/2004 art. 2º II (15%) e §§1º, 4º e 5º (IRRF de 0,005% e dispensa mensal até
 R$ 1,00) e art. 3º I (limite de R$ 20.000,00 das alienações de ações no mês); IN RFB 1.585/2015

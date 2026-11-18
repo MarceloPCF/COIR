@@ -229,7 +229,7 @@ def _acima_da_posicao(
     params: ParametrosFiscais, ate: date,
 ) -> None:  # fmt: skip
     """Venda acima da posição da conta: o motor apuraria venda a descoberto, que não é o que a
-    simulação quer mostrar (parecer de 18/11/2026). Confere na visão por conta."""
+    simulação quer mostrar (critério do COIR de 18/11/2026). Confere na visão por conta."""
     movs = movimentar([*entradas.notas, *sinteticas], entradas.eventos, params, ate, Visao.CONTA,
                       isolados=[])  # fmt: skip
     for m in movs:

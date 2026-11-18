@@ -19,7 +19,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 9.430/1996 | 20 | [lei-9430-1996.md](normas/lei-9430-1996.md) |
 | Lei 9.779/1999 | 1 | [lei-9779-1999.md](normas/lei-9779-1999.md) |
 | Lei 9.959/2000 | 8 | [lei-9959-2000.md](normas/lei-9959-2000.md) |
-| Lei 11.033/2004 | 47 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
+| Lei 11.033/2004 | 48 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
 | Lei 11.051/2004 | 5 | [lei-11051-2004.md](normas/lei-11051-2004.md) |
 | Lei 11.196/2005 | 1 | [lei-11196-2005.md](normas/lei-11196-2005.md) |
 | Lei 11.312/2006 | 6 | — |
@@ -33,7 +33,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 15.270/2025 | 16 | [lei-15270-2025.md](normas/lei-15270-2025.md) |
 | MP 497/2010 | 3 | [mp-497-2010.md](normas/mp-497-2010.md) |
 | IN RFB 1.022/2010 | 5 | [in-rfb-1022-2010.md](normas/in-rfb-1022-2010.md) |
-| IN RFB 1.585/2015 | 144 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
+| IN RFB 1.585/2015 | 145 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
 | IN RFB 1.700/2017 | 2 | [in-rfb-1700-2017.md](normas/in-rfb-1700-2017.md) |
 | IN RFB 1.916/2019 | 1 | [in-rfb-1916-2019.md](normas/in-rfb-1916-2019.md) |
 | Res. CMN 4.880/2020 | 1 | [res-cmn-4880-2020.md](normas/res-cmn-4880-2020.md) |
@@ -57,7 +57,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | CTN | 10 | [lei-5172-1966-ctn.md](normas/lei-5172-1966-ctn.md) |
 | Súmula STJ 360 | 1 | — |
 | REsp 1.149.022/SP | 1 | — |
-| RIR/2018 | 9 | [decreto-9580-2018-rir.md](normas/decreto-9580-2018-rir.md) |
+| RIR/2018 | 10 | [decreto-9580-2018-rir.md](normas/decreto-9580-2018-rir.md) |
 | Instrução Normativa SRF 25/2001 | 6 | — |
 | Instrução Normativa SRF 41/1998 | 5 | [in-srf-41-1998.md](normas/in-srf-41-1998.md) |
 
@@ -401,7 +401,8 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_base_da_reparticao_usa_o_bruto_e_ignora_venda_por_exercicio: Lei 11.033/2004 art. 2º §2º: venda por exercício fora da base do 0,005%. Agosto/2026, uma nota: V 1.000 AAAA3 a…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …8º e art. 14 III (JCP a 17,5% pago ou creditado desde 01/01/2026, na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e…
 - `tests/fiscal_cases/test_proventos.py` — test_atualizacao_do_provento_pela_selic_e_tributacao_exclusiva: …(B3). Para 100 ações: bruto 5,684 -> 5,68; retidos 22,5% como renda fixa (Lei 8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º) -> líquido 4,40, IRRF 1,28. Não é dividendo: fora da Lei 15.270.
-- `tests/fiscal_cases/test_simulacao.py` — módulo: …à mão, sem custos e sem IRRF nas ordens (casos S1 a S9 do parecer fiscal de 18/11/2026). Fontes: Lei 11.033/2004 art. 2º II (15%) e §§1º, 4º e 5º (IRRF de 0,005% e dispensa mensal até R$ 1,00) e art. 3º I…
+- `tests/fiscal_cases/test_simulacao.py` — módulo: …Números conferidos à mão, sem custos e sem IRRF nas ordens (casos S1 a S9, critério do COIR). Fontes: Lei 11.033/2004 art. 2º II (15%) e §§1º, 4º e 5º (IRRF de 0,005% e dispensa mensal até R$ 1,00) e art. 3º I…
+- `tests/fiscal_cases/test_simulacao.py` — test_irrf_estimado_soma_as_vendas_reais_do_mes_antes_da_ordem: A dispensa de R$ 1,00 é do mês inteiro na corretora (Lei 11.033/2004 art. 2º §§4º e 5º): venda real de 15.000,00 em 03/11 (0,75, dispensada sozinha) e ordem de…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …do termo; a isenção alcança só o ganho das vendas comuns. Números conferidos à mão, sem custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — test_day_trade_de_unit_ou_etf_fica_fora_da_soma: …= true, a unit entra: soma 23.000,00, isento 0, 15% x 5.000,00 = 750,00 + 40,00 - 2,00 = DARF 788,00 (Lei 11.033/2004 art. 3º I).
 
@@ -709,6 +710,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_simulacao.py` — módulo: …e dispensa mensal até R$ 1,00) e art. 3º I (limite de R$ 20.000,00 das alienações de ações no mês); IN RFB 1.585/2015 art. 59 I e §2º (soma do limite e isenção), art. 63 (IRRF de 0,005%), art. 65 §§1º a 4º (day trade…
 - `tests/fiscal_cases/test_simulacao.py` — test_compra_hipotetica_seguida_de_venda_no_mesmo_dia_e_day_trade: Compra simulada de 1.000 a 11,00 e venda simulada de 1.000 a 11,50 no mesmo dia e corretora: day trade de 500,00 x 20% = 100,00 (IN RFB 1.585/2015 art. 65 §§1º e 3º). IRRF estimado de 1% sobre 500,00 = 5,00.
 - `tests/fiscal_cases/test_simulacao.py` — test_custos_reduzem_o_ganho_mas_nao_a_soma_do_limite: 1.924 a 10,40 (20.009,60) com R$ 20,00 de custos: a soma do limite é bruta e passa dele; o ganho cai para 749,60 (IN RFB 1.585/2015 art. 56 §3º): 112,44.
+- `tests/fiscal_cases/test_simulacao.py` — test_duas_ordens_no_dia_so_a_primeira_casa_com_a_compra_do_dia: …ordens de venda de 1.000 a 11,20 e de 500 a 11,50 no mesmo dia e corretora. Pela ordem dos negócios (IN RFB 1.585/2015 art. 65 §3º), a primeira venda casa com a compra (day trade de 200,00); a segunda é comum, pelo PM…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I ("total das alienações desse ativo") e §2º I e IV (a isenção não se aplica a day trade,…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — test_day_trade_de_unit_ou_etf_fica_fora_da_soma: …(venda 8.000,00; ganho 200,00; IRRF 2,00). Units (R4a, parâmetro units_na_isencao = false) e ETF (IN RFB 1.585/2015 art. 59 §2º II) não são ações para o limite: soma 15.000,00, ganho comum isento 5.000,00, imposto…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — test_mes_so_de_day_trade_acima_do_limite_nao_avisa: …19,50 / 20,00, venda 25.000,00, ganho 625,00; imposto 20% = 125,00; IRRF de 1% sobre o ganho = 6,25 (IN RFB 1.585/2015 art. 65 §§8º e 11); DARF 118,75. A soma passa do limite, mas não há ganho comum que pudesse ser…
@@ -889,6 +891,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 - `coir/engine/apuracao.py` — módulo: …inclusive para o ano seguinte (Lei 9.430/1996 art. 68 §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915).
 - `coir/engine/calendario.py` — módulo: …de termo (datas sempre por parâmetro). - DARF: último dia útil (bancário) do mês seguinte ao da apuração (RIR/2018 art. 915; Lei 9.430/1996 art. 68 §1º para o acúmulo abaixo do mínimo). - Opções sobre ações: regra…
+- `coir/engine/simulacao.py` — ultimo_mes: Último mês simulável: a DARF dele vence no mês seguinte (RIR/2018 art. 915), que o calendário tem de cobrir; a de dezembro venceria em janeiro do ano que ele não tem.
 - `data/parametros_fiscais.csv` — aliquota_comum: Lei 11.033/2004 art. 2º II; RIR/2018 art. 839
 - `docs/regras-fiscais.md` — R12: …| `data/feriados.csv` (o último dia útil do ano não é útil: Res. CMN 4.880/2020 art. 3º) + acúmulo | RIR/2018 art. 915; Lei 9.430/1996 art. 68 caput e §1º | A
 - `docs/regras-fiscais.md` — R18: …| IN RFB 1.585/2015 arts. 47 I b, 58, 59 I e §2º IV, 62 II e III e 63 III a; RIR/2018 art. 848; critério do COIR | A no momento e na isenção; M no PM da data da liquidação e na soma do…
