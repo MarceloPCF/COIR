@@ -3,7 +3,7 @@
  "data": "2026-11-11",
  "fontes": {
   "b3": {
-   "licenca": "termos da B3",
+   "licenca": "fonte pública da B3",
    "arquivos": [
     "ativos_b3.csv",
     "emissores_b3.csv",

@@ -10,7 +10,7 @@
 ``atualizar`` coleta as fontes públicas, regrava em data/ os arquivos gerados que mudaram e escreve
 o resumo das mudanças (corpo do PR semanal). Sai com código 0 mesmo sem mudança.
 
-``nomes`` refaz ``nomes_pregao_b3.csv`` com o COTAHIST de 2008 em diante (a coleta semanal só lê o
+``nomes`` refaz ``nomes_pregao_b3.csv`` com o COTAHIST de 2008 em diante (a coleta só lê o
 ano corrente). ``pregao`` diz se vale coletar hoje: fim de semana e feriado da B3 ficam para o
 próximo dia útil.
 
