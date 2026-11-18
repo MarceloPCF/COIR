@@ -517,6 +517,18 @@ na pasta de <code>COIR_CACHE_B3</code>) exige que tudo isso saia vazio.</li>
 companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020, Tarpon 2019, GTD
 2013...) fica registrada em <code>sem_evento.csv</code> como redução de capital, sem proposta no app.</p>
 
+<p>Fontes por origem e a chave <code>fontes.b3</code> (decisão em <code>docs/adr/0005-fontes-por-origem.md</code>):</p>
+
+<ul>
+<li>cada origem tem os seus arquivos, e <code>data/procedencia.csv</code> diz a categoria e a licença de cada
+um; o app junta as origens por conceito (eventos, emissores, tipos de ativo);</li>
+<li><code>"fontes.b3": "desligada"</code> no <code>config.json</code> faz o app usar só a curadoria e os dados abertos da
+CVM e do Banco Central, sem abrir as tabelas da bolsa. Fica sem cobertura o que só a bolsa
+dá: nome de pregão de ativo fora de <code>ativos.csv</code>, eventos que só a bolsa lista, proventos em
+dinheiro, restituição de capital, o aviso de ativo que parou de negociar e o tipo de ETF, BDR,
+FIP, FIDC e FI-Infra que não estiver em <code>tipos_ativo.csv</code>.</li>
+</ul>
+
 <p>Licenças e atribuição (<code>data/LICENCA_DADOS.md</code> acompanha as tabelas):</p>
 
 <ul>

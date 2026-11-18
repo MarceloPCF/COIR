@@ -1,5 +1,5 @@
 """F7b: "Atualizar tabelas" — o app só usa o pacote público se cada arquivo bater com o SHA-256 do
-manifesto, o formato for o desta versão e as tabelas carregarem; sem rede, nada muda."""
+manifesto, o formato for um dos que esta versão lê e as tabelas carregarem; sem rede, nada muda."""
 
 import json
 import shutil

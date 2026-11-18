@@ -161,8 +161,9 @@ def _conferir(bruto: bytes) -> dict[str, bytes]:
     if not isinstance(manifesto, dict) or not isinstance(manifesto.get("arquivos"), dict):
         raise AtualizacaoError("manifesto fora do formato")
     if manifesto.get("formato") not in referencias.FORMATOS_ACEITOS:
-        raise AtualizacaoError(f"pacote no formato {manifesto.get('formato')}; esta versão lê o "
-                               f"formato {referencias.FORMATO} (atualize o COIR)")  # fmt: skip
+        aceitos = " e ".join(str(f) for f in sorted(referencias.FORMATOS_ACEITOS))
+        raise AtualizacaoError(f"pacote no formato {manifesto.get('formato')}; esta versão lê os "
+                               f"formatos {aceitos} (atualize o COIR)")  # fmt: skip
     esperados = {str(k): str(v) for k, v in manifesto["arquivos"].items()}
     if set(esperados) != set(conteudo):
         raise AtualizacaoError("arquivos do pacote não conferem com o manifesto")

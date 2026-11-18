@@ -130,6 +130,16 @@ Restituição de capital em dinheiro: a aba de proventos da B3 (`REST CAP DIN`) 
 companhias listadas hoje; a de companhia que já saiu da bolsa (CR2 2015 e 2020, Tarpon 2019, GTD
 2013...) fica registrada em `sem_evento.csv` como redução de capital, sem proposta no app.
 
+Fontes por origem e a chave `fontes.b3` (decisão em `docs/adr/0005-fontes-por-origem.md`):
+
+- cada origem tem os seus arquivos, e `data/procedencia.csv` diz a categoria e a licença de cada
+  um; o app junta as origens por conceito (eventos, emissores, tipos de ativo);
+- `"fontes.b3": "desligada"` no `config.json` faz o app usar só a curadoria e os dados abertos da
+  CVM e do Banco Central, sem abrir as tabelas da bolsa. Fica sem cobertura o que só a bolsa
+  dá: nome de pregão de ativo fora de `ativos.csv`, eventos que só a bolsa lista, proventos em
+  dinheiro, restituição de capital, o aviso de ativo que parou de negociar e o tipo de ETF, BDR,
+  FIP, FIDC e FI-Infra que não estiver em `tipos_ativo.csv`.
+
 Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 - CVM: contém informações do Portal de Dados Abertos da CVM (https://dados.cvm.gov.br), sob a

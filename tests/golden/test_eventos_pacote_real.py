@@ -1,9 +1,9 @@
-"""Cobertura do pacote público de eventos (data/eventos_b3.csv) contra os eventos já validados do
-usuário (banco real, cópia): todo desdobramento, grupamento e bonificação lançado, de companhia
-ainda listada, tem no pacote o evento com a data ex até uma semana antes da data lançada (o
-gabarito costuma lançar no dia do crédito) e o mesmo fator: a quantidade lançada é a que o fator
-do pacote dá sobre a posição na data com sem o próprio evento. Ajuste de série de opção conta pelo
-evento do ativo-objeto.
+"""Cobertura do pacote público de eventos (data/eventos_cvm.csv e data/eventos_b3.csv) contra
+os eventos já validados do usuário (banco real, cópia): todo desdobramento, grupamento e
+bonificação lançado, de companhia ainda listada, tem no pacote o evento com a data ex até uma
+semana antes da data lançada (o gabarito costuma lançar no dia do crédito) e o mesmo fator: a
+quantidade lançada é a que o fator do pacote dá sobre a posição na data com sem o próprio
+evento. Ajuste de série de opção conta pelo evento do ativo-objeto.
 
 Falha lista o que falta (o pacote não traz, ou traz com outra data ou fator).
 """

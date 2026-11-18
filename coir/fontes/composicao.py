@@ -1,4 +1,7 @@
-"""Junta os provedores por conceito, com a precedência curadoria > CVM/BCB > bolsa.
+"""Junta os provedores por conceito. Precedência: nos eventos, CVM > bolsa (a curadoria não tem
+tabela de eventos); nos emissores e tipos de ativo, curadoria > bolsa > CVM, porque a bolsa diz
+quem tem o código hoje e a CVM só completa (``correcoes_por_ticker`` é a exceção do ticker
+antigo).
 
 O mesmo registro em duas fontes entra uma vez, com as origens somadas. Conteúdo diferente na mesma
 chave é divergência: vale a fonte de maior precedência e a diferença fica registrada (a mesma regra

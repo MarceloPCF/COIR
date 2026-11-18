@@ -69,8 +69,7 @@ def pasta_efetiva(dados: Path | None) -> Path:
 def definir_fonte_b3(modo: str) -> bool:
     """Liga ou desliga a fonte da bolsa (chave ``fontes.b3``) e limpa os caches das tabelas;
     devolve se ela ficou ligada. ``pacote`` (padrão) lê os arquivos da bolsa do pacote em uso;
-    ``desligada`` não abre nenhum. ``local`` (baixar no PC do usuário) ainda não existe: sem os
-    arquivos locais, vale como desligada."""
+    ``desligada`` não abre nenhum. ``local`` é reservado: por ora vale como desligada."""
     if modo not in MODOS_B3:
         raise ConfiguracaoError(f"fontes.b3: {modo!r} inválido (use {', '.join(MODOS_B3)})")
     ligada = modo == "pacote"

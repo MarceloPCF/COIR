@@ -1,8 +1,8 @@
 """Dados de referência por conceito (eventos, proventos, cadastro de instrumentos e emissores...).
 
 Os serviços pedem o conceito, sem saber a fonte: cada origem (curadoria do projeto, CVM, Banco
-Central, bolsa) tem o seu provedor em ``provedores/``, e ``composicao`` junta os provedores com a
-precedência curadoria > CVM/BCB > bolsa, registrando as divergências. As tabelas fixas do motor
+Central, bolsa) tem o seu provedor em ``provedores/``, e ``composicao`` junta os provedores pela
+precedência de cada conceito, registrando as divergências. As tabelas fixas do motor
 (``Referencias`` e ``ReferenciasFiscais``) continuam em ``coir.referencias``.
 """
 
