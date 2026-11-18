@@ -413,7 +413,8 @@ def test_motor_so_levanta_erro_fora_do_registro() -> None:
     """O motor não escreve em disco (regra 6): os erros dele não são registrados ao nascer."""
     from coir import erros
 
-    permitidos = {"MotorError", "ReferenciaError", "ConciliacaoError", "ExtracaoError"}
+    permitidos = {"MotorError", "ReferenciaError", "ConciliacaoError", "ExtracaoError",
+                  "SimulacaoError"}  # fmt: skip
     dominio = {n for n, c in vars(erros).items() if isinstance(c, type)
                and issubclass(c, erros.CoirError)}  # fmt: skip
     for arquivo in Path("coir/engine").rglob("*.py"):

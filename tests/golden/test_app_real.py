@@ -66,6 +66,7 @@ CONTEUDO = {
     "/inicio": "Bem-vindo ao COIR",
     "/opcoes": "Prêmio das abertas", "/futuros": "Resultado de 2026",
     "/proventos": "Dividendos · isentos (09)", "/outros-custos": "Total do ano:",
+    "/simulacao": "Notas importadas até",
     "/conciliacao": "Posição em ",
     "/eventos": "Eventos lançados (", "/declaracao": "Imposto pago/retido",
 }  # fmt: skip

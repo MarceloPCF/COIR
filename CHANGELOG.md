@@ -10,6 +10,9 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ## [Não lançado]
 
+### Adicionado
+- **Tela Simulação**: digite ordens de venda ou de compra à vista (várias, com preços diferentes) e veja o efeito no imposto antes de operar. O COIR apura as ordens com as mesmas regras da apuração mensal, sobre a carteira das notas importadas, e mostra lado a lado: sem as ordens, cenário A e cenário B. Cada ordem tem uma data em cada cenário; sem data, fica fora dele (execução parcial), e datas em meses diferentes comparam vender de uma vez ou aos poucos. Aparecem o imposto e a DARF de cada mês, o ganho isento e o limite de R$ 20 mil (que, estourado, tira a isenção de todas as vendas de ações do mês), o prejuízo a compensar que sobra, a quantidade e o custo que ficam na carteira e a parte que vira day trade com compra do mesmo dia na mesma corretora. O IRRF que a corretora reteria aparece como estimativa, sem reduzir o imposto. Nada é gravado, e a tela não sugere operações.
+
 ### Alterado
 - **Versão só no título da janela**: o número da versão deixa de aparecer também ao lado de "COIR" no topo; continua no título da janela.
 - **Menu lateral mais compacto**: os itens dos grupos ficam mais próximos, e o menu inteiro cabe numa tela de altura comum.

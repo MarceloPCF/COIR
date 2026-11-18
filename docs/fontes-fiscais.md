@@ -16,10 +16,10 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 8.981/1995 | 13 | [lei-8981-1995.md](normas/lei-8981-1995.md) |
 | Lei 9.249/1995 | 24 | [lei-9249-1995.md](normas/lei-9249-1995.md) |
 | Lei 9.250/1995 | 8 | [lei-9250-1995.md](normas/lei-9250-1995.md) |
-| Lei 9.430/1996 | 19 | [lei-9430-1996.md](normas/lei-9430-1996.md) |
+| Lei 9.430/1996 | 20 | [lei-9430-1996.md](normas/lei-9430-1996.md) |
 | Lei 9.779/1999 | 1 | [lei-9779-1999.md](normas/lei-9779-1999.md) |
-| Lei 9.959/2000 | 5 | [lei-9959-2000.md](normas/lei-9959-2000.md) |
-| Lei 11.033/2004 | 43 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
+| Lei 9.959/2000 | 8 | [lei-9959-2000.md](normas/lei-9959-2000.md) |
+| Lei 11.033/2004 | 48 | [lei-11033-2004.md](normas/lei-11033-2004.md) |
 | Lei 11.051/2004 | 5 | [lei-11051-2004.md](normas/lei-11051-2004.md) |
 | Lei 11.196/2005 | 1 | [lei-11196-2005.md](normas/lei-11196-2005.md) |
 | Lei 11.312/2006 | 6 | — |
@@ -33,7 +33,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 15.270/2025 | 16 | [lei-15270-2025.md](normas/lei-15270-2025.md) |
 | MP 497/2010 | 3 | [mp-497-2010.md](normas/mp-497-2010.md) |
 | IN RFB 1.022/2010 | 5 | [in-rfb-1022-2010.md](normas/in-rfb-1022-2010.md) |
-| IN RFB 1.585/2015 | 135 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
+| IN RFB 1.585/2015 | 145 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
 | IN RFB 1.700/2017 | 2 | [in-rfb-1700-2017.md](normas/in-rfb-1700-2017.md) |
 | IN RFB 1.916/2019 | 1 | [in-rfb-1916-2019.md](normas/in-rfb-1916-2019.md) |
 | Res. CMN 4.880/2020 | 1 | [res-cmn-4880-2020.md](normas/res-cmn-4880-2020.md) |
@@ -57,7 +57,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | CTN | 10 | [lei-5172-1966-ctn.md](normas/lei-5172-1966-ctn.md) |
 | Súmula STJ 360 | 1 | — |
 | REsp 1.149.022/SP | 1 | — |
-| RIR/2018 | 8 | [decreto-9580-2018-rir.md](normas/decreto-9580-2018-rir.md) |
+| RIR/2018 | 10 | [decreto-9580-2018-rir.md](normas/decreto-9580-2018-rir.md) |
 | Instrução Normativa SRF 25/2001 | 6 | — |
 | Instrução Normativa SRF 41/1998 | 5 | [in-srf-41-1998.md](normas/in-srf-41-1998.md) |
 
@@ -338,6 +338,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_multa_mora.py` — test_contagem_literal_da_lei_por_parametro: Lei 9.430/1996 art. 61 §1º: do dia seguinte ao vencimento, em dias corridos.
 - `tests/fiscal_cases/test_multa_mora.py` — test_multa_de_mora_como_a_receita: Lei 9.430/1996 art. 61; contagem e centavos como decididos (rfb, ROUND_DOWN).
 - `tests/fiscal_cases/test_saldos_iniciais.py` — test_imposto_acumulado_abaixo_do_minimo_continua_no_ano_seguinte: …(leitura conservadora): o imposto abaixo de R$ 10 em 31/12 não some; acumula até o total chegar a R$ 10 (Lei 9.430/1996 art. 68 §1º). Saldo inicial em 31/12/2024: imposto acumulado de 6,00. Março/2025: venda de 1.000…
+- `tests/fiscal_cases/test_simulacao.py` — módulo: …o resultado do dia), art. 37 §2º (prejuízo só na mesma categoria); Lei 9.959/2000 art. 8º (day trade); Lei 9.430/1996 art. 68 §1º (DARF abaixo de R$ 10,00 acumula); RIR/2018 art. 915 (vencimento no último dia útil do…
 
 ## Lei 9.779/1999
 
@@ -345,11 +346,14 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 ## Lei 9.959/2000
 
+- `coir/engine/simulacao.py` — _irrf_day_trade: 1% a mais sobre o resultado positivo de day trade do dia por corretora, compensadas as perdas do dia (Lei 9.959/2000 art. 8º; IN RFB 1.585/2015 art. 65 caput e §4º). Estimativa.
+- `data/parametros_fiscais.csv` — aliquota_irrf_day_trade: Lei 9.959/2000 art. 8º caput; IN RFB 1.585/2015 art. 65 caput e §4º: 1% sobre o resultado positivo do dia na mesma instituição, compensadas as perdas de day trade do dia. Só para a estimativa exibida na tela Simulação; o cálculo usa o IRRF impresso nas notas
 - `data/parametros_fiscais.csv` — day_trade_mesma_corretora: Lei 9.959/2000 art. 8º §1º I a (redação original: a quantidade negociada tem de ter sido liquidada); IN SRF 25/2001 art. 31 §6º e IN RFB 1.022/2010 art. 54 §6º (redação original): operação iniciada numa instituição e encerrada em outra, com liquidação física e movimentação da custódia, não é day trade
 - `docs/regras-fiscais.md` — Critérios do COIR: trade (Lei 9.959/2000 art. 8º §§6º e 7º).
 - `docs/regras-fiscais.md` — Pendências do motor: intermediadora" (Lei 9.959/2000 art. 8º §1º) compara a corretora da nota: XP, Clear e Rico são
 - `docs/regras-fiscais.md` — R6: …meses seguintes do ano; em dezembro, o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_irrf_de_day_trade_e_consumido_primeiro: IRRF em saldo único (Lei 9.959/2000 art. 8º §4º; IN 1.585 art. 65 §8º; P&R IRPF 2026 pergunta 714): abate o imposto total do mês.…
+- `tests/fiscal_cases/test_simulacao.py` — módulo: …pela ordem dos negócios; 1% sobre o resultado do dia), art. 37 §2º (prejuízo só na mesma categoria); Lei 9.959/2000 art. 8º (day trade); Lei 9.430/1996 art. 68 §1º (DARF abaixo de R$ 10,00 acumula); RIR/2018 art.…
 
 ## Lei 11.033/2004
 
@@ -357,16 +361,19 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `coir/engine/fiagro.py` — módulo: …aviso. - Rendimento de Fiagro antes de 11/06/2021: sem isenção (parâmetro ``fiagro_rendimento_isento``; Lei 11.033/2004 art. 3º III, red. Lei 14.130/2021, veto derrubado no DOU de 11/06/2021). - Requisitos da isenção…
 - `coir/engine/fichas.py` — módulo: …IRPF (comuns/day trade e FII), com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §8º; critério do COIR: separar só na…
 - `coir/engine/proventos.py` — módulo: …(1 - alíquota), centavos arredondados (estimativa: vale o informe). - Rendimento de FII/Fiagro: isento (Lei 11.033/2004 art. 3º III). "Rendimento" em ação pago junto com um dividendo ou JCP do mesmo código e dia: a…
+- `coir/engine/simulacao.py` — _irrf_alienacao: …retenção sobre a soma das alienações do mês na corretora, dispensada quando igual ou inferior a R$ 1,00 (Lei 11.033/2004 art. 2º §§1º, 4º e 5º; IN RFB 1.585/2015 art. 63). Estimativa: o cálculo usa o IRRF impresso nas…
 - `data/irpf/2025.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/irpf/2026.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/irpf/2027.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/parametros_fiscais.csv` — aliquota_comum: Lei 11.033/2004 art. 2º II; RIR/2018 art. 839
 - `data/parametros_fiscais.csv` — aliquota_day_trade: Lei 11.033/2004 art. 2º I
+- `data/parametros_fiscais.csv` — aliquota_irrf_alienacao: Lei 11.033/2004 art. 2º §1º I a IV; IN RFB 1.585/2015 art. 63 caput: 0,005% sobre a alienação à vista, a soma positiva dos prêmios do dia, o termo e os ajustes no encerramento; exceto day trade (Lei 11.033/2004 art. 2º §§1º e 3º) e exercício (IN RFB 1.585/2015 art. 63 §3º II a). Só para a estimativa exibida na tela Simulação; o cálculo usa o IRRF impresso nas notas
 - `data/parametros_fiscais.csv` — day_trade_na_soma_limite: Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)
 - `data/parametros_fiscais.csv` — fiagro_rendimento_isento: Lei 11.033/2004 art. 3º III (red. Lei 14.130/2021 art. 4º; veto derrubado, DOU 11/06/2021)
 - `data/parametros_fiscais.csv` — fiagro_rendimento_isento: Lei 14.130/2021 (cria o Fiagro em 29/03/2021; a extensão da isenção da Lei 11.033 art. 3º III foi vetada e o veto derrubado só no DOU de 11/06/2021); critério do COIR (leitura conservadora)
 - `data/parametros_fiscais.csv` — fii_isencao_minimo_cotistas: Lei 11.033/2004 art. 3º parágrafo único I (red. Lei 11.196/2005 art. 125)
 - `data/parametros_fiscais.csv` — fii_isencao_minimo_cotistas: Lei 11.033/2004 art. 3º §1º I e III (red. Lei 14.754/2023 art. 41; enquadramento até 30/06/2024): 100 cotistas e o grupo de pessoas ligadas sem 30% ou mais das cotas
+- `data/parametros_fiscais.csv` — irrf_alienacao_dispensa: Lei 11.033/2004 art. 2º §§4º e 5º; IN RFB 1.585/2015 art. 63 §§4º a 6º: dispensada a retenção igual ou inferior a R$ 1,00, somado o imposto das operações do mês (estimativa por corretora, que é quem retém). Só para a estimativa exibida na tela Simulação
 - `data/parametros_fiscais.csv` — limite_isencao_acoes: Lei 11.033/2004 art. 3º I (valor bruto das alienações de ações à vista no mês)
 - `docs/regras-fiscais.md` — Critérios do COIR: saldo único (a lei e a IN não separam o IRRF de FII; Lei 11.033/2004 art. 2º §7º). As fichas do
 - `docs/regras-fiscais.md` — Critérios do COIR: venda de ação no limite (Lei 11.033/2004 art. 3º I; critério do COIR,
@@ -394,6 +401,8 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_irrf_fichas.py` — test_base_da_reparticao_usa_o_bruto_e_ignora_venda_por_exercicio: Lei 11.033/2004 art. 2º §2º: venda por exercício fora da base do 0,005%. Agosto/2026, uma nota: V 1.000 AAAA3 a…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …8º e art. 14 III (JCP a 17,5% pago ou creditado desde 01/01/2026, na data do pagamento ou do crédito); Lei 11.033/2004 art. 3º III (rendimentos de FII isentos); IN RFB 1.585/2015 art. 74 e Lei 15.265/2025 arts. 20 e…
 - `tests/fiscal_cases/test_proventos.py` — test_atualizacao_do_provento_pela_selic_e_tributacao_exclusiva: …(B3). Para 100 ações: bruto 5,684 -> 5,68; retidos 22,5% como renda fixa (Lei 8.981/1995 art. 65 §4º c; Lei 11.033/2004 art. 1º) -> líquido 4,40, IRRF 1,28. Não é dividendo: fora da Lei 15.270.
+- `tests/fiscal_cases/test_simulacao.py` — módulo: …Números conferidos à mão, sem custos e sem IRRF nas ordens (casos S1 a S9, critério do COIR). Fontes: Lei 11.033/2004 art. 2º II (15%) e §§1º, 4º e 5º (IRRF de 0,005% e dispensa mensal até R$ 1,00) e art. 3º I…
+- `tests/fiscal_cases/test_simulacao.py` — test_irrf_estimado_soma_as_vendas_reais_do_mes_antes_da_ordem: A dispensa de R$ 1,00 é do mês inteiro na corretora (Lei 11.033/2004 art. 2º §§4º e 5º): venda real de 15.000,00 em 03/11 (0,75, dispensada sozinha) e ordem de…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …do termo; a isenção alcança só o ganho das vendas comuns. Números conferidos à mão, sem custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — test_day_trade_de_unit_ou_etf_fica_fora_da_soma: …= true, a unit entra: soma 23.000,00, isento 0, 15% x 5.000,00 = 750,00 + 40,00 - 2,00 = DARF 788,00 (Lei 11.033/2004 art. 3º I).
 
@@ -588,6 +597,9 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `coir/engine/proventos.py` — _rendimento_etf: …na fonte, ficha 06 pelo líquido que a B3 creditou. ETF de renda fixa: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei 14.754/2023 arts. 18 II, 24 e 32 I;…
 - `coir/engine/proventos.py` — módulo: …só aviso. De ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II), ficha exclusiva 06 pelo líquido. Nenhum dos dois entra na apuração mensal;…
 - `coir/engine/rateio.py` — módulo: Rateio dos custos da nota pelo valor das operações (IN RFB 1.585/2015 art. 56 §§3º e 4º: custos de corretagem e taxas integram o custo de aquisição e reduzem o valor de…
+- `coir/engine/simulacao.py` — _irrf_alienacao: …na corretora, dispensada quando igual ou inferior a R$ 1,00 (Lei 11.033/2004 art. 2º §§1º, 4º e 5º; IN RFB 1.585/2015 art. 63). Estimativa: o cálculo usa o IRRF impresso nas notas.
+- `coir/engine/simulacao.py` — _irrf_day_trade: 1% a mais sobre o resultado positivo de day trade do dia por corretora, compensadas as perdas do dia (Lei 9.959/2000 art. 8º; IN RFB 1.585/2015 art. 65 caput e §4º). Estimativa.
+- `coir/engine/simulacao.py` — módulo: …a ordem executada depois dos negócios já feitos no dia; o day trade casa pela ordem dos negócios, IN RFB 1.585/2015 art. 65 §3º). - IRRF zero nas notas sintéticas: a DARF simulada nunca fica menor que a real. A…
 - `data/irpf/2025.yaml` — imposto_pago: Programa IRPF 2026, ficha Imposto pago/retido (leiaute DIRPF 2023 reg. 20); IN RFB 1.585/2015 art. 63 §8º III; o saldo de day trade de dezembro só por restituição (art. 65 §§9º e 12 II; P&R IRPF 2026 pergunta 715)
 - `data/irpf/2025.yaml` — isentos: Programa IRPF 2026, ficha Rendimentos isentos e não tributáveis; Manual do MIR (rendimentos do capital e do patrimônio); Lei 9.249/1995 art. 10; Lei 11.033/2004 art. 3º I e III; IN RFB 1.585/2015 arts. 58 §1º e 74
 - `data/irpf/2025.yaml` — renda_variavel: Programa IRPF 2026, ficha "Renda variável - operações comuns/day trade" (leiaute DIRPF 2023 reg. 40); P&R IRPF 2026 pergunta 707; IN RFB 1.585/2015 art. 62 I
@@ -605,6 +617,8 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `data/isencao_pme.csv` — PRIO3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (HRT Participações, HRTP3); RI PRIO: isentas as compradas entre 10/07/2014 e 29/01/2021, e as adquiridas a partir de 01/02/2021 não (follow-on precificado em 28/01/2021); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
 - `data/isencao_pme.csv` — PRNR3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; fora da tabela de 2014 da B3; citada por fontes secundárias como enquadrada; sem oferta subsequente conhecida: isenta até o fim do prazo (confirmação por fontes secundárias); média de fim: COTAHIST da B3, 30 pregões de 16/11 a 28/12/2023, fechamento ponderado pela quantidade (cálculo do COIR; sem valor oficial publicado)
 - `data/isencao_pme.csv` — SQIA3: Lei 13.043/2014 art. 16; IN RFB 1.585/2015 arts. 66 a 69-A; lista B3 (Senior Solution, SNSL3); RI Sinqia, citado por fontes secundárias: isentas as compradas entre 10/07/2014 e 05/09/2019 (oferta deliberada em 05/09/2019, Formulário de Referência 2019); sem negócio nos 30 pregões finais de 2023
+- `data/parametros_fiscais.csv` — aliquota_irrf_alienacao: Lei 11.033/2004 art. 2º §1º I a IV; IN RFB 1.585/2015 art. 63 caput: 0,005% sobre a alienação à vista, a soma positiva dos prêmios do dia, o termo e os ajustes no encerramento; exceto day trade (Lei 11.033/2004 art. 2º §§1º e 3º) e exercício (IN RFB 1.585/2015 art. 63 §3º II a). Só para a estimativa exibida na tela Simulação; o cálculo usa o IRRF impresso nas notas
+- `data/parametros_fiscais.csv` — aliquota_irrf_day_trade: Lei 9.959/2000 art. 8º caput; IN RFB 1.585/2015 art. 65 caput e §4º: 1% sobre o resultado positivo do dia na mesma instituição, compensadas as perdas de day trade do dia. Só para a estimativa exibida na tela Simulação; o cálculo usa o IRRF impresso nas notas
 - `data/parametros_fiscais.csv` — custo_dividendo_em_bens: Lei 9.249/1995 art. 10 (o dividendo é isento pelo valor atribuído no aviso). Custo do bem recebido: o valor atribuído ou, quando menor, o valor corrente na data da entrega (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); critério do COIR, conservador. Alternativa: valor_atribuido
 - `data/parametros_fiscais.csv` — day_trade_criterio: IN RFB 1.585/2015 art. 65 §3º: casar pela ordem cronológica dos negócios; a nota não traz horário e a corretora (que o tem e retém o IRRF) marca D: vale a marcação D quando consistente (quantidade D de compra = de venda = menor das duas no dia); sem marcação ou inconsistente, a ordem impressa (critério do COIR). Alternativa: ordem_impressa
 - `data/parametros_fiscais.csv` — day_trade_na_soma_limite: Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I e §2º I e IV, art. 67 §3º (só a PME tem regra de não computar); CTN art. 111 II: toda venda de ação do mês entra na soma do limite de R$ 20 mil, inclusive em day trade; a isenção alcança só o ganho das vendas comuns (critério do COIR, leitura literal)
@@ -613,6 +627,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `data/parametros_fiscais.csv` — fidc_venda_bolsa: sem norma expressa: IN RFB 1.585/2015 art. 16 I a só para fundo fechado com carteira de ações (art. 18 §2º); critério do COIR. Alternativa: ganho_liquido (15%, a prática de mercado)
 - `data/parametros_fiscais.csv` — fip_amortizacao_custo: IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º
 - `data/parametros_fiscais.csv` — fip_venda_bolsa: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I (não revogado: Lei 14.754/2023 art. 46)
+- `data/parametros_fiscais.csv` — irrf_alienacao_dispensa: Lei 11.033/2004 art. 2º §§4º e 5º; IN RFB 1.585/2015 art. 63 §§4º a 6º: dispensada a retenção igual ou inferior a R$ 1,00, somado o imposto das operações do mês (estimativa por corretora, que é quem retém). Só para a estimativa exibida na tela Simulação
 - `data/parametros_fiscais.csv` — irrf_day_trade_abate_fii: IN RFB 1.585/2015 art. 65 §8º I (a lei permite deduzir do imposto do mês); programa IRPF: a ficha de fundos imobiliários não tem linha de IR fonte de day trade (leiaute DIRPF, registro 42); critério do COIR, conservador: o 1% só abate o imposto de operações comuns e day trade, e o que sobrar em dezembro é restituição
 - `data/parametros_fiscais.csv` — janela_liquidacao_oferta_dias: Sem norma: Critério do COIR para venda antes da liquidação da oferta; a aquisição vem antes da venda (IN RFB 1.585/2015 art. 58)
 - `data/parametros_fiscais.csv` — leilao_fracao_isentavel: sem norma específica: fração vendida em leilão é alienação de ação no mercado à vista (IN RFB 1.585/2015 art. 58 caput); entra no limite de R$ 20 mil do mês do crédito (critério do COIR)
@@ -692,6 +707,10 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — test_rendimento_de_etf_de_renda_fixa_e_exclusivo_em_qualquer_ano: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. 500 cotas a 0,20 = bruto 100,00; líquido 85,00. Sem o preço na linha, o bruto fica igual ao líquido.
 - `tests/fiscal_cases/test_raiz55.py` — módulo: …os mesmos. Na nota, a quantidade é a de ações e o preço é por 100 ações; o custo é o valor impresso (IN RFB 1.585/2015 art. 58 caput). A PNA continua ação para a isenção de R$ 20 mil (art. 59 I).
 - `tests/fiscal_cases/test_saldos_iniciais.py` — módulo: …o COIR sem o histórico de notas. Custódia inicial: a posição em 31/12 entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58), o mesmo do Bens e Direitos, sem resultado e sem efeito no day trade (art. 65 §2º).…
+- `tests/fiscal_cases/test_simulacao.py` — módulo: …e dispensa mensal até R$ 1,00) e art. 3º I (limite de R$ 20.000,00 das alienações de ações no mês); IN RFB 1.585/2015 art. 59 I e §2º (soma do limite e isenção), art. 63 (IRRF de 0,005%), art. 65 §§1º a 4º (day trade…
+- `tests/fiscal_cases/test_simulacao.py` — test_compra_hipotetica_seguida_de_venda_no_mesmo_dia_e_day_trade: Compra simulada de 1.000 a 11,00 e venda simulada de 1.000 a 11,50 no mesmo dia e corretora: day trade de 500,00 x 20% = 100,00 (IN RFB 1.585/2015 art. 65 §§1º e 3º). IRRF estimado de 1% sobre 500,00 = 5,00.
+- `tests/fiscal_cases/test_simulacao.py` — test_custos_reduzem_o_ganho_mas_nao_a_soma_do_limite: 1.924 a 10,40 (20.009,60) com R$ 20,00 de custos: a soma do limite é bruta e passa dele; o ganho cai para 749,60 (IN RFB 1.585/2015 art. 56 §3º): 112,44.
+- `tests/fiscal_cases/test_simulacao.py` — test_duas_ordens_no_dia_so_a_primeira_casa_com_a_compra_do_dia: …ordens de venda de 1.000 a 11,20 e de 500 a 11,50 no mesmo dia e corretora. Pela ordem dos negócios (IN RFB 1.585/2015 art. 65 §3º), a primeira venda casa com a compra (day trade de 200,00); a segunda é comum, pelo PM…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — módulo: …custos. Fontes: Lei 11.033/2004 art. 3º I ("valor das alienações [...] para o conjunto de ações"); IN RFB 1.585/2015 art. 59 I ("total das alienações desse ativo") e §2º I e IV (a isenção não se aplica a day trade,…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — test_day_trade_de_unit_ou_etf_fica_fora_da_soma: …(venda 8.000,00; ganho 200,00; IRRF 2,00). Units (R4a, parâmetro units_na_isencao = false) e ETF (IN RFB 1.585/2015 art. 59 §2º II) não são ações para o limite: soma 15.000,00, ganho comum isento 5.000,00, imposto…
 - `tests/fiscal_cases/test_soma_limite_isencao.py` — test_mes_so_de_day_trade_acima_do_limite_nao_avisa: …19,50 / 20,00, venda 25.000,00, ganho 625,00; imposto 20% = 125,00; IRRF de 1% sobre o ganho = 6,25 (IN RFB 1.585/2015 art. 65 §§8º e 11); DARF 118,75. A soma passa do limite, mas não há ganho comum que pudesse ser…
@@ -872,12 +891,14 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 - `coir/engine/apuracao.py` — módulo: …inclusive para o ano seguinte (Lei 9.430/1996 art. 68 §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915).
 - `coir/engine/calendario.py` — módulo: …de termo (datas sempre por parâmetro). - DARF: último dia útil (bancário) do mês seguinte ao da apuração (RIR/2018 art. 915; Lei 9.430/1996 art. 68 §1º para o acúmulo abaixo do mínimo). - Opções sobre ações: regra…
+- `coir/engine/simulacao.py` — ultimo_mes: Último mês simulável: a DARF dele vence no mês seguinte (RIR/2018 art. 915), que o calendário tem de cobrir; a de dezembro venceria em janeiro do ano que ele não tem.
 - `data/parametros_fiscais.csv` — aliquota_comum: Lei 11.033/2004 art. 2º II; RIR/2018 art. 839
 - `docs/regras-fiscais.md` — R12: …| `data/feriados.csv` (o último dia útil do ano não é útil: Res. CMN 4.880/2020 art. 3º) + acúmulo | RIR/2018 art. 915; Lei 9.430/1996 art. 68 caput e §1º | A
 - `docs/regras-fiscais.md` — R18: …| IN RFB 1.585/2015 arts. 47 I b, 58, 59 I e §2º IV, 62 II e III e 63 III a; RIR/2018 art. 848; critério do COIR | A no momento e na isenção; M no PM da data da liquidação e na soma do…
 - `docs/regras-fiscais.md` — R7: …do COIR) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_eventos_ajustam_quantidade_e_custo_sem_resultado: R8: bonificação soma quantidade com custo atribuído; desdobramento e grupamento só a quantidade; redução de capital reduz o custo (RIR/2018 art. 843 §1º e §3º II; IN RFB 1.585/2015 art. 58 §§1º, 7º e 8º).
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t4_darf_abaixo_de_10_acumula_e_vira_o_ano: R12: DARF abaixo de R$ 10 acumula, inclusive para o ano seguinte (Lei 9.430/1996 art. 68 §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915). Dez/23 7,00 + Jan/24 4,00 = 11,00, vencimento 29/02/2024.
+- `tests/fiscal_cases/test_simulacao.py` — módulo: …Lei 9.959/2000 art. 8º (day trade); Lei 9.430/1996 art. 68 §1º (DARF abaixo de R$ 10,00 acumula); RIR/2018 art. 915 (vencimento no último dia útil do mês seguinte).
 
 ## Instrução Normativa SRF 25/2001
 

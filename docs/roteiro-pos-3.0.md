@@ -17,7 +17,7 @@ ao menos provável na 3.1.
 | Importar a planilha de resultado da v2 (`.xlsb`) como ponto de partida | a v3 refaz tudo a partir dos PDFs (os mesmos da pasta `Entrada` da v2); quem não tem as notas antigas informa a custódia e o prejuízo em 31/12 em Cadastros › Saldos iniciais | rodada do beta (26/10/2026) |
 | Vídeo narrado do programa no site | o topo do site mostra as telas em sequência (imagem animada) | rodada do beta (26/10/2026) |
 | Formulário de mensagens no site e espaço para publicar elogios e depoimentos | o site só tem o formulário de aviso de versão nova por e-mail | rodada de uso (25/10/2026) |
-| Tela de simulação: vendas hipotéticas (por exemplo, em parcelas com preços diferentes) sobre a posição atual, com o efeito no imposto, no prejuízo a compensar, no limite de R$ 20 mil do mês e no risco de virar day trade. Só leitura: nada é gravado. A nota do dia ainda sem fechamento entraria só como cenário da simulação, nunca na apuração, e seria descartada quando a nota definitiva for importada | não existe; a nota prévia (número 0, custos ainda provisórios) não é importada | pedido de usuário (17/11/2026) |
+| Tela de simulação: vendas e compras hipotéticas (por exemplo, em parcelas com preços diferentes) sobre a posição atual, com o efeito no imposto, no prejuízo a compensar, no limite de R$ 20 mil do mês e no day trade. Só leitura: nada é gravado | feita na 3.1.4 (tela Simulação). A nota do dia ainda sem fechamento (número 0, custos provisórios) não entra, nem como cenário: decisão do mantenedor | pedido de usuário (17/11/2026) |
 
 ## Pendências fiscais e do motor
 

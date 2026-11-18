@@ -46,6 +46,12 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <h2 id="nao-lancado">[Não lançado]</h2>
 
+<h3 id="adicionado">Adicionado</h3>
+
+<ul>
+<li><strong>Tela Simulação</strong>: digite ordens de venda ou de compra à vista (várias, com preços diferentes) e veja o efeito no imposto antes de operar. O COIR apura as ordens com as mesmas regras da apuração mensal, sobre a carteira das notas importadas, e mostra lado a lado: sem as ordens, cenário A e cenário B. Cada ordem tem uma data em cada cenário; sem data, fica fora dele (execução parcial), e datas em meses diferentes comparam vender de uma vez ou aos poucos. Aparecem o imposto e a DARF de cada mês, o ganho isento e o limite de R$ 20 mil (que, estourado, tira a isenção de todas as vendas de ações do mês), o prejuízo a compensar que sobra, a quantidade e o custo que ficam na carteira e a parte que vira day trade com compra do mesmo dia na mesma corretora. O IRRF que a corretora reteria aparece como estimativa, sem reduzir o imposto. Nada é gravado, e a tela não sugere operações.</li>
+</ul>
+
 <h3 id="alterado">Alterado</h3>
 
 <ul>
@@ -55,7 +61,7 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <h2 id="313-2026-11-18">[3.1.3] - 2026-11-18</h2>
 
-<h3 id="adicionado">Adicionado</h3>
+<h3 id="adicionado-2">Adicionado</h3>
 
 <ul>
 <li><strong>Versão no topo da janela</strong>: a versão instalada aparece ao lado de "COIR", no topo e na tela de erro do banco, e no título da janela. Ajuda no suporte: as capturas de tela passam a mostrar a versão.</li>
@@ -78,7 +84,7 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <h2 id="312-2026-11-17">[3.1.2] - 2026-11-17</h2>
 
-<h3 id="adicionado-2">Adicionado</h3>
+<h3 id="adicionado-3">Adicionado</h3>
 
 <ul>
 <li><strong>"Processando dados, aguarde"</strong>: enquanto o COIR importa notas ou planilhas da B3, confere os eventos, atualiza as tabelas ou restaura um backup, um aviso cobre a janela, mostra o que está sendo feito (na importação, quantos arquivos já foram) e some quando termina. Antes dava para trocar de tela no meio do processamento, e a operação terminava numa tela que já não existia.</li>
@@ -111,7 +117,7 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <h2 id="311-2026-11-12">[3.1.1] - 2026-11-12</h2>
 
-<h3 id="adicionado-3">Adicionado</h3>
+<h3 id="adicionado-4">Adicionado</h3>
 
 <ul>
 <li><strong>Rótulos das notas escritos de outro jeito</strong>: o COIR passa a reconhecer os rótulos da nota em outras grafias, o que ajuda a ler notas de corretoras que ele ainda não conhece. Valem, por exemplo, "Data do pregão", "Data pregao", "D. pregão", "Dt pregão" e "Datapregão"; "Nº da nota" e "Número da nota"; "Fl."; "Cód. cliente"; e "Tx. liquidação". Também valem acentos e maiúsculas trocados, palavras coladas ou separadas e o rótulo quebrado em duas linhas. As formas aceitas ficam reunidas num só arquivo (<code>coir/parsing/rotulos.yaml</code>). Nenhuma delas casa com outro campo: "Data liquidação" não vira data do pregão, e "Taxas BM&amp;F (emol+f.gar)" não vira emolumentos. As notas que o COIR já lia saem iguais.</li>
@@ -221,7 +227,7 @@ arquivo rejeitado pode não ter titular conhecido.</li>
 
 <h2 id="310-2026-11-04">[3.1.0] - 2026-11-04</h2>
 
-<h3 id="adicionado-4">Adicionado</h3>
+<h3 id="adicionado-5">Adicionado</h3>
 
 <ul>
 <li><p><strong>Tela Suporte</strong>, para mandar uma nota que o COIR não lê ou lê errado (uma corretora nova,
@@ -310,7 +316,7 @@ DLLs ao abrir. Na 3.0.0, o contorno é desbloquear o <code>.zip</code> (Propried
 de extrair.</li>
 </ul>
 
-<h3 id="adicionado-5">Adicionado</h3>
+<h3 id="adicionado-6">Adicionado</h3>
 
 <ul>
 <li>Página do manual <strong>Se o COIR não abrir</strong>: aviso do Windows, antivírus que põe o programa em
@@ -367,7 +373,7 @@ da v2 (todas são correções da v2):
   vencimento.
 - <strong>IRRF até R$ 1,00</strong> (dispensado, não retido) não vira crédito.</p>
 
-<h3 id="adicionado-6">Adicionado</h3>
+<h3 id="adicionado-7">Adicionado</h3>
 
 <ul>
 <li>Licença da v3: AGPL-3.0-or-later (a v2 em <code>legacy/</code> continua MIT).</li>
@@ -436,7 +442,7 @@ da v2 (todas são correções da v2):
 <li><code>requirements.txt</code> convertido para UTF-8 (as versões das bibliotecas não foram alteradas).</li>
 </ul>
 
-<h3 id="adicionado-7">Adicionado</h3>
+<h3 id="adicionado-8">Adicionado</h3>
 
 <ul>
 <li>Leitura da conta do cliente por nota, quando um mesmo PDF reúne notas de contas diferentes.</li>

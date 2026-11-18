@@ -11,11 +11,12 @@ from coir.auditoria import erro_de_dominio
 class CoirError(Exception):
     """Base de todos os erros do COIR. Todo erro nasce registrado na auditoria, porque a tela só
     mostra a mensagem. Ficam de fora os do caminho normal, registrados pelo resultado: a nota
-    rejeitada (``ExtracaoError``) e o ativo isolado (``MotorError``)."""
+    rejeitada (``ExtracaoError``), o ativo isolado (``MotorError``) e a ordem que a tela Simulação
+    recusa (``SimulacaoError``: digitação do usuário, e o motor não escreve em disco)."""
 
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
-        if not isinstance(self, ExtracaoError | MotorError):
+        if not isinstance(self, ExtracaoError | MotorError | SimulacaoError):
             erro_de_dominio(self)
 
 
@@ -87,3 +88,8 @@ class ExportacaoError(CoirError):
 class AtualizacaoError(CoirError):
     """Pacote de tabelas de referência que não pode ser baixado ou usado (sem rede, hash que não
     confere, formato de outra versão): nada é alterado."""
+
+
+class SimulacaoError(CoirError):
+    """Ordem da tela Simulação que o motor não pode apurar como digitada (data sem pregão, venda
+    acima da posição, ativo sem tipo ou isolado, mês fora do calendário)."""
