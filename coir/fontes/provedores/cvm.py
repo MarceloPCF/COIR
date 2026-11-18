@@ -98,3 +98,12 @@ def tickers(pasta: Path) -> frozenset[str]:
     é procurada pelo ticker na data do evento, quando o código era de quem fez o evento)."""
     return frozenset({r["ticker"] for r in opcionais(pasta / VALORES)}
                      | {t for t, _ in tipos_ativo(pasta)})  # fmt: skip
+
+
+def companhias_por_ticker(pasta: Path) -> dict[str, Emissor]:
+    """Ticker de ação ou unit -> a companhia que o declarou no FCA (o CNPJ do registro na CVM),
+    com o ano da última declaração em ``visto_ate``."""
+    return {r["ticker"]: Emissor(emissor=r["ticker"][:4], cnpj=r["cnpj"],
+                                 razao_social=r["razao_social"], tipo="COMPANHIA",
+                                 visto_ate=r["visto_ate"], origem=CVM_FCA)
+            for r in opcionais(pasta / VALORES) if cnpj_valido(r["cnpj"])}  # fmt: skip

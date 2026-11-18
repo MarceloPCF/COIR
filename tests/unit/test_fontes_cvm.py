@@ -245,3 +245,32 @@ def test_meses_de_fiagro_na_virada_do_ano_e_cache_so_de_ano_fechado(tmp_path: Pa
     # o ano corrente muda: só os anos fechados ficam no cache
     assert (tmp_path / "fca_cia_aberta_2026.zip").is_file()
     assert not (tmp_path / "fca_cia_aberta_2027.zip").exists()
+
+
+def test_cnpj_do_ticker_antigo_pela_companhia_que_o_declarou(tmp_path: Path) -> None:
+    """O código foi reaproveitado (ou a bolsa traz a filial): o Bens e Direitos do ticker antigo
+    sai com o CNPJ de quem o declarou no FCA; o ticker que a bolsa viu depois do último FCA e o
+    código da curadoria ficam como estão."""
+    pasta = _pasta(tmp_path,
+                   "VELH3,11222333000181,VELHA SA,ON,2024-01-01\n"
+                   "REUS3,11222333000181,VELHA SA,ON,2020-01-01\n"
+                   "CURA3,11222333000181,VELHA SA,ON,2024-01-01\n"
+                   "IGUA3,04252011000110,IGUAL SA,ON,2026-01-01\n", "")  # fmt: skip
+    (pasta / "emissores_b3.csv").write_text(
+        "emissor,cnpj,razao_social,tipo,visto_desde,visto_ate\n"
+        "VELH,11444777000161,NOVA DONA,FII,2026-01-01,2026-11-10\n"
+        "REUS,11444777000161,NOVA DONA,COMPANHIA,2026-01-01,2026-11-10\n"
+        "CURA,11444777000161,NOVA DONA,COMPANHIA,2026-01-01,2026-11-10\n"
+        "IGUA,04252011000110,IGUAL S.A.,COMPANHIA,2026-01-01,2026-11-10\n",
+        encoding="utf-8",
+    )
+    (pasta / "instrumentos_b3.csv").write_text(
+        "ticker,isin,categoria,especificacao,emissor,nome,visto_desde,visto_ate\n"
+        "REUS3,BRREUSACNOR0,SHARES,ON,REUS,NOVA,2026-01-01,2026-11-10\n",
+        encoding="utf-8",
+    )
+    (pasta / "emissores.csv").write_text(
+        "emissor,cnpj,razao_social,observacao\nCURA,04252011000110,CURADA SA,conferido\n",
+        encoding="utf-8")  # fmt: skip
+    assert fontes.correcoes_por_ticker(pasta) == {
+        "VELH3": ("11222333000181", "VELHA SA", "COMPANHIA")}  # fmt: skip

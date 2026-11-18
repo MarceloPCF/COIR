@@ -9,6 +9,7 @@ precedência curadoria > CVM/BCB > bolsa, registrando as divergências. As tabel
 from pathlib import Path
 
 from coir.fontes.composicao import (
+    correcoes_por_ticker,
     emissores,
     eventos,
     eventos_e_divergencias,
@@ -47,6 +48,7 @@ __all__ = [
     "Evento",
     "Provento",
     "ProventoHistorico",
+    "correcoes_por_ticker",
     "emissores",
     "evento_valido",
     "eventos",

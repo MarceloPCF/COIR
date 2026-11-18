@@ -152,6 +152,28 @@ def emissores(pasta: Path) -> dict[str, tuple[str, str, str]]:
     return {e: (c, n, t) for e, (c, n, t, _) in saida.items()}
 
 
+def correcoes_por_ticker(pasta: Path) -> dict[str, tuple[str, str, str]]:
+    """Ticker -> (CNPJ, razão social, tipo) da companhia que o declarou no FCA, quando o CNPJ
+    que ``emissores`` dá ao código é outro: o código foi reaproveitado (EMBR3 era da Embraer; o
+    código EMBR hoje é de outra empresa) ou a bolsa traz o CNPJ de uma filial. Fica de fora o
+    código da curadoria (vale a curadoria) e o ticker que a bolsa viu depois do último FCA que o
+    declarou (o ticker foi reaproveitado: vale a bolsa)."""
+    por_codigo = emissores(pasta)
+    curados = {e.emissor for e in curadoria.emissores(pasta)}
+    visto: dict[str, str] = {}
+    for i in b3.instrumentos(pasta):
+        visto[i.ticker] = max(visto.get(i.ticker, ""), i.visto_ate)
+    saida: dict[str, tuple[str, str, str]] = {}
+    for ticker, e in cvm.companhias_por_ticker(pasta).items():
+        atual = por_codigo.get(e.emissor)
+        if atual is None or atual[0] == e.cnpj or e.emissor in curados:
+            continue
+        if visto.get(ticker, "")[:4] > e.visto_ate[:4]:
+            continue
+        saida[ticker] = (e.cnpj, e.razao_social, e.tipo)
+    return saida
+
+
 def instrumentos(pasta: Path) -> dict[str, tuple[str, str, str]]:
     """Ticker -> (emissor, especificação "ON NM", razão social), o visto por último."""
     saida: dict[str, tuple[str, str, str, str]] = {}

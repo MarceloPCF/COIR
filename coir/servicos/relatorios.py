@@ -39,9 +39,11 @@ def info_ativos(
     tickers: Iterable[str], refs: Referencias, fiscais: ReferenciasFiscais, pasta: Path,
 ) -> dict[str, InfoAtivo]:  # fmt: skip
     """Cadastro público de cada ticker para a declaração: emissor e especificação pelo cadastro de
-    instrumentos da B3, CNPJ pelo pacote (emissores.csv por cima); opção pelo ativo-objeto."""
+    instrumentos da B3, CNPJ pelo pacote (emissores.csv por cima; o do FCA quando o código foi
+    reaproveitado); opção pelo ativo-objeto."""
     instrumentos = fontes.instrumentos(pasta)
     emissores = fontes.emissores(pasta)
+    por_ticker = fontes.correcoes_por_ticker(pasta)
     saida: dict[str, InfoAtivo] = {}
     for ticker in sorted(set(tickers)):
         objeto = None
@@ -50,7 +52,7 @@ def info_ativos(
             objeto = refs.opcoes_raiz.get(ticker[:4])
             base = objeto or ticker
         emissor, especificacao, nome = instrumentos.get(base, (base[:4], "", ""))
-        cnpj, razao, tipo = emissores.get(emissor, (None, nome, ""))
+        cnpj, razao, tipo = por_ticker.get(base) or emissores.get(emissor, (None, nome, ""))
         saida[ticker] = InfoAtivo(
             emissor=emissor, cnpj=cnpj, razao_social=razao or nome,
             especificacao=especificacao, tipo_b3=tipo, objeto=objeto,
