@@ -22,6 +22,7 @@ página deste manual ao lado, sem cobrir o que você está preenchendo.
 | Lançamentos | [Importar](telas/importar.md) | notas em PDF e planilhas da B3 |
 | | [Notas](telas/notas.md) | cada nota lida, com o PDF ao lado |
 | | [Operações](telas/operacoes.md) | o livro de operações, com filtros |
+| | [Simulação](telas/simulacao.md) | o efeito no imposto de vendas e compras antes de operar |
 | Imposto | [Apuração mensal](telas/apuracao.md) | o imposto mês a mês, com a memória de cálculo |
 | | [DARF](telas/darf.md) | o que pagar, quando, multa e juros; pagamento e comprovante |
 | | [Proventos](telas/proventos.md) | dividendos, JCP e rendimentos de FII |
