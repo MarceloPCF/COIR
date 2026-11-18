@@ -2,8 +2,9 @@
 
 Liga cada operação ao ativo (ativo_id da F3), ao tipo de ativo (data/tipos_ativo.csv), ao
 vencimento da série (prazo impresso "MM/AA" + regra de data/vencimentos_opcoes.csv) e à opção
-exercida; a compra a termo recebe a data de liquidação (pregão + prazo). As linhas BM&F viram
-ajustes de futuros com o valor impresso.
+exercida; o termo recebe a data de liquidação: a da movimentação da B3, quando ela mostra a
+liquidação antecipada, ou o vencimento (pregão + prazo), com aviso se a B3 não a mostrar (ver
+`coir/servicos/termo.py`). As linhas BM&F viram ajustes de futuros com o valor impresso.
 """
 
 import re
@@ -12,11 +13,18 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from coir import auditoria
-from coir.db.modelos import Conta, EventoCorporativo, NotaCorretagem, Operacao, TickerHistorico
+from coir.db.modelos import (
+    Conta,
+    EventoCorporativo,
+    MovimentacaoB3,
+    NotaCorretagem,
+    Operacao,
+    TickerHistorico,
+)
 from coir.db.sessao import conectar
 from coir.domain.fiscal import (
     AjusteFuturo,
@@ -46,6 +54,7 @@ from coir.engine.movimentos import carteira, movimentar, termos_em_aberto
 from coir.erros import ReferenciaError
 from coir.parsing import futuros
 from coir.servicos import outros_custos, saldos_iniciais, trilha
+from coir.servicos.termo import Contrato, Liquidacao, ler_linhas, liquidacoes
 
 RE_PRAZO = re.compile(r"^(?P<mes>\d{2})/(?P<ano>\d{2})$")
 RE_SEMANAL = re.compile(r"\dW(?P<semana>[1-5])$")  # strike + Wn; "ABEVW5" é put de novembro
@@ -114,7 +123,7 @@ def _objeto_tipo(serie: str, publicas: Referencias, refs: ReferenciasFiscais) ->
 
 def _nota_bovespa(
     registro: NotaCorretagem, nota: NotaExtraida, refs: ReferenciasFiscais, tickers: Tickers,
-    publicas: Referencias,
+    publicas: Referencias, termos: dict[int, Liquidacao],
 ) -> tuple[OperacaoMotor, ...]:  # fmt: skip
     ops: list[OperacaoMotor] = []
     for o, negocio in zip(registro.operacoes, nota.negocios_bovespa, strict=True):
@@ -129,22 +138,76 @@ def _nota_bovespa(
         pme_ate, pme_media = None, None
         if not opcao and o.cv == "C" and isencao and isencao.compra_elegivel(registro.data_pregao):
             pme_ate, pme_media = isencao.vendas_ate, isencao.media_fim
-        liquidacao = None
-        if o.mercado == "TERMO" and o.prazo_termo_dias is not None:
-            liquidacao = liquidacao_termo(registro.data_pregao, o.prazo_termo_dias, refs.calendario)
-        ops.append(
-            OperacaoMotor(
-                id=o.id, ordem=o.ordem, ativo=o.ativo_id, ticker=o.papel, tipo=tipo,
-                mercado=o.mercado, cv=o.cv,  # type: ignore[arg-type]
-                quantidade=o.quantidade, preco=o.preco, total=o.total,
-                vencimento=_vencimento(negocio.prazo, o.papel, refs) if opcao else None,
-                opcao=exercida, liquidacao_termo=liquidacao, pme_ate=pme_ate,
-                pme_media_fim=pme_media,
-                marcada_dt=negocio.day_trade,
-                objeto_tipo=_objeto_tipo(o.papel, publicas, refs) if opcao else None,
-            )
+        op = OperacaoMotor(
+            id=o.id, ordem=o.ordem, ativo=o.ativo_id, ticker=o.papel, tipo=tipo,
+            mercado=o.mercado, cv=o.cv,  # type: ignore[arg-type]
+            quantidade=o.quantidade, preco=o.preco, total=o.total,
+            vencimento=_vencimento(negocio.prazo, o.papel, refs) if opcao else None,
+            opcao=exercida, pme_ate=pme_ate, pme_media_fim=pme_media,
+            marcada_dt=negocio.day_trade,
+            objeto_tipo=_objeto_tipo(o.papel, publicas, refs) if opcao else None,
         )  # fmt: skip
+        liquidacao = termos.get(o.id) if o.mercado == "TERMO" else None
+        ops += _partes_do_termo(op, liquidacao) if liquidacao else [op]
     return tuple(ops)
+
+
+def _partes_do_termo(op: OperacaoMotor, liq: Liquidacao) -> list[OperacaoMotor]:
+    """Uma operação por data de liquidação (a antecipada pode ser parcial), com a quantidade e
+    o valor da parte (preço a termo x quantidade; a última leva o resto e fecha o total). Os
+    custos da nota o motor rateia pelas partes como por qualquer operação (pelo valor, centavos
+    pelo maior resto): a soma fecha com a nota. O aviso vai na parte do vencimento."""
+    if not liq.partes:
+        return [op]
+    saida: list[OperacaoMotor] = []
+    resto = op.total
+    for i, (dia, quantidade) in enumerate(liq.partes):
+        ultima = i == len(liq.partes) - 1
+        total = resto if ultima else op.preco * quantidade
+        resto -= total
+        saida.append(op.model_copy(update={
+            "quantidade": quantidade, "total": total, "liquidacao_termo": dia,
+            "aviso": liq.aviso if liq.aviso and ultima else "",
+        }))  # fmt: skip
+    return saida
+
+
+def _termos(
+    sessao: Session, registros: Sequence[NotaCorretagem], refs: Referencias,
+    fiscais: ReferenciasFiscais, tickers: Tickers,
+) -> dict[int, Liquidacao]:  # fmt: skip
+    """Liquidação de cada compra e venda a termo (id da operação), pela movimentação da B3."""
+    contratos = [
+        Contrato(chave=o.id, titular=r.conta.titular_id, corretora=r.conta.corretora.nome,
+                 ativo=o.ativo_id, ticker=o.papel, cv=o.cv, pregao=r.data_pregao,
+                 vencimento=liquidacao_termo(r.data_pregao, o.prazo_termo_dias, fiscais.calendario),
+                 quantidade=o.quantidade)
+        for r in registros for o in r.operacoes
+        if o.mercado == "TERMO" and o.prazo_termo_dias is not None
+    ]  # fmt: skip
+    if not contratos:
+        return {}
+    linhas = ler_linhas(
+        sessao.execute(select(
+            MovimentacaoB3.titular_id, MovimentacaoB3.movimentacao, MovimentacaoB3.produto,
+            MovimentacaoB3.codigo, MovimentacaoB3.instituicao, MovimentacaoB3.entrada,
+            MovimentacaoB3.data, MovimentacaoB3.quantidade,
+        ).where(MovimentacaoB3.movimentacao.ilike("%termo%"))).all(),
+        refs.corretora_b3, tickers.ativo,
+    )  # fmt: skip
+    periodo = {
+        t: (ini, fim)
+        for t, ini, fim in sessao.execute(
+            select(MovimentacaoB3.titular_id, func.min(MovimentacaoB3.data),
+                   func.max(MovimentacaoB3.data)).group_by(MovimentacaoB3.titular_id)
+        ).all()
+    }  # fmt: skip
+    vendas: dict[tuple[int, int], list[date]] = {}
+    for r in registros:
+        for o in r.operacoes:
+            if o.cv == "V" and o.mercado != "TERMO":
+                vendas.setdefault((r.conta.titular_id, o.ativo_id), []).append(r.data_pregao)
+    return liquidacoes(contratos, linhas, periodo, vendas)
 
 
 def _ajustes(nota: NotaExtraida, refs: Referencias) -> tuple[AjusteFuturo, ...]:
@@ -202,14 +265,15 @@ def entradas(
 ) -> tuple[list[NotaMotor], list[Evento]]:
     tickers = Tickers(sessao)
     notas: list[NotaMotor] = []
-    registros = sessao.scalars(
+    registros = list(sessao.scalars(
         select(NotaCorretagem)
         .options(
             selectinload(NotaCorretagem.operacoes),
             selectinload(NotaCorretagem.conta).selectinload(Conta.corretora),
         )
         .order_by(NotaCorretagem.data_pregao, NotaCorretagem.id)
-    )
+    ))  # fmt: skip
+    termos = _termos(sessao, registros, refs, fiscais, tickers)
     for r in registros:
         nota = NotaExtraida.model_validate_json(r.json_nota)
         bovespa = r.segmento == "bovespa"
@@ -219,7 +283,7 @@ def entradas(
                 corretora=r.conta.corretora.nome, numero=r.numero, data=r.data_pregao,
                 custos=custos_dedutiveis(nota, r.custos_total, fiscais.parametros),
                 irrf=r.irrf, irrf_day_trade=r.irrf_day_trade,
-                operacoes=_nota_bovespa(r, nota, fiscais, tickers, refs) if bovespa else (),
+                operacoes=_nota_bovespa(r, nota, fiscais, tickers, refs, termos) if bovespa else (),
                 ajustes=() if bovespa else _ajustes(nota, refs),
             )
         )  # fmt: skip
