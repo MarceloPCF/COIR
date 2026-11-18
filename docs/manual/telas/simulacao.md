@@ -1,5 +1,7 @@
 # Simulação
 
+![Simulação (banco de demonstração)](../imagens/simulacao.png)
+
 Digite ordens de venda ou de compra à vista e veja o efeito delas no imposto de renda, antes de
 operar. O COIR apura as ordens com as mesmas regras da apuração mensal, sobre a carteira das
 notas já importadas, e mostra a diferença. **Nada é gravado**: a apuração, a DARF e a carteira não
