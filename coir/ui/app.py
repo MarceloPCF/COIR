@@ -34,6 +34,7 @@ from coir.ui.telas import (
     painel,
     proventos,
     relatorios,
+    simulacao,
     suporte,
 )
 
@@ -56,6 +57,7 @@ GRUPOS: tuple[tuple[str, tuple[Tela, ...]], ...] = (
         Tela("/importar", "Importar", "upload_file", importar.montar),
         Tela("/notas", "Notas", "receipt_long", notas.montar),
         Tela("/operacoes", "Operações", "list_alt", operacoes.montar),
+        Tela("/simulacao", "Simulação", "science", simulacao.montar),
     )),
     ("Imposto", (
         Tela("/apuracao", "Apuração mensal", "calculate", apuracao.montar),

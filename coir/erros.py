@@ -87,3 +87,8 @@ class ExportacaoError(CoirError):
 class AtualizacaoError(CoirError):
     """Pacote de tabelas de referência que não pode ser baixado ou usado (sem rede, hash que não
     confere, formato de outra versão): nada é alterado."""
+
+
+class SimulacaoError(CoirError):
+    """Ordem da tela Simulação que o motor não pode apurar como digitada (data sem pregão, venda
+    acima da posição, ativo sem tipo ou isolado, mês fora do calendário)."""
