@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from nicegui.testing.user_simulation import user_simulation
 
+from coir.config import VERSAO
 from coir.servicos.estado import Estado
 from coir.ui import tema
 from coir.ui.app import TELAS, montar, montar_erro
@@ -73,6 +74,7 @@ async def test_topo_com_a_logomarca(tmp_path: Path) -> None:
         await user.open("/")
         await user.should_see(marker="marca")
         await user.should_see("Controle de Operações e Imposto de Renda")
+        await user.should_see(marker="versao-topo", content=VERSAO)
 
 
 @pytest.mark.asyncio

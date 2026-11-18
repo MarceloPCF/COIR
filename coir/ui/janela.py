@@ -83,7 +83,8 @@ def iniciar(estado: Estado, *, navegador: bool = False, porta: int | None = None
     app.native.window_args["maximized"] = True
     ui.run(
         (lambda: montar_erro(estado, erro)) if erro else (lambda: montar(estado)),
-        title="COIR", favicon=tema.ICONE, host="127.0.0.1", port=porta or native.find_open_port(),
+        title=f"COIR {VERSAO}", favicon=tema.ICONE, host="127.0.0.1",
+        port=porta or native.find_open_port(),
         native=nativo, window_size=(1440, 900) if nativo else None, reload=False,
         show=abrir and not nativo, language="pt-BR", dark=None, show_welcome_message=False,
         uvicorn_logging_level="warning",
