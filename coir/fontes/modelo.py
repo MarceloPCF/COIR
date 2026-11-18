@@ -15,6 +15,8 @@ from decimal import Decimal
 CURADORIA = "curadoria"
 CVM_FRE = "cvm_fre"
 CVM_IPE = "cvm_ipe"
+CVM_FCA = "cvm_fca"  # formulário cadastral: códigos de negociação das companhias
+CVM_FUNDOS = "cvm_fundos"  # informes mensais de FII e de Fiagro
 BCB = "bcb"
 B3 = "b3"
 ORIGENS_CVM = frozenset({CVM_FRE, CVM_IPE})

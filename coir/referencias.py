@@ -31,7 +31,7 @@ from coir.domain.parametros import (
 from coir.domain.referencias import ContratoFuturo, Referencias, TrocaTicker
 from coir.erros import ConfiguracaoError
 from coir.fontes.leitura import linhas, mapa
-from coir.fontes.provedores import b3, bcb
+from coir.fontes.provedores import b3, bcb, cvm
 from coir.parsing.numeros import compactar
 from coir.recursos import pasta_data
 
@@ -172,6 +172,8 @@ def carregar_fiscais(pasta: Path | None = None) -> ReferenciasFiscais:
             raise ConfiguracaoError(f"tipos_ativo.csv: {t['ticker']} repetido")
         tipos[t["ticker"]] = TipoAtivo(t["tipo"])
     for ticker, tipo in b3.tipos_ativo(base):  # por baixo da tabela manual
+        tipos.setdefault(ticker, TipoAtivo(tipo))
+    for ticker, tipo in cvm.tipos_ativo(base):  # o que a bolsa não traz (código reaproveitado)
         tipos.setdefault(ticker, TipoAtivo(tipo))
     feriados = linhas(base / "feriados.csv")
     anos = {date.fromisoformat(f["data"]).year for f in feriados}

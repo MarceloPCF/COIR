@@ -397,8 +397,8 @@ def test_evento_excluido_nao_volta_mesmo_que_a_b3_o_devolva() -> None:
     assert gerar.juntar_eventos([gshp.linha()], [gshp], resumo, excluidos) == []
     assert resumo.eventos_novos == [] and resumo.divergencias == []
     assert all(e.emissor != "ITUB" or e.data_com != "2011-10-31" for e in gerar.eventos_curados())
-    pacote = Path(__file__).resolve().parents[2] / "data" / "eventos_b3.csv"
-    assert not [r for r in gerar.ler_csv(pacote)
+    pacote = Path(__file__).resolve().parents[2] / "data"
+    assert not [r for r in gerar.ler_eventos_pacote(pacote)
                 if tuple(r[c] for c in gerar.COLUNAS_CHAVE) in excluidos]  # fmt: skip
 
 

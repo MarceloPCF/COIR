@@ -17,6 +17,7 @@ import pytest
 from coir import fontes, referencias
 from coir.config import modo_fonte_b3
 from coir.erros import ConfiguracaoError
+from coir.fontes.provedores import curadoria, cvm
 from coir.recursos import pasta_data
 from tools.referencias import gerar
 
@@ -53,8 +54,11 @@ def test_dividir_e_juntar_devolve_a_mesma_tabela() -> None:
     cvm, b3 = gerar.dividir_eventos(juntos)
     assert gerar.juntar_divididos(cvm, b3) == juntos
     assert all(set(r["origem"].split("+")) <= {"cvm_fre", "cvm_ipe"} for r in cvm)
-    assert all(r["conferido_cotahist"] == ("sim" if "cvm_fre" in r["origem"] else "nao")
+    # data com pela cotação: a do FRE sempre; a do aviso que não a informa, pela referência
+    assert all(r["conferido_cotahist"] == ("sim" if "cvm_fre" in r["origem"]
+                                           or gerar.PELA_COTACAO in r["referencia"] else "nao")
                for r in cvm)  # fmt: skip
+    assert any(r["conferido_cotahist"] == "sim" and r["origem"] == "cvm_ipe" for r in cvm)
     assert {r["origem"] for r in b3} == {"b3"}
     # o documento e o custo atribuído ficam do lado da CVM
     chaves_cvm = {tuple(r[c] for c in gerar.COLUNAS_CHAVE) for r in cvm}
@@ -74,7 +78,8 @@ def test_pacote_json_lista_os_arquivos_por_fonte() -> None:
     assert info["formato"] == referencias.FORMATO == gerar.FORMATO == 3
     fontes_ = info["fontes"]
     assert set(fontes_["b3"]["arquivos"]) == ARQUIVOS_B3
-    assert fontes_["cvm"] == {"licenca": "ODbL-1.0", "arquivos": ["eventos_cvm.csv"]}
+    assert fontes_["cvm"] == {"licenca": "ODbL-1.0", "arquivos": [
+        "eventos_cvm.csv", "fundos_cvm.csv", "valores_mobiliarios_cvm.csv"]}  # fmt: skip
     assert "saidas.csv" in fontes_["curadoria"]["arquivos"]
     gerado = gerar.pacote_json(pasta_data(), date.fromisoformat(info["data"]))
     assert gerado == (pasta_data() / "pacote.json").read_text(encoding="utf-8")
@@ -118,11 +123,13 @@ def test_b3_desligada_nao_abre_arquivo_da_bolsa(
     assert abertos and not set(abertos) & ARQUIVOS_B3
     # o que sobra é o que a CVM e a curadoria trazem
     assert eventos and all("b3" not in e.origem.split("+") for e in eventos)
-    assert all(t == "" for _, _, t in fontes.emissores(pasta).values())  # só a curadoria
-    # ISIN -> ticker só pela tabela curada de trocas de código
-    assert set(fontes.tickers_por_isin(pasta).values()) <= {
-        t for r in gerar.ler_csv(pasta / "trocas_ticker.csv")
-        for t in (r["ticker"], r["ticker_impresso"])}  # fmt: skip
+    # emissores e ISIN -> ticker só pela curadoria e pela CVM
+    assert {t for _, _, t in fontes.emissores(pasta).values()} <= {"", "COMPANHIA", "FII",
+                                                                    "FIAGRO"}  # fmt: skip
+    conhecidos = {t for r in gerar.ler_csv(pasta / "trocas_ticker.csv")
+                  for t in (r["ticker"], r["ticker_impresso"])}  # fmt: skip
+    conhecidos |= cvm.tickers(pasta) | curadoria.tickers(pasta)
+    assert set(fontes.tickers_por_isin(pasta).values()) <= conhecidos
 
 
 def test_b3_desligada_no_formato_2_nao_le_a_tabela_junta(

@@ -7,6 +7,8 @@ from coir.erros import ConfiguracaoError
 from coir.fontes.leitura import opcionais
 from coir.fontes.modelo import CURADORIA, Emissor, TrocaCodigo
 
+ATIVOS = "ativos.csv"
+TIPOS_ATIVO = "tipos_ativo.csv"
 EMISSORES = "emissores.csv"
 SAIDAS = "saidas.csv"
 SAIDAS_FORMATO_2 = "saidas_b3.csv"  # o mesmo arquivo, com o nome antigo
@@ -43,3 +45,9 @@ def trocas(pasta: Path) -> list[TrocaCodigo]:
                     origem=CURADORIA)
         for t in opcionais(pasta / TROCAS)
     ]  # fmt: skip
+
+
+def tickers(pasta: Path) -> frozenset[str]:
+    """Tickers que as tabelas curadas conhecem (nomes de pregão das notas e tipos de ativo)."""
+    return frozenset({r["ticker"] for r in opcionais(pasta / ATIVOS)}
+                     | {r["ticker"] for r in opcionais(pasta / TIPOS_ATIVO)})  # fmt: skip

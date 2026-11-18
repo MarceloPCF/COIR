@@ -42,7 +42,9 @@
   "cvm": {
    "licenca": "ODbL-1.0",
    "arquivos": [
-    "eventos_cvm.csv"
+    "eventos_cvm.csv",
+    "fundos_cvm.csv",
+    "valores_mobiliarios_cvm.csv"
    ]
   },
   "norma": {

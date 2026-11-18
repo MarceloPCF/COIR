@@ -17,9 +17,10 @@ Arquivos gerados (os curados à mão, como ``ativos.csv``, continuam valendo por
 - ``eventos_cvm.csv`` e ``eventos_b3.csv``: desdobramentos, grupamentos, bonificações, cisões e
   subscrições (nunca apaga), cada arquivo com as linhas da sua fonte (``cvm_fre``, ``cvm_ipe``;
   ``b3``). O evento que as duas trazem aparece nos dois, cada um com a sua origem; o documento
-  (``referencia``), o custo atribuído e ``conferido_cotahist`` (data com do FRE fixada pela
-  cotação) ficam do lado da CVM. A junção (``ler_eventos_pacote``) soma as origens; divergência
-  entre fontes não entra e vai para o resumo do PR (``historico.py``);
+  (``referencia``), o custo atribuído e ``conferido_cotahist`` (data com fixada pela cotação: a
+  do FRE sempre; a do aviso, quando ele não a informa) ficam do lado da CVM. A junção
+  (``ler_eventos_pacote``) soma as origens; divergência entre fontes não entra e vai para o
+  resumo do PR (``historico.py``);
 - ``selic_mensal.csv``: série 4390 do BCB, só meses encerrados;
 - ``proventos_b3.csv``: proventos em dinheiro (dividendo, JCP, rendimento) com data de aprovação,
   data com, pagamento e valor por ação (o crédito do JCP; a B3 só lista os últimos meses, nunca
@@ -950,6 +951,12 @@ def pacote_json(pasta: Path, data: date) -> str:
     return json.dumps(info, indent=1, ensure_ascii=False) + "\n"
 
 
+def data_do_pacote(pasta: Path) -> date:
+    """A data gravada em ``pacote.json``."""
+    info = json.loads((pasta / "pacote.json").read_text(encoding="utf-8"))
+    return date.fromisoformat(info["data"])
+
+
 def _chave_evento(r: Mapping[str, str]) -> tuple[str, ...]:
     return tuple(r[c] for c in COLUNAS_CHAVE)
 
@@ -986,6 +993,15 @@ def juntar_divididos(cvm: Iterable[Mapping[str, str]], b3: Iterable[Mapping[str,
     return [todos[k] for k in sorted(todos, key=_ordem_evento)]
 
 
+PELA_COTACAO = "data com pela cotação"  # na referência do aviso que não informa a data com
+
+
+def _pela_cotacao(origens: Collection[str], r: Mapping[str, str]) -> bool:
+    """A data com veio da cotação: a do FRE sempre (o formulário só traz o ano); a do aviso, quando
+    a referência diz que ele não a informa."""
+    return "cvm_fre" in origens or PELA_COTACAO in r.get("referencia", "")
+
+
 def dividir_eventos(linhas: Iterable[Mapping[str, str]]
                     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:  # fmt: skip
     """(linhas da CVM, linhas da bolsa). O documento, o custo atribuído e a marca da data com
@@ -996,8 +1012,8 @@ def dividir_eventos(linhas: Iterable[Mapping[str, str]]
         partes = set((r.get("origem") or "b3").split("+"))
         da_cvm = sorted(p for p in partes if p.startswith("cvm_"))
         if da_cvm:
-            cvm.append({**r, "origem": "+".join(da_cvm),
-                        "conferido_cotahist": "sim" if "cvm_fre" in da_cvm else "nao"})  # fmt: skip
+            conferido = "sim" if _pela_cotacao(da_cvm, r) else "nao"
+            cvm.append({**r, "origem": "+".join(da_cvm), "conferido_cotahist": conferido})
         if "b3" in partes:
             so_da_bolsa = {"referencia": "", "custo_atribuido": ""} if da_cvm else {}
             b3.append({**r, "origem": "b3", **so_da_bolsa})

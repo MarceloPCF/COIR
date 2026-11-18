@@ -93,10 +93,29 @@ def eventos(pasta: Path) -> list[Evento]:
     return juntar_eventos(cvm.eventos(pasta), b3.eventos(pasta))[0]
 
 
+# classe no ISIN (posições 7 a 11) -> final do código de negociação; confere com todo o cadastro
+# de instrumentos de hoje (ON 3, PN 4, PNA 5... unit e cota de fundo 11)
+FINAL_PELA_CLASSE = {"ACNOR": "3", "ACNPR": "4", "ACNPA": "5", "ACNPB": "6", "ACNPC": "7",
+                     "ACNPD": "8"}  # fmt: skip
+
+
+def ticker_pelo_isin(isin: str) -> str | None:
+    """O código de negociação que a estrutura do ISIN dá (emissor + final da classe), ou None."""
+    if len(isin) != 12 or not isin.startswith("BR"):
+        return None
+    final = FINAL_PELA_CLASSE.get(isin[6:11])
+    if final is None and (isin[6:10] == "CDAM" or isin[6:9] == "CTF"):
+        final = "11"
+    return f"{isin[2:6]}{final}" if final else None
+
+
 def tickers_por_isin(pasta: Path) -> dict[str, str]:
     """ISIN -> ticker de ação ou unit (o mais recente visto no cadastro de instrumentos). O ISIN de
     antes de uma troca de código (KROT3 era BRKROTACNOR9) leva ao ticker da época, que o cadastro
-    de hoje não tem: o evento daquele ISIN acha a posição do ativo."""
+    de hoje não tem: o evento daquele ISIN acha a posição do ativo. O ISIN de evento que nenhuma
+    tabela liga a um ticker vai pela estrutura do código, se o ticker que ela dá existe no
+    cadastro da CVM ou nas tabelas curadas. O código reaproveitado não engana: a posição é a do
+    ticker na data com do evento, quando o código ainda era de quem fez o evento."""
     padrao = RE_TICKER_PADRAO
     saida: dict[str, tuple[str, str]] = {}
     for i in b3.instrumentos(pasta):
@@ -107,17 +126,26 @@ def tickers_por_isin(pasta: Path) -> dict[str, str]:
         for isin, ticker in ((t.isin_antigo, t.ticker_impresso), (t.isin_novo, t.ticker)):
             if isin and padrao.match(ticker):
                 por_isin.setdefault(isin, ticker)
+    conhecidos = cvm.tickers(pasta) | curadoria.tickers(pasta)
+    for ev in eventos(pasta):
+        for isin in (ev.isin, ev.isin_emitido):
+            ticker = ticker_pelo_isin(isin) if isin and isin not in por_isin else None
+            if ticker in conhecidos:
+                por_isin[isin] = ticker
     return por_isin
 
 
 def emissores(pasta: Path) -> dict[str, tuple[str, str, str]]:
     """Emissor (4 letras) -> (CNPJ, razão social, tipo: COMPANHIA, FII, FIAGRO, ETF...), para o
-    Bens e Direitos. A curadoria vale sobre o cadastro da bolsa (o CNPJ visto por último); o tipo
-    continua o do cadastro."""
+    Bens e Direitos. A curadoria vale sobre tudo (o tipo continua o do cadastro). Entre a bolsa e
+    a CVM vale a bolsa, que diz quem tem o código hoje (o CNPJ visto por último); a CVM completa
+    o código que a bolsa não traz (o código é reaproveitado, e a CVM guarda quem o usou antes)."""
     saida: dict[str, tuple[str, str, str, str]] = {}
     for e in b3.emissores(pasta):
         if e.visto_ate >= saida.get(e.emissor, ("", "", "", ""))[3]:
             saida[e.emissor] = (e.cnpj, e.razao_social, e.tipo, e.visto_ate)
+    for e in cvm.emissores(pasta):
+        saida.setdefault(e.emissor, (e.cnpj, e.razao_social, e.tipo, e.visto_ate))
     for e in curadoria.emissores(pasta):
         tipo = saida.get(e.emissor, ("", "", "", ""))[2]
         saida[e.emissor] = (e.cnpj, e.razao_social, tipo, "")

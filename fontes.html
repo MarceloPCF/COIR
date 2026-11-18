@@ -374,8 +374,20 @@ fonte (<code>data/eventos_cvm.csv</code> e <code>data/eventos_b3.csv</code>), e 
 <tr>
   <td>CVM, cadastro de companhias abertas</td>
   <td><code>https://dados.cvm.gov.br/dados/CIA_ABERTA/CAD/DADOS/cad_cia_aberta.csv</code></td>
-  <td>CNPJ, nome e data do cancelamento do registro. Liga ao FRE e ao IPE a companhia que saiu da bolsa antes de 2018 (o FCA não tem o código dela).</td>
-  <td><code>tools/referencias/emissores_antigos.csv</code> (curado, com a fonte)</td>
+  <td>CNPJ, nome e data do cancelamento do registro. Liga ao FRE e ao IPE a companhia que saiu da bolsa antes de 2018 (o FCA não tem o código dela) e dá a razão social dos códigos do FCA.</td>
+  <td><code>tools/referencias/emissores_antigos.csv</code> (curado, com a fonte) e <code>valores_mobiliarios_cvm.csv</code></td>
+</tr>
+<tr>
+  <td>CVM, FCA, tabela <code>valor_mobiliario</code></td>
+  <td><code>https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FCA/DADOS/fca_cia_aberta_AAAA.zip</code> (2018 em diante)</td>
+  <td>Código de negociação de cada ação e unit em bolsa, com o CNPJ da companhia e a espécie.</td>
+  <td><code>python -m tools.referencias cvm</code> → <code>valores_mobiliarios_cvm.csv</code></td>
+</tr>
+<tr>
+  <td>CVM, informe mensal de FII (tabela <code>geral</code>) e de Fiagro</td>
+  <td><code>https://dados.cvm.gov.br/dados/FII/DOC/INF_MENSAL/DADOS/inf_mensal_fii_AAAA.zip</code> (2016 em diante) e <code>https://dados.cvm.gov.br/dados/FIAGRO/DOC/INF_MENSAL/DADOS/inf_mensal_fiagro_AAAAMM.zip</code> (últimos doze meses)</td>
+  <td>CNPJ, nome e ISIN da cota de cada fundo negociado em bolsa. O ISIN é declarado pelo fundo: o que dois fundos declararam fica de fora.</td>
+  <td><code>python -m tools.referencias cvm</code> → <code>fundos_cvm.csv</code></td>
 </tr>
 <tr>
   <td>Banco Central, série 4390 (Selic mensal)</td>

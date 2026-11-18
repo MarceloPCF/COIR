@@ -49,6 +49,8 @@ def _pacote(tmp: Path, *linhas: str) -> Path:
     )  # fmt: skip
     (pasta / "eventos_b3.csv").write_text(CAB_EVENTOS + "".join(f"{x}\n" for x in linhas),
                                           encoding="utf-8")  # fmt: skip
+    # só os eventos do teste: os reais da CVM achariam o ticker pela estrutura do ISIN
+    (pasta / "eventos_cvm.csv").unlink()
     return pasta
 
 

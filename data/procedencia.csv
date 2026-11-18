@@ -22,6 +22,8 @@ isencao_pme.csv,norma,AGPL-3.0-or-later,"Lei 13.043/2014 art. 16 e IN RFB 1.585/
 parametros_fiscais.csv,norma,AGPL-3.0-or-later,"legislação, com a fonte de cada linha na coluna fonte"
 vencimentos_opcoes.csv,norma,AGPL-3.0-or-later,"regra de vencimento das opções, com a fonte na coluna fonte"
 selic_mensal.csv,bcb,ODbL-1.0,"Banco Central do Brasil, SGS série 4390"
+fundos_cvm.csv,cvm,ODbL-1.0,"CVM, dados abertos: informes mensais de FII e de Fiagro (cotas negociadas em bolsa)"
+valores_mobiliarios_cvm.csv,cvm,ODbL-1.0,"CVM, dados abertos: formulário cadastral (valores mobiliários) e cadastro de companhias abertas"
 eventos_cvm.csv,cvm,ODbL-1.0,"CVM, dados abertos: formulário de referência (cvm_fre) e avisos aos acionistas (cvm_ipe), com o documento na coluna referencia"
 ativos_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)
 eventos_b3.csv,b3,termos da B3,B3 (páginas e arquivos públicos)

@@ -9,9 +9,11 @@ repositório, no pacote do programa e no pacote de referências.
 Contém informações do Portal de Dados Abertos da CVM (https://dados.cvm.gov.br), acessadas pelo
 portal e disponibilizadas sob a Open Database License (ODbL) 1.0
 (https://opendatacommons.org/licenses/odbl/1-0/): Formulário de Referência (FRE), Informações
-Periódicas e Eventuais (IPE), Formulário Cadastral (FCA) e cadastro de companhias abertas.
+Periódicas e Eventuais (IPE), Formulário Cadastral (FCA), cadastro de companhias abertas e
+informes mensais de FII e de Fiagro.
 
-- Onde entram: `eventos_cvm.csv` (coluna `origem`: `cvm_fre` ou `cvm_ipe`), as linhas de
+- Onde entram: `eventos_cvm.csv` (coluna `origem`: `cvm_fre` ou `cvm_ipe`),
+  `valores_mobiliarios_cvm.csv`, `fundos_cvm.csv`, as linhas de
   `trocas_ticker.csv` e de `saidas.csv` cuja `fonte` cita a CVM, e as tabelas de
   `tools/referencias/` (`eventos_cvm_ipe.csv`, `emissores_antigos.csv`, `sem_evento.csv`).
 - Essas linhas, como base de dados derivada, ficam disponíveis sob a mesma ODbL 1.0.
