@@ -17,7 +17,7 @@ from coir.reports.fiscais import MESES
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import simulacao
 from coir.servicos.estado import Estado
-from coir.servicos.simulacao import Contexto, OrdemDigitada, ResultadoSimulacao
+from coir.servicos.simulacao import Contexto, OrdemDigitada, Regras, ResultadoSimulacao
 from coir.ui import ocupado, tabela
 from coir.ui.entrada import valor_br
 
@@ -38,10 +38,10 @@ HIPOTESES = (
     "O preço médio é o da carteira apurada com as notas importadas até {ultima}. Compras, vendas, "
     "transferências e eventos (bonificação, desdobramento, grupamento, incorporação, cisão) até a "
     "data simulada mudam a quantidade e o preço médio.",
-    "As regras são as vigentes hoje: 15% em operações comuns, 20% em day trade e em FII e Fiagro, "
-    "isenção de ações até R$ 20.000,00 de vendas no mês. Lei nova pode mudar as regras de meses "
-    "futuros; vale a lei da data de cada venda.",
-    "O limite de R$ 20.000,00 é do valor bruto de todas as vendas de ações do mês (data do "
+    "As regras são as vigentes hoje: {comum} em operações comuns, {dt} em day trade, {fii} em FII "
+    "e Fiagro, isenção de ações até {limite} de vendas no mês. Lei nova pode mudar as regras de "
+    "meses futuros; vale a lei da data de cada venda.",
+    "O limite de {limite} é do valor bruto de todas as vendas de ações do mês (data do "
     "pregão), somando todas as corretoras e contas do titular (Lei 11.033/2004 art. 3º I). Custos "
     "da corretora não reduzem esse valor. As vendas de ações em day trade, por exercício de opção "
     "e na liquidação de termo entram na soma (critério do COIR, leitura literal da lei), mas o "
@@ -50,8 +50,8 @@ HIPOTESES = (
     "limite e não têm isenção (units: critério do COIR).",
     "Prejuízo só compensa ganho da mesma categoria: operações comuns, day trade ou FII e Fiagro. "
     "Ganho isento não consome prejuízo.",
-    "Imposto abaixo de R$ 10,00 não gera DARF: soma-se ao dos meses seguintes e vence com o mês em "
-    "que o total chega a R$ 10,00 (Lei 9.430/1996 art. 68). A DARF vence no último dia útil do mês "
+    "Imposto abaixo de {darf} não gera DARF: soma-se ao dos meses seguintes e vence com o mês em "
+    "que o total chega a {darf} (Lei 9.430/1996 art. 68). A DARF vence no último dia útil do mês "
     "seguinte ao da venda.",
     "As ordens simuladas não têm IRRF deduzido (veja o valor estimado no quadro).",
     "Vendas em anos diferentes: o saldo de IRRF não passa de dezembro para janeiro (o de 0,005% "
@@ -66,13 +66,14 @@ DAY_TRADE_FIXO = (
     "Day trade é a compra e a venda do mesmo ativo no mesmo dia, na mesma corretora, ainda que em "
     "contas diferentes dela. As ações que você já tinha não contam: a venda casa primeiro com as "
     "compras do dia, pela ordem dos negócios. Compra e venda em corretoras diferentes não são day "
-    "trade, nem o exercício de opção seguido de venda no mesmo dia. O ganho de day trade paga 20%, "
-    "não tem isenção, sofre retenção de 1% na fonte, e o prejuízo só compensa ganho de day trade "
+    "trade, nem o exercício de opção seguido de venda no mesmo dia. O ganho de day trade paga "
+    "{dt}, não tem isenção, sofre retenção de {irrf_dt} na fonte, e o prejuízo só compensa ganho "
+    "de day trade "
     "(Lei 9.959/2000 art. 8º; Lei 11.033/2004 art. 2º; IN RFB 1.585/2015 art. 65)."
 )
 CUSTOS = (
     "Corretagem, emolumentos e taxas reduzem o ganho (IN RFB 1.585/2015 art. 56 §3º), mas não o "
-    "valor que conta para o limite de R$ 20.000,00. Sem custos informados, o imposto simulado sai "
+    "valor que conta para o limite de {limite}. Sem custos informados, o imposto simulado sai "
     "um pouco maior que o real."
 )
 COLUNAS_MES = (
@@ -112,6 +113,20 @@ def _r(v: Decimal) -> str:
 
 def _q(v: Decimal) -> str:
     return formatar(v, T.QUANTIDADE)
+
+
+def _pct(v: Decimal) -> str:
+    texto = f"{v * 100:f}"
+    if "." in texto:
+        texto = texto.rstrip("0").rstrip(".")
+    return texto.replace(".", ",") + "%"
+
+
+def valores(r: Regras) -> dict[str, str]:
+    """Os parâmetros fiscais nos textos da tela (nada fixo no texto)."""
+    return {"comum": _pct(r.aliquota_comum), "dt": _pct(r.aliquota_day_trade),
+            "fii": _pct(r.aliquota_fii), "limite": f"R$ {_r(r.limite_isencao)}",
+            "darf": f"R$ {_r(r.darf_minimo)}", "irrf_dt": _pct(r.irrf_day_trade)}  # fmt: skip
 
 
 @dataclass
@@ -209,20 +224,20 @@ def _quadro(base: ResultadoSimulacao, resultados: dict[str, ResultadoSimulacao])
 
 
 def _day_trade(r: ResultadoSimulacao, nome: str, contas: dict[int, str],
-               ordens: list[OrdemDigitada]) -> list[str]:  # fmt: skip
+               ordens: list[OrdemDigitada], v: dict[str, str]) -> list[str]:  # fmt: skip
     por_numero = {o.numero: o for o in ordens}
     textos: list[str] = []
     for o in r.ordens:
         if not o.quantidade_day_trade:
             continue
         d = por_numero[o.numero]
-        resto = o.quantidade - o.quantidade_day_trade
+        resto = o.quantidade_comum
         textos.append(
             f"Cenário {nome}, ordem {o.numero}: em {d.data:%d/%m/%Y}, {_q(o.quantidade_day_trade)} "
             f"{o.ticker} formam day trade com negócio do mesmo dia na {contas.get(d.conta, '')}: "
             f"resultado de {_r(o.resultado_day_trade)} no grupo de day trade, pelo preço do dia e "
-            "não pelo preço médio, tributado a 20%, sem isenção e com IRRF de 1% sobre o ganho do "
-            "dia."
+            f"não pelo preço médio, tributado a {v['dt']}, sem isenção e com IRRF de "
+            f"{v['irrf_dt']} sobre o ganho do dia."
             + (f" As outras {_q(resto)} são operação comum, pelo preço médio." if resto else "")
             + " A simulação supõe a ordem executada depois dos negócios já feitos no dia."
         )  # fmt: skip
@@ -231,19 +246,20 @@ def _day_trade(r: ResultadoSimulacao, nome: str, contas: dict[int, str],
 
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     del ao_mudar  # só leitura: nada muda no banco
+    hoje = estado.agora().date()
+    v = valores(simulacao.regras(estado.fiscais, hoje))
     ui.label("Simulação").classes("coir-titulo-pagina")
     ui.label(
         "Digite ordens de venda ou de compra à vista e veja o efeito no imposto, no limite de "
-        "isenção de R$ 20 mil, no prejuízo a compensar e no day trade. Os cenários A e B usam as "
-        "mesmas ordens com datas próprias: deixe a data em branco para a ordem ficar fora do "
-        "cenário, ou use meses diferentes para comparar."
+        f"isenção de {v['limite']}, no prejuízo a compensar e no day trade. Os cenários A e B "
+        "usam as mesmas ordens com datas próprias: deixe a data em branco para a ordem ficar fora "
+        "do cenário, ou use meses diferentes para comparar."
     ).classes("coir-subtitulo")
     ui.label(AVISO_GERAL).classes("coir-carimbo text-sm").mark("sim-aviso")
     if not estado.existe or estado.titular is None:
         ui.label("Cadastre o titular e importe as notas primeiro.").classes("coir-vazio w-full")
         return
     titular = estado.titular
-    hoje = estado.agora().date()
     ordens: list[_Ordem] = []
     ctx_box: list[Contexto] = []
     corpo = ui.column().classes("w-full gap-2")
@@ -258,7 +274,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         botao_simular = ui.button("Simular", icon="play_arrow").props("unelevated").mark(
             "sim-simular")  # fmt: skip
     grade_ordens = ui.column().classes("w-full gap-1")
-    ui.label(CUSTOS).classes("coir-subtitulo text-xs")
+    ui.label(CUSTOS.format(**v)).classes("coir-subtitulo text-xs")
     with ui.expansion("Hipóteses desta simulação").classes("w-full").mark("sim-hipoteses"):
         lista_hipoteses = ui.column().classes("gap-1")
     resultado = ui.column().classes("w-full gap-3")
@@ -272,7 +288,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                   if ctx_box and ctx_box[0].ultima_nota else "a última nota")  # fmt: skip
         with lista_hipoteses:
             for h in HIPOTESES:
-                ui.label("• " + h.format(ultima=ultima)).classes("text-sm")
+                ui.label("• " + h.format(ultima=ultima, **v)).classes("text-sm")
 
     def adicionar(ordem: _Ordem | None = None) -> None:
         nova = ordem or _Ordem()
@@ -340,6 +356,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         if not any(cenarios.values()):
             ui.notify("Dê uma data a pelo menos uma ordem.", type="warning")
             return
+        botao_simular.disable()
         try:
             with ocupado.processando("Simulando as ordens"):
                 resultados = await run.io_bound(
@@ -347,8 +364,12 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                     cenarios, estado.apuracao,
                 )  # fmt: skip
         except CoirError as erro:
-            ui.notify(f"Simulação não feita: {erro}", type="negative", multi_line=True)
+            if not botao_simular.is_deleted:
+                ui.notify(f"Simulação não feita: {erro}", type="negative", multi_line=True)
             return
+        finally:
+            if not botao_simular.is_deleted:
+                botao_simular.enable()
         if resultados is not None and not resultado.is_deleted:
             mostrar(resultados, cenarios)
 
@@ -370,12 +391,12 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                     for o in r.ordens
                 ]).mark(f"sim-ordens-{nome}")  # fmt: skip
             textos = [t for nome, r in resultados.items()
-                      for t in _day_trade(r, nome, contas(), cenarios[nome])]  # fmt: skip
+                      for t in _day_trade(r, nome, contas(), cenarios[nome], v)]  # fmt: skip
             with ui.column().classes("w-full gap-1").mark("sim-day-trade"):
                 ui.label("Day trade").classes("coir-titulo text-base")
                 for t in textos:
                     ui.label(t).classes("coir-carimbo text-sm")
-                ui.label(DAY_TRADE_FIXO).classes("coir-subtitulo text-xs")
+                ui.label(DAY_TRADE_FIXO.format(**v)).classes("coir-subtitulo text-xs")
             avisos = sorted({a for r in resultados.values() for a in r.avisos})
             if avisos:
                 with ui.column().classes("w-full gap-1").mark("sim-avisos"):

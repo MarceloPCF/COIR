@@ -12,7 +12,7 @@ from nicegui.testing.user_simulation import user_simulation
 from coir.servicos import simulacao
 from coir.servicos.simulacao import OrdemDigitada
 from coir.ui.app import montar
-from coir.ui.telas.simulacao import _Ordem, digitadas
+from coir.ui.telas.simulacao import _Ordem, digitadas, valores
 from tests.unit.ui.test_telas import ESPERA, _estado
 from tools.banco_demo import criar
 
@@ -113,3 +113,21 @@ async def test_venda_acima_da_posicao_e_recusada(demo: Path) -> None:
         user.find(marker="sim-simular").click()
         await user.should_see("passa da posição da conta", retries=ESPERA)
         await user.should_not_see("Resultado até")
+
+
+def test_compra_de_ativo_que_o_titular_nunca_teve(demo: Path) -> None:
+    """O ticker sem ativo no banco ganha um ativo só na memória; o tipo vem das tabelas."""
+    estado = _estado(demo)
+    compra = OrdemDigitada(numero=1, ticker="abcd3", conta=1, cv="C", quantidade=D(100),
+                           preco=D(10), custos=D(0), data=DIA)  # fmt: skip
+    r = simulacao.simular_banco(demo, estado.refs, estado.fiscais, 1, {"A": [compra]})
+    posicao = r["A"].posicoes[0]
+    assert (posicao.ticker, posicao.quantidade, posicao.custo) == ("ABCD3", D(100), D(1000))
+    assert posicao.quantidade_base == 0
+
+
+def test_textos_com_os_parametros_fiscais(demo: Path) -> None:
+    """Alíquotas e limites dos textos vêm dos parâmetros (nada fixo no texto)."""
+    v = valores(simulacao.regras(_estado(demo).fiscais, DIA))
+    assert v == {"comum": "15%", "dt": "20%", "fii": "20%", "limite": "R$ 20.000,00",
+                 "darf": "R$ 10,00", "irrf_dt": "1%"}  # fmt: skip

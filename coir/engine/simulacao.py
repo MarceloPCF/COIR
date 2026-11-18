@@ -4,8 +4,8 @@ Cada ordem digitada vira uma nota sintética, acrescentada às notas reais, e ``
 mesmo ``ate`` com e sem elas: a diferença é o efeito das ordens no imposto, no limite de isenção,
 no prejuízo a compensar e na carteira. Nada é gravado.
 
-- Uma nota por ordem, número ``SIM-0001``...: na ordem dos negócios do dia, os números não
-  numéricos ficam depois das notas reais (a simulação supõe a ordem executada depois dos negócios
+- Uma nota por ordem, número ``~SIM-0001``...: na ordem dos negócios do dia, esses números
+  ficam depois das notas reais (a simulação supõe a ordem executada depois dos negócios
   já feitos no dia; o day trade casa pela ordem dos negócios, IN RFB 1.585/2015 art. 65 §3º).
 - IRRF zero nas notas sintéticas: a DARF simulada nunca fica menor que a real. A estimativa do
   IRRF que a corretora reteria (0,005% e 1% do day trade) só é exibida (``irrf_estimado``).
@@ -46,7 +46,7 @@ CENTAVO = Decimal("0.01")
 # fixa, fundos de alíquota zero e FIDC ficam fora: vencimento, ajuste e tributação próprios)
 TIPOS_SIMULAVEIS = frozenset({TipoAtivo.ACAO, TipoAtivo.UNIT, TipoAtivo.ETF, TipoAtivo.BDR,
                               TipoAtivo.FII, TipoAtivo.DIREITO, TipoAtivo.FIP})  # fmt: skip
-PREFIXO = "SIM-"
+PREFIXO = "~SIM-"  # "~" ordena depois de dígitos e letras: a ordem fica depois das notas reais
 
 
 class OrdemSimulada(Modelo):
@@ -93,6 +93,7 @@ class ResultadoOrdem(Modelo):
     quantidade: Decimal
     valor: Decimal  # bruto (quantidade x preço)
     resultado: Decimal  # operação comum ou FII (venda), sem o day trade
+    quantidade_comum: Decimal  # parte que ficou como operação comum (ou FII)
     quantidade_day_trade: Decimal  # parte que casou com compra ou venda do mesmo dia
     resultado_day_trade: Decimal  # do grupo de day trade em que a ordem entrou
     quantidade_apos: Decimal  # posição do titular depois da ordem
@@ -147,7 +148,8 @@ class ResultadoSimulacao(Modelo):
 
 
 def ultimo_mes(cal: Calendario) -> tuple[int, int]:
-    """Último mês simulável: a DARF dele vence no mês seguinte, que o calendário tem de cobrir."""
+    """Último mês simulável: a DARF dele vence no mês seguinte (RIR/2018 art. 915), que o
+    calendário tem de cobrir; a de dezembro venceria em janeiro do ano que ele não tem."""
     return (cal.ultimo_ano, 11)
 
 
@@ -244,9 +246,10 @@ def _acima_da_posicao(
 
 def simular(
     entradas: Entradas, ordens: Sequence[OrdemSimulada], params: ParametrosFiscais,
-    cal: Calendario, ate: date, base: Apuracao | None = None,
+    cal: Calendario, ate: date, base: Apuracao | None = None, desde: date | None = None,
 ) -> ResultadoSimulacao:  # fmt: skip
-    """Apura o cenário com as ordens e compara com a base, do mês da primeira ordem até `ate`.
+    """Apura o cenário com as ordens e compara com a base, do mês de `desde` (padrão: o da
+    primeira ordem) até `ate`. Cenários comparados entre si usam o mesmo `desde` e o mesmo `ate`.
     `base`: a apuração sem as ordens até o mesmo `ate` (a tela já a tem em cache)."""
     titulares = {o.titular for o in ordens}
     if len(titulares) != 1:
@@ -266,6 +269,10 @@ def simular(
     cenario = apurar([*entradas.notas, *sinteticas], entradas.eventos, params, cal, ate,
                      entradas.outros_custos, entradas.saldos_iniciais)  # fmt: skip
     inicio = min(o.data for o in ordens)
+    if desde is not None:
+        if desde > inicio:
+            raise SimulacaoError("o início da comparação é posterior a uma ordem")
+        inicio = desde
     meses_base = {(m.ano, m.mes): m for m in base.meses if m.titular == titular}
     meses = tuple(
         MesSimulado(ano=m.ano, mes=m.mes, base=meses_base.get((m.ano, m.mes)), cenario=m)
@@ -293,14 +300,17 @@ def _por_ordem(
         meus = [m for m in movs if o.numero in {mapa.get(i) for i in _ids(m.origem)}]
         dt = [m for m in meus if m.categoria is Categoria.DAY_TRADE]
         comuns = [m for m in meus if m.categoria is not Categoria.DAY_TRADE]
-        # o day trade junta as operações do dia: a parte da ordem é o que não ficou como comum
+        # o day trade junta as operações do dia (a origem lista todas, inclusive as que sobraram
+        # como comuns): a parte da ordem é o que não ficou como comum
         q_comum = sum((m.quantidade for m in comuns), ZERO)
-        ultimo = meus[-1] if meus else None
+        q_dt = o.quantidade - q_comum if dt else ZERO
+        # posição depois da ordem: a do passo comum (o day trade não muda a posição)
+        ultimo = comuns[-1] if comuns else (meus[-1] if meus else None)
         saida.append(ResultadoOrdem(
             numero=o.numero, ticker=o.ticker, cv=o.cv, quantidade=o.quantidade, valor=o.total,
             resultado=sum((m.resultado for m in comuns), ZERO),
-            quantidade_day_trade=o.quantidade - q_comum if dt else ZERO,
-            resultado_day_trade=sum((m.resultado for m in dt), ZERO),
+            quantidade_comum=o.quantidade - q_dt, quantidade_day_trade=q_dt,
+            resultado_day_trade=sum((m.resultado for m in dt), ZERO) if q_dt else ZERO,
             quantidade_apos=ultimo.quantidade_apos if ultimo else ZERO,
             pm_apos=ultimo.pm_apos if ultimo else ZERO,
         ))  # fmt: skip
@@ -345,7 +355,9 @@ def _irrf_alienacao(
         vendas: dict[tuple[str, int, int], Decimal] = defaultdict(lambda: ZERO)
         premios: dict[tuple[str, date], Decimal] = defaultdict(lambda: ZERO)
         for m in apuracao.movimentos:
-            if m.titular != titular or m.corretora is None or not m.base_irrf or m.data < desde:
+            # a retenção e a dispensa são do mês inteiro na corretora, com as vendas reais dele
+            if (m.titular != titular or m.corretora is None or not m.base_irrf
+                    or (m.data.year, m.data.month) < (desde.year, desde.month)):  # fmt: skip
                 continue
             if m.tipo is TipoAtivo.OPCAO:  # a soma dos prêmios do dia, se positiva (art. 63 II)
                 premios[(m.corretora, m.data)] += m.base_irrf

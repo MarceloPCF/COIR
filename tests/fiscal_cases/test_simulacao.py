@@ -315,3 +315,69 @@ def test_ordens_que_a_simulacao_recusa(ordem: dict[str, object], trecho: str) ->
     o = _ordem(livro, 1, "XXXX3", quantidade, "10", **ordem)  # type: ignore[arg-type]
     with pytest.raises(SimulacaoError, match=trecho):
         _simular(livro, [o], date(ULTIMO, 12, 31) if o.data.year == ULTIMO else FIM_NOV)
+
+
+def test_irrf_estimado_soma_as_vendas_reais_do_mes_antes_da_ordem() -> None:
+    """A dispensa de R$ 1,00 é do mês inteiro na corretora (Lei 11.033/2004 art. 2º §§4º e 5º):
+    venda real de 15.000,00 em 03/11 (0,75, dispensada sozinha) e ordem de 5.200,00 em 23/11
+    (0,26): no mês, 20.200,00 x 0,005% = 1,01, retido."""
+    livro = _livro()
+    livro.nota(COMPRA, livro.op("C", "YYYY3", 1000, "12"))
+    livro.nota(date(2026, 11, 3), livro.op("V", "YYYY3", 1000, "15"))
+    r = _simular(livro, [_ordem(livro, 1, "XXXX3", 500, "10.40")])
+    assert r.irrf_alienacao == D("1.01")
+
+
+def test_duas_ordens_no_dia_so_a_primeira_casa_com_a_compra_do_dia() -> None:
+    """Compra real de 1.000 a 11,00 em 18/11; ordens de venda de 1.000 a 11,20 e de 500 a 11,50
+    no mesmo dia e corretora. Pela ordem dos negócios (IN RFB 1.585/2015 art. 65 §3º), a primeira
+    venda casa com a compra (day trade de 200,00); a segunda é comum, pelo PM 10,00 (750,00), sem
+    resultado de day trade atribuído."""
+    livro = _com_compra_do_dia()
+    dia = date(2026, 11, 18)
+    r = _simular(livro, [_ordem(livro, 1, "XXXX3", 1000, "11.20", dia),
+                         _ordem(livro, 2, "XXXX3", 500, "11.50", dia)])  # fmt: skip
+    primeira, segunda = r.ordens
+    assert (primeira.quantidade_day_trade, primeira.resultado_day_trade) == (D(1000), D(200))
+    assert primeira.quantidade_comum == 0
+    assert (segunda.quantidade_day_trade, segunda.resultado_day_trade) == (0, 0)
+    assert (segunda.quantidade_comum, segunda.resultado) == (D(500), D(750))
+    assert segunda.quantidade_apos == D(9500) and segunda.pm_apos == D(10)
+
+
+def test_compra_e_venda_no_dia_a_posicao_depois_da_ordem() -> None:
+    """Na compra seguida de venda no mesmo dia, todo o volume é day trade: a posição depois de
+    cada ordem continua 10.000 a PM 10,00."""
+    livro = _livro()
+    r = _simular(livro, [_ordem(livro, 1, "XXXX3", 1000, "11", cv="C"),
+                         _ordem(livro, 2, "XXXX3", 1000, "11.50")])  # fmt: skip
+    assert all(o.quantidade_day_trade == D(1000) for o in r.ordens)
+    assert {(o.quantidade_apos, o.pm_apos) for o in r.ordens} == {(D(10000), D(10))}
+
+
+def test_cenarios_comparados_no_mesmo_periodo() -> None:
+    """Com o início comum, o cenário que só vende em dezembro também mostra novembro: os totais
+    dos dois cenários cobrem os mesmos meses."""
+    livro = _livro()
+    ordens = [_ordem(livro, 1, "XXXX3", 2500, "10.40", DEZ)]
+    params = REFS.parametros
+    entradas = Entradas(livro.notas, livro.eventos)
+    so_dez = simular(entradas, ordens, params, REFS.calendario, FIM_DEZ)
+    desde_nov = simular(entradas, ordens, params, REFS.calendario, FIM_DEZ, desde=NOV)
+    assert [(m.ano, m.mes) for m in so_dez.meses] == [(2026, 12)]
+    assert [(m.ano, m.mes) for m in desde_nov.meses] == [(2026, 11), (2026, 12)]
+    with pytest.raises(SimulacaoError, match="posterior a uma ordem"):
+        simular(entradas, ordens, params, REFS.calendario, FIM_DEZ, desde=date(2026, 12, 15))
+
+
+def test_escada_na_virada_do_ano() -> None:
+    """Ordens 1 e 2 em 14/12/2026 (ganho 3.000,00: 450,00, vence 29/01/2027) e 3 e 4 em
+    18/01/2027 (ganho 7.000,00: 1.050,00, vence no último dia útil de fevereiro de 2027)."""
+    livro = _livro()
+    janeiro = date(2027, 1, 18)
+    datas = (DEZ, DEZ, janeiro, janeiro)
+    r = _simular(livro, [_ordem(livro, n, "XXXX3", 2500, p, datas[n - 1]) for p, n in ESCADA],
+                 date(2027, 1, 31))  # fmt: skip
+    assert _mes(r, 2026, 12) == (D("450.00"), D("450.00"), date(2027, 1, 29))
+    assert _mes(r, 2027, 1) == (D("1050.00"), D("1050.00"), date(2027, 2, 26))
+    assert r.irrf_alienacao == D("5.50")  # 2,65 em dezembro e 2,85 em janeiro

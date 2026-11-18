@@ -152,6 +152,30 @@ def ordens_do_motor(
     return saida
 
 
+@dataclass(frozen=True)
+class Regras:
+    """Valores dos parâmetros fiscais numa data, para os textos da tela (nada fixo no texto)."""
+
+    aliquota_comum: Decimal
+    aliquota_day_trade: Decimal
+    aliquota_fii: Decimal
+    limite_isencao: Decimal
+    darf_minimo: Decimal
+    irrf_day_trade: Decimal
+
+
+def regras(fiscais: ReferenciasFiscais, dia: date) -> Regras:
+    p = fiscais.parametros
+    return Regras(
+        aliquota_comum=p.decimal("aliquota_comum", dia),
+        aliquota_day_trade=p.decimal("aliquota_day_trade", dia),
+        aliquota_fii=p.decimal("aliquota_fii", dia),
+        limite_isencao=p.decimal("limite_isencao_acoes", dia),
+        darf_minimo=p.decimal("darf_minimo", dia),
+        irrf_day_trade=p.decimal("aliquota_irrf_day_trade", dia),
+    )
+
+
 def horizonte(cenarios: Mapping[str, Sequence[OrdemDigitada]]) -> date:
     """Fim do mês da última ordem de qualquer cenário: todos são comparados até ele."""
     datas = [o.data for ordens in cenarios.values() for o in ordens]
@@ -167,8 +191,10 @@ def simular_banco(
     base: Callable[[date], Apuracao] | None = None,
 ) -> dict[str, ResultadoSimulacao]:  # fmt: skip
     """Cada cenário (nome -> ordens) contra a mesma base, até o mesmo mês. `base`: a apuração
-    sem as ordens até uma data (a tela passa a do cache); None calcula aqui."""
+    sem as ordens até uma data (a tela passa a do cache); None calcula aqui. Todos começam no
+    mês da primeira ordem de qualquer cenário: os totais cobrem o mesmo período."""
     ate = horizonte(cenarios)
+    desde = min(o.data for ordens in cenarios.values() for o in ordens)
     dados = ler(banco, refs, fiscais, titular)
     e = dados.entradas
     apurada = base(ate) if base is not None else apurar(
@@ -181,7 +207,7 @@ def simular_banco(
         ordens = ordens_do_motor(dados, fiscais, titular, digitadas)
         try:
             saida[nome] = simular(dados.entradas, ordens, fiscais.parametros, fiscais.calendario,
-                                  ate, apurada)  # fmt: skip
+                                  ate, apurada, desde)  # fmt: skip
         except SimulacaoError as erro:
             raise SimulacaoError(f"{nome}: {erro}") from erro
     return saida
