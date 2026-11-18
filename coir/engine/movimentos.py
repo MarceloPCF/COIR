@@ -538,6 +538,7 @@ def _percorrer(
     vencimentos: set[date] = set()
     ops: list[tuple[date, _Op]] = []  # dia em que a operação entra no livro
     vendas_a_termo: list[tuple[NotaMotor, OperacaoMotor]] = []
+    compras_sem_b3: list[tuple[NotaMotor, OperacaoMotor]] = []  # compra a termo com aviso
     compras_a_vista: set[tuple[int, str, int, date]] = set()  # titular, corretora, ativo, pregão
     for nota in notas:
         if nota.data > ate or not nota.operacoes:
@@ -566,6 +567,8 @@ def _percorrer(
                                      "data de liquidação (prazo)")  # fmt: skip
                 if op.cv == "V":
                     vendas_a_termo.append((nota, op))
+                elif op.aviso:
+                    compras_sem_b3.append((nota, op))
                 if op.liquidacao_termo <= ate:
                     ops.append((op.liquidacao_termo, item))
                     if (op.aviso and livro.visao is Visao.TITULAR
@@ -620,6 +623,8 @@ def _percorrer(
             raise
     livro.em_curso = None
     _avisar_suspeitas(livro)
+    if livro.visao is Visao.TITULAR:
+        _avisar_termo_descoberto(livro, compras_sem_b3)
     for dia, o in tiradas:
         _venda_isolada(livro, dia, o)
     return meses
@@ -677,6 +682,53 @@ def _avisar_suspeitas(livro: Livro) -> None:
                 "nota de compra (de outra corretora ou anterior às notas importadas), a custódia "
                 "inicial (Cadastros) ou um evento corporativo (tela Eventos)"
             )
+            livro.avisos.append(aviso)
+
+
+def _avisar_termo_descoberto(
+    livro: Livro, compras: Sequence[tuple[NotaMotor, OperacaoMotor]]
+) -> None:
+    """Compra a termo sem a liquidação na movimentação da B3 (o serviço manda o aviso na operação)
+    e venda à vista do mesmo ativo, entre o pregão e a data usada, que deixou a posição vendida:
+    sem ações em custódia, a entrega da venda exigiu a liquidação antecipada do termo ("por
+    diferença", de 1 a 3 dias úteis depois do pedido), e o ganho e o custo são da data dela (IN
+    RFB 1.585/2015 art. 59 §2º IV e art. 62 I). O COIR mantém a data usada (o vencimento) e troca
+    o aviso da operação por este, mais forte (parecer do especialista de 17/11/2026, opção (a),
+    escolhida pelo usuário em 18/11/2026: sem palpite da data)."""
+    for nota, op in compras:
+        assert op.liquidacao_termo is not None
+        venda = next((m for m in livro.movimentos
+                      if (m.titular, m.ativo) == (nota.titular, op.ativo) and m.cv == "V"
+                      and m.grupo is not Grupo.TERMO and m.quantidade_apos < 0
+                      and nota.data <= m.data < op.liquidacao_termo), None)  # fmt: skip
+        if venda is None:
+            continue
+        dia = venda.data
+        uteis = [dia + timedelta(days=n) for n in range(1, 8)
+                 if (dia + timedelta(days=n)).weekday() < 5][:3]  # fmt: skip
+        meses = sorted({(d.year, d.month) for d in uteis})
+        provavel = " ou ".join(f"{m:02d}/{a}" for a, m in meses)
+        resultado = sum((m.resultado for m in livro.movimentos
+                         if m.origem == f"termo:{op.id}"), ZERO)  # fmt: skip
+        em_jogo = (
+            f"o resultado de {reais(resultado)} que o COIR pôs em "
+            f"{op.liquidacao_termo:%m/%Y} (e o imposto dele) provavelmente é de {provavel}"
+            if resultado
+            else f"o custo, o ganho e o imposto provavelmente são de {provavel}"
+        )
+        aviso = (
+            f"Termo: a venda de {op.ticker} em {dia:%d/%m/%Y} deixou a posição vendida "
+            f"({venda.quantidade_apos.normalize():f}) antes da data usada para a compra a termo "
+            f"de {nota.data:%d/%m/%Y} ({op.liquidacao_termo:%d/%m/%Y}, sem a liquidação na "
+            "movimentação da B3). Sem ações em custódia, a entrega da venda exigiu a liquidação "
+            f"antecipada do termo, de 1 a 3 dias úteis depois da venda: {em_jogo}, com DARF "
+            "que vence antes (IN RFB 1.585/2015 art. 59 §2º IV e art. 62 I). Importe a "
+            "movimentação da B3 que cobre o período do contrato para o COIR ler a data da "
+            "liquidação"
+        )
+        if op.aviso in livro.avisos:
+            livro.avisos.remove(op.aviso)
+        if aviso not in livro.avisos:
             livro.avisos.append(aviso)
 
 

@@ -120,7 +120,10 @@ def liquidacoes(
     liquidação não apareceu nela. Sem ela (parecer do especialista de 17/11/2026), a venda a
     termo sempre avisa (quem antecipa é o comprador); a compra a termo só avisa quando o titular
     vendeu o ativo à vista entre o pregão e o vencimento (``vendas``: datas das vendas por titular
-    e ativo) ou quando o vencimento cai em outro ano. ``periodo``: primeira e última data da
+    e ativo) ou quando o vencimento cai em outro ano. Se a venda deixou a posição vendida, o motor
+    troca esse aviso por um mais forte (`coir/engine/movimentos.py`), mantendo o vencimento
+    (decisão do usuário de 18/11/2026, seguindo o especialista). ``periodo``: primeira e última
+    data da
     movimentação importada de cada titular (um intervalo só: um buraco entre duas planilhas não é
     visto, por isso o aviso diz "não encontrou", e não que a B3 não mostra).
 
@@ -188,11 +191,10 @@ def _aviso(
             return (
                 f"Termo: houve venda à vista de {c.ticker} em {vendeu[0]:%d/%m/%Y}, antes do "
                 f"vencimento da compra a termo de {c.pregao:%d/%m/%Y} ({c.corretora}), e o COIR "
-                f"usou o vencimento, {c.vencimento:%d/%m/%Y}, como data de liquidação. Se não "
-                "havia outras ações em custódia, a entrega da venda exigiu a liquidação "
-                "antecipada do termo, e o custo e o ganho são da data dela (IN RFB 1.585/2015 art. "
-                "59 §2º IV e art. 62 I): importe a movimentação da B3 que cobre o período do "
-                "contrato para o COIR ler a liquidação antecipada"
+                f"usou o vencimento, {c.vencimento:%d/%m/%Y}, como data de liquidação. Se o "
+                "contrato foi liquidado antes, o preço médio dessa venda muda (IN RFB 1.585/2015 "
+                "art. 62 I e §1º): importe a movimentação da B3 que cobre o período do contrato "
+                "para o COIR ler a liquidação antecipada"
             )
         if c.vencimento.year == c.pregao.year:
             return ""

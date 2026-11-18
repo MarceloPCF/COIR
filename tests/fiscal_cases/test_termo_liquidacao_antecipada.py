@@ -111,3 +111,51 @@ def test_ta_3_variante_custo_nao_divisivel_fecha_com_a_nota() -> None:
     assert (p.quantidade, p.custo) == (D(500), D("12520.01"))
     [p] = livro.carteira(date(2026, 7, 3))
     assert (p.quantidade, p.custo) == (D(1000), D("25040.01"))
+
+
+AVISO_SEM_B3 = "Termo: houve venda à vista (aviso do serviço, sem a movimentação da B3)"
+
+
+def _ta_4a(venda: date, quantidade: int = 500, antes: int = 0) -> Livro:
+    """TA-4a: 05/01/2026, compra a termo de 500 AAAA3 a 31,00, prazo 60 dias (vencimento 06/03),
+    custos 20,00, sem a liquidação na movimentação da B3 (o serviço manda o aviso na operação);
+    venda à vista de `quantidade` a 35,00 em `venda`, com `antes` ações compradas em 02/01."""
+    livro = Livro()
+    if antes:
+        livro.nota(date(2026, 1, 2), livro.op("C", "AAAA3", antes, "30"))
+    termo = livro.op("C", "AAAA3", 500, "31", mercado=TERMO, liquidacao=date(2026, 3, 6))
+    livro.nota(date(2026, 1, 5), termo.model_copy(update={"aviso": AVISO_SEM_B3}), custos="20")
+    livro.nota(venda, livro.op("V", "AAAA3", quantidade, "35"))
+    return livro
+
+
+def test_ta_4a_venda_a_descoberto_coberta_pelo_termo_sem_b3_fica_no_vencimento_com_aviso() -> None:
+    """Sem a movimentação da B3, o COIR mantém o vencimento (opção (a) do parecer de 17/11/2026,
+    escolhida pelo usuário em 18/11/2026): 17.500,00 - 15.520,00 = 1.980,00 em 03/2026, IR
+    297,00. A venda de 09/02 deixou a posição vendida: a entrega exigiu a liquidação antecipada
+    (1 a 3 dias úteis: 10 a 12/02), e o aviso forte troca o do serviço, com o resultado em jogo e
+    o mês provável (IN RFB 1.585/2015 art. 59 §2º IV e art. 62 I)."""
+    ap = _ta_4a(date(2026, 2, 9)).apurar(date(2026, 3, 31))
+    marco = categoria(ap, 2026, 3, Categoria.COMUM)
+    assert (marco.resultado, marco.imposto) == (D(1980), D("297.00"))
+    assert AVISO_SEM_B3 not in ap.avisos
+    [aviso] = [a for a in ap.avisos if a.startswith("Termo:")]
+    assert "venda de AAAA3 em 09/02/2026 deixou a posição vendida (-500)" in aviso
+    assert "resultado de R$ 1.980,00 que o COIR pôs em 03/2026" in aviso
+    assert "provavelmente é de 02/2026," in aviso
+
+
+def test_ta_4a_venda_na_virada_do_mes_da_os_dois_meses_provaveis() -> None:
+    """Venda em 26/02/2026 (quinta): a liquidação antecipada cai entre 27/02 e 03/03, no mesmo
+    mês ou no seguinte. O ganho da liquidação vai para a data dela (decisão de 18/11/2026,
+    seguindo o especialista: art. 62 I, "data da liquidação")."""
+    ap = _ta_4a(date(2026, 2, 26)).apurar(date(2026, 3, 31))
+    [aviso] = [a for a in ap.avisos if a.startswith("Termo:")]
+    assert "provavelmente é de 02/2026 ou 03/2026," in aviso
+
+
+def test_ta_4a_venda_com_acoes_em_custodia_fica_com_o_aviso_simples() -> None:
+    """Com 500 ações compradas antes, a venda não deixa a posição vendida: a liquidação antecipada
+    não era necessária e fica o aviso do serviço (o PM da venda pode mudar)."""
+    ap = _ta_4a(date(2026, 2, 9), antes=500).apurar(date(2026, 3, 31))
+    assert [a for a in ap.avisos if a.startswith("Termo:")] == [AVISO_SEM_B3]
