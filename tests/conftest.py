@@ -9,8 +9,10 @@ from hypothesis import settings
 from coir import auditoria, referencias
 from coir.config import VAR_CONFIG, dados_dir
 
-# Testes de propriedade determinísticos (mesmos exemplos em toda execução e no CI).
-settings.register_profile("coir", derandomize=True, print_blob=True)
+# Testes de propriedade determinísticos (mesmos exemplos em toda execução e no CI). Sem prazo por
+# exemplo: o tempo depende da carga da máquina (um SQLite criado por exemplo passava dos 200 ms
+# num Windows ocupado) e faria o mesmo exemplo passar ou falhar conforme o momento.
+settings.register_profile("coir", derandomize=True, print_blob=True, deadline=None)
 settings.load_profile("coir")
 
 
