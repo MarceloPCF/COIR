@@ -366,6 +366,7 @@ async def test_declaracao_marcar_e_desmarcar_depressa_grava_o_ultimo(demo: Path)
     async with user_simulation(lambda: montar(estado)) as user:
         await user.open("/declaracao")
         await user.should_see("Exercício 2026, ano-calendário 2025", retries=ESPERA)
+        await user.should_see("03.01", retries=ESPERA)  # a ficha inicial (bens) já aberta
         user.find(marker="ficha-rv").click()
         await user.should_see("Mercado à Vista - Ações", retries=ESPERA)
         [caixa] = user.find(marker="lancado-rv:01").elements
