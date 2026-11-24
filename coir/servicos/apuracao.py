@@ -260,7 +260,7 @@ def _assinado(n: NegocioBMF) -> Decimal:
     return n.valor if n.dc == "C" else -n.valor  # como na conciliação (sem indicador: débito)
 
 
-Entradas = tuple[list[NotaMotor], list[Evento]]  # o que o motor lê do banco (não alterar)
+Entradas = tuple[Sequence[NotaMotor], Sequence[Evento]]  # o que o motor lê do banco
 
 
 def ler_entradas(banco: Path, refs: Referencias, fiscais: ReferenciasFiscais) -> Entradas:
