@@ -1093,6 +1093,25 @@ def _ativos_do_ticker(s: Session, ticker: str) -> set[int]:
     return set(s.scalars(select(TickerHistorico.ativo_id).where(TickerHistorico.ticker == ticker)))
 
 
+class _HistoricoTickers:
+    """O histórico de tickers lido uma vez (as propostas do pacote consultavam a tabela a cada
+    evento): ticker -> ativos e ativo -> tickers."""
+
+    def __init__(self, s: Session) -> None:
+        self._ativos: dict[str, set[int]] = defaultdict(set)
+        self._tickers: dict[int, set[str]] = defaultdict(set)
+        for ticker, ativo in s.execute(select(TickerHistorico.ticker, TickerHistorico.ativo_id)):
+            self._ativos[ticker].add(ativo)
+            self._tickers[ativo].add(ticker)
+
+    def ativos(self, ticker: str) -> set[int]:
+        return set(self._ativos.get(ticker, ()))
+
+    def nomes(self, ticker: str, ativos: set[int]) -> set[str]:
+        """O ticker e todos os nomes que os ativos dele já tiveram."""
+        return {ticker} | {t for a in ativos for t in self._tickers.get(a, ())}
+
+
 def _posicoes(movs: list[Movimento]) -> dict[tuple[int, int], list[tuple[date, Decimal]]]:
     """(conta, ativo) -> [(data, quantidade depois)], na visão por conta, em ordem."""
     saida: dict[tuple[int, int], list[tuple[date, Decimal]]] = defaultdict(list)
@@ -1157,6 +1176,7 @@ def _do_pacote(
         if s_.classe in refs.classes
     }
     nome_conta = {c.id: c.corretora.nome for c in contas}
+    historico_tickers = _HistoricoTickers(s)
     saida: list[Proposta] = []
     for ev in eventos:
         tipo = TIPOS_PACOTE.get(ev.tipo)
@@ -1176,14 +1196,23 @@ def _do_pacote(
             continue  # depois de onde o livro parou: a posição na data com não é conhecida
         # a B3 escreve o grupamento como razão (0,1 = 10 viram 1) e os demais em % (200 = +200%)
         fator = Decimal(ev.fator) / (1 if tipo is TipoEvento.GRUPAMENTO else 100)
-        ativos = _ativos_do_ticker(s, ticker)
-        nomes = {ticker} | {t for a in ativos for t in s.scalars(
-            select(TickerHistorico.ticker).where(TickerHistorico.ativo_id == a))}  # fmt: skip
+        ativos = historico_tickers.ativos(ticker)
+        nomes = historico_tickers.nomes(ticker, ativos)
+        ajusta = tipo is not None and tipo in AJUSTA_SERIE
         for (conta, ativo), hist in historico.items():
+            serie = tickers_serie.get(ativo)
+            # só as posições que o evento atinge (a ação dele ou a série de opção sobre ela): a
+            # posição na data com, mais cara, sai só delas
+            if serie is None:
+                atingida = ativo in ativos
+            else:
+                objeto = objeto_da_serie.get(serie) or refs.opcoes_raiz.get(serie[:4])
+                atingida = ajusta and objeto in nomes
+            if not atingida:
+                continue
             q = _na_data(hist, data_com)
             if not q or conta not in nome_conta or data_ex > parou_em.get(ativo, date.max):
                 continue  # depois de onde o ativo parou, a posição na data com não é conhecida
-            serie = tickers_serie.get(ativo)
             if ativo in ativos and serie is None and tipo is TipoEvento.REDUCAO_CAPITAL:
                 dados, nota = _resgate(ev, ticker, conta, q, _na_data(custos[(conta, ativo)],
                                                                       data_com), fator, data_ex,
@@ -1222,7 +1251,7 @@ def _do_pacote(
                 referencia=ev.referencia))  # fmt: skip
     saida += _propor_restituicoes(s, refs, fiscais, pasta, por_isin, historico, nome_conta,
                                   tickers_serie, parou_em, inicio, limite, ignoradas,
-                                  lancados)  # fmt: skip
+                                  lancados, historico_tickers)  # fmt: skip
     return saida
 
 
@@ -1259,6 +1288,7 @@ def _propor_restituicoes(
     por_isin: dict[str, str], historico: dict[tuple[int, int], list[tuple[date, Decimal]]],
     nome_conta: dict[int, str], tickers_serie: dict[int, str], parou_em: dict[int, date],
     inicio: date, limite: date, ignoradas: set[str], lancados: list[tuple[int, int | None, date]],
+    historico_tickers: _HistoricoTickers,
 ) -> list[Proposta]:  # fmt: skip
     """Restituição de capital em dinheiro como redução de capital só com o valor (posição na data
     com vezes o valor por ação, truncado no centavo), na data ex. Pede conferência: a B3 credita
@@ -1274,16 +1304,12 @@ def _propor_restituicoes(
             continue
         if data_ex > limite:
             continue
-        ativos = _ativos_do_ticker(s, ticker)
+        ativos = historico_tickers.ativos(ticker)
         for (conta, ativo), hist in historico.items():
+            if ativo not in ativos or ativo in tickers_serie:
+                continue  # posição de outro ativo: nem calcula a da data com
             q = _na_data(hist, data_com)
-            if (
-                ativo not in ativos
-                or ativo in tickers_serie
-                or q <= 0
-                or conta not in nome_conta
-                or data_ex > parou_em.get(ativo, date.max)
-            ):
+            if q <= 0 or conta not in nome_conta or data_ex > parou_em.get(ativo, date.max):
                 continue  # fmt: skip
             total = (q * valor).quantize(Decimal("0.01"), rounding=ROUND_FLOOR)
             if total <= 0:
