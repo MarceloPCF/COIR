@@ -92,11 +92,11 @@ Regras da combinação (`tools/referencias/gerar.py`, `historico.py`):
   como bonificação de 100% e é dividendo pago em dinheiro e em cotas do FII Top Center (nenhuma
   ação emitida; provento isento, Lei 9.249/95, art. 10). As cotas entram à mão como entrada, com
   custo de R$ 9,2089623 por cota (R$ 621.716.835,00 / 67.512.149 ações; CVM, Reg. 1311/19, e
-  aviso aos acionistas de 26/03/2019). O COIR não modela dividendo pago em ativo de outra empresa
-  (pendência para versões futuras);
+  aviso aos acionistas de 26/03/2019). Desde a 3.1.2 o lançamento é o evento "Dividendo pago em
+  bens" da tela Eventos, que o pacote não propõe;
 - o mesmo evento vindo de duas fontes soma a origem (`b3+cvm_fre`); fator diferente na mesma
   data com, ou o mesmo fator em data com próxima, é **divergência**: o pacote fica como estava e
-  o caso vai para o PR semanal, para revisão humana;
+  o caso vai para o resumo da coleta (corpo do PR), para revisão humana;
 - do FRE só entra fator que é fração simples (p/q com q até 20, 1/n ou n) e data com confirmada
   pela cotação (a única mudança de distribuição, depois da aprovação, em que o preço andou como o
   fator manda; ou a data com já confirmada de outra espécie do mesmo ato). Ambíguo, sem negócio

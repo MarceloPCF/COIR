@@ -283,10 +283,9 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
     parcela; o COIR mantém centavos com maiores restos, que somam exatamente a nota (decisão de
     16/10/2026);
   - futuros: o outro sistema distribui os custos de cada nota BM&F entre as linhas por outro critério; a
-    soma de todos os futuros é igual (diferença total R$ 0,00 fora a opção flexível). Pendência
-    pós-v3.0: ratear os custos de futuros por contrato e por categoria (a B3 cobra emolumentos e
-    registro por contrato, com tabela própria de day trade), configurável com vigência; a v3.0
-    rateia pelo volume;
+    soma de todos os futuros é igual (diferença total R$ 0,00 fora a opção flexível). O rateio por
+    contrato e por categoria foi avaliado e não será feito: fica o valor financeiro (decisão de
+    16/11/2026, seção "Decisões do parecer de 16/11/2026");
   - notas de exercício: outro critério de rateio, até R$ 2 por ativo (às vezes o outro sistema deixa
     de fora a taxa de transferência de ativos);
   - dados do outro sistema: custos de uma nota de exercício e de uma venda de opção não lançados;
@@ -491,7 +490,8 @@ Decididos na revisão: o IRRF de day trade impresso como "projeção" nas notas 
 sobre o ganho do dia e é deduzido no mês (confirmado pelo usuário); day trade "na mesma instituição
 intermediadora" (Lei 9.959/2000 art. 8º §1º) compara a corretora da nota: XP, Clear e Rico são
 corretoras diferentes, com código e contas próprios (decisão do usuário). Ficam para depois:
-- Rateio dos custos de futuros por contrato e por categoria, configurável (hoje pelo volume).
+- Rateio dos custos de futuros por contrato e por categoria: decidido em 16/11/2026 que fica pelo
+  valor financeiro (ver "Decisões do parecer de 16/11/2026").
 - Day trade entre corretoras antes de 28/07/2010: resolvido em 16/11/2026 (só na mesma corretora,
   pela norma da época). Fica de fora a marcação manual do par entre corretoras liquidado pelo saldo,
   que pede o extrato da liquidante; sem caso real.
@@ -510,7 +510,8 @@ corretoras diferentes, com código e contas próprios (decisão do usuário). Fi
   centavos pelo maior resto), e não pelo resto na última parte: a soma fecha com a nota. Dois
   contratos iguais do mesmo ativo e corretora sem linha de quantidade exata: o de vencimento
   anterior consome primeiro (heurística).
-- `data/feriados.csv` cobre até 2027: estender antes de apurar dezembro de 2027.
+- `data/feriados.csv` cobre até 2028: estender antes de apurar dezembro de 2028 (a tela Simulação
+  vai até novembro de 2028).
 
 ## Decisões da revisão contra a base normativa (10/11/2026)
 
