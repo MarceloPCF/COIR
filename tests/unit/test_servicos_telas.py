@@ -261,6 +261,34 @@ def test_entradas_do_motor_reaproveitadas_ate_o_banco_mudar(tmp_path: Path) -> N
     assert len(estado.entradas()[0]) == len(primeira[0]) - 1
 
 
+def test_calculo_em_andamento_ao_invalidar_nao_fica_guardado(tmp_path: Path) -> None:
+    """Uma tela calculava (numa thread) quando outra gravou e chamou ``invalidar``: o resultado
+    que terminou depois, feito com o banco ou as tabelas de antes, não pode ficar guardado. Com
+    a marca do banco igual (gravação sem mudar tamanho e data, ou tabelas trocadas sem gravar no
+    banco), ele servia todas as telas até a próxima gravação."""
+    from threading import Event
+
+    estado = Estado(tmp_path / "coir.db")
+    estado._marca = lambda: (1,)  # type: ignore[method-assign]
+    comecou, liberar = Event(), Event()
+    valores = iter(["antigo", "novo"])
+
+    def calcular() -> str:
+        valor = next(valores)
+        if valor == "antigo":
+            comecou.set()
+            liberar.wait(10)
+        return valor
+
+    with ThreadPoolExecutor(1) as executor:
+        em_andamento = executor.submit(estado._guardado, ("x",), calcular)
+        assert comecou.wait(10)
+        estado.invalidar()
+        liberar.set()
+        assert em_andamento.result() == "antigo"  # quem pediu antes recebe o que pediu
+    assert estado._guardado(("x",), calcular) == "novo"
+
+
 def test_nota_de_origem_de_cada_movimento() -> None:
     from coir.servicos.carteira import nota_de
 

@@ -131,6 +131,7 @@ class Estado:
         self.versao_verificada = False
         self.darf_escolhida: tuple[int, int] | None = None  # o Painel abre a DARF desta competência
         self._cache: dict[tuple[object, ...], object] = {}
+        self._geracao = 0  # muda a cada invalidar(): cálculo de antes não fica guardado
         self._trava = Lock()
         self._travas: dict[tuple[object, ...], Lock] = {}
 
@@ -246,13 +247,17 @@ class Estado:
     def invalidar(self) -> None:
         with self._trava:
             self._cache.clear()
+            self._geracao += 1
 
     def _guardado(self, chave: tuple[object, ...], calcular: Callable[[], T]) -> T:
         """Calcula uma vez por marca do banco; telas que pedem a mesma chave ao mesmo tempo
-        esperam o primeiro cálculo (uma trava por chave). Entradas de marcas antigas saem."""
+        esperam o primeiro cálculo (uma trava por chave). Entradas de marcas antigas saem. O
+        cálculo que começou antes de um ``invalidar`` (gravação, tabelas novas) devolve o valor a
+        quem pediu, mas não fica guardado: a marca do banco pode não ter mudado."""
         marca = self._marca()
-        chave = (*chave, marca)
         with self._trava:
+            geracao = self._geracao
+            chave = (*chave, marca, geracao)
             if chave in self._cache:
                 return self._cache[chave]  # type: ignore[return-value]
             trava = self._travas.setdefault(chave, Lock())
@@ -262,10 +267,11 @@ class Estado:
                     return self._cache[chave]  # type: ignore[return-value]
             valor = calcular()
             with self._trava:
-                for velha in [k for k in self._cache if k[-1] != marca]:
-                    del self._cache[velha]
-                self._cache[chave] = valor
                 self._travas.pop(chave, None)
+                if self._geracao == geracao:
+                    for velha in [k for k in self._cache if k[-2] != marca]:
+                        del self._cache[velha]
+                    self._cache[chave] = valor
         return valor
 
     # ------------------------------------------------------------------------- consultas
