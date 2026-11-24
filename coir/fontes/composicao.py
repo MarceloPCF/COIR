@@ -26,12 +26,20 @@ log = logging.getLogger(__name__)
 def _assinatura(pasta: Path) -> tuple[object, ...]:
     """Do que depende o que se lê da pasta: o modo da fonte da bolsa e cada arquivo (nome,
     identificação, gravação e tamanho). Aplicar outro pacote ou voltar ao anterior troca o
-    conteúdo de ``referencias/atual`` no mesmo caminho: a assinatura muda junto."""
-    arquivos: list[tuple[str, int, int, int]] = []
-    if pasta.is_dir():
-        for p in pasta.iterdir():
+    conteúdo de ``referencias/atual`` no mesmo caminho: a assinatura muda junto. O pacote é
+    plano (só arquivos, ver ``atualizacao.RE_NOME``). Arquivo (ou a pasta) que some no meio da
+    troca fica de fora: a leitura seguinte já vê a pasta nova, com outra assinatura."""
+    arquivos: list[tuple[str, int, int, int, int]] = []
+    try:
+        itens = list(pasta.iterdir()) if pasta.is_dir() else []
+    except FileNotFoundError:  # a pasta foi renomeada durante a listagem
+        itens = []
+    for p in itens:
+        try:
             st = p.stat()
-            arquivos.append((p.name, st.st_ino, st.st_mtime_ns, st.st_size))
+        except FileNotFoundError:
+            continue
+        arquivos.append((p.name, st.st_ino, st.st_ctime_ns, st.st_mtime_ns, st.st_size))
     return b3.ligada(), tuple(sorted(arquivos))
 
 
@@ -45,7 +53,7 @@ class _PelosArquivos[T]:
         update_wrapper(self, funcao)
         self.__wrapped__: Callable[[Path], T] = funcao  # a leitura sem o cache (como no @cache)
 
-    def _ler(self, pasta: Path, _assinatura: tuple[object, ...]) -> T:
+    def _ler(self, pasta: Path, assinatura: tuple[object, ...]) -> T:  # assinatura: só a chave
         return self._funcao(pasta)
 
     def __call__(self, pasta: Path) -> T:

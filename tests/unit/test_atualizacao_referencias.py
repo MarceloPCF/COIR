@@ -207,3 +207,20 @@ def test_tabelas_embutidas_integras() -> None:
     sairam = {(r["isin"], r["data_com"]) for r in linhas} - {(r.isin, r.data_com) for r in lidos}
     assert ("BRBBDCACNOR1", "2009-06-08") in sairam and len(sairam) == 12
     assert len(lidos) == len(linhas) - 2 * len(sairam)
+
+
+def test_arquivo_que_some_durante_a_troca_do_pacote_nao_derruba_a_leitura(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Aplicar ou voltar um pacote renomeia ``referencias/atual`` enquanto uma tela pode estar
+    lendo: o arquivo listado que some antes de ser lido sai da assinatura, sem erro inesperado."""
+    pasta = tmp_path / "atual"
+    shutil.copytree(pasta_data(), pasta)
+    listar = Path.iterdir
+
+    def com_fantasma(self: Path):
+        yield from listar(self)
+        yield self / "apagado_no_meio.csv"
+
+    monkeypatch.setattr(Path, "iterdir", com_fantasma)
+    assert fontes.ultimos_negocios(pasta) == fontes.ultimos_negocios.__wrapped__(pasta)
