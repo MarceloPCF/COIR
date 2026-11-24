@@ -867,3 +867,39 @@ async def test_cadastros_grava_o_prejuizo_inicial(tmp_path: Path) -> None:
     assert saldo is not None
     assert (saldo.ano, saldo.comum, saldo.day_trade, saldo.fii) == (
         2025, Decimal("1234.56"), Decimal("0"), Decimal("10"))  # fmt: skip
+
+
+@pytest.mark.asyncio
+async def test_nota_manual_grava_mostra_e_remove(tmp_path: Path) -> None:
+    """Nota manual (24/11/2026): o formulário cria a conta nova, grava, a nota aparece marcada
+    como manual e sai pela remoção com confirmação."""
+    from coir.servicos import nota_manual as nm
+
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    estado.ano = 2025
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/notas")
+        user.find(marker="nova-nota-manual").click()
+        await user.should_see("Digite a nota como a corretora", retries=ESPERA)
+        user.find(marker="manual-corretora").type("XP")
+        user.find(marker="manual-numero-conta").type("123")
+        user.find(marker="manual-data").type("2025-03-10")
+        user.find(marker="manual-ativo-0").type("PETR4")
+        user.find(marker="manual-quantidade-0").type("100")
+        user.find(marker="manual-preco-0").type("30,00")
+        user.find(marker="manual-custo-emolumentos").type("0,90")
+        user.find(marker="manual-conferir").click()
+        await user.should_see("Valor das operações R$ 3.000,00", retries=ESPERA)
+        user.find(marker="manual-gravar").click()
+        await user.should_see("Nota M1 gravada", retries=ESPERA)
+        [gravada] = listar(estado.banco, None, None)
+        assert nm.eh_manual(gravada.arquivo) and gravada.custos == Decimal("0.90")
+        await user.open(f"/notas/{gravada.id}")
+        await user.should_see("Nota digitada à mão", retries=ESPERA)
+        user.find(marker="remover-nota-manual").click()
+        await user.should_see("Remover a nota manual M1?", retries=ESPERA)
+        user.find(marker="remover-sim").click()
+        await user.should_see("Nota M1 removida", retries=ESPERA)
+    assert listar(estado.banco, None, None) == []

@@ -440,10 +440,10 @@ def salvar_lote(
     a cisão de uma posição em várias contas só fecha com os eventos de todas."""
     feitos: list[int] = []
     with conectar(banco) as fabrica, fabrica.begin() as s:
-        antes = _pendencia_antes(s, titular, refs, fiscais)
+        antes = pendencia_antes(s, titular, refs, fiscais)
         for d, evento_id in lote:
             feitos.append(_gravar(s, titular, d, evento_id, refs))
-        _conferir_no_motor(s, titular, refs, fiscais, antes)
+        conferir_no_motor(s, titular, refs, fiscais, antes)
     for d, evento_id in lote:
         trilha.evento_salvo(titular, d, evento_id is not None)
     return feitos
@@ -540,7 +540,7 @@ def _erro_do_livro(
     return min(erros, key=lambda e: e.data or date.min, default=None)
 
 
-def _pendencia_antes(
+def pendencia_antes(
     s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais
 ) -> MotorError | None:  # fmt: skip
     try:
@@ -549,9 +549,9 @@ def _pendencia_antes(
         return None  # o motor recusa de novo depois da mudança, com a mensagem
 
 
-def _conferir_no_motor(
+def conferir_no_motor(
     s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais,
-    antes: MotorError | None,
+    antes: MotorError | None, o_que: str = "o evento",
 ) -> None:  # fmt: skip
     """A mudança não pode criar pendência no livro. Com uma pendência de antes (ex.: bonificação
     que falta noutro ativo), o livro pode continuar parando nela ou passar dela e parar numa data
@@ -560,7 +560,7 @@ def _conferir_no_motor(
     try:
         depois = _erro_do_livro(s, titular, refs, fiscais)
     except ReferenciaError as erro:
-        raise ImportacaoError(f"o evento não fecha com as operações: {erro}") from erro
+        raise ImportacaoError(f"{o_que} não fecha com as operações: {erro}") from erro
     if depois is None or (
         antes is not None
         and (
@@ -569,7 +569,7 @@ def _conferir_no_motor(
         )
     ):
         return  # fmt: skip
-    raise ImportacaoError(f"o evento não fecha com as operações: {depois}") from depois
+    raise ImportacaoError(f"{o_que} não fecha com as operações: {depois}") from depois
 
 
 def excluir(
@@ -590,7 +590,7 @@ def excluir_lote(
     proposta do evento apagado fica ignorada: o lançamento automático não o traz de volta."""
     apagados: list[tuple[int, str, date]] = []
     with conectar(banco) as fabrica, fabrica.begin() as s:
-        antes = _pendencia_antes(s, titular, refs, fiscais)
+        antes = pendencia_antes(s, titular, refs, fiscais)
         registros: list[EventoCorporativo] = []
         for evento_id in ids:
             registro = s.get(EventoCorporativo, evento_id)
@@ -603,7 +603,7 @@ def excluir_lote(
             s.delete(registro)
         s.flush()
         try:
-            _conferir_no_motor(s, titular, refs, fiscais, antes)
+            conferir_no_motor(s, titular, refs, fiscais, antes)
         except ImportacaoError as erro:
             raise ImportacaoError(f"sem este evento o livro não fecha: {erro.__cause__}") from erro
         for registro in registros:
@@ -677,6 +677,17 @@ AMORTIZACAO_FIP = ("amortização de cotas de FIP: troque o valor pela parcela d
                    "restante é rendimento com IRRF de 15% (Lei 14.754/2023 art. 24). Até 2023 a "
                    "amortização reduz o custo e só o excedente é rendimento (IN RFB 1.585/2015 "
                    "art. 32 §2º)")  # fmt: skip
+AMORTIZACAO_FII = ("amortização de cotas de FII: reduz o custo das cotas. Não há norma expressa; "
+                   "a analogia é com a IN RFB 1.585/2015 arts. 16 §2º e 37 §3º, critério "
+                   "conservador do COIR: o custo fica menor e o imposto na venda, maior. Se o "
+                   "informe do administrador tratar parte do valor como rendimento, lance só a "
+                   "parte de capital")  # fmt: skip
+AMORTIZACAO_ETF = ("amortização de cotas de ETF: troque o valor pela parcela de custo que o "
+                   "informe do administrador mostra. Desde 2024 só essa parcela devolve custo; o "
+                   "restante é rendimento com IRRF de 15% (Lei 14.754/2023 arts. 18 II e "
+                   "24)")  # fmt: skip
+NOTA_AMORTIZACAO = {TipoAtivo.FIP: AMORTIZACAO_FIP, TipoAtivo.FII: AMORTIZACAO_FII,
+                    TipoAtivo.ETF: AMORTIZACAO_ETF}  # fmt: skip
 RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z0-9]{4})(?P<classe>9|10)$")  # recibo de subscrição ON/PN
 JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data ex)
 
@@ -734,8 +745,8 @@ def propostas(
             elif tipo is TipoEvento.DIREITO_RECEBIDO:
                 nota_data = NOTA_CREDITO
             elif m.movimentacao.strip().lower() == "amortização":
-                fip = fiscais is not None and fiscais.tipos.tipo_ou_sem(codigo) is TipoAtivo.FIP
-                nota_data = AMORTIZACAO_FIP if fip else AMORTIZACAO_FUNDO
+                tipo_fundo = fiscais.tipos.tipo_ou_sem(codigo) if fiscais else None
+                nota_data = NOTA_AMORTIZACAO.get(tipo_fundo, AMORTIZACAO_FUNDO)  # type: ignore[arg-type]
             dados = DadosEvento(
                 tipo=tipo, data=data, conta=conta, ticker="" if recebido else ticker, cv=cv,
                 quantidade=None if recebido or so_valor else m.quantidade,
@@ -1004,9 +1015,9 @@ def _mapa_proposta(
     m: MovimentacaoB3, codigo: str, fiscais: ReferenciasFiscais | None
 ) -> tuple[TipoEvento, str | None] | None:
     """Tipo e C/V do evento que a linha da movimentação sugere (None: nenhum). A baixa do direito
-    não exercido é uma saída; a amortização só reduz o custo em cotas de FI-Infra, FIP-IE e FIP
-    comum (pareceres do especialista de 09/11 e 13/11/2026; nos outros fundos fica como
-    estava)."""
+    não exercido é uma saída; a amortização reduz o custo nos fundos de
+    ``ParametrosFiscais.amortizacao_reduz_custo`` (FI-Infra, FIP-IE, FIP comum, FII e Fiagro, e ETF
+    de ações desde 2024; pareceres do especialista de 09/11, 13/11 e 24/11/2026)."""
     movimentacao = m.movimentacao.strip().lower()
     if any(x in movimentacao for x in NAO_EXERCIDO):
         return None if m.entrada else (TipoEvento.DIREITO_NAO_EXERCIDO, None)
@@ -1019,7 +1030,8 @@ def _mapa_proposta(
         return TipoEvento.EXERCICIO_DIREITO, None  # o direito sai e o recibo entra com o custo
     if movimentacao == "amortização" and (
         not m.entrada or fiscais is None
-        or fiscais.tipos.tipo_ou_sem(codigo) not in (TipoAtivo.FUNDO_INFRA, TipoAtivo.FIP)
+        or not fiscais.parametros.amortizacao_reduz_custo(fiscais.tipos.tipo_ou_sem(codigo),
+                                                          m.data)
     ):  # fmt: skip
         return None
     return mapa

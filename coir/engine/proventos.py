@@ -164,10 +164,10 @@ def proventos(
             continue
         if x.movimentacao not in (DIVIDENDO, JCP, RENDIMENTO, REEMBOLSO, RESTITUICAO, AMORTIZACAO):
             continue
-        if (x.movimentacao == AMORTIZACAO
-                and tipos.tipo_ou_sem(x.codigo) not in (TipoAtivo.FUNDO_INFRA,
-                                                         TipoAtivo.FIP)):  # fmt: skip
-            continue  # amortização de outros fundos: fora, como antes
+        if x.movimentacao == AMORTIZACAO and not params.amortizacao_reduz_custo(
+            tipos.tipo_ou_sem(x.codigo), x.data
+        ):
+            continue  # amortização dos demais fundos: fora
         if not x.entrada:
             raise MotorError(
                 f"{x.data}: {x.movimentacao} de {x.codigo} a débito (mov:{item.id}) "

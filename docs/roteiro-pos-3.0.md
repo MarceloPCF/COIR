@@ -13,6 +13,7 @@ ao menos provável na 3.1.
 | Assinatura digital do `COIR.exe` (o Windows deixa de mostrar o aviso do SmartScreen) | sem assinatura, por decisão: volta à pauta se muitos usuários tiverem problema para abrir. A opção gratuita para projeto de código aberto é a SignPath Foundation; o manual ([Se o COIR não abrir](manual/se-nao-abrir.md)) explica o aviso e como conferir o SHA-256 | planejamento da F9; revisto na 3.0.1 |
 | Enviar cada pacote novo à Microsoft como falso positivo (formulário de envio de arquivos do Defender), para o antivírus parar de pôr o programa em quarentena | não é feito; o manual ensina a restaurar o arquivo da quarentena | versão 3.0.1 (27/10/2026) |
 | Link para os guias na página inicial do site | os guias só aparecem no rodapé e no manual | versão 3.0.1 (27/10/2026) |
+| Nota de corretagem digitada à mão (nota perdida ou corretora sem nota em PDF) | feita depois da 3.1.4: tela Notas, "Nova nota manual" | pedido do mantenedor (24/11/2026) |
 | Troca do nome do programa | continua COIR | decisão do mantenedor |
 | Importar a planilha de resultado da v2 (`.xlsb`) como ponto de partida | a v3 refaz tudo a partir dos PDFs (os mesmos da pasta `Entrada` da v2); quem não tem as notas antigas informa a custódia e o prejuízo em 31/12 em Cadastros › Saldos iniciais | rodada do beta (26/10/2026) |
 | Vídeo narrado do programa no site | o topo do site mostra as telas em sequência (imagem animada) | rodada do beta (26/10/2026) |

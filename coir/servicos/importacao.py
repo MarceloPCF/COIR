@@ -403,7 +403,15 @@ def _gravar(
         return
     existente = repo.nota_por_chave(sessao, nota.chave)
     if existente is None:
-        repo.gravar_nota(sessao, nota, ops, arquivo, conta, ativos)
+        gravada = repo.gravar_nota(sessao, nota, ops, arquivo, conta, ativos)
+        if not arquivo.nome.startswith(repo.PREFIXO_NOTA_MANUAL):
+            manuais = repo.manuais_no_dia(sessao, conta.id, nota.data_pregao, gravada.segmento)
+            if manuais:
+                rel.avisos.append(
+                    f"nota {nota.numero} de {nota.arquivo}: há nota manual ({', '.join(manuais)}) "
+                    f"na mesma conta em {nota.data_pregao:%d/%m/%Y}. Se for a mesma, remova a "
+                    "manual na tela Notas, senão as operações contam duas vezes"
+                )  # fmt: skip
         rel.notas_gravadas += 1
         rel.operacoes_gravadas += len(ops)
         rel.gravadas_por_arquivo[nota.arquivo] += 1

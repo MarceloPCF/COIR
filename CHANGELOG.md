@@ -8,6 +8,20 @@ Este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) 
 
 O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+- **Nota manual**: a tela Notas ganhou **Nova nota manual**, para a nota de corretagem que se perdeu ou de corretora que não dá nota em PDF. A nota é digitada inteira, Bovespa ou BM&F: operações, custos e IRRF. Ela entra no cálculo como as notas lidas do PDF, com as mesmas regras de day trade, rateio dos custos, IRRF e preço médio. **Corrigir** e **Remover** fazem backup antes e guardam a versão anterior. Se o PDF da mesma nota for importado depois, o COIR avisa na importação e no sino, porque as operações contariam duas vezes.
+
+### Alterado
+- **Restituição de capital maior que o custo**: em ação e unit, o custo e o preço médio vão a zero e o ativo continua no cálculo. Antes, o ativo inteiro saía da apuração. O excedente não entra na apuração mensal da bolsa: o COIR avisa que, na leitura dele, é ganho de capital fora de bolsa, a apurar no programa GCAP no mês em que o dinheiro foi creditado, isento até R$ 35 mil recebidos no mês. Não há norma expressa; o parâmetro `restituicao_capital_acima_do_custo` volta ao comportamento anterior. BDR e os demais tipos sem norma continuam fora do cálculo nesse caso, agora com o motivo explicado.
+- **Amortização de cotas de FII e Fiagro**: a tela Eventos passa a propor, pela movimentação da B3, a amortização como redução do custo das cotas. Antes ela era ignorada, e o custo ficava maior que o real, com imposto a menos na venda. Não há norma expressa; o COIR segue a analogia com os outros fundos (parâmetro `fii_amortizacao`). Confira no informe do administrador se o valor é devolução de capital.
+- **Amortização de ETF de ações desde 2024**: segue a regra do FIP. Só a parcela de custo que o informe do administrador mostra reduz o custo, e o COIR avisa para lançá-la (Lei 14.754/2023).
+- **Ordem dos negócios no mesmo pregão**: entre notas diferentes do mesmo dia, vale a ordem do número da nota e dos negócios impressos, e não a ordem em que as notas foram importadas. Muda só quem vendeu, em notas diferentes do mesmo dia, mais do que tinha.
+
+### Corrigido
+- **Nota aberta pelo endereço**: uma nota de um ano sem outras notas não aparecia na tela Notas.
+
 ## [3.1.4] - 2026-11-18
 
 ### Adicionado
