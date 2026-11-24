@@ -54,7 +54,7 @@ from coir.engine.calendario import proximo_pregao
 from coir.engine.movimentos import movimentar
 from coir.erros import CoirError, ImportacaoError, MotorError, ReferenciaError
 from coir.servicos import trilha
-from coir.servicos.apuracao import Tickers, entradas
+from coir.servicos.apuracao import Entradas, Tickers, entradas
 
 COLUNAS = ("data", "corretora", "conta", "ticker", "tipo", "cv", "quantidade", "valor",
            "corretora_destino", "conta_destino", "observacao", "origem")  # fmt: skip
@@ -684,7 +684,7 @@ JANELA = 10  # dias entre a data da B3 (crédito) e a do evento lançado (data e
 @auditoria.operacao("propostas")
 def propostas(
     banco: Path, titular: int, refs: Referencias, fiscais: ReferenciasFiscais | None = None,
-    pasta: Path | None = None,
+    pasta: Path | None = None, base: Entradas | None = None,
 ) -> list[Proposta]:  # fmt: skip
     """Eventos sugeridos, mais recentes primeiro: os do pacote público de referências que atingem
     a posição (com ``fiscais`` e ``pasta``; já com a data ex) e os da movimentação da B3 (data do
@@ -771,7 +771,8 @@ def propostas(
         if fiscais is None or pasta is None:
             trilha.propostas(titular, saida)
             return _sem_pendencia_antes(saida)
-        do_pacote = _do_pacote(s, titular, refs, fiscais, pasta, contas, ignoradas, lancados)
+        do_pacote = _do_pacote(s, titular, refs, fiscais, pasta, contas, ignoradas, lancados,
+                               base)  # fmt: skip
         ultima = s.scalar(select(func.max(NotaCorretagem.data_pregao)).join(Conta)
                           .where(Conta.titular_id == titular))  # fmt: skip
     if ultima is not None:
@@ -1142,6 +1143,7 @@ def _na_data(historico: list[tuple[date, Decimal]], dia: date) -> Decimal:
 def _do_pacote(
     s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais, pasta: Path,
     contas: list[Conta], ignoradas: set[str], lancados: list[tuple[int, int | None, date]],
+    base: Entradas | None = None,
 ) -> list[Proposta]:  # fmt: skip
     """Para cada evento do pacote de ativo que o titular tinha na data com (por conta), o evento
     com a quantidade pelo fator e, nas séries de opção abertas do ativo, o ajuste de quantidade."""
@@ -1149,7 +1151,7 @@ def _do_pacote(
     if not eventos:
         return []
     por_isin = fontes.tickers_por_isin(pasta)
-    notas, evs = entradas(s, refs, fiscais)
+    notas, evs = base if base is not None else entradas(s, refs, fiscais)
     notas = [n for n in notas if n.titular == titular]
     evs = [e for e in evs if e.titular == titular]
     limite = date.max

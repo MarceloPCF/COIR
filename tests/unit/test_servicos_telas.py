@@ -233,6 +233,34 @@ def test_estado_guarda_notas_e_livro_ate_o_banco_mudar(demo: Path) -> None:
     assert estado.livro() is estado.livro()
 
 
+def test_entradas_do_motor_reaproveitadas_ate_o_banco_mudar(tmp_path: Path) -> None:
+    """As telas recalculam pelo motor a partir das mesmas entradas (notas e eventos já lidos do
+    banco); gravada uma mudança (a tela chama ``invalidar``), as entradas são lidas de novo."""
+    from datetime import date
+
+    from sqlalchemy import select
+
+    from coir.db import repositorio as repo
+    from coir.db.modelos import NotaCorretagem
+    from coir.db.sessao import conectar
+    from coir.domain.fiscal import Visao
+
+    banco = criar(tmp_path / "demo")
+    estado = Estado(banco)
+    ate = date(2026, 10, 16)
+    primeira = estado.entradas()
+    estado.carteira(ate, Visao.TITULAR)
+    estado.termos(ate)
+    estado.apuracao(ate)
+    assert estado.entradas() is primeira
+    with conectar(banco) as fabrica, fabrica.begin() as s:
+        nota = s.scalars(select(NotaCorretagem).order_by(NotaCorretagem.id)).first()
+        assert nota is not None
+        repo.remover_nota(s, nota, "teste", "conteúdo", AGORA)
+    estado.invalidar()
+    assert len(estado.entradas()[0]) == len(primeira[0]) - 1
+
+
 def test_nota_de_origem_de_cada_movimento() -> None:
     from coir.servicos.carteira import nota_de
 

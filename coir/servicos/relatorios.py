@@ -29,7 +29,7 @@ from coir.reports.saida_csv import escrever_csv
 from coir.reports.saida_pdf import escrever_pdf
 from coir.reports.saida_xlsx import escrever_xlsx
 from coir.servicos import outros_custos, saldos_iniciais
-from coir.servicos.apuracao import entradas
+from coir.servicos.apuracao import Entradas, entradas
 from coir.servicos.proventos import proventos_banco
 
 FORMATOS = ("xlsx", "csv", "pdf")
@@ -63,7 +63,7 @@ def info_ativos(
 def dados_banco(
     banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ano: int, gerado_em: datetime,
     titular: int | None = None, data: date | None = None, visao: Visao = Visao.TITULAR,
-    pasta_refs: Path | None = None,
+    pasta_refs: Path | None = None, base: Entradas | None = None,
 ) -> DadosRelatorio:  # fmt: skip
     """``pasta_refs``: as tabelas em uso (o pacote baixado, se mais novo), para o CNPJ e o
     cadastro dos ativos na declaração."""
@@ -82,7 +82,7 @@ def dados_banco(
             escolhido = next((t for t in todos if t.id == titular), None)
             if escolhido is None:
                 raise ExportacaoError(f"titular {titular} não cadastrado")
-        notas, eventos = entradas(sessao, refs, fiscais)
+        notas, eventos = base if base is not None else entradas(sessao, refs, fiscais)
         custos = outros_custos.do_banco(sessao)
         saldos = saldos_iniciais.do_banco(sessao)
         livro = tuple(NotaDoLivro(nota=n, operacoes=tuple(ops))

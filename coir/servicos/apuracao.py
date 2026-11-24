@@ -260,9 +260,17 @@ def _assinado(n: NegocioBMF) -> Decimal:
     return n.valor if n.dc == "C" else -n.valor  # como na conciliação (sem indicador: débito)
 
 
-def entradas(
-    sessao: Session, refs: Referencias, fiscais: ReferenciasFiscais
-) -> tuple[list[NotaMotor], list[Evento]]:
+Entradas = tuple[list[NotaMotor], list[Evento]]  # o que o motor lê do banco (não alterar)
+
+
+def ler_entradas(banco: Path, refs: Referencias, fiscais: ReferenciasFiscais) -> Entradas:
+    """As entradas do motor numa sessão própria (o ``Estado`` guarda e reaproveita entre telas:
+    ler e validar todas as notas do banco é a parte mais cara de cada consulta)."""
+    with conectar(banco) as fabrica, fabrica() as sessao:
+        return entradas(sessao, refs, fiscais)
+
+
+def entradas(sessao: Session, refs: Referencias, fiscais: ReferenciasFiscais) -> Entradas:
     tickers = Tickers(sessao)
     notas: list[NotaMotor] = []
     registros = list(sessao.scalars(
@@ -355,41 +363,43 @@ def _tipo_evento(fiscais: ReferenciasFiscais, ticker: str) -> TipoAtivo:
 
 
 def carteira_banco(
-    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date, visao: Visao
-) -> tuple[list[PosicaoAtivo], dict[int, str]]:
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date, visao: Visao,
+    base: Entradas | None = None,
+) -> tuple[list[PosicaoAtivo], dict[int, str]]:  # fmt: skip
     """Posições abertas no fim de `ate` na visão pedida, com o número de cada conta. Ativo
-    isolado (pendência, ver ``apurar``) fica fora: a apuração é que lista e avisa."""
+    isolado (pendência, ver ``apurar``) fica fora: a apuração é que lista e avisa. ``base``: as
+    entradas já lidas (``ler_entradas``); sem ela, lidas aqui."""
     with conectar(banco) as fabrica, fabrica() as sessao:
-        notas, eventos = entradas(sessao, refs, fiscais)
+        notas, eventos = base if base is not None else entradas(sessao, refs, fiscais)
         contas = {c.id: c.numero for c in sessao.scalars(select(Conta))}
     return carteira(notas, eventos, fiscais.parametros, ate, visao, isolados=[]), contas
 
 
 def termos_banco(
-    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date
-) -> list[TermoAberto]:
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date,
+    base: Entradas | None = None,
+) -> list[TermoAberto]:  # fmt: skip
     """Compras a termo ainda não liquidadas no fim de `ate` (só para mostrar na Carteira)."""
-    with conectar(banco) as fabrica, fabrica() as sessao:
-        notas, _ = entradas(sessao, refs, fiscais)
+    notas, _ = base if base is not None else ler_entradas(banco, refs, fiscais)
     return termos_em_aberto(notas, ate)
 
 
 def carteiras_banco(
-    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, datas: list[date], visao: Visao
-) -> dict[date, list[PosicaoAtivo]]:
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, datas: list[date], visao: Visao,
+    base: Entradas | None = None,
+) -> dict[date, list[PosicaoAtivo]]:  # fmt: skip
     """Posições em várias datas lendo o banco uma vez só (conciliação com a B3)."""
-    with conectar(banco) as fabrica, fabrica() as sessao:
-        notas, eventos = entradas(sessao, refs, fiscais)
+    notas, eventos = base if base is not None else ler_entradas(banco, refs, fiscais)
     return {dia: carteira(notas, eventos, fiscais.parametros, dia, visao, isolados=[])
             for dia in datas}  # fmt: skip
 
 
 def movimentos_banco(
-    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date, visao: Visao
-) -> list[Movimento]:
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date, visao: Visao,
+    base: Entradas | None = None,
+) -> list[Movimento]:  # fmt: skip
     """Movimentos (com futuros) na visão pedida; a apuração usa só a por titular."""
-    with conectar(banco) as fabrica, fabrica() as sessao:
-        notas, eventos = entradas(sessao, refs, fiscais)
+    notas, eventos = base if base is not None else ler_entradas(banco, refs, fiscais)
     return movimentar(
         notas, eventos, fiscais.parametros, ate, visao, isolados=[]
     ) + movimentos_futuros(notas, ate)
@@ -398,12 +408,12 @@ def movimentos_banco(
 @auditoria.operacao("apuracao")
 def apurar_banco(
     banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, ate: date,
-    saldos: Sequence[SaldoInicial] | None = None,
+    saldos: Sequence[SaldoInicial] | None = None, base: Entradas | None = None,
 ) -> Apuracao:  # fmt: skip
     """`saldos`: prejuízos iniciais no lugar dos gravados no banco (comparação com um gabarito
-    que começa num marco); None usa os do banco."""
+    que começa num marco); None usa os do banco. ``base``: as entradas já lidas."""
     with conectar(banco) as fabrica, fabrica() as sessao:
-        notas, eventos = entradas(sessao, refs, fiscais)
+        notas, eventos = base if base is not None else entradas(sessao, refs, fiscais)
         custos = outros_custos.do_banco(sessao)
         if saldos is None:
             saldos = saldos_iniciais.do_banco(sessao)

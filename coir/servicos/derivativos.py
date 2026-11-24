@@ -28,7 +28,7 @@ from coir.domain.fiscal import (
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias, opcao_de_compra
 from coir.engine.futuros import movimentos_futuros
-from coir.servicos.apuracao import entradas
+from coir.servicos.apuracao import Entradas, ler_entradas
 
 
 @dataclass(frozen=True)
@@ -163,10 +163,10 @@ class Futuros:
 
 
 def futuros_banco(
-    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, titular: int, ate: date
-) -> Futuros:
-    with conectar(banco) as fabrica, fabrica() as s:
-        notas, _ = entradas(s, refs, fiscais)
+    banco: Path, refs: Referencias, fiscais: ReferenciasFiscais, titular: int, ate: date,
+    base: Entradas | None = None,
+) -> Futuros:  # fmt: skip
+    notas, _ = base if base is not None else ler_entradas(banco, refs, fiscais)
     do_titular = [n for n in notas if n.titular == titular]
     abertas: list[PosicaoFuturo] = []
     avisos: list[str] = []
