@@ -4,6 +4,7 @@ manifesto, o formato for um dos que esta versão lê e as tabelas carregarem; se
 import json
 import shutil
 import zipfile
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -18,9 +19,13 @@ from tools.referencias.gerar import COLUNAS_EVENTOS, ler_eventos_pacote
 URL_ZIP = "https://github.com/MarceloPCF/COIR/releases/download/referencias-2099.01.01/p.zip"
 
 
-def _pacote(tmp: Path, data: str = "2099-01-01", formato: int = referencias.FORMATO) -> bytes:
+def _pacote(tmp: Path, data: str = "2099-01-01", formato: int = referencias.FORMATO,
+            nomes_pregao: str = "") -> bytes:  # fmt: skip
     pasta = tmp / "pacote-data"
     shutil.copytree(pasta_data(), pasta)
+    if nomes_pregao:  # linhas a mais em nomes_pregao_b3.csv
+        with (pasta / "nomes_pregao_b3.csv").open("a", encoding="utf-8", newline="") as f:
+            f.write(nomes_pregao)
     (pasta / "pacote.json").write_text(json.dumps({"formato": referencias.FORMATO, "data": data}))
     if not (pasta / "eventos_b3.csv").is_file():
         cabecalho = ",".join(COLUNAS_EVENTOS) + "\n"
@@ -85,6 +90,29 @@ def test_verifica_baixa_confere_e_aplica(tmp_path: Path) -> None:
     assert atualizacao.situacao(dados).anterior is not None
     atualizacao.voltar(dados)
     assert atualizacao.situacao(dados).baixado
+
+
+def test_tabelas_lidas_seguem_o_pacote_aplicado_e_o_anterior(tmp_path: Path) -> None:
+    """O pacote em uso fica sempre em <dados>/referencias/atual: aplicar outro (ou voltar ao
+    anterior) troca o conteúdo no mesmo caminho, e o que foi lido do pacote antigo (último
+    negócio de cada ticker, ativos que saíram, eventos) não pode valer até reabrir o programa."""
+    dados = tmp_path / "dados"
+    dados.mkdir()
+    primeiro = _github(_pacote(tmp_path / "1"))
+    novo_ticker = "ZZZZ TESTE ON,ZZZZ3,2098-01-02,2098-12-30,\n"
+    segundo = _github(_pacote(tmp_path / "2", nomes_pregao=novo_ticker))
+    remoto = atualizacao.verificar(primeiro)
+    assert remoto is not None
+    atualizacao.preparar(dados, remoto, primeiro)
+    atualizacao.aplicar(dados)
+    atual = referencias.pasta_efetiva(dados)
+    assert "ZZZZ3" not in fontes.ultimos_negocios(atual)
+    atualizacao.preparar(dados, remoto, segundo)
+    atualizacao.aplicar(dados)
+    assert referencias.pasta_efetiva(dados) == atual  # mesmo caminho, outro conteúdo
+    assert fontes.ultimos_negocios(atual)["ZZZZ3"] == date(2098, 12, 30)
+    atualizacao.voltar(dados)
+    assert "ZZZZ3" not in fontes.ultimos_negocios(atual)
 
 
 def test_hash_errado_nao_altera_nada(tmp_path: Path) -> None:

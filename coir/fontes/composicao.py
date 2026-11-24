@@ -10,17 +10,50 @@ de ``juntar_eventos`` do pipeline), nunca uma escolha calada.
 
 import logging
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
-from functools import cache
+from functools import lru_cache, update_wrapper
 from pathlib import Path
 
 from coir.fontes.modelo import Divergencia, Evento, partes_da_origem
 from coir.fontes.provedores import b3, curadoria, cvm
 
 log = logging.getLogger(__name__)
+
+
+def _assinatura(pasta: Path) -> tuple[object, ...]:
+    """Do que depende o que se lê da pasta: o modo da fonte da bolsa e cada arquivo (nome,
+    identificação, gravação e tamanho). Aplicar outro pacote ou voltar ao anterior troca o
+    conteúdo de ``referencias/atual`` no mesmo caminho: a assinatura muda junto."""
+    arquivos: list[tuple[str, int, int, int]] = []
+    if pasta.is_dir():
+        for p in pasta.iterdir():
+            st = p.stat()
+            arquivos.append((p.name, st.st_ino, st.st_mtime_ns, st.st_size))
+    return b3.ligada(), tuple(sorted(arquivos))
+
+
+class _PelosArquivos[T]:
+    """Guarda o resultado de ``funcao(pasta)`` enquanto os arquivos da pasta forem os mesmos
+    (as propostas de eventos liam as mesmas tabelas do pacote várias vezes por tela)."""
+
+    def __init__(self, funcao: Callable[[Path], T]) -> None:
+        self._funcao = funcao
+        self._guardado = lru_cache(maxsize=8)(self._ler)
+        update_wrapper(self, funcao)
+        self.__wrapped__: Callable[[Path], T] = funcao  # a leitura sem o cache (como no @cache)
+
+    def _ler(self, pasta: Path, _assinatura: tuple[object, ...]) -> T:
+        return self._funcao(pasta)
+
+    def __call__(self, pasta: Path) -> T:
+        return self._guardado(pasta, _assinatura(pasta))
+
+    def cache_clear(self) -> None:
+        self._guardado.cache_clear()
+
 
 RE_TICKER_PADRAO = re.compile(r"^[A-Z0-9]{4}([3-8]|11|5[3-6])$")  # 53 a 56: ações "P" (RAIZ55)
 
@@ -93,7 +126,12 @@ def eventos_e_divergencias(pasta: Path) -> tuple[list[Evento], list[Divergencia]
 
 def eventos(pasta: Path) -> list[Evento]:
     """Eventos corporativos utilizáveis de todas as fontes (vazio sem nenhuma)."""
-    return juntar_eventos(cvm.eventos(pasta), b3.eventos(pasta))[0]
+    return list(_eventos(pasta))
+
+
+@_PelosArquivos
+def _eventos(pasta: Path) -> tuple[Evento, ...]:
+    return tuple(juntar_eventos(cvm.eventos(pasta), b3.eventos(pasta))[0])
 
 
 # classe no ISIN (posições 7 a 11) -> final do código de negociação; confere com todo o cadastro
@@ -113,6 +151,12 @@ def ticker_pelo_isin(isin: str) -> str | None:
 
 
 def tickers_por_isin(pasta: Path) -> dict[str, str]:
+    """ISIN -> ticker de ação ou unit (ver ``_tickers_por_isin``); cópia, livre para mudar."""
+    return dict(_tickers_por_isin(pasta))
+
+
+@_PelosArquivos
+def _tickers_por_isin(pasta: Path) -> dict[str, str]:
     """ISIN -> ticker de ação ou unit (o mais recente visto no cadastro de instrumentos). O ISIN de
     antes de uma troca de código (KROT3 era BRKROTACNOR9) leva ao ticker da época, que o cadastro
     de hoje não tem: o evento daquele ISIN acha a posição do ativo. O ISIN de evento que nenhuma
@@ -186,7 +230,7 @@ def instrumentos(pasta: Path) -> dict[str, tuple[str, str, str]]:
     return {t: (e, s, n) for t, (e, s, n, _) in saida.items()}
 
 
-@cache
+@_PelosArquivos
 def ultimos_negocios(pasta: Path) -> dict[str, date]:
     """Ticker -> último negócio visto (vazio em pacote antigo)."""
     saida: dict[str, date] = {}
@@ -196,7 +240,7 @@ def ultimos_negocios(pasta: Path) -> dict[str, date]:
     return saida
 
 
-@cache
+@_PelosArquivos
 def saidas(pasta: Path) -> dict[str, dict[str, str]]:
     """O que houve com o ativo que parou de negociar (curada, com fonte)."""
     return curadoria.saidas(pasta)
