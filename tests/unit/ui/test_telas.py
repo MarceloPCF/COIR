@@ -1,6 +1,7 @@
 """F6: fluxos das telas 1, 3, 4 e 5 sem navegador (assistente, importar, notas, operações)."""
 
 import asyncio
+import base64
 import json
 import threading
 from collections.abc import Callable
@@ -250,6 +251,49 @@ async def test_notas_amplia_a_pagina_do_pdf(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_notas_pagina_atrasada_nao_cobre_a_pagina_escolhida_depois(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Clicar em "pág. 2" e logo em "pág. 1": a página 2, desenhada por último, não pode ficar na
+    tela no lugar da página escolhida (nem a ampliação abrir uma e mostrar outra)."""
+    from coir.servicos import notas as servico_notas
+
+    estado = _estado(criar(tmp_path / "demo", pdfs=True))
+    [nota] = [n for n in listar(estado.banco, None, None) if len(n.paginas) > 1]
+    estado.ano = nota.data.year
+    liberar, terminou = threading.Event(), threading.Event()
+
+    def pagina_png(pdf: Path, pagina: int, largura: int = 1100, senhas: Any = ()) -> bytes:
+        if pagina == 2:
+            liberar.wait(10)
+            terminou.set()
+        return f"pagina-{pagina}".encode()
+
+    monkeypatch.setattr(servico_notas, "pagina_png", pagina_png)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open(f"/notas/{nota.id}")
+        await user.should_see(marker="pagina-pdf", retries=ESPERA)
+        [imagem] = user.find(marker="pagina-pdf").elements
+        assert isinstance(imagem, ui.image)
+        mostrada = "data:image/png;base64," + base64.b64encode(b"pagina-1").decode()
+        for _ in range(ESPERA):
+            if imagem.source == mostrada:
+                break
+            await asyncio.sleep(0.1)
+        user.find("pág. 2").click()
+        await asyncio.sleep(0.3)  # a página 2 começa a ser desenhada (e espera)
+        user.find("pág. 1").click()
+        await asyncio.sleep(0.3)
+        liberar.set()
+        for _ in range(ESPERA):
+            if terminou.is_set():
+                break
+            await asyncio.sleep(0.1)
+        await asyncio.sleep(0.5)  # a tarefa da página 2 volta ao laço da janela
+        assert imagem.source == mostrada
+
+
+@pytest.mark.asyncio
 async def test_notas_filtra_pelo_numero(demo: Path) -> None:
     estado = _estado(demo)
     async with user_simulation(lambda: montar(estado)) as user:
@@ -333,6 +377,47 @@ async def test_carteira_abre_a_trilha_do_pm(demo: Path) -> None:
         user.find(marker="grade-carteira").trigger("rowClicked", {"data": linha})
         await user.should_see(f"Trilha do PM: {linha['c0']}", retries=ESPERA)
         await user.should_see("vale a ordem dos negócios da nota")  # parecer de 16/11/2026
+
+
+@pytest.mark.asyncio
+async def test_carteira_posicao_atrasada_nao_cobre_a_data_escolhida_depois(demo: Path) -> None:
+    """Trocar a data duas vezes seguidas: a posição da primeira data, que termina de calcular por
+    último (a segunda já estava calculada), não pode tomar o lugar da data que ficou no campo."""
+    estado = _estado(demo)
+    antiga = date(2025, 12, 31)
+    liberar, terminou = threading.Event(), threading.Event()
+    carteira, termos = estado.carteira, estado.termos
+
+    def carteira_lenta(ate: date, visao: Any) -> Any:
+        if ate == antiga:
+            liberar.wait(10)
+        return carteira(ate, visao)
+
+    def termos_marcados(ate: date) -> Any:
+        try:
+            return termos(ate)
+        finally:
+            if ate == antiga:
+                terminou.set()
+
+    estado.carteira = carteira_lenta  # type: ignore[method-assign]
+    estado.termos = termos_marcados  # type: ignore[method-assign]
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/carteira")
+        await user.should_see("posições em 16/10/2026", retries=ESPERA)
+        [campo] = user.find(marker="data-carteira").elements
+        campo.set_value(antiga.isoformat())  # type: ignore[attr-defined]
+        await asyncio.sleep(0.3)  # a posição de 31/12/2025 começa a ser calculada (e espera)
+        campo.set_value("2026-10-16")  # type: ignore[attr-defined]
+        await user.should_see("posições em 16/10/2026", retries=ESPERA)
+        liberar.set()
+        for _ in range(ESPERA):
+            if terminou.is_set():
+                break
+            await asyncio.sleep(0.1)
+        await asyncio.sleep(0.5)  # a tarefa da data antiga volta ao laço da janela
+        await user.should_not_see("posições em 31/12/2025")
+        await user.should_see("posições em 16/10/2026")
 
 
 @pytest.mark.asyncio

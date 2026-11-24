@@ -311,8 +311,8 @@ def _pdf(d: notas.DetalheNota, senhas: list[str]) -> None:
         except CoirError as erro:
             ui.notify(str(erro), type="negative")
             return
-        if png is None or imagem.is_deleted:
-            return
+        if png is None or imagem.is_deleted or atual[0] != pagina:
+            return  # outra página escolhida durante o desenho: vale a dela
         imagem.set_source("data:image/png;base64," + base64.b64encode(png).decode())
 
     def botao(pagina: int) -> None:

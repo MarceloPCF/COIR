@@ -136,6 +136,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         lista = ui.column().classes("min-w-[440px] flex-[0.8] gap-2")
         lado = ui.column().classes("min-w-[520px] flex-[1.2] gap-2")
     linhas: list[carteira.LinhaPosicao] = []
+    aberta: list[carteira.LinhaPosicao] = []  # a última posição clicada (trilha do PM)
 
     async def carregar() -> None:
         ate, visao = escolha.data, escolha.visao
@@ -148,7 +149,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             resultado = await run.io_bound(estado.carteira, ate, visao)
             termos = await run.io_bound(estado.termos, ate)
         except CoirError as erro:
-            if lista.is_deleted:
+            if lista.is_deleted or (ate, visao) != (escolha.data, escolha.visao):
                 return
             lista.clear()
             with lista:
@@ -156,6 +157,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             return
         if resultado is None or lista.is_deleted:
             return  # a tela foi refeita (titular, ano) ou fechada durante o cálculo
+        if (ate, visao) != (escolha.data, escolha.visao):
+            return  # data ou visão trocada durante o cálculo: vale a carga da escolha atual
         posicoes, contas = resultado
         linhas[:] = carteira.posicoes(posicoes, contas, estado.titular, termos or (), visao)
         lista.clear()
@@ -181,6 +184,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     async def abrir(indice: int) -> None:
         p = linhas[indice]
         ate, visao = escolha.data, escolha.visao
+        aberta[:] = [p]
         if p.liquidacao is not None:
             lado.clear()
             with lado:
@@ -190,6 +194,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         mapa = await run.io_bound(estado.notas_das_operacoes)
         if movs is None or mapa is None or lado.is_deleted:
             return
+        if (ate, visao) != (escolha.data, escolha.visao) or aberta[0] is not p:
+            return  # outra data, visão ou posição escolhida durante o cálculo
         passos = carteira.trilha(movs, estado.titular, p, ate)
         lado.clear()
         with lado:
