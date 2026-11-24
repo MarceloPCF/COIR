@@ -2,6 +2,7 @@
 importação das planilhas da B3, sem navegador e sem dados reais."""
 
 import asyncio
+import threading
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -343,3 +344,41 @@ async def test_declaracao_anual_ficha_a_ficha_e_lancado(demo: Path) -> None:
         await user.open("/declaracao")
         await user.should_see("Sem o mapeamento das fichas do programa IRPF 2024",
                               retries=ESPERA)  # fmt: skip
+
+
+@pytest.mark.asyncio
+async def test_declaracao_marcar_e_desmarcar_depressa_grava_o_ultimo(demo: Path) -> None:
+    """Marcar e logo desmarcar "lançado": as duas gravações rodam em threads e a primeira, se
+    terminar por último, deixava o item lançado no banco com a caixa desmarcada na tela."""
+    estado = _estado(demo)
+    estado.titular, estado.ano = 1, 2025
+    liberar, terminou = threading.Event(), threading.Event()
+    marcar = estado.marcar_lancado
+
+    def marcar_lento(chave: str, lancado: bool) -> None:
+        if lancado:
+            liberar.wait(10)
+        marcar(chave, lancado)
+        if lancado:
+            terminou.set()
+
+    estado.marcar_lancado = marcar_lento  # type: ignore[method-assign]
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/declaracao")
+        await user.should_see("Exercício 2026, ano-calendário 2025", retries=ESPERA)
+        user.find(marker="ficha-rv").click()
+        await user.should_see("Mercado à Vista - Ações", retries=ESPERA)
+        [caixa] = user.find(marker="lancado-rv:01").elements
+        assert isinstance(caixa, ui.checkbox)
+        caixa.set_value(True)
+        await asyncio.sleep(0.3)  # a marcação começa a gravar (e espera)
+        caixa.set_value(False)
+        await asyncio.sleep(0.3)
+        liberar.set()
+        for _ in range(ESPERA):
+            if terminou.is_set():
+                break
+            await asyncio.sleep(0.1)
+        await asyncio.sleep(0.5)  # a desmarcação, se esperava a vez, grava agora
+        assert caixa.value is False
+        assert "rv:01" not in estado.lancados()
