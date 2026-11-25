@@ -14,7 +14,7 @@ from coir.erros import ImportacaoError, MotorError
 from coir.servicos import eventos
 from coir.servicos.apuracao import carteira_banco
 from coir.servicos.b3 import importar_planilhas
-from coir.servicos.eventos import DadosEvento
+from coir.servicos.eventos import DadosEvento, lancamento, pacote
 from tests.unit.test_importador_b3 import CAB_MOV, planilha
 from tools.banco_demo import criar
 
@@ -444,7 +444,7 @@ def test_evento_automatico_apagado_nao_volta(demo: Path) -> None:
 def _pendencias(monkeypatch: pytest.MonkeyPatch, *erros: MotorError | None) -> None:
     """O motor para em `erros[0]` antes de gravar e em `erros[1]` depois."""
     fila = list(erros)
-    monkeypatch.setattr(eventos, "_erro_do_livro", lambda *_: fila.pop(0))
+    monkeypatch.setattr(lancamento, "_erro_do_livro", lambda *_: fila.pop(0))
 
 
 ITSA = MotorError("exercício de 1050 ITSAL921 em 2023-12-15", date(2023, 12, 15))
@@ -493,14 +493,14 @@ def test_propostas_do_pacote_com_o_livro_parado(
         "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
         "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
     ])  # fmt: skip
-    real = eventos.movimentar
+    real = pacote.movimentar
 
     def parado(*args: object, **kwargs: object) -> object:
         if args[3] == date.max:
             raise MotorError("exercício sem a opção", date(2023, 3, 15))
         return real(*args, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(eventos, "movimentar", parado)
+    monkeypatch.setattr(pacote, "movimentar", parado)
     do_pacote = [p for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
                  if "eventos da B3" in p.movimentacao and p.codigo == "GGBR4"]  # fmt: skip
     assert [(p.dados.tipo, p.dados.quantidade) for p in do_pacote] == [
@@ -519,7 +519,7 @@ def test_ativo_travado_nao_esconde_as_propostas_dos_outros(
         "GGBR,BRGGBRTESTE1,DESDOBRAMENTO,100,2023-02-28,2023-02-01,BRGGBRTESTE1,,,",
         "GGBR,BRGGBRTESTE1,BONIFICACAO,5,2023-05-31,2023-05-01,BRGGBRTESTE1,,,",
     ])  # fmt: skip
-    real = eventos.movimentar
+    real = pacote.movimentar
 
     def com_isolado(ativo: int) -> object:
         def movimentar(*args: object, isolados: list[AtivoIsolado] | None = None) -> object:
@@ -534,7 +534,7 @@ def test_ativo_travado_nao_esconde_as_propostas_dos_outros(
         return [p.dados.tipo for p in eventos.propostas(demo, 1, REFS, FISCAIS, pasta)
                 if "eventos da B3" in p.movimentacao and p.codigo == "GGBR4"]  # fmt: skip
 
-    monkeypatch.setattr(eventos, "movimentar", com_isolado(999999))  # outro ativo travou
+    monkeypatch.setattr(pacote, "movimentar", com_isolado(999999))  # outro ativo travou
     assert set(propostas()) == {TipoEvento.DESDOBRAMENTO, TipoEvento.BONIFICACAO}
     from sqlalchemy import select
 
@@ -545,7 +545,7 @@ def test_ativo_travado_nao_esconde_as_propostas_dos_outros(
         ggbr = s.scalars(select(TickerHistorico.ativo_id)
                          .where(TickerHistorico.ticker == "GGBR4")).first()  # fmt: skip
     assert ggbr is not None
-    monkeypatch.setattr(eventos, "movimentar", com_isolado(ggbr))  # o próprio ativo travou
+    monkeypatch.setattr(pacote, "movimentar", com_isolado(ggbr))  # o próprio ativo travou
     assert propostas() == [TipoEvento.DESDOBRAMENTO]  # o de depois espera a pendência
 
 
@@ -597,11 +597,11 @@ def test_pendencia_na_visao_por_conta_nao_fica_escondida(
     conta = MotorError("evento DESDOBRAMENTO de BIDI4 sem posição na conta", date(2021, 5, 27))
 
     def movimentar(*args: object) -> None:
-        raise ITSA if args[-1] is eventos.Visao.TITULAR else conta
+        raise ITSA if args[-1] is lancamento.Visao.TITULAR else conta
 
     from coir.db.sessao import conectar
 
-    monkeypatch.setattr(eventos, "movimentar", movimentar)
+    monkeypatch.setattr(lancamento, "movimentar", movimentar)
     with conectar(demo) as fabrica, fabrica() as s:
         assert eventos._erro_do_livro(s, 1, REFS, FISCAIS) is conta
 
@@ -770,7 +770,7 @@ def test_lote_recusado_volta_com_o_motivo_e_nao_trava_os_outros(
             raise ImportacaoError("não fecha")
         return original(banco, titular, lote, *resto)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(eventos, "salvar_lote", recusa_ggbr)
+    monkeypatch.setattr(lancamento, "salvar_lote", recusa_ggbr)
     resultado = eventos.lancar_seguras(demo, 1, chaves, REFS, FISCAIS, pasta)
     assert len(resultado.ids) == 1
     assert resultado.recusadas == (("GGBR4", "não fecha"),)
