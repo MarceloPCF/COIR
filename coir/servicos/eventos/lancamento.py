@@ -59,10 +59,10 @@ def salvar_lote(
     a cisão de uma posição em várias contas só fecha com os eventos de todas."""
     feitos: list[int] = []
     with conectar(banco) as fabrica, fabrica.begin() as s:
-        antes = _pendencia_antes(s, titular, refs, fiscais)
+        antes = pendencia_antes(s, titular, refs, fiscais)
         for d, evento_id in lote:
             feitos.append(_gravar(s, titular, d, evento_id, refs))
-        _conferir_no_motor(s, titular, refs, fiscais, antes)
+        conferir_no_motor(s, titular, refs, fiscais, antes)
     for d, evento_id in lote:
         trilha.evento_salvo(titular, d, evento_id is not None)
     return feitos
@@ -140,7 +140,7 @@ def _erro_do_livro(
     return min(erros, key=lambda e: e.data or date.min, default=None)
 
 
-def _pendencia_antes(
+def pendencia_antes(
     s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais
 ) -> MotorError | None:  # fmt: skip
     try:
@@ -149,9 +149,9 @@ def _pendencia_antes(
         return None  # o motor recusa de novo depois da mudança, com a mensagem
 
 
-def _conferir_no_motor(
+def conferir_no_motor(
     s: Session, titular: int, refs: Referencias, fiscais: ReferenciasFiscais,
-    antes: MotorError | None,
+    antes: MotorError | None, o_que: str = "o evento",
 ) -> None:  # fmt: skip
     """A mudança não pode criar pendência no livro. Com uma pendência de antes (ex.: bonificação
     que falta noutro ativo), o livro pode continuar parando nela ou passar dela e parar numa data
@@ -160,7 +160,7 @@ def _conferir_no_motor(
     try:
         depois = _erro_do_livro(s, titular, refs, fiscais)
     except ReferenciaError as erro:
-        raise ImportacaoError(f"o evento não fecha com as operações: {erro}") from erro
+        raise ImportacaoError(f"{o_que} não fecha com as operações: {erro}") from erro
     if depois is None or (
         antes is not None
         and (
@@ -169,7 +169,7 @@ def _conferir_no_motor(
         )
     ):
         return  # fmt: skip
-    raise ImportacaoError(f"o evento não fecha com as operações: {depois}") from depois
+    raise ImportacaoError(f"{o_que} não fecha com as operações: {depois}") from depois
 
 
 def excluir(
@@ -190,7 +190,7 @@ def excluir_lote(
     proposta do evento apagado fica ignorada: o lançamento automático não o traz de volta."""
     apagados: list[tuple[int, str, date]] = []
     with conectar(banco) as fabrica, fabrica.begin() as s:
-        antes = _pendencia_antes(s, titular, refs, fiscais)
+        antes = pendencia_antes(s, titular, refs, fiscais)
         registros: list[EventoCorporativo] = []
         for evento_id in ids:
             registro = s.get(EventoCorporativo, evento_id)
@@ -203,7 +203,7 @@ def excluir_lote(
             s.delete(registro)
         s.flush()
         try:
-            _conferir_no_motor(s, titular, refs, fiscais, antes)
+            conferir_no_motor(s, titular, refs, fiscais, antes)
         except ImportacaoError as erro:
             raise ImportacaoError(f"sem este evento o livro não fecha: {erro.__cause__}") from erro
         for registro in registros:

@@ -40,6 +40,28 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <p>Se a nota foi alterada por um reprocessamento, uma linha mostra a data e o que mudou, e o botão <strong>Ver versão anterior</strong> abre o que ela dizia antes.</p>
 
+<h2 id="nota-manual">Nota manual</h2>
+
+<p>Para a nota que se perdeu, ou de corretora que não dá nota em PDF, use <strong>Nova nota manual</strong> no topo da tela. Digite a nota como a corretora a imprimiria:</p>
+
+<ul>
+<li><strong>Cabeçalho:</strong> a conta (ou <strong>Conta nova...</strong>, com a corretora e o número da conta), a data do pregão, o número da nota e o segmento (Bovespa ou BM&amp;F).</li>
+<li><strong>Operações:</strong> uma linha para cada negócio.
+<ul>
+<li>Na Bovespa: compra ou venda, mercado, código do ativo, vencimento da opção (MM/AA) ou prazo do termo em dias, quantidade, preço e a marca de day trade.</li>
+<li>Na BM&amp;F: contrato, vencimento, tipo (NORMAL, DAY TRADE ou AJUPOS), quantidade, preço e o valor da linha, com D ou C.</li>
+</ul></li>
+<li><strong>Custos e IRRF</strong>, como estão na nota ou no extrato da corretora. Em branco vale zero.</li>
+</ul>
+
+<p><strong>Conferir totais</strong> mostra o valor das operações, os custos e o líquido. <strong>Gravar</strong> confere a nota do mesmo jeito que as lidas do PDF e faz um backup antes. A nota entra no cálculo com as mesmas regras: day trade, rateio dos custos, IRRF e preço médio. Se a nota deixar alguma operação sem fechar, por exemplo uma venda de ativo que não está na carteira, nada é gravado e o motivo aparece na tela.</p>
+
+<p>Sem número informado, o COIR sugere M1, M2... No mesmo pregão, os negócios de uma nota com letra no número contam depois dos negócios das notas numeradas. Código de ativo que as tabelas não conhecem entra com aviso: confira se foi digitado certo.</p>
+
+<p>Na lista, a nota manual aparece com "(manual)". No detalhe, <strong>Corrigir</strong> abre o formulário preenchido e <strong>Remover</strong> a tira do cálculo, depois de pedir confirmação. Nos dois casos, o COIR faz backup e guarda a versão anterior.</p>
+
+<p>Uma nota com o mesmo número, conta e pregão de outra já gravada é recusada. Com outro número, se já houver nota na mesma conta e pregão (do PDF ou manual), o COIR mostra qual é e quantos negócios iguais ela tem, e só grava em <strong>Gravar mesmo assim</strong>: pode haver duas notas no mesmo pregão, mas pode ser também a mesma nota, que contaria duas vezes. Se achar o PDF da nota manual depois, importe-o e remova a manual; enquanto as duas estiverem gravadas, o COIR avisa na importação e no sino do topo.</p>
+
 <p><a href="../index.html">Voltar ao índice do manual</a></p>
 
 </main>

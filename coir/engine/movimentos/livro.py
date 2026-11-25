@@ -293,5 +293,13 @@ def _de(o: _Op) -> Origem:
     return (o.nota.conta, o.nota.corretora)
 
 
-def _ordem(p: _Peca) -> tuple[int, int]:
-    return (p.base.nota.id, p.base.op.ordem)
+def _ordem(p: _Peca) -> tuple[date, str, int, int]:
+    """Peças do dia na ordem dos negócios (número da nota e ordem impressa), não na ordem em que
+    as notas foram gravadas: corrigir uma nota manual não muda o cálculo."""
+    return _ordem_negocio(p.base)
+
+
+def _ordem_negocio(o: _Op) -> tuple[date, str, int, int]:
+    """Ordem dos negócios no dia: número da nota e ordem impressa (a nota não traz horário)."""
+    numero = o.nota.numero
+    return (o.nota.data, numero.zfill(20) if numero.isdigit() else numero, o.op.ordem, o.op.id)

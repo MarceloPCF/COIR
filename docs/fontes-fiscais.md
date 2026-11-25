@@ -11,11 +11,11 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | LC 224/2025 | 8 | [lc-224-2025.md](normas/lc-224-2025.md) |
 | LC 236/2026 | 2 | [lc-236-2026.md](normas/lc-236-2026.md) |
 | Lei 6.404/1976 | 11 | [lei-6404-1976.md](normas/lei-6404-1976.md) |
-| Lei 7.713/1988 | 13 | [lei-7713-1988.md](normas/lei-7713-1988.md) |
-| Lei 8.668/1993 | 3 | [lei-8668-1993.md](normas/lei-8668-1993.md) |
+| Lei 7.713/1988 | 16 | [lei-7713-1988.md](normas/lei-7713-1988.md) |
+| Lei 8.668/1993 | 5 | [lei-8668-1993.md](normas/lei-8668-1993.md) |
 | Lei 8.981/1995 | 13 | [lei-8981-1995.md](normas/lei-8981-1995.md) |
 | Lei 9.249/1995 | 24 | [lei-9249-1995.md](normas/lei-9249-1995.md) |
-| Lei 9.250/1995 | 8 | [lei-9250-1995.md](normas/lei-9250-1995.md) |
+| Lei 9.250/1995 | 10 | [lei-9250-1995.md](normas/lei-9250-1995.md) |
 | Lei 9.430/1996 | 20 | [lei-9430-1996.md](normas/lei-9430-1996.md) |
 | Lei 9.779/1999 | 1 | [lei-9779-1999.md](normas/lei-9779-1999.md) |
 | Lei 9.959/2000 | 8 | [lei-9959-2000.md](normas/lei-9959-2000.md) |
@@ -23,25 +23,26 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | Lei 11.051/2004 | 5 | [lei-11051-2004.md](normas/lei-11051-2004.md) |
 | Lei 11.196/2005 | 1 | [lei-11196-2005.md](normas/lei-11196-2005.md) |
 | Lei 11.312/2006 | 6 | — |
-| Lei 11.478/2007 | 7 | [lei-11478-2007.md](normas/lei-11478-2007.md) |
+| Lei 11.478/2007 | 8 | [lei-11478-2007.md](normas/lei-11478-2007.md) |
 | Lei 12.350/2010 | 1 | [lei-12350-2010.md](normas/lei-12350-2010.md) |
-| Lei 12.431/2011 | 10 | [lei-12431-2011.md](normas/lei-12431-2011.md) |
-| Lei 13.043/2014 | 37 | [lei-13043-2014.md](normas/lei-13043-2014.md) |
+| Lei 12.431/2011 | 11 | [lei-12431-2011.md](normas/lei-12431-2011.md) |
+| Lei 13.043/2014 | 38 | [lei-13043-2014.md](normas/lei-13043-2014.md) |
 | Lei 14.130/2021 | 5 | [lei-14130-2021.md](normas/lei-14130-2021.md) |
-| Lei 14.754/2023 | 15 | [lei-14754-2023.md](normas/lei-14754-2023.md) |
+| Lei 14.754/2023 | 20 | [lei-14754-2023.md](normas/lei-14754-2023.md) |
 | Lei 15.265/2025 | 15 | [lei-15265-2025.md](normas/lei-15265-2025.md) |
 | Lei 15.270/2025 | 16 | [lei-15270-2025.md](normas/lei-15270-2025.md) |
 | MP 497/2010 | 3 | [mp-497-2010.md](normas/mp-497-2010.md) |
 | IN RFB 1.022/2010 | 5 | [in-rfb-1022-2010.md](normas/in-rfb-1022-2010.md) |
-| IN RFB 1.585/2015 | 146 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
+| IN RFB 1.585/2015 | 150 | [in-rfb-1585-2015.md](normas/in-rfb-1585-2015.md) |
 | IN RFB 1.700/2017 | 2 | [in-rfb-1700-2017.md](normas/in-rfb-1700-2017.md) |
 | IN RFB 1.916/2019 | 1 | [in-rfb-1916-2019.md](normas/in-rfb-1916-2019.md) |
 | Res. CMN 4.880/2020 | 1 | [res-cmn-4880-2020.md](normas/res-cmn-4880-2020.md) |
-| SC Cosit 37/2020 | 3 | [sc-cosit-37-2020.md](normas/sc-cosit-37-2020.md) |
+| SC Cosit 37/2020 | 7 | [sc-cosit-37-2020.md](normas/sc-cosit-37-2020.md) |
 | SC Cosit 42/2020 | 2 | [sc-cosit-42-2020.md](normas/sc-cosit-42-2020.md) |
 | SC Cosit 63/2020 | 2 | [sc-cosit-63-2020.md](normas/sc-cosit-63-2020.md) |
 | SC Cosit 67/2024 | 1 | [sc-cosit-67-2024.md](normas/sc-cosit-67-2024.md) |
-| SC Cosit 130/2023 | 1 | [sc-cosit-130-2023.md](normas/sc-cosit-130-2023.md) |
+| SC Cosit 130/2023 | 3 | [sc-cosit-130-2023.md](normas/sc-cosit-130-2023.md) |
+| SC Cosit 131/2016 | 1 | — |
 | SC Cosit 145/2021 | 6 | [sc-cosit-145-2021.md](normas/sc-cosit-145-2021.md) |
 | SC Cosit 148/2025 | 5 | [sc-cosit-148-2025.md](normas/sc-cosit-148-2025.md) |
 | SC Cosit 153/2016 | 1 | [sc-cosit-153-2016.md](normas/sc-cosit-153-2016.md) |
@@ -50,14 +51,14 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 | SC Cosit 227/2018 | 3 | [sc-cosit-227-2018.md](normas/sc-cosit-227-2018.md) |
 | P&R IRPF | 2 | [pr-irpf.md](normas/pr-irpf.md) |
 | P&R IRPF 2022 | 2 | [pr-irpf.md](normas/pr-irpf.md) |
-| P&R IRPF 2026 | 28 | [pr-irpf.md](normas/pr-irpf.md) |
+| P&R IRPF 2026 | 29 | [pr-irpf.md](normas/pr-irpf.md) |
 | Manual MIR | 2 | [manual-mir.md](normas/manual-mir.md) |
 | Manual MIR 2026 | 3 | [manual-mir.md](normas/manual-mir.md) |
 | Programa IRPF | 15 | — |
 | CTN | 10 | [lei-5172-1966-ctn.md](normas/lei-5172-1966-ctn.md) |
 | Súmula STJ 360 | 1 | — |
 | REsp 1.149.022/SP | 1 | — |
-| RIR/2018 | 10 | [decreto-9580-2018-rir.md](normas/decreto-9580-2018-rir.md) |
+| RIR/2018 | 11 | [decreto-9580-2018-rir.md](normas/decreto-9580-2018-rir.md) |
 | Instrução Normativa SRF 25/2001 | 6 | — |
 | Instrução Normativa SRF 41/1998 | 5 | [in-srf-41-1998.md](normas/in-srf-41-1998.md) |
 
@@ -92,11 +93,11 @@ Regras da combinação (`tools/referencias/gerar.py`, `historico.py`):
   como bonificação de 100% e é dividendo pago em dinheiro e em cotas do FII Top Center (nenhuma
   ação emitida; provento isento, Lei 9.249/95, art. 10). As cotas entram à mão como entrada, com
   custo de R$ 9,2089623 por cota (R$ 621.716.835,00 / 67.512.149 ações; CVM, Reg. 1311/19, e
-  aviso aos acionistas de 26/03/2019). O COIR não modela dividendo pago em ativo de outra empresa
-  (pendência para versões futuras);
+  aviso aos acionistas de 26/03/2019). Desde a 3.1.2 o lançamento é o evento "Dividendo pago em
+  bens" da tela Eventos, que o pacote não propõe;
 - o mesmo evento vindo de duas fontes soma a origem (`b3+cvm_fre`); fator diferente na mesma
   data com, ou o mesmo fator em data com próxima, é **divergência**: o pacote fica como estava e
-  o caso vai para o PR semanal, para revisão humana;
+  o caso vai para o resumo da coleta (corpo do PR), para revisão humana;
 - do FRE só entra fator que é fração simples (p/q com q até 20, 1/n ou n) e data com confirmada
   pela cotação (a única mudança de distribuição, depois da aprovação, em que o preço andou como o
   fator manda; ou a data com já confirmada de outra espécie do mesmo ato). Ambíguo, sem negócio
@@ -243,10 +244,12 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 ## Lei 7.713/1988
 
+- `coir/engine/movimentos/eventos.py` — _acima_do_custo: …= ganho_capital): ganho de capital fora de bolsa, no GCAP, no mês do crédito do dinheiro (Lei 7.713/1988 art. 3º; IN 1.585 art. 58 §8º; SC Cosit 37/2020 por analogia); com isolar, o ativo sai do cálculo.…
 - `coir/engine/movimentos/eventos.py` — _dividendo_em_bens: …pago, e a norma manda usar o valor corrente na data da aquisição (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); o COIR fica com o menor entre o atribuído e o corrente (parâmetro…
 - `coir/engine/movimentos/eventos.py` — _exercicio_direito: …sem resultado, e o recibo (ou a ação) subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção…
 - `coir/engine/proventos.py` — módulo: …só alcança PJ tributada no País); é rendimento do exterior, sujeito ao carnê-leão pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR não calcula…
 - `data/parametros_fiscais.csv` — custo_dividendo_em_bens: Lei 9.249/1995 art. 10 (o dividendo é isento pelo valor atribuído no aviso). Custo do bem recebido: o valor atribuído ou, quando menor, o valor corrente na data da entrega (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); critério do COIR, conservador. Alternativa: valor_atribuido
+- `data/parametros_fiscais.csv` — restituicao_capital_acima_do_custo: IN RFB 1.585/2015 art. 58 §8º (a restituição em dinheiro reduz o custo das ações); o que passar do custo não vira custo negativo: custo e PM a zero, e o excedente é ganho de capital fora de bolsa, no GCAP, no mês do crédito do dinheiro, fora da apuração mensal (Lei 7.713/1988 art. 3º §§2º a 4º; SC Cosit 37/2020 e 131/2016, por analogia; critério do COIR, sem norma expressa). Ação e unit. Alternativa: isolar (o ativo sai do cálculo, como até a 3.1.4)
 - `docs/regras-fiscais.md` — Proventos: …no País). É rendimento do exterior, sujeito ao carnê-leão e ao ajuste anual pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR só lista, com…
 - `docs/regras-fiscais.md` — Proventos: …o custo é o valor atribuído ou, quando menor, o valor corrente na entrega (IN 1.585 art. 58 §3º IV; Lei 7.713/1988 art. 16 V), com aviso: Critério do COIR, conservador (parâmetro `custo_dividendo_em_bens`;…
 - `docs/regras-fiscais.md` — R22: …janela usa a Subscrição simples, que marca o lote isento (critério conservador: nunca reduz imposto) | Lei 7.713/1988 art. 16 caput, §2º e §4º; IN RFB 1.585/2015 art. 58 caput, §§4º, 6º e 7º, e art. 60 II a e §1º…
@@ -256,11 +259,14 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — test_dividendo_de_bdr_so_avisa_com_a_leitura_do_carne_leao: Lei 9.249/1995 art. 10 (só PJ tributada no País); Lei 7.713/1988 art. 8º. O COIR não calcula: faltam o imposto retido no exterior e a tabela progressiva.
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — test_dividendo_em_bens_fica_pelo_valor_de_mercado_quando_menor_com_aviso: Leitura conservadora (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V): mercado na entrega 1.900,00, abaixo do atribuído: custo 1.900,00. Venda por 2.200,00:…
 - `tests/fiscal_cases/test_raiz55.py` — módulo: …e primeiro de RAIZ55 em 03/11/2026. Nada muda na quantidade nem nos direitos. Regra: não há alienação (Lei 7.713/1988 art. 3º §3º), e o custo e a quantidade continuam os mesmos. Na nota, a quantidade é a de ações e o…
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — módulo: …reduz o custo (IN RFB 1.585/2015 art. 58 §8º). O que passar do custo não vira custo negativo (Lei 7.713/1988 art. 16; RIR/2018 art. 141 §2º): custo e PM a zero, e o excedente é ganho de capital fora de bolsa…
 
 ## Lei 8.668/1993
 
 - `coir/engine/fiagro.py` — módulo: …só autoriza compensar perda de FII com ganho de FII; nenhuma norma autoriza compensar Fiagro com FII (a Lei 8.668 art. 20-D só remete às regras gerais). Ano com resultado de sinais opostos entre os dois: aviso. -…
+- `coir/engine/movimentos/eventos.py` — _acima_do_custo: …= reduz_custo): excedente tributado a 20% na fonte pelo administrador, por analogia com o resgate (Lei 8.668/1993 art. 18 I; IN 1.585 art. 37 §3º). - ETF de renda fixa: tributação só na fonte (Lei 13.043/2014…
 - `data/parametros_fiscais.csv` — aliquota_fii: Lei 8.668/1993 art. 18 II (red. Lei 9.779/1999); inclui day trade de FII
+- `data/parametros_fiscais.csv` — fii_amortizacao: sem norma expressa para FII e Fiagro (IN RFB 1.585/2015 arts. 35 a 40; Lei 8.668/1993): por analogia com a IN 1.585 art. 16 §2º e art. 37 §3º, a amortização reduz o custo das cotas e a tela Eventos a propõe; acima do custo, custo a zero e aviso (20% na fonte pelo administrador, Lei 8.668 art. 18 I). Critério conservador do COIR. Alternativa: fora (não propõe, como até a 3.1.4)
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — test_dividendo_em_bens_entra_pelo_valor_atribuido_quando_o_de_mercado_nao_e_menor: …custo 2.000,00. Venda das 20 cotas a 110,00 = 2.200,00: ganho de FII 200,00, imposto de 20% = 40,00 (Lei 8.668/1993 art. 18 II). A posição na companhia que pagou não muda.
 
 ## Lei 8.981/1995
@@ -313,9 +319,11 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `data/parametros_fiscais.csv` — aliquota_irrf_dividendos_acima_limite: Lei 15.270/2025 (Lei 9.250 art. 6º-A caput e §§1º e 2º)
 - `data/parametros_fiscais.csv` — dividendos_limite_mensal_mesma_pj: Lei 15.270/2025 (Lei 9.250 art. 6º-A): acima de R$ 50 mil no mês da mesma PJ há retenção de 10% sobre o total
 - `data/parametros_fiscais.csv` — irpf_minimo_renda_anual: Lei 9.250/1995 art. 16-A (incl. Lei 15.270/2025): IR mínimo de quem recebe mais de R$ 600 mil no ano; os ganhos líquidos em bolsa, inclusive os isentos, entram na base (§1º I); só aviso informativo (critério do COIR)
+- `docs/regras-fiscais.md` — Proventos: Lei 9.250/1995 art. 22 II); não soma no limite de R$ 20 mil nem compensa prejuízo da bolsa (Lei
 - `tests/fiscal_cases/test_obrigatoriedade_dirpf.py` — test_ir_minimo_informa_os_ganhos_de_bolsa_desde_2026: Lei 9.250 art. 16-A §1º I (Lei 15.270/2025), critério do COIR: total informativo. 2026: C 1.000 PETR4 a 10,00; V…
 - `tests/fiscal_cases/test_petz_auau.py` — módulo: …mensal; a perda não compensa ganhos da bolsa. - Isenção do resgate: até R$ 35 mil alienados no mês (Lei 9.250/1995 art. 22 II). - A incorporação em si segue o parâmetro incorporacao_acoes_tratamento (custo…
 - `tests/fiscal_cases/test_proventos.py` — módulo: …e 21 (reembolso de BTC); IN 1.585 art. 58 §8º (restituição de capital reduz o custo); Lei 15.270/2025 (Lei 9.250 art. 6º-A: IRRF de 10% sobre o total dos dividendos da mesma PJ no mês acima de R$ 50 mil). Critérios…
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — test_r1_excedente_zera_o_custo_e_fica_fora_da_apuracao: …a soma passaria de R$ 20 mil e o imposto seria 600,00. GCAP: 1.500,00 recebidos no mês, até R$ 35 mil (Lei 9.250/1995 art. 22 II): isento, como no resgate PETZ/AUAU.
 
 ## Lei 9.430/1996
 
@@ -429,13 +437,14 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 ## Lei 11.478/2007
 
+- `coir/engine/movimentos/eventos.py` — _acima_do_custo: …nas outras, o custo vai a zero sem aviso. - FI-Infra e FIP-IE: rendimento do fundo, alíquota zero (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º; critério do COIR). - Ação e unit…
 - `coir/engine/proventos.py` — _rendimento_fundo_infra: …do líquido indica retenção, o que só acontece com o fundo desenquadrado (Lei 12.431 art. 3º §§5º e 6º; Lei 11.478 art. 2º §§4º e 5º): a retenção é definitiva e a ficha continua a mesma, pelo líquido; o COIR avisa.
 - `coir/engine/proventos.py` — módulo: …e FIP-IE (tipo FUNDO_INFRA): alíquota zero, exclusiva na fonte (Lei 12.431/2011 art. 3º §§1º, 2º e 2º-A; Lei 11.478/2007 art. 2º §3º); ficha exclusiva 06 pelo valor líquido. Preço x quantidade acima do líquido sugere…
 - `docs/regras-fiscais.md` — R20: …de redução de capital); sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16 §2º; IN RFB 1.585/2015 arts. 33 (§8º: sem…
 - `tests/fiscal_cases/test_fundo_infra.py` — módulo: FI-Infra (Lei 12.431/2011 art. 3º) e FIP-IE (Lei 11.478/2007 art. 2º §1º I), tipo FUNDO_INFRA pela lista de fundos da B3: o ganho de pessoa física tem…
 - `tests/fiscal_cases/test_fundo_infra.py` — test_amortizacao_acima_do_custo_zera_o_custo_e_avisa_o_excedente: …amortização de 1.200,00 em 15/06/2025. O custo vai a zero e o excedente de 200,00 é rendimento do fundo (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), com alíquota zero: o COIR avisa e não o lança. Antes, o…
 - `tests/fiscal_cases/test_fundo_infra.py` — test_rendimentos_distribuidos_vao_para_a_exclusiva_06: Critério do COIR: rendimento de FI-Infra (Lei 12.431 art. 3º §§1º e 2º) e de FIP-IE (Lei 11.478 art. 2º §3º diz isento, mas o programa só aceita a exclusiva 06) na exclusiva 06, em linhas separadas;…
-- `tests/fiscal_cases/test_proventos.py` — test_amortizacao_de_fi_infra_reduz_o_custo_e_a_de_fii_fica_fora: Lei 12.431/2011 art. 3º e IN 1.585 art. 34 (FI-Infra; para FIP-IE, Lei 11.478/2007 art. 2º §2º e IN art. 33): a amortização reduz o custo das cotas. A de FII continua fora.
+- `tests/fiscal_cases/test_proventos.py` — test_amortizacao_de_fi_infra_e_de_fii_reduz_o_custo: Lei 12.431/2011 art. 3º e IN 1.585 art. 34 (FI-Infra; para FIP-IE, Lei 11.478/2007 art. 2º §2º e IN art. 33): a amortização reduz o custo das cotas. A de FII também, desde o…
 
 ## Lei 12.350/2010
 
@@ -443,6 +452,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 ## Lei 12.431/2011
 
+- `coir/engine/movimentos/eventos.py` — _acima_do_custo: …a zero sem aviso. - FI-Infra e FIP-IE: rendimento do fundo, alíquota zero (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º; critério do COIR). - Ação e unit (restituicao_capital_acima_do_custo = ganho_capital):…
 - `coir/engine/proventos.py` — _rendimento_fundo_infra: …IRRF. Preço x quantidade acima do líquido indica retenção, o que só acontece com o fundo desenquadrado (Lei 12.431 art. 3º §§5º e 6º; Lei 11.478 art. 2º §§4º e 5º): a retenção é definitiva e a ficha continua a mesma,…
 - `coir/engine/proventos.py` — módulo: …(parâmetro). - Rendimento de FI-Infra e FIP-IE (tipo FUNDO_INFRA): alíquota zero, exclusiva na fonte (Lei 12.431/2011 art. 3º §§1º, 2º e 2º-A; Lei 11.478/2007 art. 2º §3º); ficha exclusiva 06 pelo valor líquido.…
 - `docs/regras-fiscais.md` — R20: …mostra retenção; amortização reduz o custo (proposta de redução de capital); sem a retenção de 0,005% | Lei 12.431/2011 art. 3º §1º I b, §§2º e 2º-A; Lei 11.478/2007 art. 2º §§1º I, 2º e 3º; IN RFB 1.585/2015 art. 16…
@@ -450,12 +460,13 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_fundo_infra.py` — test_amortizacao_acima_do_custo_zera_o_custo_e_avisa_o_excedente: …O custo vai a zero e o excedente de 200,00 é rendimento do fundo (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), com alíquota zero: o COIR avisa e não o lança. Antes, o motor falhava.
 - `tests/fiscal_cases/test_fundo_infra.py` — test_bens_e_direitos_e_ficha_do_ganho_na_dirpf: Critério do COIR (Manual MIR; Guia IR 2026): FI-Infra em 07.10 e FIP-IE em 07.07, com o CNPJ do fundo; o ganho na ficha Exclusiva/Definitiva, código 06 (Lei 12.431 art. 3º §2º: "exclusivamente na fonte"), não em isentos.
 - `tests/fiscal_cases/test_fundo_infra.py` — test_rendimentos_distribuidos_vao_para_a_exclusiva_06: Critério do COIR: rendimento de FI-Infra (Lei 12.431 art. 3º §§1º e 2º) e de FIP-IE (Lei 11.478 art. 2º §3º diz isento, mas o programa só aceita a…
-- `tests/fiscal_cases/test_proventos.py` — test_amortizacao_de_fi_infra_reduz_o_custo_e_a_de_fii_fica_fora: Lei 12.431/2011 art. 3º e IN 1.585 art. 34 (FI-Infra; para FIP-IE, Lei 11.478/2007 art. 2º §2º e IN art. 33): a amortização reduz o custo das cotas. A de FII continua fora.
+- `tests/fiscal_cases/test_proventos.py` — test_amortizacao_de_fi_infra_e_de_fii_reduz_o_custo: Lei 12.431/2011 art. 3º e IN 1.585 art. 34 (FI-Infra; para FIP-IE, Lei 11.478/2007 art. 2º §2º e IN art. 33): a…
 - `tests/fiscal_cases/test_proventos.py` — test_rendimento_de_fi_infra_com_retencao_avisa: Fundo desenquadrado retém na fonte (Lei 12.431 art. 3º §§5º e 6º): preço x quantidade acima do líquido vira aviso; o lançamento continua pelo líquido.
 - `tests/fiscal_cases/test_proventos.py` — test_rendimento_de_fi_infra_vai_para_a_exclusiva_sem_irrf: Lei 12.431/2011 art. 3º §§1º e 2º: alíquota zero, exclusivamente na fonte. 100 cotas x 1,2345 = 123,45 líquido = bruto; não é rendimento de FII (isentos).
 
 ## Lei 13.043/2014
 
+- `coir/engine/movimentos/eventos.py` — _acima_do_custo: …o resgate (Lei 8.668/1993 art. 18 I; IN 1.585 art. 37 §3º). - ETF de renda fixa: tributação só na fonte (Lei 13.043/2014 art. 2º §4º). - Os demais (BDR, ETF antes de 2024, direito...): sem norma, o ativo fica isolado.
 - `coir/engine/movimentos/posicao.py` — _fim_da_isencao: Lei 13.043/2014 art. 17 §6º e IN 1.585 art. 68: no dia seguinte ao fim da isenção, o lote isento sobe à média dos…
 - `coir/engine/posicao.py` — fim_da_isencao: Lei 13.043/2014 art. 17 §6º: o lote isento sobe ao maior entre o custo pago e quantidade x média dos 30 pregões, e os lotes se fundem num PM só (art. 58). Devolve o aumento.
 - `coir/engine/proventos.py` — _origem_reembolso: …é a quantidade emprestada vezes o valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica;…
@@ -504,14 +515,17 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 ## Lei 14.754/2023
 
+- `coir/engine/movimentos/eventos.py` — _amortizacao_etf: …x amortização / valor patrimonial devolve custo; o restante é rendimento com IRRF de 15%, definitivo (Lei 14.754/2023 arts. 18 II, 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I). O COIR não tem o valor…
 - `coir/engine/movimentos/eventos.py` — _amortizacao_fip: …/ valor patrimonial é devolução de custo; o restante é rendimento com IRRF de 15%, definitivo (Lei 14.754/2023 art. 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I). O COIR não tem o valor…
 - `coir/engine/movimentos/livro.py` — _avisar_come_cotas: Desde 2024 o FIP que não é entidade de investimento tem tributação periódica (Lei 14.754/2023 art. 26), e o imposto pago nela aumenta o custo da cota (art. 17 §2º II). O COIR não tem esse…
 - `coir/engine/proventos.py` — _rendimento_etf: …Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei 14.754/2023 arts. 18 II, 24 e 32 I; parâmetro rendimento_etf_exclusivo); antes, sem norma lida, fica só o…
 - `coir/engine/proventos.py` — módulo: …País); é rendimento do exterior, sujeito ao carnê-leão pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR não calcula (faltam o imposto retido no…
+- `data/parametros_fiscais.csv` — etf_amortizacao_custo: Lei 14.754/2023 arts. 18 II, 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I: só a parcela custo x amortização / valor patrimonial devolve custo, o restante é rendimento com IRRF de 15%, definitivo; sem a parcela do informe, reduz até zero com aviso (critério do COIR, conservador)
 - `data/parametros_fiscais.csv` — fii_isencao_minimo_cotistas: Lei 11.033/2004 art. 3º §1º I e III (red. Lei 14.754/2023 art. 41; enquadramento até 30/06/2024): 100 cotistas e o grupo de pessoas ligadas sem 30% ou mais das cotas
 - `data/parametros_fiscais.csv` — fip_amortizacao_custo: Lei 14.754/2023 art. 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I; sem a parcela do informe, reduz até zero com aviso (critério do COIR, conservador)
 - `data/parametros_fiscais.csv` — fip_venda_bolsa: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I (não revogado: Lei 14.754/2023 art. 46)
 - `data/parametros_fiscais.csv` — rendimento_etf_exclusivo: Lei 14.754/2023 arts. 18 II, 24 caput e 32 I: IRRF de 15% na data da distribuição, definitivo para a pessoa física; ficha exclusiva 06 pelo líquido
+- `docs/regras-fiscais.md` — Proventos: custo do informe reduz o custo (Lei 14.754/2023 arts. 18 II, 24 e 17 §5º II b), sempre com aviso.
 - `docs/regras-fiscais.md` — Proventos: …do exterior, sujeito ao carnê-leão e ao ajuste anual pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR só lista, com aviso: faltam o imposto…
 - `docs/regras-fiscais.md` — Proventos: …por ETF de ações desde 01/01/2024: IRRF de 15% na distribuição, definitivo para a pessoa física (Lei 14.754/2023 arts. 18 II, 24 e 32 I); ficha exclusiva 06 pelo líquido (linha `rendimento_etf`, parâmetro…
 - `docs/regras-fiscais.md` — R16: …antes de 11/06/2021 (`fiagro_rendimento_isento`) | Lei 11.033/2004 art. 3º (alt. Lei 14.130/2021 e Lei 14.754/2023) | M
@@ -519,6 +533,8 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_fip_fidc.py` — módulo: …em bolsa (IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I, não revogado pela Lei 14.754/2023 art. 46), na categoria comum (Lei 8.981/1995 art. 72 §4º). - Amortização de FIP até 31/12/2023:…
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — módulo: …COIR). - Rendimento distribuído por ETF de ações desde 01/01/2024: IRRF de 15% na data da distribuição (Lei 14.754/2023 arts. 18 II e 24 caput), definitivo para a pessoa física (art. 32 I): ficha de tributação…
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — test_rendimento_de_etf_de_acoes_desde_2024_e_exclusivo_pelo_liquido: Caso B10-b: 1.000 cotas a 0,10 = bruto 100,00; IRRF de 15% = 15,00; líquido 85,00 creditado pela B3. Exclusiva 06: 85,00 (Lei 14.754/2023 arts. 18 II, 24 e 32 I).
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — módulo: …- ETF de ações desde 2024: só a parcela custo x amortização / valor patrimonial devolve custo (Lei 14.754/2023 arts. 18 II, 24 e 17 §2º III e §5º II b). - BDR acima do custo: sem norma; o ativo fica isolado.
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — test_r7_amortizacao_de_etf_desde_2024_pela_parcela_de_custo: C 100 ETFX11 a 100,00; amortização de 500,00 com VP 125,00: parcela de custo 400,00 (Lei 14.754/2023 art. 17 §5º II b); custo 9.600,00. V 100 a 101,00: ganho 500,00, imposto 75,00. Com o valor…
 
 ## Lei 15.265/2025
 
@@ -581,6 +597,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `coir/engine/movimentos/day_trade.py` — _day_trade: …marcou D formam o day trade quando a marcação é consistente; senão, a ordem dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º).
 - `coir/engine/movimentos/day_trade.py` — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…
 - `coir/engine/movimentos/day_trade.py` — módulo: Day trade: compra e venda do mesmo ativo no mesmo dia e corretora, casadas pela ordem dos negócios (IN RFB 1.585/2015 art. 65 §3º); o excedente vira operação comum.
+- `coir/engine/movimentos/eventos.py` — _acima_do_custo: …e o excedente só é avisado (critério do COIR, critérios do COIR). O custo fiscal é o do titular (IN RFB 1.585/2015 art. 58 caput): só a visão TITULAR decide e avisa; nas outras, o custo vai a zero sem aviso. -…
 - `coir/engine/movimentos/eventos.py` — _amortizacao_fip: …fip_amortizacao_custo = excedente): o imposto na fonte só incide sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a amortização reduz o custo até zero, e o excedente é…
 - `coir/engine/movimentos/eventos.py` — _cisao: Cisão: o percentual do custo de A divulgado pela companhia vai para B, sem resultado (IN RFB 1.585/2015 art. 58 §6º: na proporção fixada pela assembleia). A quantidade de A não muda. Os eventos das…
 - `coir/engine/movimentos/eventos.py` — _direito_nao_exercido: …emolumentos, pelo PM) vira perda em operações comuns na data do evento, o fim do prazo de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; art. 64 caput; SC Cosit 166/2021; critério do…
@@ -626,6 +643,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `data/parametros_fiscais.csv` — direito_recebido_custo_zero: IN RFB 1.585/2015 art. 58 §7º I a III (analogia: a norma não trata do direito recebido); critério do COIR
 - `data/parametros_fiscais.csv` — direito_vencido_data: IN RFB 1.585/2015 art. 60 §3º (analogia: perda na data do vencimento); Lei 6.404 art. 171 §4º (prazo decadencial): o direito comprado não exercido vira perda no fim do prazo de subscrição do pacote da B3, ou na data da baixa na B3 sem ele; alternativa baixa_b3 (critério do COIR)
 - `data/parametros_fiscais.csv` — fidc_venda_bolsa: sem norma expressa: IN RFB 1.585/2015 art. 16 I a só para fundo fechado com carteira de ações (art. 18 §2º); critério do COIR. Alternativa: ganho_liquido (15%, a prática de mercado)
+- `data/parametros_fiscais.csv` — fii_amortizacao: sem norma expressa para FII e Fiagro (IN RFB 1.585/2015 arts. 35 a 40; Lei 8.668/1993): por analogia com a IN 1.585 art. 16 §2º e art. 37 §3º, a amortização reduz o custo das cotas e a tela Eventos a propõe; acima do custo, custo a zero e aviso (20% na fonte pelo administrador, Lei 8.668 art. 18 I). Critério conservador do COIR. Alternativa: fora (não propõe, como até a 3.1.4)
 - `data/parametros_fiscais.csv` — fip_amortizacao_custo: IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º
 - `data/parametros_fiscais.csv` — fip_venda_bolsa: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I (não revogado: Lei 14.754/2023 art. 46)
 - `data/parametros_fiscais.csv` — irrf_alienacao_dispensa: Lei 11.033/2004 art. 2º §§4º e 5º; IN RFB 1.585/2015 art. 63 §§4º a 6º: dispensada a retenção igual ou inferior a R$ 1,00, somado o imposto das operações do mês (estimativa por corretora, que é quem retém). Só para a estimativa exibida na tela Simulação
@@ -636,6 +654,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `data/parametros_fiscais.csv` — reembolso_btc_dividendos_isento: IN RFB 1.585/2015 art. 74 caput e §1º I a (Lei 13.043/2014 art. 7º)
 - `data/parametros_fiscais.csv` — reembolso_btc_norma_omissa: IN RFB 1.585/2015 art. 74 caput e §1º I a (reembolso de dividendos de BTC expressamente isento)
 - `data/parametros_fiscais.csv` — rendimento_etf_exclusivo: IN RFB 1.585/2015 arts. 24 a 27 não tratam da distribuição de rendimentos de ETF de ações: sem norma lida, o COIR só avisa
+- `data/parametros_fiscais.csv` — restituicao_capital_acima_do_custo: IN RFB 1.585/2015 art. 58 §8º (a restituição em dinheiro reduz o custo das ações); o que passar do custo não vira custo negativo: custo e PM a zero, e o excedente é ganho de capital fora de bolsa, no GCAP, no mês do crédito do dinheiro, fora da apuração mensal (Lei 7.713/1988 art. 3º §§2º a 4º; SC Cosit 37/2020 e 131/2016, por analogia; critério do COIR, sem norma expressa). Ação e unit. Alternativa: isolar (o ativo sai do cálculo, como até a 3.1.4)
 - `data/trocas_ticker.csv` — PETZ3: B3 COTAHIST: último negócio de PETZ3 em 02/01/2026; AUAU3 desde 05/01/2026 (RI: relação 1:1, abertura deduzida de R$ 0,71); CNPJ muda (18328118000109 -> 53153938000108): incorporação tratada como troca curada, custo mantido (IN RFB 1.585/2015 art. 58 §6º); R$ 0,71 por ação à parte: resgate de PN, SC Cosit 37/2020
 - `docs/regras-fiscais.md` — Critérios do COIR: A IN RFB 1.585/2015 art. 56 §§3º e 4º admite deduzir os custos necessários e permite ratear os do
 - `docs/regras-fiscais.md` — Critérios do COIR: é isento (IN RFB 1.585/2015 art. 59 §2º IV); a venda entra na soma do limite do mês dela.
@@ -657,7 +676,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `docs/regras-fiscais.md` — R4: …de termo, leilão de fração), excluídos units (R4a), ETF, BDR, FII, direitos e o lote isento de PME (IN 1.585 art. 67 §3º); a isenção alcança só o ganho das vendas comuns à vista (art. 59 §2º I e IV). Critério do…
 - `docs/regras-fiscais.md` — R6: …0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da…
 - `docs/regras-fiscais.md` — R7: …fica fora (parâmetro `custodia_no_custo = false`, critério do COIR) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A
-- `docs/regras-fiscais.md` — R8: …Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF 2022 pergunta 578 (substituição de ações; não…
+- `docs/regras-fiscais.md` — R8: …Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º, 7º e 8º (restituição de capital), art. 60 §2º; P&R IRPF 2022 pergunta 578…
 - `docs/regras-fiscais.md` — R9: …(ON→3, PN→4, PNA→5, PNB→6, UNT→11); sem classe: classe da abertura da série, depois opcoes.csv | IN RFB 1.585/2015 | M
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_bonificacao_ajusta_a_quantidade_da_serie_sem_custo: R8 (Lei 9.249/1995 art. 10 §1º e IN RFB 1.585/2015 art. 58: o custo atribuído da bonificação vai para as ações) e ajuste de proventos da B3 nas…
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_compensacao_separada_entre_comum_e_day_trade: R2: prejuízo de day trade só compensa com ganho de day trade (IN RFB 1.585/2015).
@@ -707,6 +726,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — test_rendimento_de_etf_de_acoes_antes_de_2024_fica_so_no_aviso: Até 31/12/2023 a IN RFB 1.585/2015 arts. 24 a 27 não trata da distribuição: o COIR não classifica (parâmetro rendimento_etf_exclusivo falso até 2023).
 - `tests/fiscal_cases/test_proventos_etf_bdr_bens.py` — test_rendimento_de_etf_de_renda_fixa_e_exclusivo_em_qualquer_ano: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. 500 cotas a 0,20 = bruto 100,00; líquido 85,00. Sem o preço na linha, o bruto fica igual ao líquido.
 - `tests/fiscal_cases/test_raiz55.py` — módulo: …os mesmos. Na nota, a quantidade é a de ações e o preço é por 100 ações; o custo é o valor impresso (IN RFB 1.585/2015 art. 58 caput). A PNA continua ação para a isenção de R$ 20 mil (art. 59 I).
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — módulo: …da posição (critério do COIR; números conferidos à mão). - Ação e unit: a restituição reduz o custo (IN RFB 1.585/2015 art. 58 §8º). O que passar do custo não vira custo negativo (Lei 7.713/1988 art. 16; RIR/2018 art.…
 - `tests/fiscal_cases/test_saldos_iniciais.py` — módulo: …o COIR sem o histórico de notas. Custódia inicial: a posição em 31/12 entra pelo custo de aquisição (IN RFB 1.585/2015 art. 58), o mesmo do Bens e Direitos, sem resultado e sem efeito no day trade (art. 65 §2º).…
 - `tests/fiscal_cases/test_simulacao.py` — módulo: …e dispensa mensal até R$ 1,00) e art. 3º I (limite de R$ 20.000,00 das alienações de ações no mês); IN RFB 1.585/2015 art. 59 I e §2º (soma do limite e isenção), art. 63 (IRRF de 0,005%), art. 65 §§1º a 4º (day trade…
 - `tests/fiscal_cases/test_simulacao.py` — test_compra_hipotetica_seguida_de_venda_no_mesmo_dia_e_day_trade: Compra simulada de 1.000 a 11,00 e venda simulada de 1.000 a 11,50 no mesmo dia e corretora: day trade de 500,00 x 20% = 100,00 (IN RFB 1.585/2015 art. 65 §§1º e 3º). IRRF estimado de 1% sobre 500,00 = 5,00.
@@ -735,9 +755,13 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 ## SC Cosit 37/2020
 
+- `coir/engine/movimentos/eventos.py` — _acima_do_custo: …de bolsa, no GCAP, no mês do crédito do dinheiro (Lei 7.713/1988 art. 3º; IN 1.585 art. 58 §8º; SC Cosit 37/2020 por analogia); com isolar, o ativo sai do cálculo. - FII e Fiagro (fii_amortizacao = reduz_custo):…
+- `data/parametros_fiscais.csv` — restituicao_capital_acima_do_custo: IN RFB 1.585/2015 art. 58 §8º (a restituição em dinheiro reduz o custo das ações); o que passar do custo não vira custo negativo: custo e PM a zero, e o excedente é ganho de capital fora de bolsa, no GCAP, no mês do crédito do dinheiro, fora da apuração mensal (Lei 7.713/1988 art. 3º §§2º a 4º; SC Cosit 37/2020 e 131/2016, por analogia; critério do COIR, sem norma expressa). Ação e unit. Alternativa: isolar (o ativo sai do cálculo, como até a 3.1.4)
 - `data/trocas_ticker.csv` — PETZ3: B3 COTAHIST: último negócio de PETZ3 em 02/01/2026; AUAU3 desde 05/01/2026 (RI: relação 1:1, abertura deduzida de R$ 0,71); CNPJ muda (18328118000109 -> 53153938000108): incorporação tratada como troca curada, custo mantido (IN RFB 1.585/2015 art. 58 §6º); R$ 0,71 por ação à parte: resgate de PN, SC Cosit 37/2020
+- `docs/regras-fiscais.md` — Proventos: 7.713/1988 art. 3º; SC Cosit 37/2020 por analogia; SC Cosit 130/2023). Sem norma expressa:
 - `docs/regras-fiscais.md` — R8: …custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; critério do COIR).…
 - `tests/fiscal_cases/test_petz_auau.py` — módulo: …- O resgate da PN é alienação: dinheiro menos o custo da PN (Lei 7.713/1988 art. 3º §3º; SC Cosit 37/2020, CETIP/BM&FBOVESPA, com a mesma estrutura de ON + PN resgatável). Fora de bolsa, vai para o GCAP e…
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — módulo: …e PM a zero, e o excedente é ganho de capital fora de bolsa (Lei 7.713/1988 art. 3º §§2º a 4º; SC Cosit 37/2020 por analogia; SC Cosit 131/2016, ementa), no GCAP, no mês do recebimento, fora da apuração mensal e…
 
 ## SC Cosit 42/2020
 
@@ -756,6 +780,12 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 ## SC Cosit 130/2023
 
 - `docs/regras-fiscais.md` — Perguntas 6 a 20 da revisão: leitura conservadora: compensa prejuízo de bolsa (SC Cosit 130/2023) e fica com o usuário.
+- `docs/regras-fiscais.md` — Proventos: 7.713/1988 art. 3º; SC Cosit 37/2020 por analogia; SC Cosit 130/2023). Sem norma expressa:
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — módulo: …da apuração mensal e do limite de R$ 20 mil (IN 1.585 art. 59 I); não compensa prejuízo de bolsa (SC Cosit 130/2023). Critério do COIR, sem norma expressa (parâmetro restituicao_capital_acima_do_custo; alternativa:…
+
+## SC Cosit 131/2016
+
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — módulo: …é ganho de capital fora de bolsa (Lei 7.713/1988 art. 3º §§2º a 4º; SC Cosit 37/2020 por analogia; SC Cosit 131/2016, ementa), no GCAP, no mês do recebimento, fora da apuração mensal e do limite de R$ 20 mil (IN 1.585…
 
 ## SC Cosit 145/2021
 
@@ -804,7 +834,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 
 ## P&R IRPF 2022
 
-- `docs/regras-fiscais.md` — R8: …na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF 2022 pergunta 578 (substituição de ações; não consta das edições 2024 e 2026; incorporação de ações); SC…
+- `docs/regras-fiscais.md` — R8: …(tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º, 7º e 8º (restituição de capital), art. 60 §2º; P&R IRPF 2022 pergunta 578 (substituição de ações; não consta das edições 2024 e 2026; incorporação de ações); SC…
 - `tests/fiscal_cases/test_eventos_societarios.py` — módulo: …ou cisão, o custo das ações originais é atribuído às recebidas na proporção fixada pela assembleia; P&R IRPF 2022 pergunta 578 (substituição de ações): não é alienação, a data de aquisição é a original. - Incorporação…
 
 ## P&R IRPF 2026
@@ -837,6 +867,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_venda_a_descoberto_resultado_na_recompra_e_limite_do_mes_da_venda: …norma específica; critério do COIR: resultado na recompra, por analogia com IN 1.585 art. 62 II e P&R IRPF 2026 pergunta 725; limite pelo mês da venda). Maio: venda a descoberto de 1.000 BBAS3 (25.000 ou 15.000).…
 - `tests/fiscal_cases/test_irpf_declaracao.py` — módulo: …o COIR preenche. Casos conferidos à mão (critério do COIR), conferidos à mão; custos zero. Fontes: P&R IRPF 2026 perguntas 707, 720 (um item por ação, total das corretoras, custo médio) e 715; IN RFB 1.585/2015 arts.…
 - `tests/fiscal_cases/test_irpf_linhas.py` — módulo: …"Mercado de opções - ações/outros", "Mercado futuro - juros" e "Mercado a termo - ações/ouro"); P&R IRPF 2026 pergunta 707 (cotas de fundo de índice não são ações); IN RFB 1.585/2015 art. 62 I e §1º (ganho do…
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — módulo: …- custo zero (IN 1.585 art. 58 caput). - Custo médio único do titular (IN 1.585 art. 58 caput; P&R IRPF 2026 pergunta 720): o excedente se mede contra o custo somado de todas as contas. - FII e Fiagro: sem norma…
 
 ## Manual MIR
 
@@ -899,6 +930,7 @@ Licenças e atribuição (`data/LICENCA_DADOS.md` acompanha as tabelas):
 - `docs/regras-fiscais.md` — R7: …do COIR) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_eventos_ajustam_quantidade_e_custo_sem_resultado: R8: bonificação soma quantidade com custo atribuído; desdobramento e grupamento só a quantidade; redução de capital reduz o custo (RIR/2018 art. 843 §1º e §3º II; IN RFB 1.585/2015 art. 58 §§1º, 7º e 8º).
 - `tests/fiscal_cases/test_casos_fiscais.py` — test_t4_darf_abaixo_de_10_acumula_e_vira_o_ano: R12: DARF abaixo de R$ 10 acumula, inclusive para o ano seguinte (Lei 9.430/1996 art. 68 §1º); vence no último dia útil do mês seguinte (RIR/2018 art. 915). Dez/23 7,00 + Jan/24 4,00 = 11,00, vencimento 29/02/2024.
+- `tests/fiscal_cases/test_restituicao_acima_do_custo.py` — módulo: …(IN RFB 1.585/2015 art. 58 §8º). O que passar do custo não vira custo negativo (Lei 7.713/1988 art. 16; RIR/2018 art. 141 §2º): custo e PM a zero, e o excedente é ganho de capital fora de bolsa (Lei 7.713/1988…
 - `tests/fiscal_cases/test_simulacao.py` — módulo: …Lei 9.959/2000 art. 8º (day trade); Lei 9.430/1996 art. 68 §1º (DARF abaixo de R$ 10,00 acumula); RIR/2018 art. 915 (vencimento no último dia útil do mês seguinte).
 
 ## Instrução Normativa SRF 25/2001

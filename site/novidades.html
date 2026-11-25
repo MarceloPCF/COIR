@@ -44,15 +44,38 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <p>O formato deste arquivo segue o <a href="https://keepachangelog.com/pt-BR/">Keep a Changelog</a>.</p>
 
-<h2 id="314-2026-11-18">[3.1.4] - 2026-11-18</h2>
+<h2 id="nao-lancado">[Não lançado]</h2>
 
 <h3 id="adicionado">Adicionado</h3>
+
+<ul>
+<li><strong>Nota manual</strong>: a tela Notas ganhou <strong>Nova nota manual</strong>, para a nota de corretagem que se perdeu ou de corretora que não dá nota em PDF. A nota é digitada inteira, Bovespa ou BM&amp;F: operações, custos e IRRF. Ela entra no cálculo como as notas lidas do PDF, com as mesmas regras de day trade, rateio dos custos, IRRF e preço médio. <strong>Corrigir</strong> e <strong>Remover</strong> fazem backup antes e guardam a versão anterior. Se o PDF da mesma nota for importado depois, o COIR avisa na importação e no sino, porque as operações contariam duas vezes. Digitada com outro número numa conta e pregão que já têm nota, do PDF ou manual, ela só é gravada depois de o COIR mostrar a nota existente e os negócios iguais e de você confirmar.</li>
+</ul>
+
+<h3 id="alterado">Alterado</h3>
+
+<ul>
+<li><strong>Restituição de capital maior que o custo</strong>: em ação e unit, o custo e o preço médio vão a zero e o ativo continua no cálculo. Antes, o ativo inteiro saía da apuração. O excedente não entra na apuração mensal da bolsa: o COIR avisa que, na leitura dele, é ganho de capital fora de bolsa, a apurar no programa GCAP no mês em que o dinheiro foi creditado, isento até R$ 35 mil recebidos no mês. Não há norma expressa; o parâmetro <code>restituicao_capital_acima_do_custo</code> volta ao comportamento anterior. BDR e os demais tipos sem norma continuam fora do cálculo nesse caso, agora com o motivo explicado.</li>
+<li><strong>Amortização de cotas de FII e Fiagro</strong>: a tela Eventos passa a propor, pela movimentação da B3, a amortização como redução do custo das cotas. Antes ela era ignorada, e o custo ficava maior que o real, com imposto a menos na venda. Não há norma expressa; o COIR segue a analogia com os outros fundos (parâmetro <code>fii_amortizacao</code>). Confira no informe do administrador se o valor é devolução de capital.</li>
+<li><strong>Amortização de ETF de ações desde 2024</strong>: segue a regra do FIP. Só a parcela de custo que o informe do administrador mostra reduz o custo, e o COIR avisa para lançá-la (Lei 14.754/2023).</li>
+<li><strong>Ordem dos negócios no mesmo pregão</strong>: entre notas diferentes do mesmo dia, vale a ordem do número da nota e dos negócios impressos, e não a ordem em que as notas foram importadas. Muda só quem vendeu, em notas diferentes do mesmo dia, mais do que tinha.</li>
+</ul>
+
+<h3 id="corrigido">Corrigido</h3>
+
+<ul>
+<li><strong>Nota aberta pelo endereço</strong>: uma nota de um ano sem outras notas não aparecia na tela Notas.</li>
+</ul>
+
+<h2 id="314-2026-11-18">[3.1.4] - 2026-11-18</h2>
+
+<h3 id="adicionado-2">Adicionado</h3>
 
 <ul>
 <li><strong>Tela Simulação</strong>: digite ordens de venda ou de compra à vista (várias, com preços diferentes) e veja o efeito no imposto antes de operar. O COIR apura as ordens com as mesmas regras da apuração mensal, sobre a carteira das notas importadas, e mostra lado a lado: sem as ordens, cenário A e cenário B. Cada ordem tem uma data em cada cenário; sem data, fica fora dele (execução parcial), e datas em meses diferentes comparam vender de uma vez ou aos poucos. Aparecem o imposto e a DARF de cada mês, o ganho isento e o limite de R$ 20 mil (que, estourado, tira a isenção de todas as vendas de ações do mês), o prejuízo a compensar que sobra, a quantidade e o custo que ficam na carteira e a parte que vira day trade com compra do mesmo dia na mesma corretora. O IRRF que a corretora reteria aparece como estimativa, sem reduzir o imposto. Nada é gravado, e a tela não sugere operações.</li>
 </ul>
 
-<h3 id="alterado">Alterado</h3>
+<h3 id="alterado-2">Alterado</h3>
 
 <ul>
 <li><strong>Versão só no título da janela</strong>: o número da versão deixa de aparecer também ao lado de "COIR" no topo; continua no título da janela.</li>
@@ -61,7 +84,7 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <h2 id="313-2026-11-18">[3.1.3] - 2026-11-18</h2>
 
-<h3 id="adicionado-2">Adicionado</h3>
+<h3 id="adicionado-3">Adicionado</h3>
 
 <ul>
 <li><strong>Versão no topo da janela</strong>: a versão instalada aparece ao lado de "COIR", no topo e na tela de erro do banco, e no título da janela. Ajuda no suporte: as capturas de tela passam a mostrar a versão.</li>
@@ -70,13 +93,13 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 <li><strong>Termo liquidado antes do vencimento</strong>: o COIR passa a ler, na movimentação da B3 importada, a linha "Liquidação Termo" e usa a data dela quando a compra ou a venda a termo foi liquidada antes do vencimento, no todo ou em parte. Antes, valia sempre o vencimento, e o ganho, o preço médio e a soma do limite de R$ 20 mil podiam cair no mês errado. Sem a movimentação do período, o COIR continua usando o vencimento e avisa na Apuração: sempre na venda a termo e, na compra, quando houve venda do mesmo ativo antes do vencimento ou o vencimento cai em outro ano. Se essa venda deixou a posição vendida, a entrega exigiu a liquidação antecipada do termo, e o aviso fica mais forte: diz o resultado que o COIR pôs no mês do vencimento e o mês provável da liquidação, de 1 a 3 dias úteis depois da venda.</li>
 </ul>
 
-<h3 id="alterado-2">Alterado</h3>
+<h3 id="alterado-3">Alterado</h3>
 
 <ul>
 <li><strong>Pacote de referências no formato 3</strong>: cada origem tem os seus arquivos. Os eventos ficam em <code>eventos_cvm.csv</code> e <code>eventos_b3.csv</code>, e a tabela de saídas passa a se chamar <code>saidas.csv</code>. O <code>pacote.json</code> lista as fontes e as licenças. O COIR aceita pacotes dos formatos 2 e 3, com o mesmo resultado.</li>
 </ul>
 
-<h3 id="corrigido">Corrigido</h3>
+<h3 id="corrigido-2">Corrigido</h3>
 
 <ul>
 <li><strong>CNPJ de ticker antigo no Bens e Direitos</strong>: quando o código de um ativo antigo passou depois para outra empresa, a declaração saía com o CNPJ da empresa nova. Era o caso de EMBR3 (saía o CNPJ da Embrast, não o da Embraer), JBSS3, TRPL3 e TRPL4 (que ainda saíam como FII) e ENAT3. TUPY3 saía com o CNPJ de uma filial. Agora vale o CNPJ da companhia que declarou o ticker à CVM. Confira a declaração de quem teve esses ativos.</li>
@@ -84,7 +107,7 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <h2 id="312-2026-11-17">[3.1.2] - 2026-11-17</h2>
 
-<h3 id="adicionado-3">Adicionado</h3>
+<h3 id="adicionado-4">Adicionado</h3>
 
 <ul>
 <li><strong>"Processando dados, aguarde"</strong>: enquanto o COIR importa notas ou planilhas da B3, confere os eventos, atualiza as tabelas ou restaura um backup, um aviso cobre a janela, mostra o que está sendo feito (na importação, quantos arquivos já foram) e some quando termina. Antes dava para trocar de tela no meio do processamento, e a operação terminava numa tela que já não existia.</li>
@@ -95,7 +118,7 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 <li><strong>Direito de subscrição recebido, na data do crédito</strong>: a tela Eventos propõe, pela movimentação da B3, o crédito do direito (custo zero), o exercício (pelo crédito do recibo) e a conversão do recibo em ação (pelo crédito das ações). Com o crédito lançado, os direitos recebidos e os comprados formam um custo médio só, como a norma pede. Sem ele, a venda do direito recebido continua com custo zero, e o COIR avisa quando havia direitos comprados. Direito e recibo que não estão nas tabelas têm o tipo reconhecido pelo final do código (1, 2, 9 e 10).</li>
 </ul>
 
-<h3 id="alterado-3">Alterado</h3>
+<h3 id="alterado-4">Alterado</h3>
 
 <ul>
 <li><strong>Nota na trilha do preço médio</strong>: a tela Carteira e preço médio explica que, em vendas do mesmo pregão que passam de zero, vale a ordem dos negócios da nota, e não o preço médio das vendas do dia que a corretora mostra. O cálculo não mudou; a soma dos resultados é a mesma.</li>
@@ -105,7 +128,7 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 <li><strong>Day trade entre corretoras antes de 28/07/2010</strong>: compra numa corretora e venda em outra no mesmo dia deixa de ser day trade também nesse período, como já era depois dele. Pela norma da época (IN SRF 25/2001 art. 31 §6º), a operação encerrada em outra instituição, com liquidação física, não era day trade. Só afeta meses já decaídos; pode mudar o prejuízo e o preço médio transportados de quem tem notas daquele tempo.</li>
 </ul>
 
-<h3 id="corrigido-2">Corrigido</h3>
+<h3 id="corrigido-3">Corrigido</h3>
 
 <ul>
 <li><strong>Direito de subscrição exercido</strong>: o custo pago pelo direito comprado em bolsa passa a entrar no custo das ações subscritas (antes ele se perdia, e a venda das ações pagava imposto a mais; o direito ficava para sempre na carteira). O direito usado sai sem resultado, o recibo de subscrição entra pelo valor pago mais o custo dos direitos e, quando as ações são creditadas, o recibo vira ação com o mesmo custo. O recibo vendido antes disso sai com o custo certo, e não mais com custo zero. As ações novas só entram no preço médio das antigas na data em que são creditadas.</li>
@@ -117,7 +140,7 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <h2 id="311-2026-11-12">[3.1.1] - 2026-11-12</h2>
 
-<h3 id="adicionado-4">Adicionado</h3>
+<h3 id="adicionado-5">Adicionado</h3>
 
 <ul>
 <li><strong>Rótulos das notas escritos de outro jeito</strong>: o COIR passa a reconhecer os rótulos da nota em outras grafias, o que ajuda a ler notas de corretoras que ele ainda não conhece. Valem, por exemplo, "Data do pregão", "Data pregao", "D. pregão", "Dt pregão" e "Datapregão"; "Nº da nota" e "Número da nota"; "Fl."; "Cód. cliente"; e "Tx. liquidação". Também valem acentos e maiúsculas trocados, palavras coladas ou separadas e o rótulo quebrado em duas linhas. As formas aceitas ficam reunidas num só arquivo (<code>coir/parsing/rotulos.yaml</code>). Nenhuma delas casa com outro campo: "Data liquidação" não vira data do pregão, e "Taxas BM&amp;F (emol+f.gar)" não vira emolumentos. As notas que o COIR já lia saem iguais.</li>
@@ -153,7 +176,7 @@ conferência de privacidade, e abre o e-mail; você anexa e envia.</li>
 Os links estão no alto da tela <strong>Suporte</strong>, no rodapé do site e no manual.</li>
 </ul>
 
-<h3 id="alterado-4">Alterado</h3>
+<h3 id="alterado-5">Alterado</h3>
 
 <ul>
 <li><strong>Limite de isenção de R$ 20 mil</strong>: a venda de ações em day trade passa a entrar na soma das vendas do mês, como já entravam a venda por exercício de opção e a do termo (Lei 11.033/2004 art. 3º I; IN RFB 1.585/2015 art. 59 I). O ganho do day trade continua sem isenção. Num mês em que só o day trade leva a soma acima de R$ 20 mil, o lucro das vendas comuns passa a ser tributado, e a apuração avisa. A memória de cálculo mostra a soma e as duas parcelas (operações comuns e day trade). É critério do COIR (a lei soma "o valor das alienações"; nenhuma norma diz expressamente se o day trade entra), com o parâmetro <code>day_trade_na_soma_limite</code>, e vale para todos os meses: um mês antigo tratado como isento pode passar a ter imposto e aparecer como DARF em atraso; confira a Apuração depois de atualizar.</li>
@@ -165,7 +188,7 @@ Os links estão no alto da tela <strong>Suporte</strong>, no rodapé do site e n
 <li><strong>Manual:</strong> imagens de todas as telas refeitas com a versão atual, e as páginas de Eventos, Apuração, Carteira, Importar e Configurações descrevem o que entrou nesta versão (avisos e propostas da aba A conferir, soma do limite com o day trade, resultado por ativo, termo em aberto, corretora sem perfil, licença e o botão <strong>Como faço?</strong>).</li>
 </ul>
 
-<h3 id="corrigido-3">Corrigido</h3>
+<h3 id="corrigido-4">Corrigido</h3>
 
 <ul>
 <li><strong>Avisos de licença de terceiros completos no pacote</strong>: o <code>AVISOS-DE-TERCEIROS.txt</code> trazia só nome e licença das bibliotecas, incluía ferramentas de desenvolvimento que não vão no .zip e deixava de fora o que não é pacote Python. Agora traz o texto integral de cada licença, com os avisos de copyright, de tudo o que vai no .zip e só disso: bibliotecas Python, o próprio Python e as bibliotecas que ele incorpora (OpenSSL, SQLite, zlib...), o runtime da Microsoft, o carregador do PyInstaller, o WebView2, os JavaScript e as fontes da interface (Vue, Quasar, AG Grid, ECharts, Material Icons, Roboto...). A montagem do pacote falha se algum arquivo ficar sem licença declarada.</li>
@@ -227,7 +250,7 @@ arquivo rejeitado pode não ter titular conhecido.</li>
 
 <h2 id="310-2026-11-04">[3.1.0] - 2026-11-04</h2>
 
-<h3 id="adicionado-5">Adicionado</h3>
+<h3 id="adicionado-6">Adicionado</h3>
 
 <ul>
 <li><p><strong>Tela Suporte</strong>, para mandar uma nota que o COIR não lê ou lê errado (uma corretora nova,
@@ -266,7 +289,7 @@ ano do item (a DARF em atraso mais antiga, o ano mais recente com aviso). O cart
 Painel mostra a mesma lista.</li>
 </ul>
 
-<h3 id="corrigido-4">Corrigido</h3>
+<h3 id="corrigido-5">Corrigido</h3>
 
 <ul>
 <li><strong>Notas da Clear de 2026 recusadas</strong> com "página sem perfil de corretora conhecido": o
@@ -306,7 +329,7 @@ vez: um evento só é recusado se criar pendência nova.</li>
 
 <h2 id="301-2026-10-27">[3.0.1] - 2026-10-27</h2>
 
-<h3 id="corrigido-5">Corrigido</h3>
+<h3 id="corrigido-6">Corrigido</h3>
 
 <ul>
 <li><strong>A janela não abria</strong> depois de extrair o <code>.zip</code> baixado: o Windows marca cada arquivo
@@ -316,7 +339,7 @@ DLLs ao abrir. Na 3.0.0, o contorno é desbloquear o <code>.zip</code> (Propried
 de extrair.</li>
 </ul>
 
-<h3 id="adicionado-6">Adicionado</h3>
+<h3 id="adicionado-7">Adicionado</h3>
 
 <ul>
 <li>Página do manual <strong>Se o COIR não abrir</strong>: aviso do Windows, antivírus que põe o programa em
@@ -373,7 +396,7 @@ da v2 (todas são correções da v2):
   vencimento.
 - <strong>IRRF até R$ 1,00</strong> (dispensado, não retido) não vira crédito.</p>
 
-<h3 id="adicionado-7">Adicionado</h3>
+<h3 id="adicionado-8">Adicionado</h3>
 
 <ul>
 <li>Licença da v3: AGPL-3.0-or-later (a v2 em <code>legacy/</code> continua MIT).</li>
@@ -390,7 +413,7 @@ da v2 (todas são correções da v2):
 
 <p>Os resultados foram comparados com os da versão 2.1.1 em todas as notas de teste (XP, BTG e Rico), valor por valor, e no Excel em uma amostra de notas de todos os anos e corretoras.</p>
 
-<h3 id="corrigido-6">Corrigido</h3>
+<h3 id="corrigido-7">Corrigido</h3>
 
 <ul>
 <li>Preenchimento de células vazias com <code>fillna(..., inplace=True)</code> em uma coluna trocado por atribuição. No pandas 3 a forma antiga não altera nada e os valores vazios das taxas continuariam vazios. (@tommmdl)</li>
@@ -400,7 +423,7 @@ da v2 (todas são correções da v2):
 <li>Python 3.15 usa UTF-8 por padrão; a saída do <code>taskkill</code> (usado para fechar o Excel) é lida agora com tolerância a caracteres inválidos, em vez de interromper a gravação no Excel.</li>
 </ul>
 
-<h3 id="alterado-5">Alterado</h3>
+<h3 id="alterado-6">Alterado</h3>
 
 <ul>
 <li>Python mínimo: 3.12 (exigido pelo numpy 2.5). Pacote para Windows com Python 3.15.</li>
@@ -412,13 +435,13 @@ da v2 (todas são correções da v2):
 
 <p>Correção de instalação: uma instalação nova da 2.1.0 falhava por incompatibilidade de bibliotecas. Nenhuma alteração no código do programa.</p>
 
-<h3 id="corrigido-7">Corrigido</h3>
+<h3 id="corrigido-8">Corrigido</h3>
 
 <ul>
 <li><code>requirements.txt</code> fixa <code>numpy==1.23.5</code> e <code>setuptools==69.5.1</code>. Sem isso o pip instalava o numpy 2.x, incompatível com o pandas 1.3.3, e o setuptools 81 ou superior, que não traz o <code>pkg_resources</code> usado pelo tabula-py 2.3.0.</li>
 </ul>
 
-<h3 id="alterado-6">Alterado</h3>
+<h3 id="alterado-7">Alterado</h3>
 
 <ul>
 <li>O pacote para Windows passa a levar o <strong>Python 3.9.7 e o Java 17 (Temurin) embutidos</strong>. Não é preciso instalar Python, bibliotecas nem Java: basta extrair o <code>.zip</code> e dar dois cliques em <code>COIR.bat</code>.</li>
@@ -432,7 +455,7 @@ da v2 (todas são correções da v2):
 
 <p>Primeira versão do repositório reorganizado. O histórico anterior foi reiniciado (veja "Removido").</p>
 
-<h3 id="alterado-7">Alterado</h3>
+<h3 id="alterado-8">Alterado</h3>
 
 <ul>
 <li>Pastas reorganizadas: código em <code>coir/</code> (antes <code>Utils/</code>), planilha-modelo em <code>modelos/</code>, tabelas auxiliares em <code>dados/</code> (antes <code>Utils/Tickets/</code>) e capturas de tela em <code>docs/imagens/</code> (antes <code>Utils/Screenshots/</code>).</li>
@@ -442,7 +465,7 @@ da v2 (todas são correções da v2):
 <li><code>requirements.txt</code> convertido para UTF-8 (as versões das bibliotecas não foram alteradas).</li>
 </ul>
 
-<h3 id="adicionado-8">Adicionado</h3>
+<h3 id="adicionado-9">Adicionado</h3>
 
 <ul>
 <li>Leitura da conta do cliente por nota, quando um mesmo PDF reúne notas de contas diferentes.</li>

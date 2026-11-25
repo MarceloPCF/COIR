@@ -6,6 +6,7 @@
   uv run python -m tools.referencias nomes [--cache pasta] [--resumo r.md]
   uv run python -m tools.referencias pregao [--data AAAA-MM-DD] (0: com pregão; 10: sem pregão)
   uv run python -m tools.referencias cvm [--cache pasta] [--resumo r.md]
+  uv run python -m tools.referencias selic [--data AAAA-MM-DD] [--resumo r.md]
 
 ``atualizar`` coleta as fontes públicas, regrava em data/ os arquivos gerados que mudaram e escreve
 o resumo das mudanças (corpo do PR semanal). Sai com código 0 mesmo sem mudança.
@@ -22,6 +23,10 @@ lista divergências e revisões.
 ``cvm`` refaz ``valores_mobiliarios_cvm.csv`` (códigos de negociação das companhias, pelo FCA) e
 ``fundos_cvm.csv`` (cotas de FII e Fiagro em bolsa, pelos informes mensais), dos dados abertos da
 CVM. As linhas antigas continuam (a tabela nunca apaga).
+
+``selic`` refaz só ``selic_mensal.csv`` (série 4390 do BCB, meses encerrados), sem consultar a B3.
+Como o ``cvm``, não muda a data do pacote: serve para pôr a Selic em dia antes de cada versão do
+programa (juros da DARF em atraso), mesmo com a coleta da B3 parada.
 """
 
 import argparse
@@ -63,6 +68,10 @@ def main(argv: list[str] | None = None) -> int:
     cad.add_argument("--pasta", type=Path, default=DATA)
     cad.add_argument("--cache", type=Path, default=None, help="zips anuais baixados")
     cad.add_argument("--resumo", type=Path, default=None)
+    taxa = sub.add_parser("selic", help="só a Selic mensal do BCB (série 4390)")
+    taxa.add_argument("--data", type=date.fromisoformat, default=date.today())
+    taxa.add_argument("--pasta", type=Path, default=DATA)
+    taxa.add_argument("--resumo", type=Path, default=None)
     montar = sub.add_parser("pacote", help="zip de data/ com manifesto (SHA-256)")
     montar.add_argument("--pasta", type=Path, default=DATA)
     montar.add_argument("--saida", type=Path, required=True)
@@ -142,6 +151,23 @@ def main(argv: list[str] | None = None) -> int:
             f"{n['fundos']} fundos ({n['ambiguos']} ISIN declarados por dois fundos, fora)"
             + "".join(f"\n- falta: {f}" for f in faltas)
         )
+        if args.resumo is not None:
+            args.resumo.write_text(texto, encoding="utf-8")
+        print(texto)
+        print(f"arquivos alterados: {', '.join(mudaram) or 'nenhum'}")
+        return 0
+    if args.comando == "selic":
+        resumo = gerar.Resumo()
+        linhas = gerar.juntar_selic(gerar.ler_csv(args.pasta / "selic_mensal.csv"),
+                                    gerar.ler_selic(fontes.selic(), args.data), resumo)  # fmt: skip
+        mudaram = gerar.gravar(args.pasta, {
+            "selic_mensal.csv": gerar.texto_csv(("mes", "taxa"), linhas),
+            # a data do pacote não muda (é a da última coleta completa)
+            "pacote.json": (args.pasta / "pacote.json").read_text(encoding="utf-8"),
+        })  # fmt: skip
+        texto = (f"Selic até {linhas[-1]['mes'] if linhas else '-'}; "
+                 f"{len(resumo.selic_nova)} meses novos ou revistos"
+                 + "".join(f"\n- {m}" for m in resumo.selic_nova))  # fmt: skip
         if args.resumo is not None:
             args.resumo.write_text(texto, encoding="utf-8")
         print(texto)

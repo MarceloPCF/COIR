@@ -53,6 +53,7 @@ from coir.engine.movimentos.livro import (
     _grupo_opcao,
     _Op,
     _ordem,
+    _ordem_negocio,
     _proporcao,
 )
 from coir.engine.movimentos.posicao import _aplicar, _exercicio, _fim_da_isencao, _lote_pme
@@ -558,7 +559,7 @@ def _processar_dia(livro: Livro, dia: date, d: _Dia, params: ParametrosFiscais) 
     for p in sorted(compras, key=_ordem):
         livro.processando(p.base.nota.titular, p.base.op.ativo)
         _aplicar(livro, dia, p)
-    for o in sorted(exercicios, key=lambda o: (o.nota.id, o.op.ordem)):
+    for o in sorted(exercicios, key=_ordem_negocio):
         livro.processando(o.nota.titular, o.op.ativo, o.op.opcao)
         _exercicio(livro, dia, o)
     for p in sorted(vendas, key=_ordem):

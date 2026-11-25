@@ -21,6 +21,7 @@ from coir.engine.movimentos.livro import (
     _categoria,
     _de,
     _Op,
+    _ordem_negocio,
     _Peca,
     _proporcao,
 )
@@ -88,12 +89,6 @@ ORDEM = "day trade (IN 1.585 art. 65 §3º: 1ª compra com a 1ª venda, pela ord
 
 
 MARCACAO = "day trade (negócios marcados D pela corretora, que tem o horário; IN 1.585 art. 65 §3º)"
-
-
-def _ordem_negocio(o: _Op) -> tuple[date, str, int, int]:
-    """Ordem dos negócios no dia: número da nota e ordem impressa (a nota não traz horário)."""
-    numero = o.nota.numero
-    return (o.nota.data, numero.zfill(20) if numero.isdigit() else numero, o.op.ordem, o.op.id)
 
 
 def _peca_inteira(o: _Op) -> _Peca:

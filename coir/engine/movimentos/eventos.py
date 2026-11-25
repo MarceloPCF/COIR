@@ -3,6 +3,7 @@
 """Eventos corporativos e de custódia na posição: desdobramento, grupamento, bonificação,
 incorporação, cisão, redução de capital, direitos, leilão de fração e transferências."""
 
+from datetime import date
 from decimal import Decimal
 
 from coir.domain.fiscal import (
@@ -221,6 +222,110 @@ def _amortizacao_fip(livro: Livro, e: Evento, pos: Posicao, custo: Decimal) -> D
     return custo
 
 
+def _regra(livro: Livro, nome: str, dia: date) -> str | None:
+    """Valor do parâmetro de critério na data (None sem vigência: o motor isola, sem palpite)."""
+    return livro.parametros.regra(nome, dia)
+
+
+def _amortizacao_etf(livro: Livro, e: Evento, pos: Posicao, custo: Decimal) -> Decimal:
+    """Amortização de cotas de ETF de ações desde 01/01/2024 (parâmetro etf_amortizacao_custo =
+    proporcional_vp): só a parcela custo x amortização / valor patrimonial devolve custo; o
+    restante é rendimento com IRRF de 15%, definitivo (Lei 14.754/2023 arts. 18 II, 24 caput e §2º
+    c/c art. 17 §2º III e §5º II b; art. 32 I). O COIR não tem o valor patrimonial: o usuário lança
+    a parcela de custo do informe; com o valor inteiro, o custo cai até zero (imposto na venda
+    maior, nunca menor), com aviso. Como o FIP desde 2024 (parecer do especialista de
+    24/11/2026)."""
+    avisar = livro.visao is Visao.TITULAR
+    if pos.custo + custo < 0 < pos.quantidade:
+        excedente = -(pos.custo + custo)
+        custo = -pos.custo
+        if avisar:
+            livro.avisos.append(
+                f"{e.data:%d/%m/%Y}: amortização de {e.ticker} acima do custo: o custo foi a zero "
+                f"e o excedente de {reais(excedente)} é rendimento do ETF, com IRRF de 15% "
+                "definitivo (Lei 14.754/2023 arts. 18 II e 24): declare pelo informe, na ficha de "
+                "tributação exclusiva (06), pelo valor líquido"
+            )  # fmt: skip
+    if avisar:
+        livro.avisos.append(
+            f"{e.data:%d/%m/%Y}: amortização de {e.ticker}: desde 2024 só a parcela de custo (o "
+            "custo vezes a amortização dividida pelo valor patrimonial da cota; Lei 14.754/2023 "
+            "arts. 24 §2º e 17 §5º II b) reduz o custo; o restante é rendimento com IRRF de 15%, "
+            "definitivo. O COIR reduziu o custo pelo valor lançado no evento: lance só a parcela "
+            "de custo que o informe do administrador mostra. Com o valor inteiro, o custo fica "
+            "menor e o imposto na venda, maior"
+        )  # fmt: skip
+    return custo
+
+
+def _acima_do_custo(livro: Livro, e: Evento, pos: Posicao, custo: Decimal) -> Decimal:
+    """Restituição de capital ou amortização maior que o custo da posição: custo e preço médio a
+    zero (nunca custo negativo: ele levaria o excedente para a apuração da bolsa, com a isenção e
+    a compensação), e o excedente só é avisado (parecer do especialista de 24/11/2026, decisões do
+    usuário). O custo fiscal é o do titular (IN RFB 1.585/2015 art. 58 caput): só a visão TITULAR
+    decide e avisa; nas outras, o custo vai a zero sem aviso.
+
+    - FI-Infra e FIP-IE: rendimento do fundo, alíquota zero (Lei 11.478/2007 art. 2º §2º; Lei
+      12.431/2011 art. 3º; critério do COIR de 10/11/2026).
+    - Ação e unit (restituicao_capital_acima_do_custo = ganho_capital): ganho de capital fora de
+      bolsa, no GCAP, no mês do crédito do dinheiro (Lei 7.713/1988 art. 3º; IN 1.585 art. 58 §8º;
+      SC Cosit 37/2020 por analogia); com isolar, o ativo sai do cálculo.
+    - FII e Fiagro (fii_amortizacao = reduz_custo): excedente tributado a 20% na fonte pelo
+      administrador, por analogia com o resgate (Lei 8.668/1993 art. 18 I; IN 1.585 art. 37 §3º).
+    - ETF de renda fixa: tributação só na fonte (Lei 13.043/2014 art. 2º §4º).
+    - Os demais (BDR, ETF antes de 2024, direito...): sem norma, o ativo fica isolado."""
+    excedente = -(pos.custo + custo)
+    zerado = -pos.custo
+    if livro.visao is not Visao.TITULAR:
+        return zerado
+    tipo, dia = e.tipo_ativo, f"{e.data:%d/%m/%Y}"
+    regra_acao = _regra(livro, "restituicao_capital_acima_do_custo", e.data)
+    if tipo is TipoAtivo.FUNDO_INFRA:
+        aviso = (
+            f"{dia}: amortização de {e.ticker} acima do custo: o custo foi a zero e o excedente "
+            f"de {reais(excedente)} é rendimento do fundo (Lei 11.478/2007 art. 2º §2º; Lei "
+            "12.431/2011 art. 3º), com alíquota zero para a pessoa física: declare na mesma linha "
+            "dos rendimentos do fundo (exclusiva 06)"
+        )  # fmt: skip
+    elif tipo in (TipoAtivo.ACAO, TipoAtivo.UNIT) and regra_acao == "ganho_capital":
+        aviso = (
+            f"{dia}: restituição de capital de {e.ticker} acima do custo: o custo e o preço médio "
+            f"foram a zero, e o excedente de {reais(excedente)} ({reais(-custo)} recebidos - "
+            f"{reais(pos.custo)} de custo) não entra na apuração mensal da bolsa. Na leitura do "
+            "COIR, é ganho de capital fora de bolsa (Lei 7.713/1988 art. 3º; IN RFB 1.585/2015 "
+            "art. 58 §8º; SC Cosit 37/2020, por analogia). Apure-o no programa GCAP no mês em que "
+            "o dinheiro foi creditado; o DARF (código 4600) vence no último dia útil do mês "
+            "seguinte. O ganho não compensa prejuízo da bolsa (SC Cosit 130/2023). Até R$ 35 mil "
+            "recebidos no mês, pode ser isento (Lei 9.250/1995 art. 22 II). Antes, confira se o "
+            "custo no COIR está completo (custódia inicial, bonificações com custo atribuído). "
+            "Não há norma expressa: confirme com o contador"
+        )  # fmt: skip
+    elif tipo is TipoAtivo.FII and _regra(livro, "fii_amortizacao", e.data) == "reduz_custo":
+        aviso = (
+            f"{dia}: amortização de {e.ticker} acima do custo: o custo foi a zero, e o excedente "
+            f"de {reais(excedente)} não entra na apuração mensal. Não há norma expressa para a "
+            "amortização de FII. Por analogia com o resgate (Lei 8.668/1993 art. 18 I; IN RFB "
+            "1.585/2015 art. 37 §3º), o excedente é tributado a 20% na fonte pelo administrador. "
+            "Confira o informe; se não houve retenção, fale com o administrador ou com o contador"
+        )  # fmt: skip
+    elif tipo is TipoAtivo.ETF_RF:
+        aviso = (
+            f"{dia}: amortização de {e.ticker} acima do custo: o custo foi a zero. O ETF de renda "
+            "fixa é tributado só na fonte (Lei 13.043/2014 art. 2º §4º): o excedente de "
+            f"{reais(excedente)} é rendimento retido pelo administrador. Declare pelo informe, na "
+            "ficha de tributação exclusiva (06), pelo líquido"
+        )  # fmt: skip
+    else:
+        raise MotorError(
+            f"restituição de capital de {e.ticker} ({dia}) maior que o custo: não há norma para a "
+            "pessoa física neste tipo de ativo, e o COIR não calcula. Confira o informe do "
+            "emissor ou do depositário e fale com o contador. Para seguir, corrija o custo "
+            "(custódia inicial) ou o valor do evento"
+        )  # fmt: skip
+    livro.avisos.append(aviso)
+    return zerado
+
+
 def _leilao_fracao(livro: Livro, e: Evento, params: ParametrosFiscais) -> None:
     """Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo
     PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro
@@ -425,21 +530,11 @@ def _evento(livro: Livro, e: Evento) -> None:
         )
     if e.tipo is TipoEvento.REDUCAO_CAPITAL and e.tipo_ativo is TipoAtivo.FIP:
         custo = _amortizacao_fip(livro, e, pos, custo)
+    elif (e.tipo is TipoEvento.REDUCAO_CAPITAL and e.tipo_ativo is TipoAtivo.ETF
+          and _regra(livro, "etf_amortizacao_custo", e.data) == "proporcional_vp"):  # fmt: skip
+        custo = _amortizacao_etf(livro, e, pos, custo)
     elif e.tipo is TipoEvento.REDUCAO_CAPITAL and pos.custo + custo < 0 < pos.quantidade:
-        if e.tipo_ativo is not TipoAtivo.FUNDO_INFRA:
-            raise MotorError(f"redução de capital de {e.ticker} ({e.data}) maior que o custo")
-        # amortização de FI-Infra ou FIP-IE acima do custo: o custo vai a zero e o excedente é
-        # rendimento (Lei 11.478/2007 art. 2º §2º; Lei 12.431/2011 art. 3º), de alíquota zero para
-        # a pessoa física; o COIR não o lança, só avisa (critério do COIR de 10/11/2026)
-        excedente = -(pos.custo + custo)
-        custo = -pos.custo
-        if livro.visao is Visao.TITULAR:
-            livro.avisos.append(
-                f"{e.data:%d/%m/%Y}: amortização de {e.ticker} acima do custo: o custo foi a zero "
-                f"e o excedente de {reais(excedente)} é rendimento do fundo (Lei 11.478/2007 art. "
-                "2º §2º; Lei 12.431/2011 art. 3º), com alíquota zero para a pessoa física: declare "
-                "na mesma linha dos rendimentos do fundo (exclusiva 06)"
-            )  # fmt: skip
+        custo = _acima_do_custo(livro, e, pos, custo)
     if pos.quantidade > 0 > pos.quantidade + quantidade or pos.quantidade < 0 < (
         pos.quantidade + quantidade
     ):
@@ -448,7 +543,9 @@ def _evento(livro: Livro, e: Evento) -> None:
             f"{pos.quantidade} para {pos.quantidade + quantidade}"
         )
     if e.tipo in (TipoEvento.DESDOBRAMENTO, TipoEvento.GRUPAMENTO, TipoEvento.REDUCAO_CAPITAL):
-        pos.repartir_isento(quantidade, custo)  # não é aquisição (IN 1.585 art. 58 §7º II)
+        # não é aquisição: desdobramento e grupamento (IN 1.585 art. 58 §7º II); redução de
+        # capital (art. 58 §8º)
+        pos.repartir_isento(quantidade, custo)
     pos.ajustar(quantidade, custo)
     if (e.cv == "C" and e.pme_ate is not None and e.data <= e.pme_ate
             and e.tipo in (TipoEvento.BONIFICACAO, TipoEvento.SUBSCRICAO,

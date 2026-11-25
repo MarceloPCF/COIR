@@ -24,8 +24,8 @@ FISCAIS = REFS.model_copy(
 )
 
 
-def _mov(movimentacao: str, entrada: bool) -> MovimentacaoB3:
-    return MovimentacaoB3(movimentacao=movimentacao, entrada=entrada)
+def _mov(movimentacao: str, entrada: bool, dia: date = date(2026, 6, 15)) -> MovimentacaoB3:
+    return MovimentacaoB3(movimentacao=movimentacao, entrada=entrada, data=dia)
 
 
 def test_baixa_do_direito_nao_exercido_propoe_o_evento() -> None:
@@ -35,10 +35,12 @@ def test_baixa_do_direito_nao_exercido_propoe_o_evento() -> None:
                           FISCAIS) is None  # fmt: skip
 
 
-def test_amortizacao_so_em_fi_infra_e_fip_ie() -> None:
+def test_amortizacao_proposta_em_fi_infra_e_em_fii() -> None:
+    """FI-Infra e FIP-IE (pareceres de 09/11/2026); FII e Fiagro pelo parâmetro fii_amortizacao
+    (parecer de 24/11/2026). Sem as tabelas fiscais, nenhuma proposta."""
     amortizacao = _mov("Amortização", entrada=True)
     assert _mapa_proposta(amortizacao, "XINF11", FISCAIS) == (TipoEvento.REDUCAO_CAPITAL, "V")
-    assert _mapa_proposta(amortizacao, "KNRI11", FISCAIS) is None
+    assert _mapa_proposta(amortizacao, "KNRI11", FISCAIS) == (TipoEvento.REDUCAO_CAPITAL, "V")
     assert _mapa_proposta(amortizacao, "XINF11", None) is None
 
 

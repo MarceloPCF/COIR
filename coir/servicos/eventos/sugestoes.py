@@ -117,6 +117,23 @@ AMORTIZACAO_FIP = ("amortização de cotas de FIP: troque o valor pela parcela d
                    "art. 32 §2º)")  # fmt: skip
 
 
+AMORTIZACAO_FII = ("amortização de cotas de FII: reduz o custo das cotas. Não há norma expressa; "
+                   "a analogia é com a IN RFB 1.585/2015 arts. 16 §2º e 37 §3º, critério "
+                   "conservador do COIR: o custo fica menor e o imposto na venda, maior. Se o "
+                   "informe do administrador tratar parte do valor como rendimento, lance só a "
+                   "parte de capital")  # fmt: skip
+
+
+AMORTIZACAO_ETF = ("amortização de cotas de ETF: troque o valor pela parcela de custo que o "
+                   "informe do administrador mostra. Desde 2024 só essa parcela devolve custo; o "
+                   "restante é rendimento com IRRF de 15% (Lei 14.754/2023 arts. 18 II e "
+                   "24)")  # fmt: skip
+
+
+NOTA_AMORTIZACAO = {TipoAtivo.FIP: AMORTIZACAO_FIP, TipoAtivo.FII: AMORTIZACAO_FII,
+                    TipoAtivo.ETF: AMORTIZACAO_ETF}  # fmt: skip
+
+
 RE_RECIBO = re.compile(r"^(?P<raiz>[A-Z0-9]{4})(?P<classe>9|10)$")  # recibo de subscrição ON/PN
 
 
@@ -173,8 +190,8 @@ def propostas(
             elif tipo is TipoEvento.DIREITO_RECEBIDO:
                 nota_data = NOTA_CREDITO
             elif m.movimentacao.strip().lower() == "amortização":
-                fip = fiscais is not None and fiscais.tipos.tipo_ou_sem(codigo) is TipoAtivo.FIP
-                nota_data = AMORTIZACAO_FIP if fip else AMORTIZACAO_FUNDO
+                tipo_fundo = fiscais.tipos.tipo_ou_sem(codigo) if fiscais else None
+                nota_data = NOTA_AMORTIZACAO.get(tipo_fundo, AMORTIZACAO_FUNDO)  # type: ignore[arg-type]
             dados = DadosEvento(
                 tipo=tipo, data=data, conta=conta, ticker="" if recebido else ticker, cv=cv,
                 quantidade=None if recebido or so_valor else m.quantidade,
@@ -446,9 +463,9 @@ def _mapa_proposta(
     m: MovimentacaoB3, codigo: str, fiscais: ReferenciasFiscais | None
 ) -> tuple[TipoEvento, str | None] | None:
     """Tipo e C/V do evento que a linha da movimentação sugere (None: nenhum). A baixa do direito
-    não exercido é uma saída; a amortização só reduz o custo em cotas de FI-Infra, FIP-IE e FIP
-    comum (pareceres do especialista de 09/11 e 13/11/2026; nos outros fundos fica como
-    estava)."""
+    não exercido é uma saída; a amortização reduz o custo nos fundos de
+    ``ParametrosFiscais.amortizacao_reduz_custo`` (FI-Infra, FIP-IE, FIP comum, FII e Fiagro, e ETF
+    de ações desde 2024; pareceres do especialista de 09/11, 13/11 e 24/11/2026)."""
     movimentacao = m.movimentacao.strip().lower()
     if any(x in movimentacao for x in NAO_EXERCIDO):
         return None if m.entrada else (TipoEvento.DIREITO_NAO_EXERCIDO, None)
@@ -461,7 +478,8 @@ def _mapa_proposta(
         return TipoEvento.EXERCICIO_DIREITO, None  # o direito sai e o recibo entra com o custo
     if movimentacao == "amortização" and (
         not m.entrada or fiscais is None
-        or fiscais.tipos.tipo_ou_sem(codigo) not in (TipoAtivo.FUNDO_INFRA, TipoAtivo.FIP)
+        or not fiscais.parametros.amortizacao_reduz_custo(fiscais.tipos.tipo_ou_sem(codigo),
+                                                          m.data)
     ):  # fmt: skip
         return None
     return mapa

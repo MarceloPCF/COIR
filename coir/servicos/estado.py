@@ -44,6 +44,7 @@ from coir.servicos import (
     declaracao,
     derivativos,
     eventos,
+    nota_manual,
     notas,
     operacoes,
     saidas,
@@ -501,6 +502,8 @@ class Estado:
                       antiga[0] if antiga else None, antiga),
             Pendencia(len(notas.arquivos_incompletos(self.banco)),
                       "arquivo(s) com nota rejeitada", "/importar"),
+            Pendencia(len(nota_manual.sobrepostas(self.banco, titular)),
+                      "nota(s) manual(is) com nota do PDF no mesmo dia", "/notas"),
             Pendencia(len({i.ativo for i in apuracao.isolados if i.titular == titular}),
                       "ativo(s) fora do cálculo (falta evento)", "/eventos"),
             Pendencia(sum(p.situacao == "pendente" and not p.depois_da_ultima_nota
