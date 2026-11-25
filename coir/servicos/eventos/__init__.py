@@ -10,6 +10,11 @@ e quantidade recebidos (natureza na incorporação; percentual do custo na cisã
 fração: quantidade e valor líquido. Dividendo em bens: cv vazio, ticker da companhia que pagou,
 ativo e quantidade recebidos, valor atribuído no aviso e valor_corrente (o de mercado na
 entrega). Reimportar o mesmo CSV não duplica (chave = hash da linha).
+
+O serviço fica em arquivos por assunto (dados, arquivo_csv, pacote, sugestoes, lancamento); este
+módulo reexporta os nomes de sempre, inclusive alguns internos (com _) que os testes usam. Para
+trocar uma função num teste (monkeypatch), troque no arquivo onde ela é usada
+(``eventos.lancamento``, ``eventos.pacote``...): trocar aqui só muda esta cópia do nome.
 """
 
 from coir.servicos.eventos.arquivo_csv import (
