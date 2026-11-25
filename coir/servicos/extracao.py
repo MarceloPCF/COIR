@@ -7,15 +7,21 @@ arquivos, e o lote dá o mesmo que a leitura um a um. O PDFium não é thread-sa
 mas cada processo tem o seu.
 
 Os processos nascem por ``spawn`` (o mesmo no Windows e no Linux; o programa empacotado chama
-``multiprocessing.freeze_support`` nos dois pontos de entrada) e importam só a leitura das notas.
+``multiprocessing.freeze_support`` nos dois pontos de entrada) e importam a leitura das notas e a
+trilha da auditoria. A rejeição volta com o registro da auditoria já calculado; o evento
+``erro.dominio`` de um erro criado dentro do processo de leitura (ex.: PDF ilegível) não vai para
+o registro, que só existe no processo do programa: no lote em processos, esse erro aparece pela
+rejeição do arquivo.
 """
 
 import multiprocessing
 import os
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from pathlib import Path
 
+from coir.erros import ImportacaoError
 from coir.parsing.extrair import ResultadoExtracao, extrair_pdf
 from coir.servicos import trilha
 
@@ -40,12 +46,28 @@ def processos(arquivos: int) -> int:
     return max(1, min(arquivos, (os.cpu_count() or 2) - 1))
 
 
-def extrair_lote(caminhos: Sequence[Path], senhas: Sequence[str]) -> Iterator[ResultadoExtracao]:
-    """Resultados na ordem de ``caminhos`` (o próximo só sai depois do anterior)."""
+Leitura = Callable[[Path, tuple[str, ...]], ResultadoExtracao]
+
+
+def extrair_lote(
+    caminhos: Sequence[Path], senhas: Sequence[str], ler: Leitura = _extrair
+) -> Iterator[ResultadoExtracao]:
+    """Resultados na ordem de ``caminhos`` (o próximo só sai depois do anterior). Fechado o
+    gerador (fim do lote, erro na gravação), os processos param e o que não começou é cancelado.
+    Um processo de leitura que cai (queda nativa ao ler um PDF) vira ``ImportacaoError``: o lote
+    é desfeito, sem derrubar o programa. ``ler``: a leitura de cada arquivo (testes)."""
     n = processos(len(caminhos))
     if n == 1:
         yield from (extrair_pdf(c, senhas) for c in caminhos)
         return
-    contexto = multiprocessing.get_context("spawn")
-    with ProcessPoolExecutor(max_workers=n, mp_context=contexto) as executor:
-        yield from executor.map(_extrair, caminhos, [tuple(senhas)] * len(caminhos))
+    executor = ProcessPoolExecutor(max_workers=n, mp_context=multiprocessing.get_context("spawn"))
+    try:
+        yield from executor.map(ler, caminhos, [tuple(senhas)] * len(caminhos))
+    except BrokenProcessPool as erro:
+        raise ImportacaoError(
+            "um processo de leitura dos PDFs parou de repente (um PDF pode estar danificado); "
+            "nada foi gravado. Importe de novo em lotes menores (até 7 arquivos são lidos um a "
+            "um) para achar o arquivo"
+        ) from erro
+    finally:
+        executor.shutdown(wait=True, cancel_futures=True)

@@ -155,12 +155,16 @@ def importar_arquivos(
         # voltam na ordem dos arquivos e a gravação continua aqui, nesta transação
         lidos = (map(extrator, a_ler) if extrator is not None
                  else extracao.extrair_lote(a_ler, tentar))  # fmt: skip
-        posicao = {c.name: i for i, c in enumerate(arquivos)}
         lote = ResultadoExtracao()
-        for caminho in a_ler:
-            if progresso is not None:
-                progresso(posicao[caminho.name], len(arquivos), caminho.name)
-            lote.juntar(next(lidos))
+        try:
+            for i, caminho in enumerate(a_ler):  # andamento: só os arquivos que serão lidos
+                if progresso is not None:
+                    progresso(i, len(a_ler), caminho.name)
+                lote.juntar(next(lidos))
+        finally:  # a leitura em processos para e libera os processos, com erro ou sem
+            fechar = getattr(lidos, "close", None)
+            if fechar is not None:
+                fechar()
         lote = sem_duplicadas(lote)
         rel.avisos += lote.avisos
         rel.rejeitadas += lote.rejeitadas
@@ -204,7 +208,7 @@ def importar_arquivos(
         for nome, registro in registros.items():
             registro.completo = nome not in incompletos
         if progresso is not None:
-            progresso(len(arquivos), len(arquivos), "")
+            progresso(len(a_ler), len(a_ler), "")
     log.info(
         "importação: %d arquivos lidos, %d ignorados, %d notas gravadas, %d já no banco, "
         "%d rejeitadas",
