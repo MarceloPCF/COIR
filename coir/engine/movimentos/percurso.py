@@ -6,6 +6,7 @@ vencimento) e o isolamento do ativo que o motor não consegue apurar."""
 from calendar import monthrange
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -257,17 +258,32 @@ def _isolar(
     return fica, tiradas, eventos, meses
 
 
-def _percorrer(
-    livro: Livro, notas: list[NotaMotor], eventos: list[Evento], parametros: ParametrosFiscais,
-    ate: date,
-) -> Meses:  # fmt: skip
-    """Monta os dias e processa; devolve os meses com itens tirados por ativo isolado."""
-    dias: dict[date, _Dia] = defaultdict(_Dia)
-    vencimentos: set[date] = set()
-    ops: list[tuple[date, _Op]] = []  # dia em que a operação entra no livro
-    vendas_a_termo: list[tuple[NotaMotor, OperacaoMotor]] = []
-    compras_sem_b3: list[tuple[NotaMotor, OperacaoMotor]] = []  # compra a termo com aviso
-    compras_a_vista: set[tuple[int, str, int, date]] = set()  # titular, corretora, ativo, pregão
+@dataclass
+class _Lidas:
+    """O que a leitura das notas deixa para o percurso."""
+
+    ops: list[tuple[date, _Op]] = field(default_factory=list[tuple[date, _Op]])  # dia de entrada
+    vencimentos: set[date] = field(default_factory=set[date])
+    vendas_a_termo: list[tuple[NotaMotor, OperacaoMotor]] = field(
+        default_factory=list[tuple[NotaMotor, OperacaoMotor]]
+    )
+    # compra a termo com aviso
+    compras_sem_b3: list[tuple[NotaMotor, OperacaoMotor]] = field(
+        default_factory=list[tuple[NotaMotor, OperacaoMotor]]
+    )
+    # titular, corretora, ativo, pregão
+    compras_a_vista: set[tuple[int, str, int, date]] = field(
+        default_factory=set[tuple[int, str, int, date]]
+    )
+
+
+def _ler_notas(
+    livro: Livro, notas: list[NotaMotor], parametros: ParametrosFiscais, ate: date
+) -> _Lidas:
+    """As operações das notas até `ate`, com o dia em que cada uma entra no livro (a termo: na
+    liquidação), os vencimentos de opção e o que os avisos de termo usam; registra no livro o
+    ticker, o tipo e o grupo de cada ativo."""
+    lidas = _Lidas()
     for nota in notas:
         if nota.data > ate or not nota.operacoes:
             continue  # nota BM&F: só ajustes (futuros.py)
@@ -294,27 +310,30 @@ def _percorrer(
                     raise MotorError(f"nota {nota.numero} de {nota.data}, {op.ticker}: termo sem "
                                      "data de liquidação (prazo)")  # fmt: skip
                 if op.cv == "V":
-                    vendas_a_termo.append((nota, op))
+                    lidas.vendas_a_termo.append((nota, op))
                 elif op.aviso:
-                    compras_sem_b3.append((nota, op))
+                    lidas.compras_sem_b3.append((nota, op))
                 if op.liquidacao_termo <= ate:
-                    ops.append((op.liquidacao_termo, item))
+                    lidas.ops.append((op.liquidacao_termo, item))
                     if (op.aviso and livro.visao is Visao.TITULAR
                             and op.aviso not in livro.avisos):  # fmt: skip
                         livro.avisos.append(op.aviso)
                 continue
-            ops.append((nota.data, item))
+            lidas.ops.append((nota.data, item))
             if op.cv == "C" and op.mercado in MERCADOS_ACAO_A_VISTA:
-                compras_a_vista.add((nota.titular, nota.corretora, op.ativo, nota.data))
+                lidas.compras_a_vista.add((nota.titular, nota.corretora, op.ativo, nota.data))
             if op.tipo is TipoAtivo.OPCAO:
                 if op.vencimento is None or op.vencimento < nota.data:
                     raise MotorError(
                         f"opção {op.ticker} em {nota.data}: vencimento {op.vencimento} ausente ou "
                         "anterior ao negócio (confira data/vencimentos_opcoes*.csv)"
                     )
-                vencimentos.add(op.vencimento)
-    if livro.visao is Visao.TITULAR:
-        _avisar_conjugadas(livro, vendas_a_termo, compras_a_vista)
+                lidas.vencimentos.add(op.vencimento)
+    return lidas
+
+
+def _eventos_ate(livro: Livro, eventos: list[Evento], ate: date) -> list[Evento]:
+    """Os eventos até `ate`, registrando no livro o ticker e o tipo do ativo (e do destino)."""
     ate_hoje: list[Evento] = []
     for evento in eventos:
         if evento.data <= ate:
@@ -325,7 +344,20 @@ def _percorrer(
                 livro.tipos.setdefault(evento.ativo_destino,
                                        evento.tipo_ativo_destino or evento.tipo_ativo)  # fmt: skip
             ate_hoje.append(evento)
-    ops, tiradas, ate_hoje, meses = _isolar(livro, ops, ate_hoje)
+    return ate_hoje
+
+
+def _percorrer(
+    livro: Livro, notas: list[NotaMotor], eventos: list[Evento], parametros: ParametrosFiscais,
+    ate: date,
+) -> Meses:  # fmt: skip
+    """Monta os dias e processa; devolve os meses com itens tirados por ativo isolado."""
+    dias: dict[date, _Dia] = defaultdict(_Dia)
+    lidas = _ler_notas(livro, notas, parametros, ate)
+    if livro.visao is Visao.TITULAR:
+        _avisar_conjugadas(livro, lidas.vendas_a_termo, lidas.compras_a_vista)
+    ate_hoje = _eventos_ate(livro, eventos, ate)
+    ops, tiradas, ate_hoje, meses = _isolar(livro, lidas.ops, ate_hoje)
     livro.parametros = parametros
     fins = {x.pme_ate + timedelta(days=1)
             for x in (*(o.op for _, o in ops), *ate_hoje) if x.pme_ate is not None}  # fmt: skip
@@ -336,7 +368,7 @@ def _percorrer(
         (dias[dia].termos if item.op.mercado == "TERMO" else dias[dia].operacoes).append(item)
     for evento in ate_hoje:
         dias[evento.data].eventos.append(evento)
-    for venc in vencimentos:
+    for venc in lidas.vencimentos:
         if venc <= ate:
             dias.setdefault(venc, _Dia())  # o pó acontece mesmo sem negócio no dia
     ofertas = [e for e in eventos if e.tipo is TipoEvento.OFERTA_PUBLICA
@@ -352,7 +384,7 @@ def _percorrer(
     livro.em_curso = None
     _avisar_suspeitas(livro)
     if livro.visao is Visao.TITULAR:
-        _avisar_termo_descoberto(livro, compras_sem_b3)
+        _avisar_termo_descoberto(livro, lidas.compras_sem_b3)
     for dia, o in tiradas:
         _venda_isolada(livro, dia, o)
     return meses
