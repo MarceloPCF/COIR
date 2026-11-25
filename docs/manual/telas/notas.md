@@ -22,6 +22,6 @@ Sem número informado, o COIR sugere M1, M2... No mesmo pregão, os negócios de
 
 Na lista, a nota manual aparece com "(manual)". No detalhe, **Corrigir** abre o formulário preenchido e **Remover** a tira do cálculo, depois de pedir confirmação. Nos dois casos, o COIR faz backup e guarda a versão anterior.
 
-Se achar o PDF dessa nota depois, importe-o e remova a nota manual. Enquanto as duas estiverem gravadas, as operações contam duas vezes; o COIR avisa na importação e no sino do topo.
+Uma nota com o mesmo número, conta e pregão de outra já gravada é recusada. Com outro número, se já houver nota na mesma conta e pregão (do PDF ou manual), o COIR mostra qual é e quantos negócios iguais ela tem, e só grava em **Gravar mesmo assim**: pode haver duas notas no mesmo pregão, mas pode ser também a mesma nota, que contaria duas vezes. Se achar o PDF da nota manual depois, importe-o e remova a manual; enquanto as duas estiverem gravadas, o COIR avisa na importação e no sino do topo.
 
 [Voltar ao índice do manual](../README.md)

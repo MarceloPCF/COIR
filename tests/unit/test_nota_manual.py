@@ -234,3 +234,40 @@ def test_nota_que_o_motor_recusa_nao_grava_nada(tmp_path: Path) -> None:
     with pytest.raises(ImportacaoError, match="não fecha com as operações"):
         nm.gravar(banco, titular, nota, REFS, FISCAIS, AGORA)
     assert _contar(banco, NotaCorretagem) == 0 and _contar(banco, ArquivoImportado) == 0
+
+
+def test_mesma_nota_do_pdf_com_outro_numero_pede_confirmacao(
+    tmp_path: Path, pdfs: list[Path], extraidas: list[NotaExtraida]
+) -> None:
+    """Digitada depois do PDF com outro número, a nota contaria duas vezes: a gravação para e
+    mostra a nota do PDF da mesma conta e pregão, com os negócios iguais; só grava confirmada."""
+    banco = tmp_path / "coir.db"
+    primeira = extraidas[0]
+    pdf = next(p for p in pdfs if primeira.numero in p.name)
+    importar_lista(banco, [pdf], REFS, AGORA)
+    with conectar(banco) as fabrica, fabrica() as s:
+        titular = s.scalar(select(Titular.id))
+    assert titular is not None
+    nota = replace(nm.de_extraida(primeira, None), numero="M1")
+    backups = len(list((tmp_path / "backups").glob("*.db")))  # o da importação
+    with pytest.raises(nm.NotaParecida) as erro:
+        nm.gravar(banco, titular, nota, REFS, FISCAIS, AGORA)
+    [parecida] = erro.value.parecidas
+    iguais = len(primeira.negocios_bovespa)
+    assert f"nota {primeira.numero} (do PDF)" in parecida and f"{iguais} igual(is)" in parecida
+    assert _contar(banco, NotaCorretagem) == 1  # nada gravado, nem backup antes da pergunta
+    assert len(list((tmp_path / "backups").glob("*.db"))) == backups
+    nm.gravar(banco, titular, nota, REFS, FISCAIS, AGORA, confirmar_parecidas=True)
+    assert _contar(banco, NotaCorretagem) == 2 and len(nm.sobrepostas(banco, titular)) == 1
+
+
+def test_duas_manuais_iguais_com_numeros_diferentes_pedem_confirmacao(
+    tmp_path: Path, extraidas: list[NotaExtraida]
+) -> None:
+    banco = tmp_path / "coir.db"
+    titular = _titular(banco)
+    base = nm.de_extraida(extraidas[0], None)
+    nm.gravar(banco, titular, replace(base, numero="M1"), REFS, FISCAIS, AGORA)
+    with pytest.raises(nm.NotaParecida, match=r"nota M1 \(manual\)"):
+        nm.gravar(banco, titular, replace(base, numero="M2"), REFS, FISCAIS, AGORA)
+    assert _contar(banco, NotaCorretagem) == 1

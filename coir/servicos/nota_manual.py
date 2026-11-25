@@ -182,6 +182,59 @@ def _desconhecidos(ops: Sequence[OperacaoExtraida], refs: Referencias) -> list[s
             for p in sorted(x for x in papeis if x and x not in conhecidos)]  # fmt: skip
 
 
+class NotaParecida(ImportacaoError):
+    """Já há nota na mesma conta, dia e segmento: pode ser a mesma nota com outro número (as
+    operações contariam duas vezes). A gravação só segue com ``confirmar_parecidas``."""
+
+    def __init__(self, parecidas: list[str]) -> None:
+        super().__init__("já há nota nesta conta e pregão: " + "; ".join(parecidas))
+        self.parecidas = parecidas
+
+
+def _quantia(valor: Decimal) -> str:
+    texto = format(valor.normalize(), "f")
+    return texto.replace(".", ",")
+
+
+def _parecidas(
+    s: Session, conta: Conta, extraida: NotaExtraida, ops: Sequence[OperacaoExtraida],
+    ignorar: int | None,
+) -> list[str]:  # fmt: skip
+    """As notas gravadas na mesma conta, dia e segmento, cada uma com os negócios iguais aos da
+    nota digitada (ativo, compra ou venda, quantidade e preço)."""
+    consulta = select(NotaCorretagem).where(
+        NotaCorretagem.conta_id == conta.id,
+        NotaCorretagem.data_pregao == extraida.data_pregao,
+        NotaCorretagem.segmento == extraida.segmento.value,
+    )
+    digitados = {(o.papel, o.cv, o.quantidade, o.preco) for o in ops}
+    saida: list[str] = []
+    for n in s.scalars(consulta):
+        if n.id == ignorar:
+            continue
+        iguais = [o for o in n.operacoes if (o.papel, o.cv, o.quantidade, o.preco) in digitados]
+        origem = "manual" if eh_manual(n.arquivo.nome) else "do PDF"
+        texto = (
+            f"nota {n.numero} ({origem}) de {n.data_pregao:%d/%m/%Y}, {len(n.operacoes)} negócio(s)"
+        )
+        if iguais:
+            exemplos = ", ".join(f"{o.papel} {o.cv} {_quantia(o.quantidade)} a "
+                                 f"{_quantia(o.preco)}" for o in iguais[:3])  # fmt: skip
+            texto += f", {len(iguais)} igual(is) aos digitados ({exemplos})"
+        saida.append(texto)
+    return saida
+
+
+def _mesma_chave(s: Session, extraida: NotaExtraida, ignorar: int | None) -> None:
+    """Mesmo número, conta, dia e segmento de uma nota gravada: recusa (a chave é única)."""
+    existente = repo.nota_por_chave(s, extraida.chave)
+    if existente is not None and existente.id != ignorar:
+        raise ImportacaoError(
+            f"já existe a nota {extraida.numero} de {extraida.data_pregao:%d/%m/%Y} nesta conta "
+            f"(de {existente.arquivo.nome}); use outro número"
+        )
+
+
 def eh_manual(nome_arquivo: str) -> bool:
     return nome_arquivo.startswith(PREFIXO)
 
@@ -379,12 +432,25 @@ def _extrair(nota: NotaManual, conta: Conta) -> NotaExtraida:
 
 def gravar(
     banco: Path, titular: int, nota: NotaManual, refs: Referencias, fiscais: ReferenciasFiscais,
-    agora: datetime, substituir: int | None = None,
+    agora: datetime, substituir: int | None = None, confirmar_parecidas: bool = False,
 ) -> Gravada:  # fmt: skip
     """Grava a nota (ou corrige a manual ``substituir``) e devolve o id. Nada muda se o ativo não
-    está nas tabelas, se a nota não fecha ou se o livro passar a ter pendência por causa dela."""
-    with conectar(banco) as fabrica, fabrica() as s:  # confere antes do backup
-        _extrair(nota, _conta(s, titular, nota))
+    está nas tabelas, se a nota não fecha ou se o livro passar a ter pendência por causa dela.
+    Com nota já gravada na mesma conta, dia e segmento, levanta ``NotaParecida`` (pode ser a mesma
+    nota com outro número), salvo com ``confirmar_parecidas``."""
+    with conectar(banco) as fabrica, fabrica() as s:  # confere antes do backup (nada é gravado)
+        conta = _conta(s, titular, nota)
+        extraida = _extrair(nota, conta)
+        _mesma_chave(s, extraida, substituir)
+        if not confirmar_parecidas:
+            try:
+                previas = operacoes(extraida, refs, {
+                    **classes_das_series([extraida], refs), **repo.series(s)})  # fmt: skip
+            except ExtracaoError as erro:
+                raise ImportacaoError(str(erro)) from erro
+            parecidas = _parecidas(s, conta, extraida, previas, substituir)
+            if parecidas:
+                raise NotaParecida(parecidas)
     fazer_backup(banco, agora)
     with conectar(banco) as fabrica, fabrica.begin() as s:
         conta = _conta(s, titular, nota)
@@ -399,11 +465,7 @@ def gravar(
             repo.remover_nota(s, velha, "substituida", "nota manual corrigida", agora)
             s.flush()
             situacao = "manual_corrigida"
-        existente = repo.nota_por_chave(s, extraida.chave)
-        if existente is not None:
-            raise ImportacaoError(f"já existe a nota {extraida.numero} de "
-                                  f"{extraida.data_pregao:%d/%m/%Y} nesta conta (de "
-                                  f"{existente.arquivo.nome}); use outro número")  # fmt: skip
+        _mesma_chave(s, extraida, None)
         conhecidas = repo.series(s)
         novas = {k: v for k, v in classes_das_series([extraida], refs).items()
                  if k not in conhecidas}  # fmt: skip

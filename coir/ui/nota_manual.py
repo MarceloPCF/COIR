@@ -303,7 +303,29 @@ def _dialogo(
                 f"{reais(n.custos_total)} · líquido {reais(r.liquido.assinado)}"
             )
 
-        async def gravar() -> None:
+        def confirmar_parecidas(parecidas: list[str]) -> None:
+            """Mesma conta e pregão de nota já gravada: pode ser a mesma nota com outro número."""
+            with ui.dialog() as aviso, ui.card().classes("w-[720px] max-w-full gap-3"):
+                ui.label("Já há nota nesta conta e pregão").classes("coir-titulo text-base")
+                ui.label(
+                    "Se for a mesma nota com outro número, as operações vão contar duas vezes. "
+                    "Confira antes de gravar:"
+                ).classes("text-sm")
+                for texto in parecidas:
+                    ui.label(f"• {texto}").classes("text-sm").mark("manual-parecida")
+
+                async def mesmo_assim() -> None:
+                    aviso.close()
+                    await gravar(confirmado=True)
+
+                with ui.row().classes("w-full justify-end gap-2"):
+                    ui.button("Voltar", on_click=aviso.close).props("flat").mark("parecida-voltar")
+                    ui.button("Gravar mesmo assim", icon="save", on_click=mesmo_assim).props(
+                        "unelevated"
+                    ).mark("parecida-gravar")
+            aviso.open()
+
+        async def gravar(confirmado: bool = False) -> None:
             try:
                 nota = _nota(f)
             except CoirError as erro:
@@ -313,8 +335,11 @@ def _dialogo(
                 with ocupado.processando("Gravando a nota"):
                     gravada = await run.io_bound(
                         nm.gravar, estado.banco, titular, nota, estado.refs, estado.fiscais,
-                        estado.agora(), nota_id,
+                        estado.agora(), nota_id, confirmado,
                     )  # fmt: skip
+            except nm.NotaParecida as erro:
+                confirmar_parecidas(erro.parecidas)
+                return
             except CoirError as erro:
                 ui.notify(str(erro), type="negative", multi_line=True)
                 return
@@ -334,7 +359,7 @@ def _dialogo(
                 "manual-conferir"
             )
             ui.button("Cancelar", on_click=janela.close).props("flat").mark("manual-cancelar")
-            ui.button("Gravar", icon="save", on_click=gravar).props("unelevated").mark(
+            ui.button("Gravar", icon="save", on_click=lambda: gravar()).props("unelevated").mark(
                 "manual-gravar"
             )
     janela.open()
