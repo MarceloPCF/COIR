@@ -57,92 +57,22 @@ def _pdfs(pasta: Path) -> list[Path]:
     return sorted(p for p in pasta.iterdir() if p.is_file() and p.suffix.lower() == ".pdf")
 
 
-def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
-    """Escolha dos arquivos, andamento e resultado (também usada no assistente)."""
-    andamento = _Andamento()
-    lidos: list[Path] = []  # os arquivos da última importação (para importar de novo os recusados)
+@dataclass
+class _Controles:
+    envio: ui.upload
+    pasta: ui.button
+    senha: ui.input
+    reprocessar: ui.checkbox
+    barra: ui.linear_progress
+    texto: ui.label
 
-    async def gravar_escolhas(escolhas: dict[NomeAmbiguo, str], arquivos: set[str]) -> None:
-        try:
-            for a, ticker in escolhas.items():
-                await run.io_bound(escolher_codigo, estado.banco, a.corretora, a.conta, a.nome,
-                                   a.data, ticker, estado.agora())  # fmt: skip
-        except CoirError as erro:
-            ui.notify(f"Escolha não gravada: {erro}", type="negative", multi_line=True)
-            return
-        await importar([p for p in lidos if p.name in arquivos])
 
-    async def importar(arquivos: Sequence[Path]) -> None:
-        if andamento.ativo:
-            return
-        if not arquivos:
-            ui.notify("Nenhum PDF para importar.", type="warning")
-            return
-        digitada = str(senha.value or "").strip()
-        if digitada and digitada not in estado.senhas_informadas:
-            estado.senhas_informadas.append(digitada)  # vale até fechar o COIR; nunca gravada
-        andamento.ativo, andamento.erros = True, []
-        lidos[:] = arquivos
-        andamento(0, len(arquivos), arquivos[0].name)
-        travar(True)
-        try:
-            with ocupado.processando("Importando as notas"):
-                rel = await run.io_bound(
-                    importar_lista,
-                    estado.banco,
-                    arquivos,
-                    estado.refs,
-                    estado.agora(),
-                    None,
-                    estado.extrator,
-                    andamento,
-                    list(estado.senhas_informadas),
-                    bool(reprocessar.value),
-                )
-        except CoirError as erro:  # lote desfeito: nada gravado
-            ui.notify(
-                f"Importação cancelada, nada foi gravado: {erro}",
-                type="negative",
-                multi_line=True,
-                timeout=0,
-                close_button="OK",
-            )
-            return
-        finally:
-            andamento.ativo = False
-            travar(False)
-            mostrar_andamento()
-        if rel is None:
-            return
-        estado.invalidar()
-        mostrar(rel)
-        if rel.mudou:  # as notas novas podem pôr ativos em carteira na data de um evento
-            try:
-                with ocupado.processando("Conferindo os eventos das notas importadas"):
-                    automaticos = await run.io_bound(estado.lancar_eventos_automaticos, True)
-            except CoirError as erro:
-                ui.notify(f"Eventos não lançados: {erro}", type="warning", multi_line=True)
-            else:
-                if automaticos and automaticos.ids:
-                    ui.notify(f"{len(automaticos.ids)} evento(s) lançado(s) automaticamente. Veja "
-                              "na tela Eventos.", type="positive", multi_line=True)  # fmt: skip
-        if rel.mudou or rel.titulares_criados:
-            ao_mudar()
-
-    async def ao_enviar(e: events.MultiUploadEventArguments) -> None:
-        recebidos = [(f.name, await f.read()) for f in e.files]
-        if not envio.is_deleted:  # a tela pode ter sido refeita durante o envio
-            envio.reset()
-        try:
-            copias = await run.io_bound(copiar_para_pasta, recebidos, estado.pasta_notas)
-        except CoirError as erro:
-            ui.notify(str(erro), type="negative")
-            return
-        await importar(copias or [])
-
-    async def importar_pasta() -> None:
-        await importar(_pdfs(estado.pasta_notas))
-
+def _controles(
+    estado: Estado,
+    ao_enviar: Callable[[events.MultiUploadEventArguments], Awaitable[None]],
+    importar_pasta: Callable[[], Awaitable[None]],
+) -> _Controles:
+    """Envio dos PDFs, pasta das notas, senha, reprocessar e a barra de andamento."""
     with ui.column().classes("coir-folha w-full gap-3"):
         with ui.row().classes("w-full items-center gap-3"):
             envio = (
@@ -193,23 +123,118 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                        ui.navigate.reload)  # fmt: skip
         barra = ui.linear_progress(value=0, show_value=False).props("rounded size=8px")
         texto = ui.label("").classes("coir-subtitulo text-sm")
+    return _Controles(envio, pasta, senha, reprocessar, barra, texto)
+
+
+async def _eventos_automaticos(estado: Estado) -> None:
+    """Depois de importar: lança os eventos seguros que as notas novas tornaram aplicáveis."""
+    try:
+        with ocupado.processando("Conferindo os eventos das notas importadas"):
+            automaticos = await run.io_bound(estado.lancar_eventos_automaticos, True)
+    except CoirError as erro:
+        ui.notify(f"Eventos não lançados: {erro}", type="warning", multi_line=True)
+        return
+    if automaticos and automaticos.ids:
+        ui.notify(f"{len(automaticos.ids)} evento(s) lançado(s) automaticamente. Veja na tela "
+                  "Eventos.", type="positive", multi_line=True)  # fmt: skip
+
+
+def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
+    """Escolha dos arquivos, andamento e resultado (também usada no assistente)."""
+    andamento = _Andamento()
+    lidos: list[Path] = []  # os arquivos da última importação (para importar de novo os recusados)
+
+    async def gravar_escolhas(escolhas: dict[NomeAmbiguo, str], arquivos: set[str]) -> None:
+        try:
+            for a, ticker in escolhas.items():
+                await run.io_bound(escolher_codigo, estado.banco, a.corretora, a.conta, a.nome,
+                                   a.data, ticker, estado.agora())  # fmt: skip
+        except CoirError as erro:
+            ui.notify(f"Escolha não gravada: {erro}", type="negative", multi_line=True)
+            return
+        await importar([p for p in lidos if p.name in arquivos])
+
+    async def importar(arquivos: Sequence[Path]) -> None:
+        if andamento.ativo:
+            return
+        if not arquivos:
+            ui.notify("Nenhum PDF para importar.", type="warning")
+            return
+        digitada = str(c.senha.value or "").strip()
+        if digitada and digitada not in estado.senhas_informadas:
+            estado.senhas_informadas.append(digitada)  # vale até fechar o COIR; nunca gravada
+        andamento.ativo, andamento.erros = True, []
+        lidos[:] = arquivos
+        andamento(0, len(arquivos), arquivos[0].name)
+        travar(True)
+        try:
+            with ocupado.processando("Importando as notas"):
+                rel = await run.io_bound(
+                    importar_lista,
+                    estado.banco,
+                    arquivos,
+                    estado.refs,
+                    estado.agora(),
+                    None,
+                    estado.extrator,
+                    andamento,
+                    list(estado.senhas_informadas),
+                    bool(c.reprocessar.value),
+                )
+        except CoirError as erro:  # lote desfeito: nada gravado
+            ui.notify(
+                f"Importação cancelada, nada foi gravado: {erro}",
+                type="negative",
+                multi_line=True,
+                timeout=0,
+                close_button="OK",
+            )
+            return
+        finally:
+            andamento.ativo = False
+            travar(False)
+            mostrar_andamento()
+        if rel is None:
+            return
+        estado.invalidar()
+        mostrar(rel)
+        if rel.mudou:  # as notas novas podem pôr ativos em carteira na data de um evento
+            await _eventos_automaticos(estado)
+        if rel.mudou or rel.titulares_criados:
+            ao_mudar()
+
+    async def ao_enviar(e: events.MultiUploadEventArguments) -> None:
+        recebidos = [(f.name, await f.read()) for f in e.files]
+        if not c.envio.is_deleted:  # a tela pode ter sido refeita durante o envio
+            c.envio.reset()
+        try:
+            copias = await run.io_bound(copiar_para_pasta, recebidos, estado.pasta_notas)
+        except CoirError as erro:
+            ui.notify(str(erro), type="negative")
+            return
+        await importar(copias or [])
+
+    async def importar_pasta() -> None:
+        await importar(_pdfs(estado.pasta_notas))
+
+    c = _controles(estado, ao_enviar, importar_pasta)
 
     def travar(sim: bool) -> None:
-        if envio.is_deleted:
+        if c.envio.is_deleted:
             return  # a importação continua, mas o usuário saiu da tela (ou ela foi refeita)
-        envio.set_enabled(not sim)
-        pasta.set_enabled(not sim)
+        c.envio.set_enabled(not sim)
+        c.pasta.set_enabled(not sim)
 
     def mostrar_andamento() -> None:
-        if barra.is_deleted:
+        if c.barra.is_deleted:
             return
         visivel = andamento.ativo and andamento.total > 0
-        barra.set_visibility(visivel)
-        texto.set_visibility(visivel)
+        c.barra.set_visibility(visivel)
+        c.texto.set_visibility(visivel)
         if visivel:
-            barra.set_value(andamento.feitos / andamento.total)
+            c.barra.set_value(andamento.feitos / andamento.total)
             lendo = f": {andamento.arquivo}" if andamento.arquivo else ": gravando"
-            texto.set_text(f"{andamento.feitos} de {andamento.total} arquivos{lendo}")
+            c.texto.set_text(f"{andamento.feitos} de {andamento.total} arquivos{lendo}")
 
     mostrar_andamento()
     ui.timer(0.25, mostrar_andamento)
@@ -221,24 +246,32 @@ def area(estado: Estado, ao_mudar: Callable[[], object]) -> None:
         linhas = por_arquivo(rel, divergencias_conhecidas(estado.dados))
         resultado.clear()
         with resultado:
-            _resumo(rel, linhas)
-            if rel.ambiguos:
-                _perguntar_codigos(rel.ambiguos, gravar_escolhas)
-            with ui.column().classes("coir-folha w-full gap-0 p-0"):
-                for linha in linhas:
-                    _linha(linha)
-            avisos = [a for a in rel.avisos if not any(x.arquivo in a for x in linhas)]
-            for aviso in (a for a in avisos if "já importada" not in a):
-                ui.label(f"Aviso: {aviso}").classes("coir-carimbo text-sm")
-            repetidas = [a for a in avisos if "já importada" in a]
-            if rel.arquivos_ignorados or rel.notas_ja_no_banco or repetidas:
-                ui.label(
-                    "Notas que já estavam no banco não são gravadas de novo (cada nota entra uma "
-                    'vez só). Para ler de novo, marque "Reprocessar notas já importadas". Os '
-                    "PDFs continuam na pasta onde estão; a tela Notas abre o original de lá."
-                ).classes("coir-subtitulo text-sm").mark("info-repetidas")
-                for aviso in repetidas:
-                    ui.label(aviso).classes("coir-subtitulo text-xs")
+            _resultado(rel, linhas, gravar_escolhas)
+
+
+def _resultado(
+    rel: RelatorioImportacao, linhas: list[ResultadoArquivo],
+    gravar_escolhas: Callable[[dict[NomeAmbiguo, str], set[str]], Awaitable[None]],
+) -> None:  # fmt: skip
+    """O resultado da importação: resumo, códigos a escolher, cada arquivo e os avisos."""
+    _resumo(rel, linhas)
+    if rel.ambiguos:
+        _perguntar_codigos(rel.ambiguos, gravar_escolhas)
+    with ui.column().classes("coir-folha w-full gap-0 p-0"):
+        for linha in linhas:
+            _linha(linha)
+    avisos = [a for a in rel.avisos if not any(x.arquivo in a for x in linhas)]
+    for aviso in (a for a in avisos if "já importada" not in a):
+        ui.label(f"Aviso: {aviso}").classes("coir-carimbo text-sm")
+    repetidas = [a for a in avisos if "já importada" in a]
+    if rel.arquivos_ignorados or rel.notas_ja_no_banco or repetidas:
+        ui.label(
+            "Notas que já estavam no banco não são gravadas de novo (cada nota entra uma "
+            'vez só). Para ler de novo, marque "Reprocessar notas já importadas". Os '
+            "PDFs continuam na pasta onde estão; a tela Notas abre o original de lá."
+        ).classes("coir-subtitulo text-sm").mark("info-repetidas")
+        for aviso in repetidas:
+            ui.label(aviso).classes("coir-subtitulo text-xs")
 
 
 def _resumo(rel: RelatorioImportacao, linhas: list[ResultadoArquivo]) -> None:
