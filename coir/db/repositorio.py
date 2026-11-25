@@ -466,6 +466,24 @@ def operacoes_gravadas(registro: NotaCorretagem) -> list[OperacaoExtraida]:
     return [_operacao(registro, o) for o in registro.operacoes]
 
 
+PREFIXO_NOTA_MANUAL = "nota manual"  # nome do ArquivoImportado de uma nota digitada à mão
+
+
+def manuais_no_dia(sessao: Session, conta_id: int, dia: date, segmento: str) -> list[str]:
+    """Números das notas manuais da conta no dia e segmento (para avisar a nota do PDF igual)."""
+    consulta = (
+        select(NotaCorretagem.numero)
+        .join(ArquivoImportado)
+        .where(
+            NotaCorretagem.conta_id == conta_id,
+            NotaCorretagem.data_pregao == dia,
+            NotaCorretagem.segmento == segmento,
+            ArquivoImportado.nome.startswith(PREFIXO_NOTA_MANUAL),
+        )
+    )
+    return list(sessao.scalars(consulta))
+
+
 def notas_do_arquivo(sessao: Session, arquivo: ArquivoImportado) -> list[NotaCorretagem]:
     if arquivo.id is None:  # arquivo novo, ainda sem nenhuma nota
         return []
@@ -510,11 +528,15 @@ def versoes_anteriores(sessao: Session, registro: NotaCorretagem) -> list[NotaAn
         .order_by(NotaAnterior.alterada_em.desc(), NotaAnterior.id.desc())
     )
     paginas = set(registro.paginas.split(","))
+    # a nota manual tem um registro de arquivo só dela: toda versão dele é dela (corrigida com
+    # outro número ou data, inclusive)
+    manual = registro.arquivo.nome.startswith(PREFIXO_NOTA_MANUAL)
     return [
         v
         for v in sessao.scalars(consulta)
         if (v.conta_id, v.numero, v.data_pregao, v.segmento)
         == (registro.conta_id, registro.numero, registro.data_pregao, registro.segmento)
+        or (manual and v.arquivo_id == registro.arquivo_id)
         or (
             v.motivo == "removida"
             and v.arquivo_id == registro.arquivo_id

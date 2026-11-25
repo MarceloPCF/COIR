@@ -11,8 +11,10 @@ from coir.domain.nota import NotaExtraida
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
+from coir.servicos import nota_manual as nm
 from coir.servicos import notas
 from coir.servicos.estado import Estado
+from coir.ui import nota_manual as formulario
 from coir.ui import tabela
 
 T = TipoColuna
@@ -62,7 +64,20 @@ def _contagem(n: int) -> str:
 
 
 def montar(estado: Estado, ao_mudar: Callable[[], object], nota: int | None = None) -> None:
-    ui.label("Notas").classes("coir-titulo-pagina")
+    def gravada(id_nota: int) -> None:
+        ao_mudar()
+        ui.navigate.to(f"/notas/{id_nota}")
+
+    def removida() -> None:
+        ao_mudar()
+        ui.navigate.to("/notas")
+
+    with ui.row().classes("w-full items-center justify-between"):
+        ui.label("Notas").classes("coir-titulo-pagina")
+        ui.button("Nova nota manual", icon="edit_note",
+                  on_click=lambda: formulario.abrir(estado, gravada)).props(
+            "flat").tooltip("Nota perdida ou de corretora sem nota em PDF").mark(
+            "nova-nota-manual")  # fmt: skip
     ui.label(
         f"As notas de {estado.ano} gravadas no banco. Escolha uma para conferir com o PDF.",
     ).classes("coir-subtitulo")
@@ -71,7 +86,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object], nota: int | None = No
         ui.label("Nenhuma nota neste ano. Importe as notas em Importar notas.").classes(
             "coir-vazio w-full"
         )
-        return
+        if nota is None:  # a nota pedida pelo endereço (/notas/<id>) pode ser de outro ano
+            return
 
     filtro = {"mes": 0, "corretora": "", "conta": "", "numero": ""}
     with ui.row().classes("w-full items-center gap-3"):
@@ -102,7 +118,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object], nota: int | None = No
         contador = ui.label("").classes("coir-subtitulo text-sm")
 
     def valores(lista: list[notas.ResumoNota]) -> list[tuple[Valor, ...]]:
-        return [(n.data, n.corretora, n.numero, n.liquido) for n in lista]
+        return [(n.data, n.corretora, n.numero + (" (manual)" if nm.eh_manual(n.arquivo) else ""),
+                 n.liquido) for n in lista]  # fmt: skip
 
     with ui.row().classes("w-full items-start gap-4 no-wrap max-[1100px]:flex-wrap"):
         with ui.column().classes("w-[340px] shrink-0 gap-2"):
@@ -141,6 +158,15 @@ def montar(estado: Estado, ao_mudar: Callable[[], object], nota: int | None = No
         detalhe.clear()
         with detalhe:
             _detalhe(d, senhas)
+            if nm.eh_manual(d.resumo.arquivo):
+                with ui.row().classes("gap-2"):
+                    ui.button("Corrigir", icon="edit",
+                              on_click=lambda: formulario.abrir(estado, gravada, id_nota)).props(
+                        "flat").mark("corrigir-nota-manual")  # fmt: skip
+                    ui.button("Remover", icon="delete",
+                              on_click=lambda: formulario.confirmar_remocao(
+                                  estado, id_nota, d.resumo.numero, removida)).props(
+                        "flat color=negative").mark("remover-nota-manual")  # fmt: skip
 
     contador.set_text(_contagem(len(todas)))
     with detalhe:
@@ -239,7 +265,8 @@ def _historico(anteriores: Sequence[notas.VersaoAnterior]) -> None:
     ultima = anteriores[0]
     with ui.row().classes("items-center gap-2 no-wrap"):
         ui.icon("history", size="20px").classes("coir-subtitulo")
-        ui.label(f"Alterada por reprocessamento em {ultima.alterada_em:%d/%m/%Y}; "
+        como = "Corrigida" if nm.eh_manual(ultima.arquivo) else "Alterada por reprocessamento"
+        ui.label(f"{como} em {ultima.alterada_em:%d/%m/%Y}; "
                  f"mudou: {ultima.mudou}.").classes("coir-subtitulo text-sm")  # fmt: skip
         rotulo = ("Ver versão anterior" if len(anteriores) == 1
                   else f"Ver {len(anteriores)} versões anteriores")  # fmt: skip
@@ -252,6 +279,10 @@ LARGURA_AMPLIADA = 2200  # pixels da página ampliada (nítida no zoom)
 
 
 def _pdf(d: notas.DetalheNota, senhas: list[str]) -> None:
+    if nm.eh_manual(d.resumo.arquivo):
+        ui.label("Nota digitada à mão (sem PDF). Para mudar, use Corrigir; se achar o PDF, "
+                 "importe-o e remova esta nota.").classes("coir-vazio w-full")  # fmt: skip
+        return
     if d.pdf is None:
         ui.label(
             f"O PDF {d.resumo.arquivo} não está na pasta das notas: a nota fica no banco, "

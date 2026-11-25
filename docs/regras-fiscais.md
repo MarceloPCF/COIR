@@ -14,7 +14,7 @@ Toda regra aqui vira parâmetro com vigência + teste. Confiança: A = alta, M =
 | R5 | Prejuízo de mês isento continua compensável | Parâmetro `prejuizo_mes_isento_compensavel = true` | Lei 8.981/1995 art. 72 §4º; Manual MIR 2026; decisão do usuário (14/10/2026) | A |
 | R6 | IRRF 0,005% s/ vendas comuns (dispensado se ≤ R$ 1; não incide no exercício nem em PME) e 1% s/ ganho de DT | Ler da nota; os dois abatem o imposto total do mês (o de DT consumido primeiro); saldo aos meses seguintes do ano; em dezembro, o de 0,005% vai para a declaração anual e o de DT só restituição | Lei 9.959/2000 art. 8º §§4º, 5º e 8º; IN RFB 1.585/2015 arts. 63 §§8º e 9º e 65 §§8º, 9º e 12; P&R IRPF 2026 perguntas 714 e 715; a página "Retenções" da RFB (19/11/2025) restringe o DT ao imposto de DT: divergência de orientação registrada | M |
 | R7 | Custo de aquisição inclui corretagem, emolumentos e taxas; na venda os custos reduzem a alienação | Rateio proporcional ao valor da operação na nota; a taxa de custódia fica fora (parâmetro `custodia_no_custo = false`, decisão de 10/11/2026) | SC Cosit 227/2018 §§17-18; IN RFB 1.585/2015 art. 56 §§3º e 4º; P&R IRPF 2026 pergunta 708 (RIR/2018 art. 841 §2º) | A |
-| R8 | Bonificação: soma quantidade com custo atribuído; desdobramento/grupamento: só quantidade; redução de capital com restituição reduz o custo. Dinheiro junto de incorporação, por resgate de ações (PETZ3 -> AUAU3): o custo é repartido pelo valor atribuído pela companhia, a parte da ação resgatada sai por `REDUCAO_CAPITAL` na data ex (o valor é esse custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026). Incorporação/fusão/cisão/conversão: o custo das ações entregues vai para as recebidas na proporção da assembleia, sem resultado (cisão: percentual divulgado pela companhia, sobre o custo de antes do evento; sem percentual, bloqueia); incorporação de ações (art. 252): custo mantido, com aviso da divergência da RFB (parâmetro `incorporacao_acoes_tratamento`); ajuste de série de opção pela B3: sem efeito fiscal (código e quantidade mudam, custo e vencimento ficam); fração vendida em leilão: alienação pelo PM no mês do crédito, entra no limite de isenção (parâmetro `leilao_fracao_isentavel`). Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º e 7º, art. 60 §2º; P&R IRPF 2022 pergunta 578 (substituição de ações; não consta das edições 2024 e 2026; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A |
+| R8 | Bonificação: soma quantidade com custo atribuído; desdobramento/grupamento: só quantidade; redução de capital com restituição reduz o custo. Dinheiro junto de incorporação, por resgate de ações (PETZ3 -> AUAU3): o custo é repartido pelo valor atribuído pela companhia, a parte da ação resgatada sai por `REDUCAO_CAPITAL` na data ex (o valor é esse custo, não o dinheiro) e o resgate é alienação fora de bolsa, no GCAP, fora da apuração mensal (SC Cosit 37/2020; critério de rateio é inferência, confiança média; decisão delegada ao especialista em 07/11/2026). Incorporação/fusão/cisão/conversão: o custo das ações entregues vai para as recebidas na proporção da assembleia, sem resultado (cisão: percentual divulgado pela companhia, sobre o custo de antes do evento; sem percentual, bloqueia); incorporação de ações (art. 252): custo mantido, com aviso da divergência da RFB (parâmetro `incorporacao_acoes_tratamento`); ajuste de série de opção pela B3: sem efeito fiscal (código e quantidade mudam, custo e vencimento ficam); fração vendida em leilão: alienação pelo PM no mês do crédito, entra no limite de isenção (parâmetro `leilao_fracao_isentavel`). Data do evento: data ex | evento_corporativo na linha do tempo do ativo (tela 7) | IN RFB 1.585/2015 art. 58 caput, §§6º, 7º e 8º (restituição de capital), art. 60 §2º; P&R IRPF 2022 pergunta 578 (substituição de ações; não consta das edições 2024 e 2026; incorporação de ações); SC Cosit 224/2014 (divergência); SC Cosit 37/2020 (resgate); Lei 6.404 arts. 227-229 e 252 | A |
 | R9 | Exercício de opções: prêmio integra custo (titular de call) / valor de venda (lançador de call); casos simétricos para put | Vincular opção, ativo-objeto e negócio de exercício; 4 casos com exemplo. A nota traz só o código da opção + "E" (ex.: KLBNO193E), às vezes + classe; ativo-objeto = 4 letras + classe (ON→3, PN→4, PNA→5, PNB→6, UNT→11); sem classe: classe da abertura da série, depois opcoes.csv | IN RFB 1.585/2015 | M |
 | R10 | Opção que vira pó: prêmio pago = perda (titular); recebido = ganho (lançador) no vencimento | Evento automático de vencimento (data como parâmetro, não "hoje") | IN RFB 1.585/2015 | A |
 | R11 | Futuros: resultado no encerramento ou liquidação da posição = soma dos ajustes desde a abertura − custos; encerramento parcial pelo preço médio; day trade no dia | Ajustes da posição aberta acumulados por contrato e realizados no encerramento ou vencimento | Lei 11.051/2004 art. 32 (caput e §2º II); IN RFB 1.585/2015 art. 61; P&R IRPF 2026 pergunta 728 | A |
@@ -283,10 +283,9 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
     parcela; o COIR mantém centavos com maiores restos, que somam exatamente a nota (decisão de
     16/10/2026);
   - futuros: o outro sistema distribui os custos de cada nota BM&F entre as linhas por outro critério; a
-    soma de todos os futuros é igual (diferença total R$ 0,00 fora a opção flexível). Pendência
-    pós-v3.0: ratear os custos de futuros por contrato e por categoria (a B3 cobra emolumentos e
-    registro por contrato, com tabela própria de day trade), configurável com vigência; a v3.0
-    rateia pelo volume;
+    soma de todos os futuros é igual (diferença total R$ 0,00 fora a opção flexível). O rateio por
+    contrato e por categoria foi avaliado e não será feito: fica o valor financeiro (decisão de
+    16/11/2026, seção "Decisões do parecer de 16/11/2026");
   - notas de exercício: outro critério de rateio, até R$ 2 por ativo (às vezes o outro sistema deixa
     de fora a taxa de transferência de ativos);
   - dados do outro sistema: custos de uma nota de exercício e de uma venda de opção não lançados;
@@ -481,7 +480,23 @@ Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
   quando não há provento dessa origem no dia; a quantidade só fica quando as duas coincidem
   (parecer do especialista, F9, 21/10/2026).
 - Restituição de capital: reduz o custo (IN 1.585 art. 58 §8º), proposta como evento só com o valor (a quantidade da linha da B3 é a posição, não ações canceladas); não é
-  rendimento. Acima do custo: o motor falha alto.
+  rendimento. Acima do custo (parecer do especialista e decisões do usuário de 24/11/2026; casos em
+  `tests/fiscal_cases/test_restituicao_acima_do_custo.py`): custo e preço médio a zero, nunca custo
+  negativo, e o excedente só é avisado, fora da apuração mensal.
+  - Ação e unit (`restituicao_capital_acima_do_custo = ganho_capital`): ganho de capital fora de bolsa,
+    no programa GCAP, no mês do crédito do dinheiro (DARF 4600; isento até R$ 35 mil recebidos no mês,
+    Lei 9.250/1995 art. 22 II); não soma no limite de R$ 20 mil nem compensa prejuízo da bolsa (Lei
+    7.713/1988 art. 3º; SC Cosit 37/2020 por analogia; SC Cosit 130/2023). Sem norma expressa:
+    confiança média. Com `isolar`, o ativo sai do cálculo, como até a 3.1.4.
+  - FII e Fiagro: a linha "Amortização" da B3 passa a ser proposta e reduz o custo (`fii_amortizacao =
+    reduz_custo`; sem norma expressa, analogia com a IN 1.585 arts. 16 §2º e 37 §3º); acima do custo,
+    aviso de que o excedente é tributado a 20% na fonte pelo administrador.
+  - ETF de ações desde 2024 (`etf_amortizacao_custo = proporcional_vp`): como o FIP, só a parcela de
+    custo do informe reduz o custo (Lei 14.754/2023 arts. 18 II, 24 e 17 §5º II b), sempre com aviso.
+    ETF de renda fixa: custo a zero e aviso (tributação só na fonte).
+  - BDR, ETF antes de 2024 e os demais: sem norma, o ativo fica isolado, com o motivo.
+  - O custo fiscal é o do titular (IN 1.585 art. 58 caput): só a visão por titular decide e avisa; nas
+    visões por conta e por corretora o custo vai a zero sem aviso.
 - "- Transferido": pares que se anulam (provento acompanhando a transferência de custódia).
 - Lei 15.270/2025 (desde 2026): só aviso, somando os dividendos líquidos da mesma empresa (raiz do
   código) no mês: acima de R$ 50 mil, ou acima de R$ 45 mil como "possível retenção".
@@ -491,7 +506,8 @@ Decididos na revisão: o IRRF de day trade impresso como "projeção" nas notas 
 sobre o ganho do dia e é deduzido no mês (confirmado pelo usuário); day trade "na mesma instituição
 intermediadora" (Lei 9.959/2000 art. 8º §1º) compara a corretora da nota: XP, Clear e Rico são
 corretoras diferentes, com código e contas próprios (decisão do usuário). Ficam para depois:
-- Rateio dos custos de futuros por contrato e por categoria, configurável (hoje pelo volume).
+- Rateio dos custos de futuros por contrato e por categoria: decidido em 16/11/2026 que fica pelo
+  valor financeiro (ver "Decisões do parecer de 16/11/2026").
 - Day trade entre corretoras antes de 28/07/2010: resolvido em 16/11/2026 (só na mesma corretora,
   pela norma da época). Fica de fora a marcação manual do par entre corretoras liquidado pelo saldo,
   que pede o extrato da liquidante; sem caso real.
@@ -510,7 +526,8 @@ corretoras diferentes, com código e contas próprios (decisão do usuário). Fi
   centavos pelo maior resto), e não pelo resto na última parte: a soma fecha com a nota. Dois
   contratos iguais do mesmo ativo e corretora sem linha de quantidade exata: o de vencimento
   anterior consome primeiro (heurística).
-- `data/feriados.csv` cobre até 2027: estender antes de apurar dezembro de 2027.
+- `data/feriados.csv` cobre até 2028: estender antes de apurar dezembro de 2028 (a tela Simulação
+  vai até novembro de 2028).
 
 ## Decisões da revisão contra a base normativa (10/11/2026)
 

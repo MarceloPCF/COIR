@@ -13,6 +13,7 @@ ao menos provável na 3.1.
 | Assinatura digital do `COIR.exe` (o Windows deixa de mostrar o aviso do SmartScreen) | sem assinatura, por decisão: volta à pauta se muitos usuários tiverem problema para abrir. A opção gratuita para projeto de código aberto é a SignPath Foundation; o manual ([Se o COIR não abrir](manual/se-nao-abrir.md)) explica o aviso e como conferir o SHA-256 | planejamento da F9; revisto na 3.0.1 |
 | Enviar cada pacote novo à Microsoft como falso positivo (formulário de envio de arquivos do Defender), para o antivírus parar de pôr o programa em quarentena | não é feito; o manual ensina a restaurar o arquivo da quarentena | versão 3.0.1 (27/10/2026) |
 | Link para os guias na página inicial do site | os guias só aparecem no rodapé e no manual | versão 3.0.1 (27/10/2026) |
+| Nota de corretagem digitada à mão (nota perdida ou corretora sem nota em PDF) | feita depois da 3.1.4: tela Notas, "Nova nota manual" | pedido do mantenedor (24/11/2026) |
 | Troca do nome do programa | continua COIR | decisão do mantenedor |
 | Importar a planilha de resultado da v2 (`.xlsb`) como ponto de partida | a v3 refaz tudo a partir dos PDFs (os mesmos da pasta `Entrada` da v2); quem não tem as notas antigas informa a custódia e o prejuízo em 31/12 em Cadastros › Saldos iniciais | rodada do beta (26/10/2026) |
 | Vídeo narrado do programa no site | o topo do site mostra as telas em sequência (imagem animada) | rodada do beta (26/10/2026) |
@@ -25,10 +26,10 @@ Registradas também em [`regras-fiscais.md`](regras-fiscais.md).
 
 | Item | Situação na 3.0 |
 |---|---|
-| Rateio dos custos de futuros por contrato e por categoria, configurável | rateio pelo volume (a soma dos custos é a mesma) |
+| Rateio dos custos de futuros por contrato e por categoria, configurável | decidido em 16/11/2026: fica pelo valor financeiro, o único critério escrito (IN RFB 1.585/2015 art. 56 §4º); a soma dos custos é a mesma |
 | Day trade entre corretoras antes de 28/07/2010 | feito na 3.1.2: compra e venda em corretoras diferentes não é day trade, como na norma da época |
 | Lote de ação de PME isento separado do tributado (IN RFB 1.585/2015 art. 69-A §4º) | feito em 08/11/2026 |
-| Venda a termo | feita na 3.1.2 (apurada na liquidação); falta ler da nota a liquidação antecipada |
+| Venda a termo | feita na 3.1.2 (apurada na liquidação); desde a 3.1.3 a liquidação antecipada vem da movimentação da B3 (linha "Liquidação Termo"); sem ela, vale o vencimento, com aviso |
 | Feriados depois de 2028 | `data/feriados.csv` vai até 2028 e precisa ser estendido antes de apurar dezembro de 2028 |
 | Dividendos de BDR e de ETF, rendimentos pagos em ações | na 3.1.2 o rendimento de ETF vai para a tributação exclusiva; o dividendo de BDR continua só com aviso (carnê-leão) |
 | Dividendo pago em ativo de outra empresa (GSHP 2019: cotas do FII Top Center) | desde a 3.1.2 há o lançamento "dividendo em bens" na tela Eventos; o evento continua fora do pacote (`tools/referencias/eventos_excluidos.csv`), com o custo do aviso (R$ 9,2089623 por cota; ver [`fontes-dados.md`](fontes-dados.md)) |
@@ -42,8 +43,8 @@ PME isentas); sobraram estas diferenças, que não são erros do cálculo:
 | Item | Situação na 3.0.1 |
 |---|---|
 | Isenção de PME julgada pela data da venda, não pelo lote | a ferramenta de conferência não separa o lote isento do tributado; o motor já separa desde 08/11/2026 |
-| 16 diferenças de IRRF (na 3.1.2): notas com day trade e operação comum juntas, notas de futuros em que a planilha externa põe o IRRF na compra e notas com venda de dois ativos em que o IRRF é repartido de outro jeito | a revisar com o mantenedor |
-| 160 diferenças de custos em notas de futuros | a investigar; a origem provável é o rateio (ver "Rateio dos custos de futuros" acima) |
+| 16 diferenças de IRRF (na 3.1.2): notas com day trade e operação comum juntas, notas de futuros em que a planilha externa põe o IRRF na compra e notas com venda de dois ativos em que o IRRF é repartido de outro jeito | revistas em 17/11/2026: a soma de cada nota é igual; muda só a repartição entre as linhas, e o imposto não muda (ver [`regras-fiscais.md`](regras-fiscais.md)) |
+| 160 diferenças de custos em notas de futuros | diferença de método de rateio, com a mesma soma por nota (ver "Rateio dos custos de futuros" acima) |
 
 ## Fora do escopo da versão 3
 

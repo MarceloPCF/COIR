@@ -75,6 +75,23 @@ def test_selic_so_meses_encerrados(tmp_path: Path) -> None:
     assert resumo.selic_nova == ["2026-08: 1.09%", "2026-09: 1.08%"]  # outubro ainda parcial
 
 
+def test_comando_selic_so_toca_a_selic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """``selic`` atualiza só ``selic_mensal.csv``, sem consultar a B3 e sem mudar a data do pacote
+    (que é a da última coleta completa)."""
+    from tools.referencias.__main__ import main
+
+    serie = json.loads((FIXTURES / "selic.json").read_text(encoding="utf-8"))
+    monkeypatch.setattr(fontes, "selic", lambda: serie)
+    pacote = '{"formato": 3, "data": "2026-09-01"}\n'
+    (tmp_path / "pacote.json").write_text(pacote, encoding="utf-8")
+    (tmp_path / "selic_mensal.csv").write_text("mes,taxa\n2026-07,1.22\n", encoding="utf-8")
+    assert main(["selic", "--data", "2026-10-05", "--pasta", str(tmp_path)]) == 0
+    assert _linhas((tmp_path / "selic_mensal.csv").read_text(encoding="utf-8")) == [
+        "2026-07,1.22", "2026-08,1.09", "2026-09,1.08"]  # fmt: skip
+    assert (tmp_path / "pacote.json").read_text(encoding="utf-8") == pacote
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["pacote.json", "selic_mensal.csv"]
+
+
 def test_reprocessar_e_deterministico_e_nao_apaga_historico(tmp_path: Path) -> None:
     arquivos, _ = gerar.gerar(tmp_path, _coleta())
     gerar.gravar(tmp_path, arquivos)

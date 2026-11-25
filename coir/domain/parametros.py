@@ -56,6 +56,24 @@ class ParametrosFiscais(Modelo):
     def texto(self, nome: str, dia: date) -> str:
         return self._um(nome, dia).valor
 
+    def regra(self, nome: str, dia: date) -> str | None:
+        """Valor do parâmetro de critério na data; None sem vigência (quem chama não palpita)."""
+        valores = {p.valor for p in self.parametros if p.nome == nome and p.vigente(dia)}
+        return valores.pop() if len(valores) == 1 else None
+
+    def amortizacao_reduz_custo(self, tipo: TipoAtivo, dia: date) -> bool:
+        """A linha "Amortização" da B3 reduz o custo das cotas deste tipo de fundo? FI-Infra,
+        FIP-IE e FIP comum, sempre (pareceres de 09 e 13/11/2026); FII e Fiagro, pelo parâmetro
+        fii_amortizacao; ETF de ações desde 2024, pelo etf_amortizacao_custo (parecer de
+        24/11/2026). Nos demais, a linha fica fora."""
+        if tipo in (TipoAtivo.FUNDO_INFRA, TipoAtivo.FIP):
+            return True
+        if tipo is TipoAtivo.FII:
+            return self.regra("fii_amortizacao", dia) == "reduz_custo"
+        if tipo is TipoAtivo.ETF:
+            return self.regra("etf_amortizacao_custo", dia) == "proporcional_vp"
+        return False
+
 
 class TiposAtivo(Modelo):
     """Ticker -> tipo. Sufixo 3 a 8: ação; 31 a 39: BDR; 1, 2, 9 e 10: direito ou recibo de

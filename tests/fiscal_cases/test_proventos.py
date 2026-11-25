@@ -16,11 +16,11 @@ import pytest
 
 from coir.domain.b3 import LinhaMovimentacao
 from coir.domain.fiscal import TipoAtivo
-from coir.domain.parametros import TiposAtivo
+from coir.domain.parametros import ParametrosFiscais, TiposAtivo
 from coir.domain.proventos import LinhaB3, Provento, TipoProvento
 from coir.engine.proventos import Candidatos, proventos
 from coir.erros import MotorError
-from tests.fiscal_cases.apoio import REFS
+from tests.fiscal_cases.apoio import REFS, parametros
 
 D = Decimal
 XP = "XP INVESTIMENTOS CCTVM S/A"
@@ -291,9 +291,11 @@ def test_reembolso_com_origem_informada_pelo_usuario() -> None:
 TIPOS_INFRA = TiposAtivo(tabela={**TIPOS.tabela, "XINF11": TipoAtivo.FUNDO_INFRA})
 
 
-def _infra(*linhas: LinhaB3) -> tuple[list[Provento], list[str]]:
+def _infra(
+    *linhas: LinhaB3, params: ParametrosFiscais | None = None
+) -> tuple[list[Provento], list[str]]:
     avisos: list[str] = []
-    return proventos(linhas, TIPOS_INFRA, REFS.parametros, avisos), avisos
+    return proventos(linhas, TIPOS_INFRA, params or REFS.parametros, avisos), avisos
 
 
 def test_rendimento_de_fi_infra_vai_para_a_exclusiva_sem_irrf() -> None:
@@ -315,14 +317,20 @@ def test_rendimento_de_fi_infra_com_retencao_avisa() -> None:
     assert any("retenção" in a for a in avisos)
 
 
-def test_amortizacao_de_fi_infra_reduz_o_custo_e_a_de_fii_fica_fora() -> None:
+def test_amortizacao_de_fi_infra_e_de_fii_reduz_o_custo() -> None:
     """Lei 12.431/2011 art. 3º e IN 1.585 art. 34 (FI-Infra; para FIP-IE, Lei 11.478/2007 art. 2º
-    §2º e IN art. 33): a amortização reduz o custo das cotas. A de FII continua fora (não foi objeto
-    do parecer)."""
-    lista, _ = _infra(
+    §2º e IN art. 33): a amortização reduz o custo das cotas. A de FII também, desde o parecer de
+    24/11/2026 (sem norma expressa; analogia com a IN 1.585 arts. 16 §2º e 37 §3º, parâmetro
+    fii_amortizacao = reduz_custo); com o parâmetro em "fora", fica de fora como antes."""
+    linhas = (
         mov(date(2026, 6, 15), "Amortização", "XINF11 - FUNDO INFRA", "100", "2", "200"),
         mov(date(2026, 6, 15), "Amortização", "KNRI11 - KINEA RENDA", "100", "2", "200", i=2),
     )
-    [p] = lista
-    assert (p.tipo, p.codigo, p.liquido) == (TipoProvento.RESTITUICAO_CAPITAL, "XINF11", D(200))
-    assert "reduz o custo" in p.observacao
+    lista, _ = _infra(*linhas)
+    assert [(p.tipo, p.codigo, p.liquido) for p in lista] == [
+        (TipoProvento.RESTITUICAO_CAPITAL, "XINF11", D(200)),
+        (TipoProvento.RESTITUICAO_CAPITAL, "KNRI11", D(200)),
+    ]
+    assert all("reduz o custo" in p.observacao for p in lista)
+    fora, _ = _infra(*linhas, params=parametros(fii_amortizacao="fora"))
+    assert [p.codigo for p in fora] == ["XINF11"]
