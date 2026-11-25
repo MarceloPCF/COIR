@@ -28,10 +28,9 @@ def nota(n: NotaExtraida, situacao: str, operacoes: int = 0) -> None:
     )  # fmt: skip
 
 
-def rejeicao(r: Rejeitada) -> None:
-    """Por que a nota não entrou: classe e ponto do erro e, na conciliação, campo e diferença."""
-    if not auditoria.ativa():
-        return
+def dados_rejeicao(r: Rejeitada) -> dict[str, object]:
+    """Do erro de uma rejeição, o que a auditoria registra: na conciliação, campo e diferença;
+    sempre, classe e ponto do erro (sem o texto)."""
     conciliacao_ = r.erro if isinstance(r.erro, ConciliacaoError) else None
     diferenca = None
     if (
@@ -40,11 +39,17 @@ def rejeicao(r: Rejeitada) -> None:
         and isinstance(conciliacao_.esperado, Decimal)
     ):
         diferenca = conciliacao_.lido - conciliacao_.esperado
-    auditoria.evento(
-        "importacao.rejeicao", "A", arquivo=r.arquivo, paginas=r.paginas, nota=r.nota or None,
-        data=r.data, campo=conciliacao_.campo if conciliacao_ else None, diferenca=diferenca,
-        **(auditoria.dados_do_erro(r.erro) if r.erro else {}),
-    )  # fmt: skip
+    return {"campo": conciliacao_.campo if conciliacao_ else None, "diferenca": diferenca,
+            **(auditoria.dados_do_erro(r.erro) if r.erro else {})}  # fmt: skip
+
+
+def rejeicao(r: Rejeitada) -> None:
+    """Por que a nota não entrou: classe e ponto do erro e, na conciliação, campo e diferença."""
+    if not auditoria.ativa():
+        return
+    dados = r.auditoria if r.auditoria is not None else dados_rejeicao(r)
+    auditoria.evento("importacao.rejeicao", "A", arquivo=r.arquivo, paginas=r.paginas,
+                     nota=r.nota or None, data=r.data, **dados)  # fmt: skip
 
 
 def _mes(m: MesApurado) -> None:
