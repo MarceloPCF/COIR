@@ -22,11 +22,10 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
-from coir.domain.fiscal import Categoria, Ficha, Grupo, MesApurado, SaldoInicial
+from coir.domain.fiscal import ZERO, Categoria, Ficha, Grupo, MesApurado, SaldoInicial
 from coir.erros import GabaritoError
 from coir.parsing.texto_pdf import paginas
 
-ZERO = Decimal(0)
 MESES = ("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto",
          "Setembro", "Outubro", "Novembro", "Dezembro")  # fmt: skip
 RE_VALOR = r"-?R\$ (?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}|\d+%"

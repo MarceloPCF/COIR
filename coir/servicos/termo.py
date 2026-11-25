@@ -17,7 +17,8 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
-ZERO = Decimal(0)
+from coir.domain.fiscal import ZERO
+
 RE_TICKER_TERMO = re.compile(r"^([A-Z0-9]{4}\d{1,2})T$")  # PETR4T -> PETR4
 LIQUIDACAO_TERMO = "liquidacao termo"
 

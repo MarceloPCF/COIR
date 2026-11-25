@@ -22,7 +22,6 @@ from coir.ui import ocupado, tabela
 from coir.ui.entrada import valor_br
 
 T = TipoColuna
-ZERO = Decimal(0)
 CENARIOS = ("A", "B")
 AVISO_GERAL = (
     "Simulação informativa. Mostra o efeito no imposto de renda das ordens que você digitou, com "

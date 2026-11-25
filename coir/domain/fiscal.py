@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict
 
 CV = Literal["C", "V"]
 ZERO = Decimal(0)
+CENTAVO = Decimal("0.01")
 
 
 class Modelo(BaseModel):

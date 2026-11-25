@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from nicegui import run, ui
 
+from coir.domain.fiscal import ZERO
 from coir.erros import CoirError
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import carteira
@@ -14,7 +15,6 @@ from coir.servicos.estado import Estado
 from coir.ui import tabela
 
 T = TipoColuna
-ZERO = Decimal(0)
 SITUACOES = (
     ("aberta", "Abertas"),
     ("vencida (pó)", "Vencidas (pó)"),

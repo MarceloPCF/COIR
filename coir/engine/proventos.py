@@ -48,13 +48,12 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
 from coir.domain.b3 import LinhaMovimentacao
-from coir.domain.fiscal import ZERO, TipoAtivo
+from coir.domain.fiscal import CENTAVO, ZERO, TipoAtivo
 from coir.domain.formato import reais
 from coir.domain.parametros import ParametrosFiscais, TiposAtivo
 from coir.domain.proventos import LinhaB3, Provento, TipoProvento
 from coir.erros import MotorError
 
-CENTAVO = Decimal("0.01")
 DIVIDENDO, JCP, RENDIMENTO = "Dividendo", "Juros Sobre Capital Próprio", "Rendimento"
 REEMBOLSO, RESTITUICAO = "Reembolso", "Restituição de Capital"
 AMORTIZACAO = "Amortização"

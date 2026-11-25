@@ -11,6 +11,7 @@ from datetime import date
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from typing import Literal
 
+from coir.domain.fiscal import CENTAVO
 from coir.domain.nota import (
     DC,
     CategoriaCusto,
@@ -85,7 +86,6 @@ RE_LIQUIDO_B3RV = re.compile(
 )
 # preço cotado por lote: valor = quantidade x preço / fator (RAIZ55: 100; lote de mil: "*")
 FATORES_COTACAO = (1, 10, 100, 1000)
-CENTAVO = Decimal("0.01")
 
 # (rótulos em rotulos.yaml, nome gravado no custo, categoria, grupo); vale o primeiro rótulo que
 # tiver valor na nota

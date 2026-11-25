@@ -18,7 +18,7 @@ from sqlalchemy import select
 
 from coir.db.modelos import DarfPagamento, Titular
 from coir.db.sessao import conectar
-from coir.domain.fiscal import JurosMora, MesApurado, MultaMora
+from coir.domain.fiscal import ZERO, JurosMora, MesApurado, MultaMora
 from coir.domain.parametros import ReferenciasFiscais
 from coir.engine.darf import juros_mora, multa_mora
 from coir.erros import ImportacaoError
@@ -27,7 +27,6 @@ from coir.servicos import trilha
 log = logging.getLogger(__name__)
 PASTA_COMPROVANTES = "comprovantes"
 LIMITE_COMPROVANTE = 10 * 1024 * 1024
-ZERO = Decimal(0)
 
 
 class Situacao(StrEnum):

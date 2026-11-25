@@ -31,6 +31,7 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
 from coir.domain.fiscal import (
+    CENTAVO,
     ZERO,
     Categoria,
     Ficha,
@@ -42,7 +43,6 @@ from coir.domain.fiscal import (
 )
 from coir.erros import MotorError
 
-CENTAVO = Decimal("0.01")
 Chave = tuple[int, int, int]  # titular, ano, mês
 
 

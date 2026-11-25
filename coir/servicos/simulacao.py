@@ -33,8 +33,6 @@ from coir.erros import SimulacaoError
 from coir.servicos import outros_custos, saldos_iniciais
 from coir.servicos.apuracao import Tickers, entradas
 
-ZERO = Decimal(0)
-
 
 @dataclass(frozen=True)
 class ContaSimulavel:

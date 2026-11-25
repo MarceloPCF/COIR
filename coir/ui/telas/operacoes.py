@@ -1,11 +1,11 @@
 """Tela 5 — Operações: o livro de operações do ano numa grade, com filtros e totais."""
 
 from collections.abc import Callable
-from decimal import Decimal
 
 from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
+from coir.domain.fiscal import ZERO
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos.estado import Estado
@@ -27,7 +27,6 @@ COLUNAS = (
     Coluna("Total", T.DINHEIRO),
     Coluna("Custos", T.DINHEIRO),
 )
-ZERO = Decimal(0)
 
 
 def _valores(linhas: list[LinhaOperacao]) -> list[tuple[Valor, ...]]:

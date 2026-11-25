@@ -20,7 +20,7 @@ from typing import Literal
 from openpyxl import load_workbook
 from pydantic import BaseModel, ConfigDict
 
-from coir.domain.fiscal import Movimento
+from coir.domain.fiscal import CENTAVO, Movimento
 from coir.domain.referencias import codigo_atual
 from coir.erros import GabaritoError
 from coir.gabarito.normalizar import corretora as normalizar_corretora
@@ -30,7 +30,6 @@ RE_SECAO = re.compile(r"^(?P<ano>\d{4}) - (?P<mes>[^-]+) - (?P<mercado>Bovespa|B
 ALIAS_CORRETORA = {"BANCO BTG PACTUAL S/A": "BTG"}
 COLUNAS = ("Ativo", "Quantidade", "Corretora", "C/V", "Custo Médio", "C/V", "Custo Final", "Data",
            "Lucratividade", "Observação", "LAIR")  # fmt: skip
-CENTAVO = Decimal("0.01")
 
 Classe = Literal[
     "confere", "ticker com outro código", "outro dia do mesmo mês", "diferença",

@@ -4,11 +4,10 @@ e, ao escolher um ativo, a trilha do PM ao lado (cada passo com a regra e a nota
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal
 
 from nicegui import run, ui
 
-from coir.domain.fiscal import Movimento, Visao
+from coir.domain.fiscal import ZERO, Movimento, Visao
 from coir.erros import CoirError
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import carteira, relatorios
@@ -27,7 +26,6 @@ COLUNAS_TRILHA = (
     Coluna("PM após", T.PM),
     Coluna("Regra"),
 )
-ZERO = Decimal(0)
 
 
 def _colunas(visao: Visao) -> tuple[Coluna, ...]:

@@ -7,10 +7,8 @@ Rateio em centavos pelo maior resto: as parcelas somam exatamente o total da not
 from collections.abc import Sequence
 from decimal import ROUND_DOWN, Decimal
 
-from coir.domain.fiscal import ZERO
+from coir.domain.fiscal import CENTAVO, ZERO
 from coir.erros import MotorError
-
-CENTAVO = Decimal("0.01")
 
 
 def ratear(total: Decimal, pesos: Sequence[Decimal]) -> list[Decimal]:

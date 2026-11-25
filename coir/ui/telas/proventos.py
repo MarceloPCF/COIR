@@ -9,6 +9,7 @@ from decimal import Decimal
 from nicegui import run, ui
 from nicegui.events import ValueChangeEventArguments
 
+from coir.domain.fiscal import ZERO
 from coir.domain.proventos import Provento, TipoProvento
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES, NOME_PROVENTO
@@ -18,7 +19,6 @@ from coir.servicos.proventos import informar_credito, informar_origem_reembolso
 from coir.ui import tabela, tema
 
 T = TipoColuna
-ZERO = Decimal(0)
 COLUNAS = (
     Coluna("Pagamento", T.DATA),
     Coluna("Ativo"),

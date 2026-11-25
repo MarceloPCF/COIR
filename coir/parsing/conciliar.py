@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from itertools import product
 
+from coir.domain.fiscal import ZERO
 from coir.domain.formato import reais
 from coir.domain.nota import (
     ROTULO_AJUSTE,
@@ -32,7 +33,6 @@ from coir.parsing.observacoes import MARCAS_COM_AVISO
 
 TOLERANCIA_NOTA = Decimal("0.05")  # além do arredondamento explicado, por nota
 MEIO_CENTAVO = Decimal("0.005")  # erro máximo de cada valor impresso, arredondado ao centavo
-ZERO = Decimal(0)
 
 
 @dataclass(frozen=True)

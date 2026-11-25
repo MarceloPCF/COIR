@@ -9,6 +9,7 @@ from decimal import Decimal
 from nicegui import run, ui
 
 from coir.domain.fiscal import (
+    ZERO,
     Apuracao,
     Categoria,
     Ficha,
@@ -33,7 +34,6 @@ from coir.servicos.estado import Estado
 from coir.ui import tabela
 
 T = TipoColuna
-ZERO = Decimal(0)
 COLUNAS_ANO = (
     Coluna("Mês"),
     Coluna("Comum", T.DINHEIRO),

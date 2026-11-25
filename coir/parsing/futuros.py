@@ -17,7 +17,7 @@ from collections import defaultdict
 from datetime import date
 from decimal import Decimal
 
-from coir.domain.fiscal import TipoAjuste
+from coir.domain.fiscal import CENTAVO, TipoAjuste
 from coir.domain.nota import NegocioBMF, NotaExtraida
 from coir.domain.referencias import ContratoFuturo, Referencias
 from coir.erros import ConciliacaoError, ExtracaoError, ReferenciaError
@@ -26,7 +26,6 @@ from coir.parsing.numeros import compactar
 RE_CONTRATO = re.compile(r"^[A-Z]{3}(?:[FGHJKMNQUVXZ]\d{2}|PPPP)$")
 TIPOS = {"NORMAL": TipoAjuste.NORMAL, "DAYTRADE": TipoAjuste.DAY_TRADE,
          "AJUPOS": TipoAjuste.AJUPOS}  # fmt: skip
-CENTAVO = Decimal("0.01")
 UM = Decimal(1)
 
 

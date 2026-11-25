@@ -31,14 +31,13 @@ from coir.db.modelos import (
     PosicaoB3,
 )
 from coir.db.sessao import conectar
-from coir.domain.fiscal import PosicaoAtivo, TipoAtivo, Visao
+from coir.domain.fiscal import ZERO, PosicaoAtivo, TipoAtivo, Visao
 from coir.domain.parametros import ReferenciasFiscais
 from coir.domain.referencias import Referencias
 from coir.engine.calendario import UM_DIA, dia_de_pregao
 from coir.servicos import trilha
 from coir.servicos.apuracao import carteira_banco
 
-ZERO = Decimal(0)
 D2_DESDE = date(2019, 5, 27)  # B3: ciclo de liquidação de ações passou de D+3 para D+2
 JANELA = timedelta(days=10)
 RE_SERIE = re.compile(r"^[A-Z0-9]{4}[A-X]\d")
