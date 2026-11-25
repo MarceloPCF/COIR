@@ -18,8 +18,8 @@ from coir.domain.irpf import FichasIrpf, MapeamentoIrpf
 from coir.domain.proventos import Provento, TipoProvento
 from coir.erros import CoirError, ConfiguracaoError
 from coir.gabarito.comparar import Tolerancias
-from coir.gabarito.dirpf import Dirpf, ler_dirpf
-from coir.gabarito.dirpf_comparar import LinhaComparacao, carregar_explicacoes, comparar, explicar
+from coir.importers.dirpf import Dirpf, ler_dirpf
+from coir.servicos.dirpf_comparar import LinhaComparacao, carregar_explicacoes, comparar, explicar
 
 PASTA_DIRPF = "_dirpf"
 

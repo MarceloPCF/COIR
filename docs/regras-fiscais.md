@@ -345,7 +345,7 @@ Respostas do usuário e pareceres do `especialista-fiscal-b3`; todos os valores 
 ## Declaração anual (F8, 20/10/2026)
 Parecer do `especialista-fiscal-b3` e decisões do usuário; casos em
 `tests/fiscal_cases/test_irpf_linhas.py`. Critério de saída: reproduzir a DIRPF 2026 (ano-calendário
-2025) entregue, lida do PDF do programa (`coir/gabarito/dirpf.py`, fora do repositório).
+2025) entregue, lida do PDF do programa (`coir/importers/dirpf.py`, fora do repositório).
 - Linhas da ficha "Renda variável - operações comuns/day trade": opção cujo ativo-objeto é ação ou
   unit em "opções - ações"; ETF, índice e outros em "opções - outros" (parâmetro
   `opcoes_linha_acoes_tipos_objeto`; P&R IRPF 2026 pergunta 707 separa cotas de fundo de índice de

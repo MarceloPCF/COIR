@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal
 
 from coir.domain.proventos import Provento, TipoProvento
-from coir.gabarito.dirpf import BemDeclarado, Dirpf
+from coir.importers.dirpf import BemDeclarado, Dirpf
 from coir.servicos.declaracao import propor_creditos
 
 D = Decimal

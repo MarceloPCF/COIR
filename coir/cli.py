@@ -317,12 +317,12 @@ def gabarito_dirpf(
     from collections import Counter
 
     from coir.gabarito.comparar import Tolerancias
-    from coir.gabarito.dirpf import ler_dirpf
-    from coir.gabarito.dirpf_comparar import carregar_explicacoes, comparar, explicar, gravar
     from coir.gabarito.exportar import exigir_fora_do_repositorio
     from coir.gabarito.externo import ticker_atual
+    from coir.importers.dirpf import ler_dirpf
     from coir.reports.irpf import fichas
     from coir.servicos.declaracao import declaracoes_lidas
+    from coir.servicos.dirpf_comparar import carregar_explicacoes, comparar, explicar, gravar
     from coir.servicos.relatorios import dados_banco
 
     dados = dados_dir(exigir=True)

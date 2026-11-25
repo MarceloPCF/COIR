@@ -5,8 +5,8 @@ from pathlib import Path
 
 from coir import referencias
 from coir.domain.irpf import BemIrpf, FichasIrpf, LinhaFicha, MesFichaIrpf, RendimentoIrpf
-from coir.gabarito.dirpf import ler_texto
-from coir.gabarito.dirpf_comparar import carregar_explicacoes, comparar, explicar, gravar
+from coir.importers.dirpf import ler_texto
+from coir.servicos.dirpf_comparar import carregar_explicacoes, comparar, explicar, gravar
 from tests.unit.test_dirpf_leitura import LINHAS_MERCADO, _paginas
 
 D = Decimal
