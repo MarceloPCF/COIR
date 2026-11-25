@@ -383,3 +383,56 @@ async def test_declaracao_marcar_e_desmarcar_depressa_grava_o_ultimo(demo: Path)
         await asyncio.sleep(0.5)  # a desmarcação, se esperava a vez, grava agora
         assert caixa.value is False
         assert "rv:01" not in estado.lancados()
+
+
+@pytest.mark.asyncio
+async def test_proventos_trocar_a_origem_depressa_grava_a_ultima(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Escolher JCP e logo Dividendos na origem do reembolso: as duas gravações rodam em threads
+    e a primeira, se terminar por último, deixava JCP no banco com Dividendos escolhido."""
+    from sqlalchemy import select
+
+    from coir.db.modelos import MovimentacaoB3, OrigemReembolso
+    from coir.db.sessao import conectar
+    from coir.ui.telas import proventos as tela
+
+    estado = _estado(tmp_path / "coir.db")
+    estado.preparar(AGORA)
+    adicionar_titular(estado.banco, cpf_de_teste(), "Titular")
+    mov = planilha(tmp_path / "movimentacao-2026-10-16.xlsx", {"Movimentação": [
+        CAB_MOV,
+        ["Credito", "10/03/2026", "Reembolso", "ITSA4 - ITAUSA",
+         "XP INVESTIMENTOS CCTVM S/A", 0, "-", "37,15"],
+    ]})  # fmt: skip
+    importar_planilhas(estado.banco, [mov], 1, AGORA)
+    with conectar(estado.banco) as fabrica, fabrica() as s:
+        chave = s.scalars(select(MovimentacaoB3.chave)).one()
+    liberar, terminou = threading.Event(), threading.Event()
+    informar = tela.informar_origem_reembolso
+
+    def informar_lento(banco: Path, ch: str, origem: str | None, agora: object) -> None:
+        if origem == "JCP":
+            liberar.wait(10)
+        informar(banco, ch, origem, agora)  # type: ignore[arg-type]
+        if origem == "JCP":
+            terminou.set()
+
+    monkeypatch.setattr(tela, "informar_origem_reembolso", informar_lento)
+    async with user_simulation(lambda: montar(estado)) as user:
+        await user.open("/proventos")
+        await user.should_see("Origem dos reembolsos de BTC", retries=ESPERA)
+        seletor = user.find(marker=f"origem-{chave[:12]}").elements.pop()
+        assert isinstance(seletor, ui.select)
+        seletor.set_value("JCP")
+        await asyncio.sleep(0.3)  # a gravação de JCP começa (e espera)
+        seletor.set_value("DIVIDENDO")
+        await asyncio.sleep(0.3)
+        liberar.set()
+        for _ in range(ESPERA):
+            if terminou.is_set():
+                break
+            await asyncio.sleep(0.1)
+        await asyncio.sleep(1)  # a escolha de Dividendos, se esperava a vez, grava agora
+    with conectar(estado.banco) as fabrica, fabrica() as s:
+        assert [o.origem for o in s.scalars(select(OrigemReembolso))] == ["DIVIDENDO"]
