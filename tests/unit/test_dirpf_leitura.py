@@ -10,7 +10,7 @@ from decimal import Decimal
 import pytest
 
 from coir.erros import GabaritoError
-from coir.gabarito.dirpf import FII, MESES, ler_texto
+from coir.importers.dirpf import FII, MESES, ler_texto
 
 D = Decimal
 CABECALHO = """NOME:

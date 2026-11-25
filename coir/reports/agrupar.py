@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
+from coir.domain.fiscal import ZERO
 from coir.reports.modelo import Coluna, TipoColuna, Valor
 
 T = TipoColuna
@@ -29,7 +30,6 @@ COLUNAS_POR_ATIVO = (
     Coluna("Resultado", T.DINHEIRO),
 )
 COLUNA_ATIVO, COLUNA_DATA = 0, 8
-ZERO = Decimal(0)
 BOVESPA, BMF = "Bovespa", "BM&F"
 
 

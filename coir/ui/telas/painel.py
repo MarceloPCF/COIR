@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from nicegui import run, ui
 
-from coir.domain.fiscal import Apuracao, Categoria, MesApurado
+from coir.domain.fiscal import ZERO, Apuracao, Categoria, MesApurado
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import TipoColuna, formatar
@@ -17,7 +17,6 @@ from coir.ui import preferencias, tema
 
 log = logging.getLogger(__name__)
 
-ZERO = Decimal(0)
 SERIES = (
     (Categoria.COMUM, "Comum", tema.CLARO.caneta),
     (Categoria.DAY_TRADE, "Day trade", tema.CLARO.carimbo),

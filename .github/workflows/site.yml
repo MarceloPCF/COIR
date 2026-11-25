@@ -1,0 +1,50 @@
+name: Site
+
+# Publica coir.com.br pelo GitHub Pages: as páginas de site/ e o que o site usa do repositório
+# (manual, imagens das telas, imagem social, página da v2), montados por tools/site/montar_site.py
+# com os mesmos endereços de sempre. Requer Settings > Pages > Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "docs/manual/**"
+      - "docs/site/**"
+      - "docs/social-preview*.png"
+      - "legacy/index.html"
+      - "legacy/docs/imagens/**"
+      - "tools/site/montar_site.py"
+      - ".github/workflows/site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.publicacao.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Montar o site
+        run: python3 tools/site/montar_site.py _site
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6.0.0
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+        with:
+          path: _site
+
+      - id: publicacao
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1

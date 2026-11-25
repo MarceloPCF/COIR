@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from nicegui import run, ui
 
-from coir.domain.fiscal import Categoria
+from coir.domain.fiscal import ZERO, Categoria
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import TipoColuna, formatar
@@ -14,7 +14,6 @@ from coir.servicos import outros_custos
 from coir.servicos.estado import Estado
 from coir.ui.entrada import valor_br
 
-ZERO = Decimal(0)
 NOMES = {Categoria.COMUM: "Comum", Categoria.DAY_TRADE: "Day trade"}
 
 

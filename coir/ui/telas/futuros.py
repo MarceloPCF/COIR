@@ -2,11 +2,10 @@
 ano por mês e contrato e, ao escolher um contrato, os ajustes dia a dia com as notas."""
 
 from collections.abc import Callable
-from decimal import Decimal
 
 from nicegui import run, ui
 
-from coir.domain.fiscal import Grupo
+from coir.domain.fiscal import ZERO, Grupo
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
 from coir.reports.modelo import Coluna, TipoColuna, Valor
@@ -15,7 +14,6 @@ from coir.servicos.estado import Estado
 from coir.ui import tabela
 
 T = TipoColuna
-ZERO = Decimal(0)
 GRUPOS = {Grupo.INDICE: "Índice", Grupo.DOLAR: "Dólar", Grupo.JUROS: "Juros",
           Grupo.COMMODITY: "Commodity"}  # fmt: skip
 COLUNAS_ABERTAS = (

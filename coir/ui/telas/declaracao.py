@@ -3,6 +3,7 @@ botão de copiar e cada item com a marcação "lançado no programa" (gravada po
 conferência com a declaração entregue quando o PDF está em <dados>/_dirpf (critério do COIR de
 20/10/2026: alternativa COIR, ficha a ficha)."""
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from decimal import Decimal
 
@@ -97,9 +98,12 @@ def _tela(estado: Estado, f: FichasIrpf, mapa: MapeamentoIrpf, feitos: set[str])
     for aviso in f.avisos:
         ui.label(aviso).classes("coir-carimbo text-xs")
 
+    gravando = asyncio.Lock()  # marcar e desmarcar depressa: grava na ordem dos cliques
+
     async def marcar(chave: str, valor: bool) -> None:
         try:
-            await run.io_bound(estado.marcar_lancado, chave, valor)
+            async with gravando:
+                await run.io_bound(estado.marcar_lancado, chave, valor)
         except CoirError as erro:
             ui.notify(f"Não gravado: {erro}", type="negative")
             return

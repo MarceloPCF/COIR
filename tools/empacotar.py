@@ -139,6 +139,7 @@ def fumaca(pasta: Path) -> None:
         if revisao != revisao_final() or len(backups) != 1:
             raise SystemExit(f"fumaça: migração {REVISAO_ANTIGA}->{revisao}, {len(backups)} backup")
         print(f"fumaça: banco {REVISAO_ANTIGA} -> {revisao}, com backup")
+        _importar_em_processos(cli, env, dados, banco)
         ui = subprocess.Popen([cli, "ui", "--navegador", "--no-abrir", "--porta",
                                str(PORTA_FUMACA)], env=env)  # fmt: skip
         try:
@@ -148,6 +149,23 @@ def fumaca(pasta: Path) -> None:
             ui.kill()  # reserva, se o taskkill falhar
             ui.wait(30)
         print("fumaça: interface respondeu")
+
+
+def _importar_em_processos(cli: str, env: dict[str, str], dados: Path, banco: Path) -> None:
+    """Notas fictícias em PDF, acima do mínimo da leitura em processos: no programa empacotado,
+    cada processo de leitura reabre o executável (spawn + freeze_support)."""
+    from coir.servicos.extracao import MINIMO_PARALELO
+    from tools.notas_ficticias import ROTEIRO_DEMONSTRACAO, carregar, gerar
+
+    pdfs, _ = gerar(carregar(ROTEIRO_DEMONSTRACAO), dados / "notas-ficticias")
+    if len(pdfs) < MINIMO_PARALELO:
+        raise SystemExit(f"fumaça: só {len(pdfs)} PDFs fictícios (mínimo {MINIMO_PARALELO})")
+    subprocess.run([cli, "importar", str(pdfs[0].parent)], env=env, check=True, timeout=300)
+    with closing(sqlite3.connect(banco)) as c:
+        [(notas,)] = c.execute("SELECT count(*) FROM nota_corretagem").fetchall()
+    if notas < len(pdfs):
+        raise SystemExit(f"fumaça: {len(pdfs)} PDFs e só {notas} notas no banco")
+    print(f"fumaça: {len(pdfs)} PDFs lidos em processos, {notas} notas gravadas")
 
 
 def _esperar_http(url: str, segundos: int) -> None:

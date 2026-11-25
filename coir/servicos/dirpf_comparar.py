@@ -19,10 +19,10 @@ from dataclasses import dataclass, replace
 from decimal import Decimal
 from pathlib import Path
 
+from coir.domain.fiscal import ZERO
 from coir.domain.irpf import FichasIrpf, MapeamentoIrpf, MesFichaIrpf
-from coir.gabarito.dirpf import MESES, Dirpf, MesFicha
+from coir.importers.dirpf import MESES, Dirpf, MesFicha
 
-ZERO = Decimal(0)
 Chave = tuple[str, str, str]  # seção, item, coluna
 
 

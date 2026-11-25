@@ -3,8 +3,9 @@
 - engine e parsing dependem só de domain (e de coir.erros); domain não depende de outra camada.
 - gabarito (ferramenta de validação) pode usar parsing, pyxlsb e openpyxl (planilha externa),
   mas não db, ui nem engine.
-- db (SQLAlchemy/Alembic) depende só de domain; servicos orquestra parsing + db (sem ui) e usa a
-  leitura e a comparação da DIRPF entregue de gabarito (tela 14).
+- importers lê os arquivos de entrada (planilhas da B3 e a DIRPF entregue, em PDF, pelo texto
+  do parsing); db (SQLAlchemy/Alembic) depende só de domain; servicos orquestra parsing,
+  importers e db (sem ui), inclusive a comparação da DIRPF (tela 14).
 - ui (NiceGUI, ADR 0004) só apresenta: usa servicos, reports e domain, nunca engine nem db.
 - reports (xlsx/csv/pdf, ADR 0003) parte só do modelo neutro e do domain: sem banco, motor nem UI;
   só ela usa xlsxwriter e reportlab, e não lê o relógio (a data de geração vem de fora).
@@ -27,7 +28,8 @@ INTERNOS_PERMITIDOS = {
         "coir.gabarito", "coir.domain", "coir.erros", "coir.parsing", "coir.recursos",
     ),
     "db": ("coir.db", "coir.domain", "coir.erros"),
-    "importers": ("coir.importers", "coir.domain", "coir.erros"),
+    # leitura de arquivos de entrada (planilhas da B3, DIRPF em PDF pelo texto do parsing)
+    "importers": ("coir.importers", "coir.domain", "coir.erros", "coir.parsing"),
     "reports": ("coir.reports", "coir.domain", "coir.erros"),
     "servicos": (
         "coir.servicos", "coir.db", "coir.domain", "coir.engine", "coir.erros", "coir.parsing",

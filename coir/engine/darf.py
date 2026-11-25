@@ -24,12 +24,11 @@ from collections.abc import Mapping
 from datetime import date
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 
-from coir.domain.fiscal import ZERO, JurosMora, MultaMora
+from coir.domain.fiscal import CENTAVO, ZERO, JurosMora, MultaMora
 from coir.domain.parametros import Calendario, ParametrosFiscais
 from coir.engine.calendario import UM_DIA, dia_util
 from coir.erros import MotorError
 
-CENTAVO = Decimal("0.01")
 ARREDONDAMENTOS = {"ROUND_DOWN": ROUND_DOWN, "ROUND_HALF_UP": ROUND_HALF_UP}
 
 

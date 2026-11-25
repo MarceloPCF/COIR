@@ -1,6 +1,7 @@
 """Tela 10 — Proventos do ano: cartões pelas linhas do IRPF, gráfico mensal e a tabela dos
 lançamentos (da movimentação da B3), com os avisos (Lei 15.270, BDR, a classificar)."""
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from decimal import Decimal
@@ -8,6 +9,7 @@ from decimal import Decimal
 from nicegui import run, ui
 from nicegui.events import ValueChangeEventArguments
 
+from coir.domain.fiscal import ZERO
 from coir.domain.proventos import Provento, TipoProvento
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES, NOME_PROVENTO
@@ -17,7 +19,6 @@ from coir.servicos.proventos import informar_credito, informar_origem_reembolso
 from coir.ui import tabela, tema
 
 T = TipoColuna
-ZERO = Decimal(0)
 COLUNAS = (
     Coluna("Pagamento", T.DATA),
     Coluna("Ativo"),
@@ -120,10 +121,13 @@ def _reembolsos(estado: Estado, lista: list[Provento],
     """Reembolsos de BTC cuja origem o valor não identificou (ou que o usuário já informou): a
     origem pelo informe da empresa ou extrato da corretora prevalece (parecer do especialista)."""
 
+    gravando = asyncio.Lock()  # trocar a origem depressa: grava na ordem das escolhas
+
     async def salvar(p: Provento, origem: str) -> None:
         try:
-            await run.io_bound(informar_origem_reembolso, estado.banco, p.chave, origem or None,
-                               estado.agora())  # fmt: skip
+            async with gravando:
+                await run.io_bound(informar_origem_reembolso, estado.banco, p.chave,
+                                   origem or None, estado.agora())  # fmt: skip
         except CoirError as erro:
             ui.notify(f"Não gravado: {erro}", type="negative")
             return
@@ -158,6 +162,8 @@ def _creditos(estado: Estado, jcp: list[Provento],
     """Data do crédito de cada JCP: a da B3 (a mais tarde entre a aprovação e a data com) ou a
     informada pelo usuário, que decide o ano da declaração (IN SRF 41/1998 art. 3º)."""
 
+    gravando = asyncio.Lock()  # gravar e apagar depressa: na ordem dos cliques
+
     async def salvar(p: Provento, campo: ui.input, apagar: bool) -> None:
         try:
             texto = (campo.value or "").strip()
@@ -166,7 +172,8 @@ def _creditos(estado: Estado, jcp: list[Provento],
             ui.notify("Data inválida: use dd/mm/aaaa.", type="warning")
             return
         try:
-            await run.io_bound(informar_credito, estado.banco, p.chave, dia, estado.agora())
+            async with gravando:
+                await run.io_bound(informar_credito, estado.banco, p.chave, dia, estado.agora())
         except CoirError as erro:
             ui.notify(f"Não gravado: {erro}", type="negative")
             return

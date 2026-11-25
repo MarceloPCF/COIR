@@ -2,9 +2,10 @@
 """Páginas HTML do site a partir do Markdown do repositório, no visual do site (marinho e verde):
 
 - docs/manual/**/*.md -> o .html ao lado (README.md vira index.html), com os links .md trocados;
-- docs/fontes-fiscais.md -> fontes.html; CHANGELOG.md -> novidades.html (raiz do site).
+- docs/fontes-fiscais.md -> site/fontes.html; CHANGELOG.md -> site/novidades.html (publicadas na
+  raiz do site: os links são calculados pelo endereço publicado, ver tools/site/montar_site.py).
 
-O GitHub Pages serve os arquivos como estão (.nojekyll), por isso o Markdown precisa virar HTML.
+O site é publicado como está (workflow site.yml, sem Jekyll), por isso o Markdown precisa virar HTML.
 Uso: uv run python tools/site/gerar_paginas.py
 """
 
@@ -15,6 +16,7 @@ from pathlib import Path
 import markdown2
 
 RAIZ = Path(__file__).resolve().parents[2]
+PAGINAS = RAIZ / "site"  # páginas publicadas na raiz do site
 SITE = "https://coir.com.br/"
 RE_LINK = re.compile(r'href="([^":#]+?)\.md(#[^"]*)?"')
 RE_TITULO = re.compile(r"^# (.+)$", re.M)
@@ -89,13 +91,19 @@ def _relativo(destino: Path, pasta: Path) -> str:
     return os.path.relpath(destino, pasta).replace(os.sep, "/")
 
 
+def _publicado(destino: Path) -> Path:
+    """Onde a página fica no site, em caminho do repositório: o que está em site/ é publicado
+    na raiz; o manual, no mesmo caminho."""
+    return RAIZ / destino.relative_to(PAGINAS) if destino.is_relative_to(PAGINAS) else destino
+
+
 def pagina(origem: Path, destino: Path) -> Path:
     texto = origem.read_text(encoding="utf-8")
     m = RE_TITULO.search(texto)
     titulo = m[1].strip() if m else origem.stem
     corpo = markdown2.markdown(texto, extras=["tables", "fenced-code-blocks", "header-ids"])
     corpo = _links(corpo, origem)
-    raiz = _relativo(RAIZ, destino.parent)
+    raiz = _relativo(RAIZ, _publicado(destino).parent)
     raiz = "" if raiz == "." else raiz + "/"
     destino.write_text(MODELO.format(titulo=html.escape(titulo), raiz=raiz, corpo=corpo),
                        encoding="utf-8", newline="\n")  # fmt: skip
@@ -106,8 +114,8 @@ def main() -> None:
     manual = RAIZ / "docs" / "manual"
     feitas = [pagina(md, md.with_name("index.html") if md.name == "README.md"
                      else md.with_suffix(".html")) for md in sorted(manual.rglob("*.md"))]  # fmt: skip
-    feitas.append(pagina(RAIZ / "docs" / "fontes-fiscais.md", RAIZ / "fontes.html"))
-    feitas.append(pagina(RAIZ / "CHANGELOG.md", RAIZ / "novidades.html"))
+    feitas.append(pagina(RAIZ / "docs" / "fontes-fiscais.md", PAGINAS / "fontes.html"))
+    feitas.append(pagina(RAIZ / "CHANGELOG.md", PAGINAS / "novidades.html"))
     for f in feitas:
         print(f.relative_to(RAIZ).as_posix())
 

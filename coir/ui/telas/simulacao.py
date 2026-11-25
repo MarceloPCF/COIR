@@ -22,7 +22,6 @@ from coir.ui import ocupado, tabela
 from coir.ui.entrada import valor_br
 
 T = TipoColuna
-ZERO = Decimal(0)
 CENARIOS = ("A", "B")
 AVISO_GERAL = (
     "Simulação informativa. Mostra o efeito no imposto de renda das ordens que você digitou, com "
@@ -244,6 +243,103 @@ def _day_trade(r: ResultadoSimulacao, nome: str, contas: dict[int, str],
     return textos
 
 
+def _resultados(
+    base: ResultadoSimulacao, resultados: dict[str, ResultadoSimulacao],
+    cenarios: dict[str, list[OrdemDigitada]], contas: dict[int, str], v: dict[str, str],
+) -> None:  # fmt: skip
+    """O quadro dos cenários, o mês a mês e as ordens de cada um, o day trade e os avisos."""
+    ui.label(f"Resultado até {base.ate:%m/%Y}").classes("coir-titulo text-base")
+    _quadro(base, resultados)
+    for nome, r in resultados.items():
+        ui.label(f"Cenário {nome}: mês a mês e ordens").classes("coir-titulo text-base")
+        tabela.grade(COLUNAS_MES, _linhas_mes(r)).mark(f"sim-meses-{nome}")
+        tabela.grade(COLUNAS_ORDEM, [
+            (o.numero, o.ticker, o.cv, o.quantidade, o.valor, o.resultado,
+             o.quantidade_day_trade, o.resultado_day_trade, o.quantidade_apos, o.pm_apos)
+            for o in r.ordens
+        ]).mark(f"sim-ordens-{nome}")  # fmt: skip
+    textos = [t for nome, r in resultados.items()
+              for t in _day_trade(r, nome, contas, cenarios[nome], v)]  # fmt: skip
+    with ui.column().classes("w-full gap-1").mark("sim-day-trade"):
+        ui.label("Day trade").classes("coir-titulo text-base")
+        for t in textos:
+            ui.label(t).classes("coir-carimbo text-sm")
+        ui.label(DAY_TRADE_FIXO.format(**v)).classes("coir-subtitulo text-xs")
+    avisos = sorted({a for r in resultados.values() for a in r.avisos})
+    if avisos:
+        with ui.column().classes("w-full gap-1").mark("sim-avisos"):
+            ui.label("Avisos que só aparecem com as ordens").classes(
+                "coir-titulo text-base")  # fmt: skip
+            for a in avisos:
+                ui.label(a).classes("text-sm")
+
+
+def _linha_ordem(k: int, o: _Ordem, contas: dict[int, str], remover: Callable[[int], None]) -> None:
+    """Os campos de uma ordem digitada (cada campo grava direto na ordem)."""
+    n = k + 1
+    ui.label(str(n))
+    ui.select({"V": "Venda", "C": "Compra"}, value=o.cv,
+              on_change=lambda e, o=o: setattr(o, "cv", e.value)).props(
+        "outlined dense options-dense").mark(f"sim-cv-{n}")  # fmt: skip
+    ui.input(value=o.ticker, on_change=lambda e, o=o: setattr(o, "ticker", e.value or "")
+             ).props("outlined dense").mark(f"sim-ticker-{n}")  # fmt: skip
+    ui.select(contas, value=o.conta,
+              on_change=lambda e, o=o: setattr(o, "conta", e.value)).props(
+        "outlined dense options-dense").mark(f"sim-conta-{n}")  # fmt: skip
+    for campo in ("quantidade", "preco", "custos"):
+        ui.input(value=getattr(o, campo),
+                 on_change=lambda e, o=o, campo=campo: setattr(o, campo, e.value or "")
+                 ).props("outlined dense input-class=text-right").mark(
+            f"sim-{campo}-{n}")  # fmt: skip
+    for c in CENARIOS:
+        ui.input(value=o.datas[c],
+                 on_change=lambda e, o=o, c=c: o.datas.__setitem__(c, e.value or "")
+                 ).props("outlined dense type=date clearable").mark(
+            f"sim-data-{c.lower()}-{n}")  # fmt: skip
+    ui.button(icon="close", on_click=partial(remover, k)).props(
+        "flat round dense").tooltip("Tirar a ordem").mark(f"sim-remover-{n}")  # fmt: skip
+
+
+def _carteira(ctx: Contexto, nomes: dict[int, str], de_posicao: Callable[[object], None]) -> None:
+    """A faixa de datas das ordens e as posições da carteira (clicar cria uma venda)."""
+    posicoes = ctx.posicoes
+    ultima = f"{ctx.ultima_nota:%d/%m/%Y}" if ctx.ultima_nota else "nenhuma"
+    ano, mes = ctx.ultimo_mes
+    ui.label(
+        f"Notas importadas até {ultima}. As ordens vão desta data até {mes:02d}/{ano}, em "
+        "dias de pregão. Clique numa posição para criar uma venda dela."
+    ).classes("coir-subtitulo text-sm").mark("sim-faixa")
+    tabela.grade(
+        COLUNAS_POSICOES,
+        [(p.ticker, nomes.get(p.conta, ""), p.quantidade, p.pm) for p in posicoes],
+        chaves=list(range(len(posicoes))), altura="h-[260px]", ao_clicar=de_posicao,
+    ).mark("sim-posicoes")  # fmt: skip
+
+
+def _hipoteses(ctx: Contexto | None, v: dict[str, str]) -> None:
+    """As hipóteses da simulação, com a data da última nota quando a carteira já foi lida."""
+    ultima = (f"{ctx.ultima_nota:%d/%m/%Y}"
+              if ctx and ctx.ultima_nota else "a última nota")  # fmt: skip
+    for h in HIPOTESES:
+        ui.label("• " + h.format(ultima=ultima, **v)).classes("text-sm")
+
+
+def _grade_ordens(ordens: list[_Ordem], contas: dict[int, str],
+                  remover: Callable[[int], None]) -> None:  # fmt: skip
+    """As ordens digitadas, uma por linha (ou o convite para adicionar a primeira)."""
+    if not ordens:
+        ui.label("Nenhuma ordem. Clique numa posição ou em Adicionar ordem.").classes(
+            "coir-vazio w-full")  # fmt: skip
+        return
+    with ui.grid(columns="40px 110px 120px 200px 120px 110px 110px 160px 160px 40px"
+                 ).classes("coir-folha w-full gap-x-2 gap-y-1 items-center"):  # fmt: skip
+        for rotulo in ("Nº", "C/V", "Ativo", "Conta", "Quantidade", "Preço", "Custos",
+                       "Data no cenário A", "Data no cenário B", ""):  # fmt: skip
+            ui.label(rotulo).classes("coir-campo-rotulo")
+        for k, o in enumerate(ordens):
+            _linha_ordem(k, o, contas, remover)
+
+
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     del ao_mudar  # só leitura: nada muda no banco
     hoje = estado.agora().date()
@@ -284,11 +380,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
     def hipoteses() -> None:
         lista_hipoteses.clear()
-        ultima = (f"{ctx_box[0].ultima_nota:%d/%m/%Y}"
-                  if ctx_box and ctx_box[0].ultima_nota else "a última nota")  # fmt: skip
         with lista_hipoteses:
-            for h in HIPOTESES:
-                ui.label("• " + h.format(ultima=ultima, **v)).classes("text-sm")
+            _hipoteses(ctx_box[0] if ctx_box else None, v)
 
     def adicionar(ordem: _Ordem | None = None) -> None:
         nova = ordem or _Ordem()
@@ -311,41 +404,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
     def desenhar_ordens() -> None:
         grade_ordens.clear()
         with grade_ordens:
-            if not ordens:
-                ui.label("Nenhuma ordem. Clique numa posição ou em Adicionar ordem.").classes(
-                    "coir-vazio w-full")  # fmt: skip
-                return
-            with ui.grid(columns="40px 110px 120px 200px 120px 110px 110px 160px 160px 40px"
-                         ).classes("coir-folha w-full gap-x-2 gap-y-1 items-center"):  # fmt: skip
-                for rotulo in ("Nº", "C/V", "Ativo", "Conta", "Quantidade", "Preço", "Custos",
-                               "Data no cenário A", "Data no cenário B", ""):  # fmt: skip
-                    ui.label(rotulo).classes("coir-campo-rotulo")
-                for k, o in enumerate(ordens):
-                    linha_ordem(k, o)
-
-    def linha_ordem(k: int, o: _Ordem) -> None:
-        n = k + 1
-        ui.label(str(n))
-        ui.select({"V": "Venda", "C": "Compra"}, value=o.cv,
-                  on_change=lambda e, o=o: setattr(o, "cv", e.value)).props(
-            "outlined dense options-dense").mark(f"sim-cv-{n}")  # fmt: skip
-        ui.input(value=o.ticker, on_change=lambda e, o=o: setattr(o, "ticker", e.value or "")
-                 ).props("outlined dense").mark(f"sim-ticker-{n}")  # fmt: skip
-        ui.select(contas(), value=o.conta,
-                  on_change=lambda e, o=o: setattr(o, "conta", e.value)).props(
-            "outlined dense options-dense").mark(f"sim-conta-{n}")  # fmt: skip
-        for campo in ("quantidade", "preco", "custos"):
-            ui.input(value=getattr(o, campo),
-                     on_change=lambda e, o=o, campo=campo: setattr(o, campo, e.value or "")
-                     ).props("outlined dense input-class=text-right").mark(
-                f"sim-{campo}-{n}")  # fmt: skip
-        for c in CENARIOS:
-            ui.input(value=o.datas[c],
-                     on_change=lambda e, o=o, c=c: o.datas.__setitem__(c, e.value or "")
-                     ).props("outlined dense type=date clearable").mark(
-                f"sim-data-{c.lower()}-{n}")  # fmt: skip
-        ui.button(icon="close", on_click=partial(remover, k)).props(
-            "flat round dense").tooltip("Tirar a ordem").mark(f"sim-remover-{n}")  # fmt: skip
+            _grade_ordens(ordens, contas(), remover)
 
     async def simular() -> None:
         try:
@@ -380,30 +439,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             return
         base = next(iter(resultados.values()))
         with resultado:
-            ui.label(f"Resultado até {base.ate:%m/%Y}").classes("coir-titulo text-base")
-            _quadro(base, resultados)
-            for nome, r in resultados.items():
-                ui.label(f"Cenário {nome}: mês a mês e ordens").classes("coir-titulo text-base")
-                tabela.grade(COLUNAS_MES, _linhas_mes(r)).mark(f"sim-meses-{nome}")
-                tabela.grade(COLUNAS_ORDEM, [
-                    (o.numero, o.ticker, o.cv, o.quantidade, o.valor, o.resultado,
-                     o.quantidade_day_trade, o.resultado_day_trade, o.quantidade_apos, o.pm_apos)
-                    for o in r.ordens
-                ]).mark(f"sim-ordens-{nome}")  # fmt: skip
-            textos = [t for nome, r in resultados.items()
-                      for t in _day_trade(r, nome, contas(), cenarios[nome], v)]  # fmt: skip
-            with ui.column().classes("w-full gap-1").mark("sim-day-trade"):
-                ui.label("Day trade").classes("coir-titulo text-base")
-                for t in textos:
-                    ui.label(t).classes("coir-carimbo text-sm")
-                ui.label(DAY_TRADE_FIXO.format(**v)).classes("coir-subtitulo text-xs")
-            avisos = sorted({a for r in resultados.values() for a in r.avisos})
-            if avisos:
-                with ui.column().classes("w-full gap-1").mark("sim-avisos"):
-                    ui.label("Avisos que só aparecem com as ordens").classes(
-                        "coir-titulo text-base")  # fmt: skip
-                    for a in avisos:
-                        ui.label(a).classes("text-sm")
+            _resultados(base, resultados, cenarios, contas(), v)
 
     async def carregar() -> None:
         try:
@@ -428,17 +464,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
 
         corpo.clear()
         with corpo:
-            ultima = f"{ctx.ultima_nota:%d/%m/%Y}" if ctx.ultima_nota else "nenhuma"
-            ano, mes = ctx.ultimo_mes
-            ui.label(
-                f"Notas importadas até {ultima}. As ordens vão desta data até {mes:02d}/{ano}, em "
-                "dias de pregão. Clique numa posição para criar uma venda dela."
-            ).classes("coir-subtitulo text-sm").mark("sim-faixa")
-            tabela.grade(
-                COLUNAS_POSICOES,
-                [(p.ticker, nomes.get(p.conta, ""), p.quantidade, p.pm) for p in posicoes],
-                chaves=list(range(len(posicoes))), altura="h-[260px]", ao_clicar=de_posicao,
-            ).mark("sim-posicoes")  # fmt: skip
+            _carteira(ctx, nomes, de_posicao)
         desenhar_ordens()
 
     botao_adicionar.on_click(lambda: adicionar())

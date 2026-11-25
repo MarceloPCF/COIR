@@ -48,6 +48,9 @@ class Rejeitada:
     nota: str = ""  # número da nota, quando o cabeçalho foi lido
     data: date | None = None
     erro: Exception | None = field(default=None, compare=False, repr=False)  # para a auditoria
+    # o que a auditoria registra do erro, já calculado onde ele aconteceu (a leitura em outro
+    # processo devolve só isto: a exceção não atravessa processos com a pilha)
+    auditoria: dict[str, object] | None = field(default=None, compare=False, repr=False)
 
 
 @dataclass

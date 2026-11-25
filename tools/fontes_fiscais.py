@@ -217,7 +217,7 @@ def _regras(raiz: Path) -> Iterator[tuple[str, Uso]]:
 
 def _docstrings(raiz: Path) -> Iterator[tuple[str, Uso]]:
     pastas = (raiz / "tests" / "fiscal_cases", raiz / "coir" / "engine")
-    for caminho in sorted(p for pasta in pastas for p in pasta.glob("*.py")):
+    for caminho in sorted(p for pasta in pastas for p in pasta.rglob("*.py")):
         arvore = ast.parse(caminho.read_text(encoding="utf-8"))
         nos: list[tuple[str, ast.AST]] = [("módulo", arvore)]
         nos += [(n.name, n) for n in ast.walk(arvore)

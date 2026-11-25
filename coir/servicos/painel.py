@@ -3,10 +3,8 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from coir.domain.fiscal import Categoria, MesApurado
+from coir.domain.fiscal import ZERO, Categoria, MesApurado
 from coir.servicos.darf import LinhaDarf, Situacao
-
-ZERO = Decimal(0)
 
 
 @dataclass(frozen=True)

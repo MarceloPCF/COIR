@@ -16,7 +16,6 @@ from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
-from functools import partial
 from pathlib import Path
 
 from sqlalchemy import select
@@ -39,10 +38,10 @@ from coir.domain.cpf import cpf_valido
 from coir.domain.nota import Cliente, NegocioBovespa, NotaExtraida, OperacaoExtraida
 from coir.domain.referencias import Referencias
 from coir.erros import ExtracaoError, ImportacaoError, NomeAmbiguoError
-from coir.parsing.extrair import Rejeitada, ResultadoExtracao, extrair_pdf, sem_duplicadas
+from coir.parsing.extrair import Rejeitada, ResultadoExtracao, sem_duplicadas
 from coir.parsing.normalizar import Desempate, classes_das_series, operacoes
 from coir.parsing.texto_pdf import senhas_do_cpf
-from coir.servicos import trilha
+from coir.servicos import extracao, trilha
 
 log = logging.getLogger(__name__)
 Extrator = Callable[[Path], ResultadoExtracao]  # outro leitor (textos nos testes); None: o PDF
@@ -122,16 +121,13 @@ def importar_arquivos(
     rel = RelatorioImportacao()
     with sessao.begin():
         tentar = [*senhas, *senhas_do_cpf(t.cpf for t in repo.titulares(sessao))]
-        ler = extrator or partial(extrair_pdf, senhas=tentar)
         contas = repo.Contas(sessao, _titular(sessao, titular), explicito=titular is not None)
         ativos = repo.Ativos(sessao)
         ativos.sincronizar_trocas(refs.trocas)
 
         registros: dict[str, ArquivoImportado] = {}
-        lote = ResultadoExtracao()
-        for feitos, caminho in enumerate(arquivos):
-            if progresso is not None:
-                progresso(feitos, len(arquivos), caminho.name)
+        a_ler: list[Path] = []
+        for caminho in arquivos:
             try:
                 dados = caminho.read_bytes()
             except OSError as erro:
@@ -154,7 +150,21 @@ def importar_arquivos(
                 registro.nome = caminho.name  # o PDF pode ter sido renomeado na pasta
             registros[caminho.name] = registro
             rel.arquivos_lidos.append(caminho.name)
-            lote.juntar(ler(caminho))
+            a_ler.append(caminho)
+        # a leitura (PDF -> notas) em vários processos quando o lote é grande; os resultados
+        # voltam na ordem dos arquivos e a gravação continua aqui, nesta transação
+        lidos = (map(extrator, a_ler) if extrator is not None
+                 else extracao.extrair_lote(a_ler, tentar))  # fmt: skip
+        lote = ResultadoExtracao()
+        try:
+            for i, caminho in enumerate(a_ler):  # andamento: só os arquivos que serão lidos
+                if progresso is not None:
+                    progresso(i, len(a_ler), caminho.name)
+                lote.juntar(next(lidos))
+        finally:  # a leitura em processos para e libera os processos, com erro ou sem
+            fechar = getattr(lidos, "close", None)
+            if fechar is not None:
+                fechar()
         lote = sem_duplicadas(lote)
         rel.avisos += lote.avisos
         rel.rejeitadas += lote.rejeitadas
@@ -198,7 +208,7 @@ def importar_arquivos(
         for nome, registro in registros.items():
             registro.completo = nome not in incompletos
         if progresso is not None:
-            progresso(len(arquivos), len(arquivos), "")
+            progresso(len(a_ler), len(a_ler), "")
     log.info(
         "importação: %d arquivos lidos, %d ignorados, %d notas gravadas, %d já no banco, "
         "%d rejeitadas",

@@ -20,6 +20,7 @@ from datetime import date
 from decimal import ROUND_DOWN, Decimal
 
 from coir.domain.fiscal import (
+    CENTAVO,
     CV,
     ZERO,
     Apuracao,
@@ -41,7 +42,6 @@ from coir.engine.calendario import dia_de_pregao, fim_do_mes
 from coir.engine.movimentos import movimentar
 from coir.erros import ReferenciaError, SimulacaoError
 
-CENTAVO = Decimal("0.01")
 # tipos que a tela simula: os da carteira à vista com regra no motor (opções, futuros, ETF de renda
 # fixa, fundos de alíquota zero e FIDC ficam fora: vencimento, ajuste e tributação próprios)
 TIPOS_SIMULAVEIS = frozenset({TipoAtivo.ACAO, TipoAtivo.UNIT, TipoAtivo.ETF, TipoAtivo.BDR,

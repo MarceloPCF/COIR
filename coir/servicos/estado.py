@@ -50,9 +50,11 @@ from coir.servicos import (
     saidas,
 )
 from coir.servicos.apuracao import (
+    Entradas,
     apurar_banco,
     carteira_banco,
     carteiras_banco,
+    ler_entradas,
     movimentos_banco,
     termos_banco,
 )
@@ -130,6 +132,7 @@ class Estado:
         self.versao_verificada = False
         self.darf_escolhida: tuple[int, int] | None = None  # o Painel abre a DARF desta competência
         self._cache: dict[tuple[object, ...], object] = {}
+        self._geracao = 0  # muda a cada invalidar(): cálculo de antes não fica guardado
         self._trava = Lock()
         self._travas: dict[tuple[object, ...], Lock] = {}
 
@@ -245,13 +248,17 @@ class Estado:
     def invalidar(self) -> None:
         with self._trava:
             self._cache.clear()
+            self._geracao += 1
 
     def _guardado(self, chave: tuple[object, ...], calcular: Callable[[], T]) -> T:
         """Calcula uma vez por marca do banco; telas que pedem a mesma chave ao mesmo tempo
-        esperam o primeiro cálculo (uma trava por chave). Entradas de marcas antigas saem."""
+        esperam o primeiro cálculo (uma trava por chave). Entradas de marcas antigas saem. O
+        cálculo que começou antes de um ``invalidar`` (gravação, tabelas novas) devolve o valor a
+        quem pediu, mas não fica guardado: a marca do banco pode não ter mudado."""
         marca = self._marca()
-        chave = (*chave, marca)
         with self._trava:
+            geracao = self._geracao
+            chave = (*chave, marca, geracao)
             if chave in self._cache:
                 return self._cache[chave]  # type: ignore[return-value]
             trava = self._travas.setdefault(chave, Lock())
@@ -261,10 +268,11 @@ class Estado:
                     return self._cache[chave]  # type: ignore[return-value]
             valor = calcular()
             with self._trava:
-                for velha in [k for k in self._cache if k[-1] != marca]:
-                    del self._cache[velha]
-                self._cache[chave] = valor
                 self._travas.pop(chave, None)
+                if self._geracao == geracao:
+                    for velha in [k for k in self._cache if k[-2] != marca]:
+                        del self._cache[velha]
+                    self._cache[chave] = valor
         return valor
 
     # ------------------------------------------------------------------------- consultas
@@ -307,10 +315,19 @@ class Estado:
         if self.ano not in anos:
             self.ano = anos[0]
 
+    def entradas(self) -> Entradas:
+        """Notas e eventos do banco prontos para o motor, lidos uma vez por marca do banco: cada
+        tela (apuração, carteira, propostas, relatórios) recalcula pelo motor, mas sem reler e
+        validar todas as notas de novo. Não alterar as listas."""
+        return self._guardado(
+            ("entradas",), lambda: ler_entradas(self.banco, self.refs, self.fiscais)
+        )
+
     def apuracao(self, ate: date) -> Apuracao:
         """Apuração de todos os titulares até `ate` (o motor recalcula do livro inteiro)."""
         return self._guardado(
-            ("apuracao", ate), lambda: apurar_banco(self.banco, self.refs, self.fiscais, ate)
+            ("apuracao", ate),
+            lambda: apurar_banco(self.banco, self.refs, self.fiscais, ate, base=self.entradas()),
         )
 
     def lista_notas(self) -> list[notas.ResumoNota]:
@@ -333,19 +350,24 @@ class Estado:
         """Posições de todos os titulares no fim de `ate`, na visão pedida."""
         return self._guardado(
             ("carteira", ate, visao),
-            lambda: carteira_banco(self.banco, self.refs, self.fiscais, ate, visao),
+            lambda: carteira_banco(
+                self.banco, self.refs, self.fiscais, ate, visao, base=self.entradas()
+            ),
         )
 
     def termos(self, ate: date) -> list[TermoAberto]:
         """Compras a termo ainda não liquidadas no fim de `ate` (fora da carteira e do PM)."""
         return self._guardado(
-            ("termos", ate), lambda: termos_banco(self.banco, self.refs, self.fiscais, ate)
+            ("termos", ate),
+            lambda: termos_banco(self.banco, self.refs, self.fiscais, ate, base=self.entradas()),
         )
 
     def movimentos(self, ate: date, visao: Visao) -> list[Movimento]:
         return self._guardado(
             ("movimentos", ate, visao),
-            lambda: movimentos_banco(self.banco, self.refs, self.fiscais, ate, visao),
+            lambda: movimentos_banco(
+                self.banco, self.refs, self.fiscais, ate, visao, base=self.entradas()
+            ),
         )
 
     def notas_das_operacoes(self) -> dict[int, int]:
@@ -365,7 +387,14 @@ class Estado:
         return self._guardado(
             ("relatorios", titular, ano, agora.date()),
             lambda: dados_banco(
-                self.banco, self.refs, self.fiscais, ano, agora, titular, pasta_refs=self.pasta_refs
+                self.banco,
+                self.refs,
+                self.fiscais,
+                ano,
+                agora,
+                titular,
+                pasta_refs=self.pasta_refs,
+                base=self.entradas(),
             ),
         )
 
@@ -533,7 +562,9 @@ class Estado:
         titular, pasta = self.titular, self.pasta_refs
         return self._guardado(
             ("propostas", titular, pasta),
-            lambda: eventos.propostas(self.banco, titular, self.refs, self.fiscais, pasta),
+            lambda: eventos.propostas(
+                self.banco, titular, self.refs, self.fiscais, pasta, base=self.entradas()
+            ),
         )
 
     def conciliacoes(self) -> list[conciliacao.Conciliacao]:
@@ -547,7 +578,7 @@ class Estado:
             anterior = None
             datas = conciliacao.datas_b3(self.banco, titular)
             carteiras = carteiras_banco(self.banco, self.refs, self.fiscais, datas,
-                                        Visao.CORRETORA)  # fmt: skip
+                                        Visao.CORRETORA, base=self.entradas())  # fmt: skip
             for dia in datas:
                 saida.append(conciliacao.conciliar(self.banco, self.refs, self.fiscais, titular,
                                                    dia, anterior, carteiras[dia]))  # fmt: skip
@@ -577,5 +608,7 @@ class Estado:
         ate, titular = self.fim_do_ano(), self.titular
         return self._guardado(
             ("futuros", titular, ate),
-            lambda: derivativos.futuros_banco(self.banco, self.refs, self.fiscais, titular, ate),
+            lambda: derivativos.futuros_banco(
+                self.banco, self.refs, self.fiscais, titular, ate, base=self.entradas()
+            ),
         )

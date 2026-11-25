@@ -117,3 +117,16 @@ def test_entradas_erradas_viram_erro_de_dominio(
     resultado = runner.invoke(app, [a.format(**caminhos) for a in argumentos])
     assert isinstance(resultado.exception, CoirError), resultado.exception
     assert mensagem in str(resultado.exception)
+
+
+def test_ordem_dos_comandos_e_grupos_na_ajuda() -> None:
+    """Os comandos se registram ao importar os arquivos de coir/cli, e a ajuda os lista nessa
+    ordem: o __init__ importa as partes numa ordem fixa (``# isort: off``)."""
+    from coir.cli import app as aplicativo
+
+    comandos = [c.name or (c.callback.__name__ if c.callback else "")
+                for c in aplicativo.registered_commands]  # fmt: skip
+    grupos = [g.name for g in aplicativo.registered_groups]
+    assert comandos == ["versao", "config", "validar-gabarito", "importar", "apurar", "carteira",
+                        "exportar", "ui"]  # fmt: skip
+    assert grupos == ["gabarito", "notas", "banco", "titular", "eventos", "b3"]

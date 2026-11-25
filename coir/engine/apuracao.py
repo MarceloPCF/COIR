@@ -22,6 +22,7 @@ from datetime import date
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 
 from coir.domain.fiscal import (
+    CENTAVO,
     ZERO,
     Apuracao,
     AtivoIsolado,
@@ -54,7 +55,6 @@ from coir.erros import MotorError
 # dos arts. 27, 58 e 60 a 62)
 FORA_DA_APURACAO = frozenset({TipoAtivo.ETF_RF, TipoAtivo.FUNDO_INFRA})
 
-CENTAVO = Decimal("0.01")
 ALIQUOTAS = {
     Categoria.COMUM: "aliquota_comum",
     Categoria.DAY_TRADE: "aliquota_day_trade",
