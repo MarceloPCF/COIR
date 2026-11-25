@@ -122,7 +122,7 @@ def liquidacoes(
     termo sempre avisa (quem antecipa é o comprador); a compra a termo só avisa quando o titular
     vendeu o ativo à vista entre o pregão e o vencimento (``vendas``: datas das vendas por titular
     e ativo) ou quando o vencimento cai em outro ano. Se a venda deixou a posição vendida, o motor
-    troca esse aviso por um mais forte (`coir/engine/movimentos.py`), mantendo o vencimento
+    troca esse aviso por um mais forte (`coir/engine/movimentos/termo.py`), mantendo o vencimento
     (decisão do usuário de 18/11/2026, seguindo o especialista). ``periodo``: primeira e última
     data da
     movimentação importada de cada titular (um intervalo só: um buraco entre duas planilhas não é
