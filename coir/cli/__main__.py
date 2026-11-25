@@ -2,4 +2,5 @@
 
 from coir.cli import main
 
-main()
+if __name__ == "__main__":  # os processos de leitura (spawn) não rodam o comando de novo
+    main()
