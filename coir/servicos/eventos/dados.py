@@ -2,6 +2,7 @@
 consultas simples (lançados, ignorados, contas)."""
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
@@ -183,10 +184,23 @@ def listar(banco: Path, titular: int) -> list[EventoLancado]:
         return saida
 
 
+Erro = Callable[[str], ImportacaoError]
+
+
 def _validar(d: DadosEvento) -> None:
+    """Confere o evento antes de gravar; a primeira falha vira ImportacaoError com o tipo do
+    evento na frente. A ordem das conferências é a da mensagem que o usuário vê primeiro."""
+
     def erro(motivo: str) -> ImportacaoError:
         return ImportacaoError(f"{d.tipo.value.lower().replace('_', ' ')}: {motivo}")
 
+    _validar_comuns(d, erro)
+    _validar_por_tipo(d, erro)
+    _validar_destino(d, erro)
+
+
+def _validar_comuns(d: DadosEvento, erro: Erro) -> None:
+    """Ativo, conta, C/V e números não negativos."""
     if not d.ticker.strip():
         raise erro("informe o ativo")
     if d.conta is None:
@@ -201,6 +215,10 @@ def _validar(d: DadosEvento) -> None:
                          ("valor de mercado", d.valor_corrente)):  # fmt: skip
         if numero is not None and (not numero.is_finite() or numero < 0):
             raise erro(f"{nome} deve ser um número >= 0")
+
+
+def _validar_por_tipo(d: DadosEvento, erro: Erro) -> None:
+    """O que cada tipo exige: quantidade, valor, oferta, direito, dividendo em bens, custódia."""
     if d.tipo in QUANTIDADE_OBRIGATORIA and not d.quantidade:
         raise erro("informe a quantidade")
     if d.tipo in (TipoEvento.REDUCAO_CAPITAL, TipoEvento.LEILAO_FRACAO) and not d.valor:
@@ -236,6 +254,10 @@ def _validar(d: DadosEvento) -> None:
             raise erro("lance a posição comprada (C); posição vendida pede as notas")
         if not d.valor:
             raise erro("informe o custo de aquisição (o valor do Bens e Direitos)")
+
+
+def _validar_destino(d: DadosEvento, erro: Erro) -> None:
+    """Transferência, ativo recebido, natureza e percentual do custo (cisão)."""
     if d.tipo is TipoEvento.TRANSFERENCIA and (d.conta_destino is None
                                                or d.conta_destino == d.conta):  # fmt: skip
         raise erro("informe a conta de destino (outra conta do titular)")
