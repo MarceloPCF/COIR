@@ -176,7 +176,7 @@ O que cada norma diz (vigência, artigos, pontos em aberto) está na base normat
 </tr>
 <tr>
   <td>IN RFB 1.585/2015</td>
-  <td>145</td>
+  <td>146</td>
   <td><a href="https://github.com/MarceloPCF/COIR/blob/main/docs/normas/in-rfb-1585-2015.md">in-rfb-1585-2015.md</a></td>
 </tr>
 <tr>
@@ -578,8 +578,8 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-77131988">Lei 7.713/1988</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — <em>dividendo</em>em_bens: …pago, e a norma manda usar o valor corrente na data da aquisição (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); o COIR fica com o menor entre o atribuído e o corrente (parâmetro…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>exercicio</em>direito: …sem resultado, e o recibo (ou a ação) subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>dividendo</em>em_bens: …pago, e a norma manda usar o valor corrente na data da aquisição (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); o COIR fica com o menor entre o atribuído e o corrente (parâmetro…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>exercicio</em>direito: …sem resultado, e o recibo (ou a ação) subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção…</li>
 <li><code>coir/engine/proventos.py</code> — módulo: …só alcança PJ tributada no País); é rendimento do exterior, sujeito ao carnê-leão pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR não calcula…</li>
 <li><code>data/parametros_fiscais.csv</code> — custo<em>dividendo</em>em<em>bens: Lei 9.249/1995 art. 10 (o dividendo é isento pelo valor atribuído no aviso). Custo do bem recebido: o valor atribuído ou, quando menor, o valor corrente na data da entrega (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); critério do COIR, conservador. Alternativa: valor</em>atribuido</li>
 <li><code>docs/regras-fiscais.md</code> — Proventos: …no País). É rendimento do exterior, sujeito ao carnê-leão e ao ajuste anual pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR só lista, com…</li>
@@ -622,7 +622,7 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-92491995">Lei 9.249/1995</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — <em>dividendo</em>em_bens: …bem entra na posição na data da entrega. O dividendo é rendimento isento pelo valor atribuído no aviso (Lei 9.249/1995 art. 10), fora da apuração mensal. Custo do bem: não houve valor pago, e a norma manda usar o…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>dividendo</em>em_bens: …bem entra na posição na data da entrega. O dividendo é rendimento isento pelo valor atribuído no aviso (Lei 9.249/1995 art. 10), fora da apuração mensal. Custo do bem: não houve valor pago, e a norma manda usar o…</li>
 <li><code>coir/engine/proventos.py</code> — <em>jcp</em>com_credito: …B3, a mais tarde entre a aprovação e a data com): declarado no ano do crédito (IN SRF 41/1998 art. 3º; Lei 9.249/1995 art. 9º §2º; a receber em 31/12 se pago depois: art. 3º parágrafo único), com a alíquota da data…</li>
 <li><code>coir/engine/proventos.py</code> — módulo: …da movimentação da B3 (critérios do COIR). - Dividendo de empresa brasileira (ação, unit): isento (Lei 9.249/1995 art. 10). De BDR: não é isento (o art. 10 só alcança PJ tributada no País); é rendimento do…</li>
 <li><code>data/irpf/2025.yaml</code> — exclusivos: Programa IRPF 2026, ficha Rendimentos sujeitos à tributação exclusiva/definitiva; Lei 9.249/1995 art. 9º; Lei 13.043/2014 art. 2º; Lei 8.981/1995 art. 65 §4º c</li>
@@ -777,8 +777,8 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-113122006">Lei 11.312/2006</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — <em>amortizacao</em>fip: …= excedente): o imposto na fonte só incide sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a amortização reduz o custo até zero, e o excedente é rendimento tributado na…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>conferir</em>fundo: …comum, sem isenção e fora do limite de R$ 20 mil). FIP: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I. FIDC: sem norma expressa para a venda em bolsa por pessoa física (o art. 16 I a da…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>amortizacao</em>fip: …= excedente): o imposto na fonte só incide sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a amortização reduz o custo até zero, e o excedente é rendimento tributado na…</li>
+<li><code>coir/engine/movimentos/livro.py</code> — <em>conferir</em>fundo: …comum, sem isenção e fora do limite de R$ 20 mil). FIP: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I. FIDC: sem norma expressa para a venda em bolsa por pessoa física (o art. 16 I a da…</li>
 <li><code>data/parametros_fiscais.csv</code> — fip<em>amortizacao</em>custo: IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º</li>
 <li><code>data/parametros_fiscais.csv</code> — fip<em>venda</em>bolsa: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I (não revogado: Lei 14.754/2023 art. 46)</li>
 <li><code>docs/regras-fiscais.md</code> — R23: …<code>tests/fiscal_cases/test_fip_fidc.py</code> | IN RFB 1.585/2015 art. 32 §§1º a 3º, art. 16 I a e art. 18 §2º; Lei 11.312/2006 art. 2º; Lei 14.754/2023 arts. 17, 24, 26, 32 I e 46; Lei 11.033/2004 art. 3º I; Lei 8.981/1995…</li>
@@ -821,7 +821,7 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-130432014">Lei 13.043/2014</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — <em>fim</em>da_isencao: Lei 13.043/2014 art. 17 §6º e IN 1.585 art. 68: no dia seguinte ao fim da isenção, o lote isento sobe à média dos…</li>
+<li><code>coir/engine/movimentos/posicao.py</code> — <em>fim</em>da_isencao: Lei 13.043/2014 art. 17 §6º e IN 1.585 art. 68: no dia seguinte ao fim da isenção, o lote isento sobe à média dos…</li>
 <li><code>coir/engine/posicao.py</code> — fim<em>da</em>isencao: Lei 13.043/2014 art. 17 §6º: o lote isento sobe ao maior entre o custo pago e quantidade x média dos 30 pregões, e os lotes se fundem num PM só (art. 58). Devolve o aumento.</li>
 <li><code>coir/engine/proventos.py</code> — <em>origem</em>reembolso: …é a quantidade emprestada vezes o valor por ação do provento do mesmo dia e empresa, menos o IR do JCP (Lei 13.043/2014 art. 7º §1º II; Lei 15.265/2025 art. 20). Só uma origem com quantidade inteira identifica;…</li>
 <li><code>coir/engine/proventos.py</code> — <em>rendimento</em>etf: …de ETF: tributação exclusiva na fonte, ficha 06 pelo líquido que a B3 creditou. ETF de renda fixa: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei…</li>
@@ -873,8 +873,8 @@ B3 nem é endossado por ela.</li>
 <h2 id="lei-147542023">Lei 14.754/2023</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — <em>amortizacao</em>fip: …/ valor patrimonial é devolução de custo; o restante é rendimento com IRRF de 15%, definitivo (Lei 14.754/2023 art. 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I). O COIR não tem o valor…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>avisar</em>come_cotas: Desde 2024 o FIP que não é entidade de investimento tem tributação periódica (Lei 14.754/2023 art. 26), e o imposto pago nela aumenta o custo da cota (art. 17 §2º II). O COIR não tem esse…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>amortizacao</em>fip: …/ valor patrimonial é devolução de custo; o restante é rendimento com IRRF de 15%, definitivo (Lei 14.754/2023 art. 24 caput e §2º c/c art. 17 §2º III e §5º II b; art. 32 I). O COIR não tem o valor…</li>
+<li><code>coir/engine/movimentos/livro.py</code> — <em>avisar</em>come_cotas: Desde 2024 o FIP que não é entidade de investimento tem tributação periódica (Lei 14.754/2023 art. 26), e o imposto pago nela aumenta o custo da cota (art. 17 §2º II). O COIR não tem esse…</li>
 <li><code>coir/engine/proventos.py</code> — <em>rendimento</em>etf: …Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei 14.754/2023 arts. 18 II, 24 e 32 I; parâmetro rendimento<em>etf</em>exclusivo); antes, sem norma lida, fica só o…</li>
 <li><code>coir/engine/proventos.py</code> — módulo: …País); é rendimento do exterior, sujeito ao carnê-leão pela leitura literal (Lei 7.713/1988 art. 8º; a Lei 14.754/2023 art. 3º §1º I só alcança operações fora do País). O COIR não calcula (faltam o imposto retido no…</li>
 <li><code>data/parametros_fiscais.csv</code> — fii<em>isencao</em>minimo_cotistas: Lei 11.033/2004 art. 3º §1º I e III (red. Lei 14.754/2023 art. 41; enquadramento até 30/06/2024): 100 cotistas e o grupo de pessoas ligadas sem 30% ou mais das cotas</li>
@@ -934,7 +934,7 @@ B3 nem é endossado por ela.</li>
 <h2 id="mp-4972010">MP 497/2010</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — módulo: …(pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da MP 497/2010, a operação entre corretoras com liquidação física também não era day trade: IN SRF 25/2001 art. 31…</li>
+<li><code>coir/engine/movimentos/__init__.py</code> — módulo: …(pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da MP 497/2010, a operação entre corretoras com liquidação física também não era day trade: IN SRF 25/2001 art. 31…</li>
 <li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>mesma_corretora: MP 497/2010 art. 21 (conv. Lei 12.350/2010 art. 45): mesma corretora</li>
 <li><code>tests/fiscal_cases/test_casos_fiscais.py</code> — test<em>t7</em>compra<em>e</em>venda<em>em</em>corretoras<em>diferentes</em>nao<em>e</em>day_trade: Desde 28/07/2010 a lei exige a mesma corretora (MP 497/2010 art. 21). Antes, a operação iniciada numa instituição e encerrada em outra, com liquidação física,…</li>
 </ul>
@@ -956,22 +956,23 @@ B3 nem é endossado por ela.</li>
 <li><code>coir/engine/fiagro.py</code> — módulo: …da B3 (tipo FIAGRO), então o que segue são avisos, sem mudar o cálculo. - Compensação cruzada: a IN RFB 1.585/2015 art. 37 §2º só autoriza compensar perda de FII com ganho de FII; nenhuma norma autoriza compensar…</li>
 <li><code>coir/engine/fichas.py</code> — módulo: …com a DARF no saldo único. A DARF mensal deduz o IRRF de um saldo único (Lei 11.033/2004 art. 2º §7º; IN RFB 1.585/2015 arts. 63 §8º e 65 §8º; critério do COIR: separar só na declaração). O programa IRPF tem uma ficha…</li>
 <li><code>coir/engine/futuros.py</code> — módulo: …"serão reconhecidos por ocasião da liquidação do contrato, cessão ou encerramento da posição". IN RFB 1.585/2015 art. 61 e P&amp;R IRPF 2026 pergunta 728: resultado de cada contrato = soma algébrica dos ajustes…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>amortizacao</em>fip: …fip<em>amortizacao</em>custo = excedente): o imposto na fonte só incide sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a amortização reduz o custo até zero, e o excedente é…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>antecipar</em>ofertas: …então a aquisição entra antes dela, e o ganho fica no mês do pregão da venda (critério do COIR; IN RFB 1.585/2015 art. 58). Antecipa só o que cobre a venda, da oferta mais próxima para a mais distante. A posição…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>avisar</em>conjugadas: …e na mesma corretora: pode ser a operação conjugada com rendimento predeterminado, que é renda fixa (IN RFB 1.585/2015 art. 47 I b e §1º I). O COIR apura como venda a termo coberta (art. 62 III) e avisa (critério do…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>avisar</em>termo_descoberto: …termo ("por diferença", de 1 a 3 dias úteis depois do pedido), e o ganho e o custo são da data dela (IN RFB 1.585/2015 art. 59 §2º IV e art. 62 I). O COIR mantém a data usada (o vencimento) e troca o aviso da operação…</li>
-<li><code>coir/engine/movimentos.py</code> — _cisao: Cisão: o percentual do custo de A divulgado pela companhia vai para B, sem resultado (IN RFB 1.585/2015 art. 58 §6º: na proporção fixada pela assembleia). A quantidade de A não muda. Os eventos das…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>conferir</em>fundo: …em <code>ganho_liquido</code> (15% na categoria comum, sem isenção e fora do limite de R$ 20 mil). FIP: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I. FIDC: sem norma expressa para a venda em…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>day</em>trade: …marcou D formam o day trade quando a marcação é consistente; senão, a ordem dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º).</li>
-<li><code>coir/engine/movimentos.py</code> — <em>direito</em>nao_exercido: …emolumentos, pelo PM) vira perda em operações comuns na data do evento, o fim do prazo de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; art. 64 caput; SC Cosit 166/2021; critério do…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>direitos</em>recebidos: …pagar nada. A parte da venda que passa da posição (e das compras do dia) entra antes, com custo zero (IN RFB 1.585/2015 art. 58 §7º, por analogia: a norma não trata do direito recebido; critério do COIR), em vez de…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>dividendo</em>em_bens: …Custo do bem: não houve valor pago, e a norma manda usar o valor corrente na data da aquisição (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); o COIR fica com o menor entre o atribuído e o corrente…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>exercicio</em>direito: …subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção de compra exercida). O exercício não é…</li>
-<li><code>coir/engine/movimentos.py</code> — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…</li>
-<li><code>coir/engine/movimentos.py</code> — _incorporacao: …fusão, conversão ou ajuste de série: a quantidade de A sai sem resultado e B entra com o mesmo custo (IN RFB 1.585/2015 art. 58 §6º; ajuste de série da B3: sem efeito fiscal, o custo é o dos prêmios, art. 60 §2º). A…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>leilao</em>fracao: Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro leilao<em>fracao</em>isentavel (critério do COIR:…</li>
-<li><code>coir/engine/movimentos.py</code> — <em>venda</em>a_termo: Liquidação da venda a termo, no vencimento do contrato: é quando a alienação se dá (IN RFB 1.585/2015 art. 59 §2º IV). Ganho = preço a termo x quantidade, menos os custos da nota da venda, menos o…</li>
-<li><code>coir/engine/movimentos.py</code> — módulo: …pelo preço do próprio negócio); compras; exercícios; vendas; vencimento (pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da MP 497/2010, a operação entre…</li>
+<li><code>coir/engine/movimentos/__init__.py</code> — módulo: …pelo preço do próprio negócio); compras; exercícios; vendas; vencimento (pó). Fontes: - Day trade: IN RFB 1.585/2015 art. 65 (mesmo ativo, mesmo dia, mesma corretora; antes da MP 497/2010, a operação entre…</li>
+<li><code>coir/engine/movimentos/day_trade.py</code> — <em>day</em>trade: …marcou D formam o day trade quando a marcação é consistente; senão, a ordem dos negócios impressa (IN RFB 1.585/2015 art. 65 §3º).</li>
+<li><code>coir/engine/movimentos/day_trade.py</code> — _fatiar: IN RFB 1.585/2015 art. 65 §3º: casa pela ordem (1º negócio de compra com o 1º de venda). Os primeiros negócios até a…</li>
+<li><code>coir/engine/movimentos/day_trade.py</code> — módulo: Day trade: compra e venda do mesmo ativo no mesmo dia e corretora, casadas pela ordem dos negócios (IN RFB 1.585/2015 art. 65 §3º); o excedente vira operação comum.</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>amortizacao</em>fip: …fip<em>amortizacao</em>custo = excedente): o imposto na fonte só incide sobre o que exceder o custo (IN RFB 1.585/2015 art. 32 §2º; Lei 11.312/2006 art. 2º §2º): a amortização reduz o custo até zero, e o excedente é…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — _cisao: Cisão: o percentual do custo de A divulgado pela companhia vai para B, sem resultado (IN RFB 1.585/2015 art. 58 §6º: na proporção fixada pela assembleia). A quantidade de A não muda. Os eventos das…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>direito</em>nao_exercido: …emolumentos, pelo PM) vira perda em operações comuns na data do evento, o fim do prazo de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; art. 64 caput; SC Cosit 166/2021; critério do…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>dividendo</em>em_bens: …Custo do bem: não houve valor pago, e a norma manda usar o valor corrente na data da aquisição (IN RFB 1.585/2015 art. 58 §3º IV; Lei 7.713/1988 art. 16 V); o COIR fica com o menor entre o atribuído e o corrente…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>exercicio</em>direito: …subscrito entra pelo valor pago mais o custo dos direitos usados (Lei 7.713/1988 art. 16 caput e §2º; IN RFB 1.585/2015 art. 58 caput; art. 60 II a e §1º, por analogia com a opção de compra exercida). O exercício não é…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — _incorporacao: …fusão, conversão ou ajuste de série: a quantidade de A sai sem resultado e B entra com o mesmo custo (IN RFB 1.585/2015 art. 58 §6º; ajuste de série da B3: sem efeito fiscal, o custo é o dos prêmios, art. 60 §2º). A…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>leilao</em>fracao: Fração vendida em leilão pela companhia: alienação pelo valor líquido recebido, custo pelo PM (IN RFB 1.585/2015 art. 58 caput). Sem norma sobre a isenção: parâmetro leilao<em>fracao</em>isentavel (critério do COIR:…</li>
+<li><code>coir/engine/movimentos/livro.py</code> — <em>avisar</em>conjugadas: …e na mesma corretora: pode ser a operação conjugada com rendimento predeterminado, que é renda fixa (IN RFB 1.585/2015 art. 47 I b e §1º I). O COIR apura como venda a termo coberta (art. 62 III) e avisa (critério do…</li>
+<li><code>coir/engine/movimentos/livro.py</code> — <em>conferir</em>fundo: …em <code>ganho_liquido</code> (15% na categoria comum, sem isenção e fora do limite de R$ 20 mil). FIP: IN RFB 1.585/2015 art. 32 §1º I a e §3º; Lei 11.312/2006 art. 2º §1º I. FIDC: sem norma expressa para a venda em…</li>
+<li><code>coir/engine/movimentos/percurso.py</code> — <em>antecipar</em>ofertas: …então a aquisição entra antes dela, e o ganho fica no mês do pregão da venda (critério do COIR; IN RFB 1.585/2015 art. 58). Antecipa só o que cobre a venda, da oferta mais próxima para a mais distante. A posição…</li>
+<li><code>coir/engine/movimentos/percurso.py</code> — <em>direitos</em>recebidos: …pagar nada. A parte da venda que passa da posição (e das compras do dia) entra antes, com custo zero (IN RFB 1.585/2015 art. 58 §7º, por analogia: a norma não trata do direito recebido; critério do COIR), em vez de…</li>
+<li><code>coir/engine/movimentos/termo.py</code> — <em>avisar</em>termo_descoberto: …termo ("por diferença", de 1 a 3 dias úteis depois do pedido), e o ganho e o custo são da data dela (IN RFB 1.585/2015 art. 59 §2º IV e art. 62 I). O COIR mantém a data usada (o vencimento) e troca o aviso da operação…</li>
+<li><code>coir/engine/movimentos/termo.py</code> — <em>venda</em>a_termo: Liquidação da venda a termo, no vencimento do contrato: é quando a alienação se dá (IN RFB 1.585/2015 art. 59 §2º IV). Ganho = preço a termo x quantidade, menos os custos da nota da venda, menos o…</li>
 <li><code>coir/engine/posicao.py</code> — módulo: Posição de um ativo pelo custo médio ponderado (IN RFB 1.585/2015 art. 58: custo médio de aquisição; custos da compra integram o custo, os da venda reduzem a…</li>
 <li><code>coir/engine/proventos.py</code> — <em>rendimento</em>etf: …na fonte, ficha 06 pelo líquido que a B3 creditou. ETF de renda fixa: Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II. ETF de ações: só desde 01/01/2024 (Lei 14.754/2023 arts. 18 II, 24 e 32 I;…</li>
 <li><code>coir/engine/proventos.py</code> — módulo: …só aviso. De ETF de renda fixa: exclusiva na fonte na distribuição (Lei 13.043/2014 art. 2º §4º; IN RFB 1.585/2015 arts. 29 III e 30 II), ficha exclusiva 06 pelo líquido. Nenhum dos dois entra na apuração mensal;…</li>
@@ -1166,7 +1167,7 @@ B3 nem é endossado por ela.</li>
 <h2 id="sc-cosit-1482025">SC Cosit 148/2025</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — <em>vender</em>por_lote: …Padrão <code>proporcional</code>: a venda se reparte entre os lotes na proporção das quantidades, como na SC Cosit 148/2025 (analogia; critério do COIR, leitura conservadora), com a parte isenta arredondada para baixo na…</li>
+<li><code>coir/engine/movimentos/posicao.py</code> — <em>vender</em>por_lote: …Padrão <code>proporcional</code>: a venda se reparte entre os lotes na proporção das quantidades, como na SC Cosit 148/2025 (analogia; critério do COIR, leitura conservadora), com a parte isenta arredondada para baixo na…</li>
 <li><code>data/parametros_fiscais.csv</code> — pme<em>lote</em>ordem<em>venda: IN RFB 1.585/2015 art. 69-A §4º manda controlar os lotes em separado e não fixa a ordem; proporcional pela SC Cosit 148/2025 §§32-33 (analogia; critério do COIR, leitura conservadora); alternativas isento</em>primeiro e tributado_primeiro</li>
 <li><code>docs/regras-fiscais.md</code> — Perguntas 6 a 20 da revisão: leitura conservadora: 11. Lotes de PME: padrão <code>proporcional</code> (SC Cosit 148/2025 §§32-33, por analogia), com a parte</li>
 <li><code>tests/fiscal_cases/test_pme_lotes.py</code> — módulo: …<code>isento_primeiro</code> e <code>tributado_primeiro</code>; o critério do COIR o padrão é <code>proporcional</code>, pela SC Cosit 148/2025 §§32-33, por analogia); custódia inicial com data na janela é isenta, fora da janela é tributada, em…</li>
@@ -1182,7 +1183,7 @@ B3 nem é endossado por ela.</li>
 <h2 id="sc-cosit-1662021">SC Cosit 166/2021</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — <em>direito</em>nao_exercido: …de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; art. 64 caput; SC Cosit 166/2021; critério do COIR). Fora do limite de R$ 20 mil: não há valor de alienação. Baixa o menor entre a…</li>
+<li><code>coir/engine/movimentos/eventos.py</code> — <em>direito</em>nao_exercido: …de exercício (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; art. 64 caput; SC Cosit 166/2021; critério do COIR). Fora do limite de R$ 20 mil: não há valor de alienação. Baixa o menor entre a…</li>
 <li><code>docs/regras-fiscais.md</code> — R21: …o saldo | IN RFB 1.585/2015 art. 60 §3º (analogia com a opção que vira pó), arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art. 171 §4º; P&amp;R IRPF 2026 pergunta 727; critério do COIR | M (sem norma específica)</li>
 <li><code>tests/fiscal_cases/test_direito_nao_exercido.py</code> — módulo: …20 mil (IN RFB 1.585/2015 art. 60 §3º, por analogia com a opção que vira pó; arts. 56 §3º, 58 e 64; SC Cosit 166/2021; Lei 6.404 art. 171 §4º). Critério do COIR.</li>
 </ul>
@@ -1331,7 +1332,7 @@ B3 nem é endossado por ela.</li>
 <h2 id="instrucao-normativa-srf-252001">Instrução Normativa SRF 25/2001</h2>
 
 <ul>
-<li><code>coir/engine/movimentos.py</code> — módulo: …antes da MP 497/2010, a operação entre corretoras com liquidação física também não era day trade: IN SRF 25/2001 art. 31 §6º); §13: exercício de opção não é day trade. - Exercício (art. 60 II a-d e §§1º e 3º):…</li>
+<li><code>coir/engine/movimentos/__init__.py</code> — módulo: …antes da MP 497/2010, a operação entre corretoras com liquidação física também não era day trade: IN SRF 25/2001 art. 31 §6º); §13: exercício de opção não é day trade. - Exercício (art. 60 II a-d e §§1º e 3º):…</li>
 <li><code>data/parametros_fiscais.csv</code> — day<em>trade</em>mesma_corretora: Lei 9.959/2000 art. 8º §1º I a (redação original: a quantidade negociada tem de ter sido liquidada); IN SRF 25/2001 art. 31 §6º e IN RFB 1.022/2010 art. 54 §6º (redação original): operação iniciada numa instituição e encerrada em outra, com liquidação física e movimentação da custódia, não é day trade</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: em outra, com liquidação física, não era day trade (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010</li>
 <li><code>docs/regras-fiscais.md</code> — Critérios do COIR: Day trade só na mesma corretora também antes de 28/07/2010 (IN SRF 25/2001 art. 31 §6º; IN RFB 1.022/2010 art. 54 §6º, redação original).</li>

@@ -1,5 +1,5 @@
 # ruff: noqa: E501  (modelos HTML em linhas longas)
-"""Gera o index.html do site (o visual do site da v2, marinho e verde, com o texto da v3; escolha
+"""Gera o site/index.html do site (o visual do site da v2, marinho e verde, com o texto da v3; escolha
 do usuário de 26/10/2026). Uso: uv run python tools/site/gerar_sites.py . tools/site/site-v2.html
 """
 
@@ -565,4 +565,4 @@ def gravar(caminho: Path, texto: str) -> None:
     print(caminho.relative_to(REPO).as_posix(), len(texto.splitlines()), "linhas")
 
 
-gravar(REPO / "index.html", inicial("./", exemplo=False))
+gravar(REPO / "site" / "index.html", inicial("./", exemplo=False))  # publicado na raiz
