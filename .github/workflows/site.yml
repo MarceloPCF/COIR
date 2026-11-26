@@ -28,12 +28,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publicar:
+  # Montagem e upload num job; publicação noutro (modelo dos READMEs do upload-pages-artifact e do
+  # deploy-pages). Com os dois no mesmo job, o deploy às vezes não via o artefato recém-enviado
+  # ("No artifacts named github-pages"; actions/deploy-pages#451).
+  montar:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.publicacao.outputs.page_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
@@ -46,5 +46,13 @@ jobs:
         with:
           path: _site
 
+  publicar:
+    needs: montar
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.publicacao.outputs.page_url }}
+    steps:
       - id: publicacao
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1
