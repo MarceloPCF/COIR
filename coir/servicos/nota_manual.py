@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from coir.db import repositorio as repo
 from coir.db.modelos import ArquivoImportado, Conta, NotaCorretagem, Titular
 from coir.db.sessao import conectar, fazer_backup
+from coir.domain.fiscal import CENTAVO, ZERO
 from coir.domain.nota import (
     CV,
     CategoriaCusto,
@@ -48,8 +49,6 @@ from coir.servicos import trilha
 from coir.servicos.eventos import conferir_no_motor, pendencia_antes
 
 PREFIXO = repo.PREFIXO_NOTA_MANUAL
-ZERO = Decimal(0)
-CENTAVO = Decimal("0.01")
 
 # mercado como a nota imprime (data/mercados_bovespa.csv) -> rótulo do formulário
 MERCADOS_BOVESPA = {
