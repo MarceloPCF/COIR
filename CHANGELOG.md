@@ -10,6 +10,8 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ## [Não lançado]
 
+## [3.1.5] - 2026-11-26
+
 ### Adicionado
 - **Nota manual**: a tela Notas ganhou **Nova nota manual**, para a nota de corretagem que se perdeu ou de corretora que não dá nota em PDF. A nota é digitada inteira, Bovespa ou BM&F: operações, custos e IRRF. Ela entra no cálculo como as notas lidas do PDF, com as mesmas regras de day trade, rateio dos custos, IRRF e preço médio. **Corrigir** e **Remover** fazem backup antes e guardam a versão anterior. Se o PDF da mesma nota for importado depois, o COIR avisa na importação e no sino, porque as operações contariam duas vezes. Digitada com outro número numa conta e pregão que já têm nota, do PDF ou manual, ela só é gravada depois de o COIR mostrar a nota existente e os negócios iguais e de você confirmar.
 
@@ -17,10 +19,17 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **Restituição de capital maior que o custo**: em ação e unit, o custo e o preço médio vão a zero e o ativo continua no cálculo. Antes, o ativo inteiro saía da apuração. O excedente não entra na apuração mensal da bolsa: o COIR avisa que, na leitura dele, é ganho de capital fora de bolsa, a apurar no programa GCAP no mês em que o dinheiro foi creditado, isento até R$ 35 mil recebidos no mês. Não há norma expressa; o parâmetro `restituicao_capital_acima_do_custo` volta ao comportamento anterior. BDR e os demais tipos sem norma continuam fora do cálculo nesse caso, agora com o motivo explicado.
 - **Amortização de cotas de FII e Fiagro**: a tela Eventos passa a propor, pela movimentação da B3, a amortização como redução do custo das cotas. Antes ela era ignorada, e o custo ficava maior que o real, com imposto a menos na venda. Não há norma expressa; o COIR segue a analogia com os outros fundos (parâmetro `fii_amortizacao`). Confira no informe do administrador se o valor é devolução de capital.
 - **Amortização de ETF de ações desde 2024**: segue a regra do FIP. Só a parcela de custo que o informe do administrador mostra reduz o custo, e o COIR avisa para lançá-la (Lei 14.754/2023).
+- **Telas mais rápidas**: as telas passam a reaproveitar as notas já lidas do banco entre uma consulta e outra, em vez de ler e conferir todas as notas de novo a cada tela. Com cerca de 2 mil notas, o Painel abre em 2,4 s (antes, 8,7 s), e as propostas da tela Eventos saem em 3 s (antes, 7 s). Os resultados são os mesmos.
+- **Importação de muitos PDFs mais rápida**: com 8 notas novas ou mais, a leitura dos PDFs roda em paralelo, um processo por núcleo do computador (menos um). A gravação continua numa transação só e na mesma ordem, com o mesmo resultado da leitura um a um. Com 330 PDFs, a importação cai de 35 s para 11 s.
+- **Tabelas de fundos da CVM** atualizadas com os informes de outubro de 2026.
 - **Ordem dos negócios no mesmo pregão**: entre notas diferentes do mesmo dia, vale a ordem do número da nota e dos negócios impressos, e não a ordem em que as notas foram importadas. Muda só quem vendeu, em notas diferentes do mesmo dia, mais do que tinha.
 
 ### Corrigido
 - **Nota aberta pelo endereço**: uma nota de um ano sem outras notas não aparecia na tela Notas.
+- **Escolhas feitas depressa nas telas**: trocar duas vezes seguidas a data ou a visão da tela Carteira podia deixar na tela a posição da primeira escolha, com o campo mostrando a segunda; o mesmo valia para a trilha do preço médio ao clicar em duas posições e para as páginas da nota na tela Notas. Agora vale sempre a última escolha.
+- **Cliques seguidos que gravam**: marcar e desmarcar depressa "lançado" na tela Declaração, ou trocar depressa a origem de um reembolso ou a data do crédito do JCP na tela Proventos, podia gravar a primeira escolha e mostrar a segunda. Agora as gravações seguem a ordem dos cliques.
+- **Tabelas depois de atualizar o pacote de referências**: o último negócio de cada ativo (usado para os ativos que saíram da bolsa) continuava o do pacote anterior até fechar o programa. Uma tela aberta durante a troca do pacote também podia dar erro de arquivo não encontrado.
+- **Resultado velho depois de gravar**: um cálculo que começou antes de uma gravação e terminou depois dela podia continuar aparecendo nas telas até a gravação seguinte.
 
 ## [3.1.4] - 2026-11-18
 
@@ -381,6 +390,7 @@ Até 2.0.4 o repositório usava tags fora do padrão e sem Releases. Elas foram 
 
 Entre abril de 2025 e junho de 2026 houve atualizações sem tag (`xp_rico_clear.py`, `acoes.csv`, `opcoes.csv` e a planilha-modelo); elas estão incorporadas à 2.1.0.
 
+[3.1.5]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.5
 [3.1.4]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.4
 [3.1.3]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.3
 [3.1.2]: https://github.com/MarceloPCF/COIR/releases/tag/v3.1.2

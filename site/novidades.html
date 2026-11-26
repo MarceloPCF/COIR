@@ -46,6 +46,8 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <h2 id="nao-lancado">[Não lançado]</h2>
 
+<h2 id="315-2026-11-26">[3.1.5] - 2026-11-26</h2>
+
 <h3 id="adicionado">Adicionado</h3>
 
 <ul>
@@ -58,6 +60,9 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 <li><strong>Restituição de capital maior que o custo</strong>: em ação e unit, o custo e o preço médio vão a zero e o ativo continua no cálculo. Antes, o ativo inteiro saía da apuração. O excedente não entra na apuração mensal da bolsa: o COIR avisa que, na leitura dele, é ganho de capital fora de bolsa, a apurar no programa GCAP no mês em que o dinheiro foi creditado, isento até R$ 35 mil recebidos no mês. Não há norma expressa; o parâmetro <code>restituicao_capital_acima_do_custo</code> volta ao comportamento anterior. BDR e os demais tipos sem norma continuam fora do cálculo nesse caso, agora com o motivo explicado.</li>
 <li><strong>Amortização de cotas de FII e Fiagro</strong>: a tela Eventos passa a propor, pela movimentação da B3, a amortização como redução do custo das cotas. Antes ela era ignorada, e o custo ficava maior que o real, com imposto a menos na venda. Não há norma expressa; o COIR segue a analogia com os outros fundos (parâmetro <code>fii_amortizacao</code>). Confira no informe do administrador se o valor é devolução de capital.</li>
 <li><strong>Amortização de ETF de ações desde 2024</strong>: segue a regra do FIP. Só a parcela de custo que o informe do administrador mostra reduz o custo, e o COIR avisa para lançá-la (Lei 14.754/2023).</li>
+<li><strong>Telas mais rápidas</strong>: as telas passam a reaproveitar as notas já lidas do banco entre uma consulta e outra, em vez de ler e conferir todas as notas de novo a cada tela. Com cerca de 2 mil notas, o Painel abre em 2,4 s (antes, 8,7 s), e as propostas da tela Eventos saem em 3 s (antes, 7 s). Os resultados são os mesmos.</li>
+<li><strong>Importação de muitos PDFs mais rápida</strong>: com 8 notas novas ou mais, a leitura dos PDFs roda em paralelo, um processo por núcleo do computador (menos um). A gravação continua numa transação só e na mesma ordem, com o mesmo resultado da leitura um a um. Com 330 PDFs, a importação cai de 35 s para 11 s.</li>
+<li><strong>Tabelas de fundos da CVM</strong> atualizadas com os informes de outubro de 2026.</li>
 <li><strong>Ordem dos negócios no mesmo pregão</strong>: entre notas diferentes do mesmo dia, vale a ordem do número da nota e dos negócios impressos, e não a ordem em que as notas foram importadas. Muda só quem vendeu, em notas diferentes do mesmo dia, mais do que tinha.</li>
 </ul>
 
@@ -65,6 +70,10 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 40px;font-size:14px;color:#6
 
 <ul>
 <li><strong>Nota aberta pelo endereço</strong>: uma nota de um ano sem outras notas não aparecia na tela Notas.</li>
+<li><strong>Escolhas feitas depressa nas telas</strong>: trocar duas vezes seguidas a data ou a visão da tela Carteira podia deixar na tela a posição da primeira escolha, com o campo mostrando a segunda; o mesmo valia para a trilha do preço médio ao clicar em duas posições e para as páginas da nota na tela Notas. Agora vale sempre a última escolha.</li>
+<li><strong>Cliques seguidos que gravam</strong>: marcar e desmarcar depressa "lançado" na tela Declaração, ou trocar depressa a origem de um reembolso ou a data do crédito do JCP na tela Proventos, podia gravar a primeira escolha e mostrar a segunda. Agora as gravações seguem a ordem dos cliques.</li>
+<li><strong>Tabelas depois de atualizar o pacote de referências</strong>: o último negócio de cada ativo (usado para os ativos que saíram da bolsa) continuava o do pacote anterior até fechar o programa. Uma tela aberta durante a troca do pacote também podia dar erro de arquivo não encontrado.</li>
+<li><strong>Resultado velho depois de gravar</strong>: um cálculo que começou antes de uma gravação e terminou depois dela podia continuar aparecendo nas telas até a gravação seguinte.</li>
 </ul>
 
 <h2 id="314-2026-11-18">[3.1.4] - 2026-11-18</h2>
