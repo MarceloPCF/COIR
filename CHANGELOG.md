@@ -28,7 +28,7 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 - **Nota aberta pelo endereço**: uma nota de um ano sem outras notas não aparecia na tela Notas.
 - **Escolhas feitas depressa nas telas**: trocar duas vezes seguidas a data ou a visão da tela Carteira podia deixar na tela a posição da primeira escolha, com o campo mostrando a segunda; o mesmo valia para a trilha do preço médio ao clicar em duas posições e para as páginas da nota na tela Notas. Agora vale sempre a última escolha.
 - **Cliques seguidos que gravam**: marcar e desmarcar depressa "lançado" na tela Declaração, ou trocar depressa a origem de um reembolso ou a data do crédito do JCP na tela Proventos, podia gravar a primeira escolha e mostrar a segunda. Agora as gravações seguem a ordem dos cliques.
-- **Tabelas depois de atualizar o pacote de referências**: o último negócio de cada ativo (usado para os ativos que saíram da bolsa) continuava o do pacote anterior até fechar o programa. Uma tela aberta durante a troca do pacote também podia dar erro de arquivo não encontrado.
+- **Tabelas depois de atualizar o pacote de referências**: o último negócio de cada ativo (usado para os ativos que saíram da bolsa) continuava o do pacote anterior até fechar o programa.
 - **Resultado velho depois de gravar**: um cálculo que começou antes de uma gravação e terminou depois dela podia continuar aparecendo nas telas até a gravação seguinte.
 
 ## [3.1.4] - 2026-11-18
