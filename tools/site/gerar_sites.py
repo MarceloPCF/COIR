@@ -540,6 +540,7 @@ def inicial(raiz: str, exemplo: bool) -> str:
   <div class="wrap">
     <span>COIR é gratuito e software livre (licença AGPL-3.0). <a href="{GH}">Código-fonte</a> · <a href="{raiz}legacy/index.html">Versão 2 (planilha)</a> · <a href="{raiz}docs/manual/se-nao-abrir.html">Se não abrir</a></span>
     <span>Suporte: <a href="mailto:{EMAIL_SUPORTE}">{EMAIL_SUPORTE}</a> · <a href="{INSTAGRAM}">Instagram</a> e <a href="{YOUTUBE}">YouTube</a>: {PERFIL} · Não substitui a orientação de um contador.</span>
+    <span>Guias: <a href="{raiz}guias/extrair-notas-de-corretagem-sinacor-para-excel/">Notas de corretagem SINACOR para Excel</a> · <a href="{raiz}guias/planilhas-darf-irrf-irpf/">DARF, IRRF e declaração do IRPF</a> · <a href="{raiz}guias/corretoras-e-mercados-compativeis/">Corretoras e mercados compatíveis</a></span>
   </div>
 </footer>
 

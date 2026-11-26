@@ -1,6 +1,7 @@
 """F6: serviços das telas de importação, notas e operações (banco temporário, notas anonimizadas
 das fixtures no lugar dos PDFs)."""
 
+import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from decimal import Decimal
@@ -339,7 +340,10 @@ def test_registro_de_atividades_nunca_grava_cpf(tmp_path: Path) -> None:
         assert arquivo == tmp_path / "logs" / "coir.log"
         assert any("nota do CPF *** importada" in x for x in linhas)
         texto = "\n".join(linhas)
-        assert cpf[6:9] not in texto and "Fulano" not in texto
+        # sem o carimbo de hora (",247" nos milissegundos) e os números de linha do traceback,
+        # que podem repetir por acaso um pedaço do CPF
+        sem_numeros = re.sub(r"line \d+", "line N", re.sub(r"(?m)^\S+ \S+,\d{3} ", "", texto))
+        assert cpf[6:9] not in sem_numeros and "Fulano" not in texto
         assert "[parameters: ***]" in texto and "erro no traceback" in texto
     finally:
         raiz = logging.getLogger()
