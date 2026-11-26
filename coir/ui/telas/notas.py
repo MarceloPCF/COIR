@@ -72,7 +72,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object], nota: int | None = No
         ao_mudar()
         ui.navigate.to("/notas")
 
-    with ui.row().classes("w-full items-center justify-between"):
+    with ui.row().classes("w-full items-center gap-6"):
         ui.label("Notas").classes("coir-titulo-pagina")
         ui.button("Nova nota manual", icon="edit_note",
                   on_click=lambda: formulario.abrir(estado, gravada)).props(
