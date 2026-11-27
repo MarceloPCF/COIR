@@ -7,10 +7,10 @@ from nicegui.events import ValueChangeEventArguments
 
 from coir.domain.fiscal import ZERO
 from coir.reports.fiscais import MESES
-from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
+from coir.reports.modelo import Coluna, TipoColuna, Valor
 from coir.servicos.estado import Estado
 from coir.servicos.operacoes import LinhaOperacao
-from coir.ui import tabela
+from coir.ui import mascara, tabela
 
 T = TipoColuna
 COLUNAS = (
@@ -64,7 +64,7 @@ def _total(linhas: list[LinhaOperacao]) -> tuple[Valor, ...]:
         "",
         None,
         None,
-        f"C {formatar(compras, T.DINHEIRO)} · V {formatar(vendas, T.DINHEIRO)}",
+        f"C {mascara.dinheiro(compras)} · V {mascara.dinheiro(vendas)}",
         custos,
     )
 

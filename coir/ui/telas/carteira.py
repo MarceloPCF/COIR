@@ -12,7 +12,7 @@ from coir.erros import CoirError
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import carteira, relatorios
 from coir.servicos.estado import Estado
-from coir.ui import tabela
+from coir.ui import mascara, tabela
 
 T = TipoColuna
 VISOES = {Visao.TITULAR: "Titular (fiscal)", Visao.CORRETORA: "Corretora", Visao.CONTA: "Conta"}
@@ -225,7 +225,7 @@ def _venda_a_termo(p: carteira.LinhaPosicao, onde: str) -> None:
             ui.label(onde).classes("coir-subtitulo text-sm")
     ui.label(
         f"{formatar(p.quantidade, T.QUANTIDADE)} ações · preço a termo sem custos "
-        f"{formatar(p.pm, T.PM)} · valor {formatar(p.custo, T.DINHEIRO)}"
+        f"{formatar(p.pm, T.PM)} · valor {mascara.dinheiro(p.custo)}"
     ).classes("coir-numero")
     assert p.liquidacao is not None
     ui.label(
@@ -253,7 +253,7 @@ def _termo(p: carteira.LinhaPosicao) -> None:
             ui.label(onde).classes("coir-subtitulo text-sm")
     ui.label(
         f"{formatar(p.quantidade, T.QUANTIDADE)} ações · preço a termo com custos "
-        f"{formatar(p.pm, T.PM)} · custo {formatar(p.custo, T.DINHEIRO)}"
+        f"{formatar(p.pm, T.PM)} · custo {mascara.dinheiro(p.custo)}"
     ).classes("coir-numero")
     assert p.liquidacao is not None
     ui.label(
@@ -285,7 +285,7 @@ def _trilha(p: carteira.LinhaPosicao, passos: list[Movimento], mapa: dict[int, i
             ui.label(onde).classes("coir-subtitulo text-sm")
     ui.label(
         f"Posição: {formatar(p.quantidade, T.QUANTIDADE)} · PM {formatar(p.pm, T.PM)} · "
-        f"custo {formatar(p.custo, T.DINHEIRO)}"
+        f"custo {mascara.dinheiro(p.custo)}"
     ).classes("coir-numero")
     valores: list[tuple[Valor, ...]] = [
         (

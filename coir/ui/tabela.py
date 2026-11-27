@@ -1,7 +1,8 @@
 """Tabelas densas (AG Grid) com a formatação dos relatórios.
 
-O texto de cada célula sai de `reports.modelo.formatar` (pt-BR, as mesmas casas do xlsx e do pdf);
-o valor bruto vai junto, escondido, para ordenar números e datas e pintar negativos de vermelho.
+O texto de cada célula sai de `reports.modelo.formatar` (pt-BR, as mesmas casas do xlsx e do pdf),
+ou da máscara nas colunas de dinheiro quando o olho do topo esconde os valores (`mascara`); o
+valor bruto vai junto, escondido, para ordenar números e datas e pintar negativos de vermelho.
 Qualquer `Secao` de relatório vira tabela sem código próprio.
 """
 
@@ -12,7 +13,8 @@ from typing import Any
 
 from nicegui import ui
 
-from coir.reports.modelo import NUMERICAS, Coluna, Secao, TipoColuna, Valor, formatar
+from coir.reports.modelo import NUMERICAS, Coluna, Secao, TipoColuna, Valor
+from coir.ui.mascara import celula
 
 Linha = Sequence[Valor]
 POUCAS_LINHAS = 20
@@ -54,7 +56,7 @@ def _coluna(i: int, c: Coluna, largura: int | None) -> dict[str, Any]:
 def _linha(colunas: Sequence[Coluna], linha: Linha, chave: object = None) -> dict[str, Any]:
     dados: dict[str, Any] = {"_chave": chave}
     for i, (c, v) in enumerate(zip(colunas, linha, strict=True)):
-        dados[f"c{i}"] = formatar(v, c.tipo)
+        dados[f"c{i}"] = celula(v, c.tipo)  # dinheiro com o olho fechado: a máscara
         dados[f"n{i}"] = _bruto(v)
     return dados
 

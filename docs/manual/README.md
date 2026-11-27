@@ -13,8 +13,20 @@ usam o **banco de demonstração**: um ano (2025) de um investidor fictício, ge
 
 ## Telas
 O menu à esquerda agrupa as telas. O topo traz o titular e o ano em uso (valem para todas as
-telas), o tema claro/escuro e o botão de recolher o menu. Em cada tela, o botão **Como faço?** abre a
-página deste manual ao lado, sem cobrir o que você está preenchendo.
+telas), o **olho** que esconde os valores, o sino das pendências, o tema claro/escuro e o botão de
+recolher o menu. Em cada tela, o botão **Como faço?** abre a página deste manual ao lado, sem cobrir
+o que você está preenchendo.
+
+**Esconder os valores (olho do topo):** para mostrar a tela a alguém ou gravar um vídeo, clique no
+olho. Os valores em R$ de todas as telas viram `•••••`: cartões, tabelas, totais, avisos e os
+números dos gráficos (as barras continuam). Quantidades, preço médio, preços e percentuais
+continuam à mostra. Outro clique mostra os valores de novo. A escolha fica gravada: o COIR abre do
+jeito que você deixou. É só na tela: o cálculo, os relatórios exportados, o PDF da DARF e o que os
+botões de copiar da Declaração copiam continuam com o valor real. Os campos que já vêm com um valor
+(valor pago da DARF, outros custos, saldos iniciais) mostram pontos até você clicar neles para
+digitar; a nota manual, que você digita inteira, fica à mostra. As tabelas continuam ordenando
+pelo valor e pintando de vermelho o negativo, e as mensagens de erro de uma nota que não fecha
+mostram os números lidos, para achar o problema.
 
 | Grupo | Tela | Para quê |
 |---|---|---|

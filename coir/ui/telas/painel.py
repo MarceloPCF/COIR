@@ -10,10 +10,9 @@ from nicegui import run, ui
 from coir.domain.fiscal import ZERO, Apuracao, Categoria, MesApurado
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
-from coir.reports.modelo import TipoColuna, formatar
 from coir.servicos import atualizacao, darf, painel, versao
 from coir.servicos.estado import Estado, Pendencia
-from coir.ui import preferencias, tema
+from coir.ui import mascara, preferencias, tema
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ SERIES = (
 
 
 def _r(valor: Decimal) -> str:
-    return formatar(valor, TipoColuna.DINHEIRO)
+    return mascara.dinheiro(valor)
 
 
 def _resultado(m: MesApurado, c: Categoria) -> Decimal:
@@ -209,7 +208,7 @@ def _numeros(r: painel.ResumoAno, ultimo_mes: str) -> None:
 def _grafico(meses: list[MesApurado]) -> None:
     ui.label("Resultado mês a mês por categoria").classes("coir-titulo text-base")
     tinta = tema.CLARO.eixo  # legível no claro e no escuro
-    ui.echart({
+    ui.echart(mascara.grafico({
         "animation": False,
         "grid": {"left": 70, "right": 20, "top": 40, "bottom": 30},
         "legend": {"top": 0, "textStyle": {"color": tinta}},
@@ -226,4 +225,4 @@ def _grafico(meses: list[MesApurado]) -> None:
              "data": [float(_resultado(m, c)) for m in meses]}  # só para desenhar
             for c, nome, cor in SERIES
         ],
-    }).classes("w-full h-[340px] coir-folha").mark("grafico-resultado")  # fmt: skip
+    })).classes("w-full h-[340px] coir-folha").mark("grafico-resultado")  # fmt: skip

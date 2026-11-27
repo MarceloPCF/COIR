@@ -10,12 +10,12 @@ from nicegui import run, ui
 from coir.domain.nota import NotaExtraida
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES
-from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
+from coir.reports.modelo import Coluna, TipoColuna, Valor
 from coir.servicos import nota_manual as nm
 from coir.servicos import notas
 from coir.servicos.estado import Estado
+from coir.ui import mascara, tabela
 from coir.ui import nota_manual as formulario
-from coir.ui import tabela
 
 T = TipoColuna
 COLUNAS_LISTA = (
@@ -43,7 +43,7 @@ COLUNAS_NEGOCIOS = (
 
 
 def _dinheiro(valor: Decimal) -> str:
-    return formatar(valor, T.DINHEIRO)
+    return mascara.dinheiro(valor)
 
 
 def _filtrar(
@@ -193,7 +193,9 @@ def _detalhe(d: notas.DetalheNota, senhas: list[str]) -> None:
                     )
                 else:
                     ui.icon("error", size="20px").classes("coir-negativo")
-                    ui.label(f"Não concilia: {d.motivo}").classes("coir-negativo text-sm")
+                    ui.label(f"Não concilia: {mascara.texto(d.motivo)}").classes(
+                        "coir-negativo text-sm"
+                    )
             if d.anteriores:
                 _historico(d.anteriores)
             _resumo_e_custos(d.nota, d.conferencias)

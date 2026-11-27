@@ -127,6 +127,11 @@ body.body--dark {{ --q-primary: #2E6FB8; }}
 .coir-positivo {{ color: var(--coir-positivo); }}
 .coir-negativo {{ color: var(--coir-negativo); }}
 .coir-carimbo {{ color: var(--coir-carimbo); }}
+/* olho do topo fechado: campo com valor em R$ mostra pontos até receber o foco (mascara.campo) */
+.coir-campo-oculto input:not(:focus) {{ -webkit-text-security: disc; }}
+@supports not (-webkit-text-security: disc) {{
+  .coir-campo-oculto input:not(:focus) {{ color: transparent;
+    text-shadow: 0 0 8px var(--coir-tinta); }} }}
 .coir-cortina {{ position: fixed; inset: 0; z-index: 9000; align-items: center;
   justify-content: center; background: rgba(10, 22, 40, .45); cursor: progress; }}
 /* o display só vale sem a classe hidden: esta folha vence a camada do Tailwind, e um display

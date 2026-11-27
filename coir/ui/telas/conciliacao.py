@@ -9,7 +9,7 @@ from coir.erros import CoirError
 from coir.reports.modelo import Coluna, TipoColuna, Valor
 from coir.servicos.conciliacao import Conciliacao
 from coir.servicos.estado import Estado
-from coir.ui import tabela
+from coir.ui import mascara, tabela
 
 T = TipoColuna
 COLUNAS = (
@@ -107,7 +107,7 @@ def _conteudo(lista: list[Conciliacao]) -> None:
             else:
                 ui.label("Tudo confere nesta data.").classes("coir-positivo")
             for aviso in c.avisos:
-                ui.label(aviso).classes("coir-carimbo text-sm")
+                ui.label(mascara.texto(aviso)).classes("coir-carimbo text-sm")
             if c.divergentes:
                 ui.label(
                     "Ajuste de série de opção (desdobramento, grupamento ou bonificação do "

@@ -8,11 +8,11 @@ from nicegui import run, ui
 
 from coir.domain.fiscal import ZERO
 from coir.erros import CoirError
-from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
+from coir.reports.modelo import Coluna, TipoColuna, Valor
 from coir.servicos import carteira
 from coir.servicos.derivativos import CicloOpcao
 from coir.servicos.estado import Estado
-from coir.ui import tabela
+from coir.ui import mascara, tabela
 
 T = TipoColuna
 SITUACOES = (
@@ -43,7 +43,7 @@ COLUNAS_TRILHA = (
 
 
 def _r(v: Decimal) -> str:
-    return formatar(v, T.DINHEIRO)
+    return mascara.dinheiro(v)
 
 
 def _lado(c: CicloOpcao) -> str:

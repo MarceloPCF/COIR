@@ -18,7 +18,7 @@ from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import simulacao
 from coir.servicos.estado import Estado
 from coir.servicos.simulacao import Contexto, OrdemDigitada, Regras, ResultadoSimulacao
-from coir.ui import ocupado, tabela
+from coir.ui import mascara, ocupado, tabela
 from coir.ui.entrada import valor_br
 
 T = TipoColuna
@@ -107,7 +107,7 @@ COLUNAS_POSICOES = (
 
 
 def _r(v: Decimal) -> str:
-    return formatar(v, T.DINHEIRO)
+    return mascara.dinheiro(v)
 
 
 def _q(v: Decimal) -> str:
@@ -123,9 +123,13 @@ def _pct(v: Decimal) -> str:
 
 def valores(r: Regras) -> dict[str, str]:
     """Os parâmetros fiscais nos textos da tela (nada fixo no texto)."""
+
+    def reais(v: Decimal) -> str:  # parâmetro fiscal: sem a máscara do olho
+        return f"R$ {formatar(v, T.DINHEIRO)}"
+
     return {"comum": _pct(r.aliquota_comum), "dt": _pct(r.aliquota_day_trade),
-            "fii": _pct(r.aliquota_fii), "limite": f"R$ {_r(r.limite_isencao)}",
-            "darf": f"R$ {_r(r.darf_minimo)}", "irrf_dt": _pct(r.irrf_day_trade)}  # fmt: skip
+            "fii": _pct(r.aliquota_fii), "limite": reais(r.limite_isencao),
+            "darf": reais(r.darf_minimo), "irrf_dt": _pct(r.irrf_day_trade)}  # fmt: skip
 
 
 @dataclass

@@ -13,10 +13,10 @@ from coir.domain.fiscal import ZERO
 from coir.domain.proventos import Provento, TipoProvento
 from coir.erros import CoirError
 from coir.reports.fiscais import MESES, NOME_PROVENTO
-from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
+from coir.reports.modelo import Coluna, TipoColuna, Valor
 from coir.servicos.estado import Estado
 from coir.servicos.proventos import informar_credito, informar_origem_reembolso
-from coir.ui import tabela, tema
+from coir.ui import mascara, tabela, tema
 
 T = TipoColuna
 COLUNAS = (
@@ -53,7 +53,7 @@ SERIES = (
 
 
 def _r(v: Decimal) -> str:
-    return formatar(v, T.DINHEIRO)
+    return mascara.dinheiro(v)
 
 
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
@@ -93,7 +93,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             else:
                 _conteudo(do_ano)
             for aviso in (a for a in avisos if str(estado.ano) in a[:10]):
-                ui.label(aviso).classes("coir-carimbo text-sm")
+                ui.label(mascara.texto(aviso)).classes("coir-carimbo text-sm")
             jcp = [p for p in todos if p.tipo is TipoProvento.JCP and estado.ano in (
                 p.ano_declaracao, p.data.year)]  # fmt: skip
             if jcp:
@@ -196,7 +196,7 @@ def _creditos(estado: Estado, jcp: list[Provento],
             return
         propostas, avisos = resultado
         for aviso in avisos:
-            ui.notify(aviso, type="warning", multi_line=True)
+            ui.notify(mascara.texto(aviso), type="warning", multi_line=True)
         if not propostas:
             pasta = estado.dados / "_dirpf"
             tem_pdf = pasta.is_dir() and any(pasta.glob("*.pdf"))
@@ -207,7 +207,7 @@ def _creditos(estado: Estado, jcp: list[Provento],
                       )  # fmt: skip
             with ui.dialog() as aviso, ui.card().classes("max-w-[560px]").mark("sem-propostas"):
                 ui.label("Nada a propor pela DIRPF").classes("coir-titulo text-base")
-                ui.label(motivo).classes("text-sm")
+                ui.label(mascara.texto(motivo)).classes("text-sm")
                 ui.button("OK", on_click=aviso.close).props("flat").classes("self-end")
             aviso.open()
             return
@@ -320,7 +320,7 @@ def _cartoes(do_ano: list[Provento]) -> None:
 def _grafico_e_grade(do_ano: list[Provento], cartoes: ui.refreshable[..., None]) -> None:
     meses = sorted({(p.data.year, p.data.month) for p in do_ano})
     tinta = tema.CLARO.eixo  # legível no claro e no escuro
-    ui.echart({
+    ui.echart(mascara.grafico({
         "animation": False,
         "grid": {"left": 70, "right": 20, "top": 40, "bottom": 30},
         "legend": {"top": 0, "textStyle": {"color": tinta}},
@@ -337,7 +337,7 @@ def _grafico_e_grade(do_ano: list[Provento], cartoes: ui.refreshable[..., None])
                       for am in meses]}
             for tipo, cor in SERIES
         ],
-    }, on_point_click=lambda e: filtrar(meses[e.data_index])).classes(
+    }), on_point_click=lambda e: filtrar(meses[e.data_index])).classes(
         "w-full h-[300px] coir-folha cursor-pointer").mark("grafico-proventos")  # fmt: skip
 
     def valores(mes: tuple[int, int] | None) -> list[tuple[Valor, ...]]:

@@ -31,7 +31,7 @@ from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import carteira
 from coir.servicos.apuracao import conta_na_isencao
 from coir.servicos.estado import Estado
-from coir.ui import tabela
+from coir.ui import mascara, tabela
 
 T = TipoColuna
 COLUNAS_ANO = (
@@ -82,7 +82,7 @@ def _item(x: Movimento, isencao: str) -> ItemOperacao:
 
 
 def _r(dinheiro: Decimal) -> str:
-    return formatar(dinheiro, T.DINHEIRO)
+    return mascara.dinheiro(dinheiro)
 
 
 def _cat(m: MesApurado, c: Categoria) -> ResultadoCategoria | None:
@@ -183,7 +183,7 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             for aviso in apuracao.avisos_de(estado.titular):
                 ano_aviso = Apuracao.ano_do_aviso(aviso)
                 if ano_aviso is None or ano_aviso == estado.ano:  # avisos do ano (ou sem data)
-                    ui.label(f"Atenção: {aviso}").classes("coir-carimbo text-sm")
+                    ui.label(f"Atenção: {mascara.texto(aviso)}").classes("coir-carimbo text-sm")
 
     def abrir(indice: int, mapa: dict[int, int]) -> None:
         m = meses[indice]
@@ -229,7 +229,7 @@ def _memoria(estado: Estado, m: MesApurado, movs: list[Movimento], mapa: dict[in
             if comum and comum.vendas_limite != comum.vendas_acoes:
                 _par("Vendas em operações comuns", _r(comum.vendas_acoes))
                 _par("Vendas em day trade", _r(comum.vendas_limite - comum.vendas_acoes))
-            _par("Limite", _r(limite))
+            _par("Limite", formatar(limite, T.DINHEIRO))  # parâmetro: sem máscara
             if comum and comum.isento:
                 _par("Ganho isento", _r(comum.isento), "coir-positivo")
             if m.isento_pme:
