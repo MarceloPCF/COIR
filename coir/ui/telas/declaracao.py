@@ -16,7 +16,7 @@ from coir.reports.irpf import ALIQUOTA, MESES, aliquota
 from coir.reports.modelo import Coluna, TipoColuna, formatar
 from coir.servicos.declaracao import Conferencia
 from coir.servicos.estado import Estado
-from coir.ui import tabela
+from coir.ui import mascara, tabela
 
 T = TipoColuna
 FICHAS = (
@@ -36,10 +36,17 @@ def _programa(valor: Decimal) -> str:
     return formatar(valor, T.DINHEIRO, milhar=False)
 
 
+def _mostrar(valor: Decimal) -> str:
+    """O mesmo valor na tela: com o olho fechado, a máscara (o botão copia o valor real)."""
+    return mascara.dinheiro(valor, milhar=False)
+
+
 def _copiar(texto: str, rotulo: str = "") -> None:
+    """Botão de copiar `texto`; o aviso repete o `rotulo` (mascarado com o olho fechado)."""
+
     def copiar() -> None:
         ui.clipboard.write(texto)
-        ui.notify(f"Copiado: {texto[:60]}", type="positive", timeout=1500)
+        ui.notify(f"Copiado: {(rotulo or texto)[:60]}", type="positive", timeout=1500)
 
     with ui.row().classes("items-center gap-1 no-wrap"):
         if rotulo:
@@ -96,7 +103,7 @@ def _tela(estado: Estado, f: FichasIrpf, mapa: MapeamentoIrpf, feitos: set[str])
         "coir-titulo text-lg"
     )
     for aviso in f.avisos:
-        ui.label(aviso).classes("coir-carimbo text-xs")
+        ui.label(mascara.texto(aviso)).classes("coir-carimbo text-xs")
 
     gravando = asyncio.Lock()  # marcar e desmarcar depressa: grava na ordem dos cliques
 
@@ -163,8 +170,8 @@ def _ficha(chave: str, f: FichasIrpf, mapa: MapeamentoIrpf,
                     ui.space()
                     lancado(f"bens:{item}")
                 with ui.row().classes("items-center gap-6"):
-                    _copiar(_programa(b.anterior), f"31/12/{f.ano - 1}: {_programa(b.anterior)}")
-                    _copiar(_programa(b.atual), f"31/12/{f.ano}: {_programa(b.atual)}")
+                    _copiar(_programa(b.anterior), f"31/12/{f.ano - 1}: {_mostrar(b.anterior)}")
+                    _copiar(_programa(b.atual), f"31/12/{f.ano}: {_mostrar(b.atual)}")
                 with ui.row().classes("items-start gap-2 no-wrap w-full"):
                     ui.label(b.discriminacao).classes("coir-subtitulo text-sm grow")
                     _copiar(b.discriminacao)
@@ -178,8 +185,8 @@ def _ficha(chave: str, f: FichasIrpf, mapa: MapeamentoIrpf,
                     ui.space()
                     lancado(f"dividas:{x.ticker}")
                 with ui.row().classes("items-center gap-6"):
-                    _copiar(_programa(x.anterior), f"31/12/{f.ano - 1}: {_programa(x.anterior)}")
-                    _copiar(_programa(x.atual), f"31/12/{f.ano}: {_programa(x.atual)}")
+                    _copiar(_programa(x.anterior), f"31/12/{f.ano - 1}: {_mostrar(x.anterior)}")
+                    _copiar(_programa(x.atual), f"31/12/{f.ano}: {_mostrar(x.atual)}")
                 with ui.row().classes("items-start gap-2 no-wrap w-full"):
                     ui.label(x.discriminacao).classes("coir-subtitulo text-sm grow")
                     _copiar(x.discriminacao)
@@ -209,7 +216,7 @@ def _rendimentos(rs: list[RendimentoIrpf], chave: str, mapa: MapeamentoIrpf,
                 ui.label(descricao).classes("coir-subtitulo text-xs")
             if r.cnpj:
                 _copiar(formatar_cnpj(r.cnpj), formatar_cnpj(r.cnpj))
-            _copiar(_programa(r.valor), _programa(r.valor))
+            _copiar(_programa(r.valor), _mostrar(r.valor))
             lancado(f"{chave}:{r.codigo}:{r.cnpj or r.chave}")
 
 
@@ -247,6 +254,9 @@ def _linha_mes(x: LinhaFicha, digita: bool, duas: bool) -> None:
     def texto(v: Decimal) -> str:
         return aliquota(v) if x.rotulo == ALIQUOTA else _programa(v)
 
+    def na_tela(v: Decimal) -> str:
+        return aliquota(v) if x.rotulo == ALIQUOTA else _mostrar(v)
+
     ui.label(x.rotulo).classes("text-sm leading-tight" if digita
                                else "text-sm leading-tight coir-subtitulo")  # fmt: skip
     valores = (x.comuns, *((x.day_trade,) if duas else ()))
@@ -255,9 +265,9 @@ def _linha_mes(x: LinhaFicha, digita: bool, duas: bool) -> None:
             if v is None:
                 continue
             if digita and v:
-                _copiar(texto(v), texto(v))
+                _copiar(texto(v), na_tela(v))
             else:
-                ui.label(texto(v)).classes("coir-numero text-right coir-subtitulo")
+                ui.label(na_tela(v)).classes("coir-numero text-right coir-subtitulo")
 
 
 COLUNAS_CONFERENCIA = (

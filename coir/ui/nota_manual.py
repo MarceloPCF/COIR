@@ -13,7 +13,7 @@ from coir.domain.nota import CV, CategoriaCusto, Segmento
 from coir.erros import CoirError
 from coir.servicos import nota_manual as nm
 from coir.servicos.estado import Estado
-from coir.ui import ocupado
+from coir.ui import mascara, ocupado
 from coir.ui.entrada import valor_br
 
 NOVA = 0  # opção "conta nova" no seletor de contas
@@ -349,7 +349,7 @@ def _dialogo(
             estado.invalidar()
             ui.notify(f"Nota {nota.numero.strip()} gravada.", type="positive")
             for aviso in gravada.avisos:
-                ui.notify(aviso, type="warning", multi_line=True)
+                ui.notify(mascara.texto(aviso), type="warning", multi_line=True)
             resultado = ao_gravar(gravada.nota_id)
             if resultado is not None:
                 await resultado
@@ -394,7 +394,7 @@ def confirmar_remocao(
             estado.invalidar()
             ui.notify(f"Nota {numero} removida.", type="positive")
             for aviso in avisos or []:
-                ui.notify(aviso, type="warning", multi_line=True)
+                ui.notify(mascara.texto(aviso), type="warning", multi_line=True)
             resultado = ao_remover()
             if resultado is not None:
                 await resultado

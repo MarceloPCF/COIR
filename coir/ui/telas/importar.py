@@ -21,7 +21,7 @@ from coir.servicos.importacao import (
     importar_lista,
     por_arquivo,
 )
-from coir.ui import ocupado, pastas
+from coir.ui import mascara, ocupado, pastas
 from coir.ui.telas import importar_b3
 
 ICONES = {
@@ -262,7 +262,7 @@ def _resultado(
             _linha(linha)
     avisos = [a for a in rel.avisos if not any(x.arquivo in a for x in linhas)]
     for aviso in (a for a in avisos if "já importada" not in a):
-        ui.label(f"Aviso: {aviso}").classes("coir-carimbo text-sm")
+        ui.label(f"Aviso: {mascara.texto(aviso)}").classes("coir-carimbo text-sm")
     repetidas = [a for a in avisos if "já importada" in a]
     if rel.arquivos_ignorados or rel.notas_ja_no_banco or repetidas:
         ui.label(
@@ -271,7 +271,7 @@ def _resultado(
             "PDFs continuam na pasta onde estão; a tela Notas abre o original de lá."
         ).classes("coir-subtitulo text-sm").mark("info-repetidas")
         for aviso in repetidas:
-            ui.label(aviso).classes("coir-subtitulo text-xs")
+            ui.label(mascara.texto(aviso)).classes("coir-subtitulo text-xs")
 
 
 def _resumo(rel: RelatorioImportacao, linhas: list[ResultadoArquivo]) -> None:

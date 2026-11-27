@@ -11,7 +11,7 @@ from coir.reports.fiscais import MESES
 from coir.reports.modelo import Coluna, TipoColuna, Valor
 from coir.servicos.derivativos import Futuros, resultado_mensal
 from coir.servicos.estado import Estado
-from coir.ui import tabela
+from coir.ui import mascara, tabela
 
 T = TipoColuna
 GRUPOS = {Grupo.INDICE: "Índice", Grupo.DOLAR: "Dólar", Grupo.JUROS: "Juros",
@@ -141,7 +141,7 @@ def _conteudo(dados: Futuros, ano: int | None) -> None:
     else:
         ui.label("Nenhum resultado realizado neste ano.").classes("coir-vazio w-full")
     for aviso in dados.avisos:
-        ui.label(aviso).classes("coir-carimbo text-sm")
+        ui.label(mascara.texto(aviso)).classes("coir-carimbo text-sm")
     ajustes = ui.column().classes("w-full gap-2")  # abrir() a preenche
     with ajustes:
         ui.label("Escolha um contrato para ver os ajustes dia a dia.").classes("coir-vazio w-full")

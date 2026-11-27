@@ -13,7 +13,7 @@ from coir.erros import CoirError
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import cadastros, eventos, saldos_iniciais
 from coir.servicos.estado import Estado
-from coir.ui import tabela
+from coir.ui import mascara, tabela
 from coir.ui.entrada import valor_br
 
 T = TipoColuna
@@ -68,9 +68,10 @@ def _saldos(estado: Estado, ao_mudar: Callable[[], object]) -> None:
                               ("darf_acumulado", "Imposto acumulado abaixo do mínimo da DARF, "
                                "ainda não pago")):  # fmt: skip
             valor = getattr(atual, chave) if atual else None
-            campos[chave] = ui.input(rotulo, value=_moeda(valor) if valor else "").props(
+            entrada = ui.input(rotulo, value=_moeda(valor) if valor else "").props(
                 "outlined dense input-class=text-right").classes("w-[360px]").mark(
                 f"saldo-{chave}")  # fmt: skip
+            campos[chave] = mascara.campo(entrada)
 
         async def salvar(apagar: bool = False) -> None:
             saldo = None
@@ -121,7 +122,7 @@ def _custodia(estado: Estado, titular: int, ano: ui.select, ao_mudar: Callable[[
                 ui.label(f"{d.data:%d/%m/%Y} {e.conta_nome} {d.ticker}").classes(
                     "coir-numero w-[260px]")  # fmt: skip
                 ui.label(f"{formatar(d.quantidade, T.INTEIRO)} ações · custo "
-                         f"{_moeda(d.valor)}").classes("coir-numero")  # fmt: skip
+                         f"{mascara.dinheiro(d.valor)}").classes("coir-numero")  # fmt: skip
                 ui.button(icon="delete_outline", on_click=lambda _, i=e.id: excluir(i)).props(
                     "flat dense round").tooltip("Excluir")  # fmt: skip
 

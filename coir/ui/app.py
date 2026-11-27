@@ -14,7 +14,7 @@ from coir import auditoria
 from coir.config import ARQUIVO_REGISTRO
 from coir.erros import CoirError
 from coir.servicos.estado import Estado, Pendencia
-from coir.ui import ajuda, ocupado, preferencias, tema
+from coir.ui import ajuda, mascara, ocupado, preferencias, tema
 from coir.ui.telas import (
     apuracao,
     assistente,
@@ -255,6 +255,19 @@ def montar(estado: Estado) -> None:
 
         ui.timer(0.3, contar, once=True)
 
+    @ui.refreshable
+    def olho() -> None:
+        """Esconde ou mostra os valores em R$ de todas as telas (fica gravado, como o tema)."""
+        oculto = mascara.ocultos()
+        dica = "Mostrar os valores" if oculto else "Ocultar os valores em R$"
+        ui.button(icon="visibility_off" if oculto else "visibility", on_click=alternar_olho).props(
+            "flat round color=white").tooltip(dica).mark("olho")  # fmt: skip
+
+    def alternar_olho() -> None:
+        mascara.alternar()
+        olho.refresh()
+        recarregar()  # a tela se refaz já com (ou sem) a máscara
+
     with ui.header().classes("coir-topo items-center gap-4 pl-6 pr-4 py-2"):
         ui.button(icon="menu", on_click=lambda: gaveta.toggle()).props(
             "flat round dense color=white").tooltip("Mostrar ou ocultar o menu").mark(
@@ -263,6 +276,7 @@ def montar(estado: Estado) -> None:
         ui.space()
         with ui.row().classes("items-center gap-4"):
             seletores()
+        olho()
         sino()
         ui.button(icon="contrast", on_click=preferencias.alternar_tema).props(
             "flat round color=white").tooltip("Tema claro ou escuro")  # fmt: skip

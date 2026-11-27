@@ -12,13 +12,14 @@ from coir.reports.fiscais import MESES
 from coir.reports.modelo import TipoColuna, formatar
 from coir.servicos import outros_custos
 from coir.servicos.estado import Estado
+from coir.ui import mascara
 from coir.ui.entrada import valor_br
 
 NOMES = {Categoria.COMUM: "Comum", Categoria.DAY_TRADE: "Day trade"}
 
 
 def _r(v: Decimal) -> str:
-    return formatar(v, TipoColuna.DINHEIRO)
+    return mascara.dinheiro(v)
 
 
 def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
@@ -89,8 +90,8 @@ def montar(estado: Estado, ao_mudar: Callable[[], object]) -> None:
             campos = {}
             for categoria in (Categoria.COMUM, Categoria.DAY_TRADE):
                 atual = atuais.get((mes, categoria))
-                campos[categoria] = (
-                    ui.input(value=_r(atual.valor) if atual else "")
+                campos[categoria] = mascara.campo(
+                    ui.input(value=formatar(atual.valor, TipoColuna.DINHEIRO) if atual else "")
                     .props("outlined dense input-class=text-right")
                     .mark(f"custo-{mes}-{categoria.value}")
                 )

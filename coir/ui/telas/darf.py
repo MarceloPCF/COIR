@@ -13,7 +13,7 @@ from coir.reports.fiscais import MESES
 from coir.reports.modelo import Coluna, TipoColuna, Valor, formatar
 from coir.servicos import darf
 from coir.servicos.estado import Estado
-from coir.ui import tabela
+from coir.ui import mascara, tabela
 from coir.ui.entrada import valor_br
 
 T = TipoColuna
@@ -36,7 +36,7 @@ CLASSES = {
 
 
 def _r(valor: Decimal) -> str:
-    return formatar(valor, T.DINHEIRO)
+    return mascara.dinheiro(valor)
 
 
 def _valores(linhas: list[darf.LinhaDarf]) -> list[tuple[Valor, ...]]:
@@ -136,7 +136,9 @@ def _documento(
         ui.label(f"DARF de {MESES[x.mes - 1].lower()}/{x.ano}").classes("coir-titulo text-lg")
         ui.label(x.situacao.value).classes(f"text-sm font-semibold {CLASSES[x.situacao]}")
     if x.pendencia:
-        ui.label(x.pendencia).classes("coir-negativo text-sm w-full").mark("darf-pendencia")
+        ui.label(mascara.texto(x.pendencia)).classes("coir-negativo text-sm w-full").mark(
+            "darf-pendencia"
+        )
     if x.situacao is darf.Situacao.EM_APURACAO:
         ui.label(
             f"O mês ainda não acabou: {_r(x.principal)} é o imposto apurado até hoje e muda com as "
@@ -264,8 +266,11 @@ def _formulario(
             .classes("w-[200px]")
             .mark("data-pagamento")
         )
-        valor = (
-            ui.input("Valor pago (R$)", value=_r(x.pagamento.valor if x.pagamento else x.total))
+        valor = mascara.campo(  # o valor real; com o olho fechado, pontos até o clique
+            ui.input(
+                "Valor pago (R$)",
+                value=formatar(x.pagamento.valor if x.pagamento else x.total, T.DINHEIRO),
+            )
             .props("outlined dense")
             .classes("w-[200px]")
             .mark("valor-pagamento")
@@ -281,7 +286,7 @@ def _formulario(
             except ValueError:
                 return
             if valor.value == sugerido["valor"]:
-                sugerido["valor"] = _r(darf.devido_em(x, dia, estado.fiscais))
+                sugerido["valor"] = formatar(darf.devido_em(x, dia, estado.fiscais), T.DINHEIRO)
                 valor.set_value(sugerido["valor"])
 
         data.on_value_change(nova_data)

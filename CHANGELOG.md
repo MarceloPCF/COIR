@@ -10,6 +10,9 @@ O formato deste arquivo segue o [Keep a Changelog](https://keepachangelog.com/pt
 
 ## [Não lançado]
 
+### Adicionado
+- **Esconder os valores**: o olho no topo da janela troca os valores em R$ de todas as telas por `•••••` (cartões, tabelas, totais, avisos e os números dos gráficos), para mostrar a tela a alguém ou gravar um vídeo. Quantidades, preço médio, preços e percentuais continuam à mostra. Outro clique mostra de novo, e a escolha fica gravada para as próximas aberturas. Nada muda no cálculo, nos relatórios exportados, no PDF da DARF nem no que os botões de copiar da Declaração copiam. Os campos que já vêm com um valor (valor pago da DARF, outros custos, saldos iniciais) mostram pontos até receberem o clique.
+
 ## [3.1.5] - 2026-11-26
 
 ### Adicionado
